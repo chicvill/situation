@@ -1,0 +1,81 @@
+/* BucketManager.css */
+.bucket-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.bucket-card {
+  padding: 1.5rem;
+  transition: transform 0.2s;
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bucket-card:hover {
+  transform: translateY(-4px);
+}
+
+.bucket-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--panel-border);
+  padding-bottom: 0.5rem;
+}
+
+.bucket-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+}
+
+.bucket-time {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.bucket-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bundle-item {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  border: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.bundle-item:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.item-name {
+  font-weight: 500;
+}
+
+.item-value {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  font-style: italic;
+  text-align: center;
+  padding: 2rem;
+}

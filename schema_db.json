@@ -1,0 +1,20 @@
+[
+    {
+        "domain": "Cafe Management",
+        "type": "Menu",
+        "fields": "when_timestamp, where_location, who_actor, what_entity, how_method, why_priority, item_name, price, category, stock_remain, discount_rate",
+        "funcs": "adjust_price(new), update_inventory(qty), get_details()"
+    },
+    {
+        "domain": "Cafe Management",
+        "type": "Staff",
+        "fields": "when_timestamp, where_location, who_actor, what_entity, how_method, why_priority, name, employee_id, position, shift_type, bio_id",
+        "funcs": "on_init(config), process_cycle(), check_validation(), sync_to_cloud(), report_telemetry()"
+    },
+    {
+        "domain": "Cafe Management",
+        "type": "Payment",
+        "fields": "when_timestamp, where_location, who_actor, what_entity, how_method, why_priority, transaction_id, amount, method, status, gateway_alias",
+        "funcs": "on_init(config), process_cycle(), check_validation(), sync_to_cloud(), report_telemetry()"
+    }
+]

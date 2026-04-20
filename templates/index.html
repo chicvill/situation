@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Universal CodeLess Engine (U.C.E) by MQnet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #84cc16; 
+            --primary-dark: #65a30d;
+            --dark: #0f172a; 
+            --bg: #f8fafc; 
+        }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); color: var(--dark); margin:0; overflow-x:hidden; }
+        
+        #splash-screen { 
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--dark); display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; color: white; z-index: 9999;
+            transition: opacity 0.8s ease-in-out; 
+        }
+        .mq-logo { font-size: 3rem; font-weight: 800; color: var(--primary); letter-spacing: -1px; margin-bottom: 10px; }
+        .mq-sub { opacity: 0.6; font-size: 1.1rem; }
+
+        #workstation-ui { display: none; height: 100vh; width: 100vw; flex-direction: row; }
+        .sidebar { width: 320px; background: #0f172a; color: white; padding: 40px 30px; display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.1); }
+        .main-workspace { flex:1; padding: 50px; overflow-y: auto; background: #f1f5f9; }
+        
+        .tab-btn { padding: 18px; margin-bottom: 12px; border-radius: 12px; cursor: pointer; border: none; background: transparent; color: #64748b; text-align: left; font-size: 0.95rem; font-weight: 600; transition: 0.2s; }
+        .tab-btn.active { background: var(--primary); color: var(--dark); font-weight: 800; box-shadow: 0 10px 20px rgba(132, 204, 22, 0.2); }
+        
+        .work-panel { background: white; padding: 40px; border-radius: 35px; border: 1px solid #e2e8f0; border-top: 8px solid var(--primary); box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
+        .work-input { border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; width: 100%; margin-bottom: 15px; font-size: 1.05rem; outline: none; box-sizing: border-box; font-family: inherit; }
+        .btn-action { background: var(--primary); color: var(--dark); border: none; padding: 12px 25px; border-radius: 12px; cursor: pointer; font-weight: 800; font-family: inherit; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 0 var(--primary-dark); }
+        .btn-action:hover { background: var(--primary-dark); transform: translateY(2px); box-shadow: 0 2px 0 var(--primary-dark); }
+        
+        .inst-card { transition: 0.15s; border: 2px solid transparent !important; background: white; padding: 15px; border-radius: 15px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.03); font-weight: 600; }
+        .inst-card:hover { border-color: var(--primary) !important; transform: translateY(-3px); }
+        .inst-card.active { border-color: var(--primary) !important; background: #f7fee7 !important; font-weight: 800; color: var(--primary-dark); }
+    </style>
+</head>
+<body onload="startMqEngine()">
+
+    <div id="splash-screen">
+        <div class="mq-logo">🌀 Universal CodeLess Engine</div>
+        <div class="mq-sub">Provided by <b>MQnet</b></div>
+        <div style="margin-top:40px; border: 2px solid rgba(255,255,255,0.1); width: 220px; height: 6px; border-radius: 3px; overflow:hidden;">
+            <div id="loading-bar" style="background:var(--primary); height: 100%; width: 0%; transition: 2s linear;"></div>
+        </div>
+    </div>
+
+    <div id="workstation-ui">
+        <div class="sidebar">
+            <h1 style="color:var(--primary); font-size:1.6rem; margin:0 0 5px 0;">🌀 U.C.E Station</h1>
+            <p style="font-size:0.8rem; opacity:0.4; margin-bottom:40px;">MQnet Platform System</p>
+            <button class="tab-btn active" id="btn-bone" onclick="switchWorkTab('bone')">🧬 설계 스튜디오 (Bone)</button>
+            <button class="tab-btn" id="btn-flesh" onclick="switchWorkTab('flesh')">🥩 객체 팩토리 (Flesh)</button>
+            <button class="tab-btn" id="btn-soul" onclick="switchWorkTab('soul')">✨ 라이브 오퍼레이션 (Soul)</button>
+            <button class="btn-action" style="margin-top:auto; background:#f43f5e; color:white; box-shadow:0 4px 0 #be123c;" onclick="localStorage.clear(); location.reload();">🔄 세션 초기화</button>
+        </div>
+
+        <div class="main-workspace">
+            <!-- STEP 1: BONE -->
+            <div id="work-bone" class="work-panel work-tab">
+                <h2 style="margin-top:0;">🧬 마스터 설계 (Schema Builder)</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 180px; gap:20px; margin-bottom:30px; align-items:end;">
+                    <div><label>1. 분야 선택</label><select id="aiDomainSelect" class="work-input" style="margin-bottom:0;" onchange="onDomainChange()"><option value="">-- 분야 선택 --</option><option value="Cafe Management">☕ 스마트 카페</option><option value="Smart Farm">🌱 스마트팜</option><option value="Home Automation">🏠 홈 오토메이션</option></select></div>
+                    <div><label>2. 클래스 제안 (AI + Custom)</label><select id="aiClassSelect" class="work-input" style="margin-bottom:0;" onchange="onClassChange()"><option value="">-- 분야 선택 시 활성 --</option></select></div>
+                    <button class="btn-action" style="width:100%; margin-bottom:0;" onclick="prepareNewClass()">+ 새 클래스 정의</button>
+                </div>
+                <div id="editorArea" style="display:none; background:#f8fafc; padding:30px; border-radius:35px; border:2px solid #e2e8f0; margin-bottom:40px; border-left: 10px solid var(--primary);">
+                    <h4 style="color:var(--primary); margin-top:0;">🤖 AI 지능형 설계 어시스턴트</h4>
+                    <div style="display:flex; gap:10px; align-items:center; margin-bottom:20px;">
+                        <input type="text" id="editClassName" class="work-input" style="flex:1; margin-bottom:0; font-weight:800; font-size:1.3rem; border-color:var(--primary);" placeholder="클래스 명칭 입력">
+                        <button class="btn-action" style="white-space:nowrap; height:52px;" onclick="autoFillAiDesign()">🪄 AI 설계 제안</button>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px;">
+                        <div><label>속성 정의 (뼈대 필드)</label><textarea id="editFields" class="work-input" style="height:110px; font-family:monospace; background:white;"></textarea></div>
+                        <div><label>행위 정의 (기본 메소드)</label><textarea id="editFuncs" class="work-input" style="height:110px; font-family:monospace; background:white;"></textarea></div>
+                    </div>
+                    <button class="btn-action" style="width:100%; margin-top:10px;" onclick="saveSchemaToDb()">💾 현재 설계를 분야 DB에 확정 저장</button>
+                </div>
+                <h3>📋 분야별 마스터 DB</h3>
+                <div id="schemaListArea" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:15px;"></div>
+                <div style="text-align:right; margin-top:40px;"><button class="btn-action" style="display:inline-flex;" onclick="switchWorkTab('flesh')">다음 화면으로 이동 (Flesh) ▶</button></div>
+            </div>
+
+            <!-- STEP 2: FLESH -->
+            <div id="work-flesh" class="work-panel work-tab" style="display:none;">
+                <h2 style="margin-top:0;">🥩 객체 생산 공장 (Instance Factory)</h2>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 150px; gap:20px; margin-bottom:30px; align-items:end;">
+                    <div><label>1. 생산 분야 선택</label><select id="factoryDomainSelect" class="work-input" style="margin-bottom:0;" onchange="syncFactoryClasses()"><option value="">-- 분야 선택 --</option><option value="Cafe Management">☕ 스마트 카페</option><option value="Smart Farm">🌱 스마트팜</option><option value="Home Automation">🏠 홈 오토메이션</option></select></div>
+                    <div><label>2. 생산 클래스 선택</label><select id="factoryClassSelect" class="work-input" style="margin-bottom:0;" onchange="autoGenerateInstances()"><option value="">-- 분야를 먼저 고르세요 --</option></select></div>
+                    <div><label>생산 개수</label><input type="number" id="factoryQty" class="work-input" value="10" min="1" max="100" style="margin-bottom:0;" oninput="autoGenerateInstances()"></div>
+                </div>
+                <div id="instanceGrid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:12px; margin-bottom:30px; max-height:280px; overflow-y:auto; padding:20px; background:#f1f5f9; border-radius:28px; border:2px inset #e2e8f0;"></div>
+                
+                <div id="instanceEditor" style="display:none; background:#fdfdfd; padding:45px; border-radius:45px; border:5px solid var(--primary); box-shadow:0 40px 100px rgba(0,0,0,0.2);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+                        <h3 id="targetInstanceLabel" style="margin:0; color:var(--primary); font-weight:800; font-size:1.8rem;">🎯 고정밀 데이터 설계</h3>
+                        <span style="background:var(--primary); color:var(--dark); padding:6px 20px; border-radius:25px; font-weight:800; font-size:0.9rem;">🔬 AI 파라메트릭 정밀 제조 모드</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:40px;">
+                        <div>
+                            <h5 style="margin-top:0; border-bottom:3px solid var(--bg); padding-bottom:12px;">🛠️ 고유 정체성 및 상세 행위(Methods)</h5>
+                            <label>객체 표기 명칭</label><input type="text" id="objName" class="work-input" oninput="evolveAiFunctions()">
+                            <label>상속 관계</label><select id="parentSelect" class="work-input"><option value="">-- 부모 없음 --</option></select>
+                            <label style="color:var(--primary-dark); font-weight:900; margin-top:10px;">🧬 AI 제안 세부 동작 절차 (Micro-Actions)</label>
+                            <textarea id="objFuncs" class="work-input" style="height:250px; font-family:monospace; background:#f0fdf4; border:2px solid var(--primary); color:var(--dark); font-weight:700;"></textarea>
+                        </div>
+                        <div>
+                            <h5 style="margin-top:0; border-bottom:3px solid var(--bg); padding-bottom:12px;">🦴 Bone 기반 데이터 충전 (Mock Data)</h5>
+                            <div id="dynamicFieldsArea" style="max-height:450px; overflow-y:auto; padding-right:15px;"></div>
+                        </div>
+                    </div>
+                    <button class="btn-action" style="width:100%; margin-top:30px; font-size:1.4rem; height:70px;" onclick="saveInstance()">💾 고정밀 파라미터 승인 및 데이터 확정</button>
+                </div>
+            </div>
+
+            <div id="work-soul" class="work-panel work-tab" style="display:none;">
+                <h2>✨ 라이브 오퍼레이션 (Soul)</h2>
+                <div style="background:var(--dark); height:500px; border-radius:40px; display:flex; align-items:center; justify-content:center; color:var(--primary); font-size:2rem; font-weight:800; border:6px solid var(--primary); letter-spacing:4px;">SOUL CORE ENGAGED</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // AI 데이터 브레인 (백엔드와 통일감을 위한 프론트엔드 캐시)
+        const AI_KNOWLEDGE_RAW = {{ ai_knowledge | tojson }};
+        let mySchemas = [];
+        let instances = [];
+        let currentTargetId = null;
+
+        function startMqEngine() {
+            document.getElementById('loading-bar').style.width = '100%';
+            setTimeout(() => {
+                const splash = document.getElementById('splash-screen');
+                splash.style.opacity = '0';
+                setTimeout(() => { splash.style.display = 'none'; document.getElementById('workstation-ui').style.display = 'flex'; restoreSession(); }, 800);
+            }, 2000);
+        }
+
+        async function syncFactoryClasses() {
+            const domain = document.getElementById('factoryDomainSelect').value;
+            const resp = await fetch('/api/get_schemas');
+            mySchemas = await resp.json();
+            const sel = document.getElementById('factoryClassSelect');
+            if(!domain) { sel.innerHTML = '<option value="">-- 분야를 먼저 고르세요 --</option>'; return; }
+            const filtered = mySchemas.filter(s => s.domain === domain || (!s.domain && AI_KNOWLEDGE_RAW[domain].some(ai => ai.type === s.type)));
+            sel.innerHTML = '<option value="">-- 클래스 선택 --</option>' + filtered.map(s => `<option value="${s.type}">${s.type}</option>`).join('');
+        }
+
+        function autoGenerateInstances() {
+            const type = document.getElementById('factoryClassSelect').value;
+            const qty = document.getElementById('factoryQty').value;
+            const grid = document.getElementById('instanceGrid');
+            if(!type) { grid.innerHTML=""; return; }
+            grid.innerHTML = ""; instances = [];
+            for(let i=1; i<=qty; i++) {
+                const id = `${type}_${String(i).padStart(2, '0')}`;
+                instances.push({ id, name: id, parent: "", type, funcs: "", customValues: {} });
+                grid.innerHTML += `<div class="inst-card" id="card_${id}" onclick="editInstance('${id}')">${id}</div>`;
+            }
+        }
+
+        function editInstance(id) {
+            currentTargetId = id; const inst = instances.find(i => i.id === id);
+            const schema = mySchemas.find(s => s.type === inst.type) || { fields: "id, name, status" };
+            document.getElementById('targetInstanceLabel').innerText = `🎯 [${id}] 상세 설계`;
+            document.getElementById('objName').value = inst.name;
+            evolveAiFunctions();
+            
+            const fieldsList = schema.fields.split(',').map(f => f.trim());
+            const dynamicArea = document.getElementById('dynamicFieldsArea');
+            dynamicArea.innerHTML = "";
+            fieldsList.forEach(field => {
+                const currentValue = inst.customValues[field] || guessAiValue(field, id);
+                inst.customValues[field] = currentValue;
+                dynamicArea.innerHTML += `<div style="margin-bottom:18px; background:#f8fafc; padding:15px; border-radius:15px; border:1px solid #e2e8f0;"><label style="display:block; font-size:0.85rem; font-weight:800; color:var(--primary-dark); margin-bottom:6px;">${field.toUpperCase()}</label><input type="text" class="work-input dynamic-input" data-field="${field}" value="${currentValue}" style="margin-bottom:0; background:white; font-family:monospace; border-style:dashed;"></div>`;
+            });
+
+            const parentSel = document.getElementById('parentSelect');
+            parentSel.innerHTML = '<option value="">-- 부모 없음 --</option>' + instances.filter(i => i.id !== id).map(i => `<option value="${i.id}">${i.id}</option>`).join('');
+            parentSel.value = inst.parent;
+            document.querySelectorAll('.inst-card').forEach(c => c.classList.remove('active'));
+            document.getElementById(`card_${id}`).classList.add('active');
+            document.getElementById('instanceEditor').style.display = 'block';
+            document.getElementById('instanceEditor').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function evolveAiFunctions() {
+            const domain = document.getElementById('factoryDomainSelect').value;
+            const type = document.getElementById('factoryClassSelect').value;
+            const name = document.getElementById('objName').value;
+            const currentInst = instances.find(i => i.id === currentTargetId);
+            if(currentInst.funcs) { document.getElementById('objFuncs').value = currentInst.funcs; return; }
+            
+            const ctx = (domain + type + name).toLowerCase();
+            let steps = [];
+            if(ctx.includes('americano')) steps = ["prepare_espresso_beans(weight: 18.2g)", "grind_to_fine(target: 250um)", "extract_double_shot(temp: 93.5C, pressure: 9bar)", "dilute_with_hot_water(ratio: 1:3.2)", "verify_viscosity()"];
+            else if(ctx.includes('latte')) steps = ["steam_milk(target_temp: 65C)", "extract_ristretto_shot(time: 22s)", "pour_latte_art(pattern: 'Heart')", "purge_steam_wand()"];
+            else if(ctx.includes('sensor')) steps = ["init_capacitive_probe()", "read_soil_moisture(depth: 30cm)", "sync_to_gateway(protocol: 'LoRa')", "go_to_deep_sleep()"];
+            else steps = ["boot_system()", "analyze_parameters()", "execute_operation()", "log_telemetry()", "shutdown()"];
+            document.getElementById('objFuncs').value = steps.join('\\n');
+        }
+
+        function saveInstance() {
+            const inst = instances.find(i => i.id === currentTargetId);
+            inst.name = document.getElementById('objName').value;
+            inst.parent = document.getElementById('parentSelect').value;
+            inst.funcs = document.getElementById('objFuncs').value;
+            document.querySelectorAll('.dynamic-input').forEach(input => { inst.customValues[input.getAttribute('data-field')] = input.value; });
+            alert(`[${currentTargetId}] 저장 완료.`);
+            document.getElementById(`card_${currentTargetId}`).innerText = inst.name;
+        }
+
+        function switchWorkTab(n) {
+            document.querySelectorAll('.work-tab').forEach(t=>t.style.display='none');
+            document.getElementById('work-'+n).style.display='block';
+            document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+            document.getElementById('btn-'+n).classList.add('active');
+            if(n==='flesh') syncFactoryClasses();
+        }
+
+        async function onDomainChange() {
+            const d = document.getElementById('aiDomainSelect').value;
+            const resp = await fetch('/api/get_schemas');
+            mySchemas = await resp.json();
+            const sel = document.getElementById('aiClassSelect');
+            if(!d) return;
+            const combined = [...new Set([...AI_KNOWLEDGE_RAW[d].map(c=>c.type), ...mySchemas.filter(s=>s.domain===d).map(s=>s.type)])];
+            sel.innerHTML = '<option value="">-- 클래스 선택 --</option>' + combined.map(t=>`<option value="${t}">${t}</option>`).join('');
+            loadFilteredDb();
+        }
+
+        function onClassChange() { /* ... */ }
+        function autoFillAiDesign() {
+            const name = document.getElementById('editClassName').value.toLowerCase().trim();
+            if(!name) { alert("클래스 명칭을 먼저 입력해 주세요!"); return; }
+
+            // [5W1H 기반 속성 설계 엔진]
+            const fields5W1H = [
+                "when_timestamp", // 언제
+                "where_location",  // 어디서
+                "who_actor",      // 누가
+                "what_entity",    // 무엇을
+                "how_method",     // 어떻게
+                "why_priority"    // 왜
+            ];
+
+            // 클래스 명칭별 특화 속성 매핑
+            const aiBrain = {
+                "menu": "item_name, price, category, stock_remain, discount_rate",
+                "staff": "name, employee_id, position, shift_type, bio_id",
+                "order": "order_id, total_price, order_type, table_no, status_code",
+                "sensor": "device_id, type, current_val, threshold, battery_lv",
+                "drone": "uid, altitude, velocity, payload_weight, gps_lat_long",
+                "payment": "transaction_id, amount, method, status, gateway_alias"
+            };
+
+            let customFields = "id, status, description";
+            for(let key in aiBrain) if(name.includes(key)) { customFields = aiBrain[key]; break; }
+
+            // 5W1H와 커스텀 속성을 결합 (중복 제거)
+            const combined = [...new Set([...fields5W1H, ...customFields.split(',').map(f=>f.trim())])];
+            document.getElementById('editFields').value = combined.join(', ');
+
+            // 구체적인 기본 함수 제안
+            let aiFuncs = "on_init(config), process_cycle(), check_validation(), sync_to_cloud(), report_telemetry()";
+            if(name.includes('menu')) aiFuncs = "adjust_price(new), update_inventory(qty), get_details()";
+            else if(name.includes('sensor')) aiFuncs = "calibrate(), read_io_port(), trigger_alarm(level)";
+            
+            document.getElementById('editFuncs').value = aiFuncs;
+
+            // 시각적 피드백: 입력창이 잠깐 반짝임
+            const fieldsArea = document.getElementById('editFields');
+            const funcsArea = document.getElementById('editFuncs');
+            fieldsArea.style.background = "#eff6ff"; funcsArea.style.background = "#eff6ff";
+            setTimeout(() => { fieldsArea.style.background = "white"; funcsArea.style.background = "white"; }, 500);
+        }
+        async function saveSchemaToDb() {
+            const d = document.getElementById('aiDomainSelect').value, t = document.getElementById('editClassName').value;
+            await fetch('/api/save_schema', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({domain:d, type:t, fields:document.getElementById('editFields').value, funcs:document.getElementById('editFuncs').value})});
+            alert("저장!"); onDomainChange();
+        }
+        async function loadFilteredDb() {
+            const d = document.getElementById('aiDomainSelect').value, area = document.getElementById('schemaListArea');
+            const filtered = mySchemas.filter(s => s.domain === d || (!s.domain && AI_KNOWLEDGE_RAW[d].some(ai=>ai.type===s.type)));
+            area.innerHTML = filtered.map(s => `<div style="position:relative; background:white; border:2px solid var(--primary); padding:15px; border-radius:15px;">` + 
+                `<button onclick="deleteSchema('${s.type}')" style="position:absolute; top:8px; right:8px; border:none; background:none; cursor:pointer; opacity:0.3;">🗑️</button><b>${s.type}</b><div>🦴 ${s.fields}</div></div>`).join('');
+        }
+        function prepareNewClass() { document.getElementById('editorArea').style.display='block'; }
+        async function deleteSchema(t) { await fetch('/api/delete_schema', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:t})}); onDomainChange(); }
+        function restoreSession() { const d = localStorage.getItem('lastDomain'); if(d){ document.getElementById('aiDomainSelect').value=d; onDomainChange(); } }
+        function guessAiValue(f, id) { return "VAL_"+Math.floor(Math.random()*999); }
+    </script>
+</body>
+</html>
