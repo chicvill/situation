@@ -78,3 +78,42 @@ JSON 구조 예시:
             "items": [{"name": "에러", "value": str(e)}],
             "timestamp": time_str
         }
+
+def analyze_history(query: str, history: list) -> str:
+    """지식 창고(history)를 분석하여 질문에 대답합니다."""
+    time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    if not model:
+        return "GEMINI_API_KEY가 설정되지 않아 실제 분석을 수행할 수 없습니다. .env 파일을 확인해 주세요!"
+
+    # 지식 창고 데이터를 텍스트로 요약 (최근 50개만)
+    context = ""
+    for b in history[:50]:
+        # b matches the structure in main.py (BundleData model)
+        # Note: In main.py, items are BundleItem objects
+        try:
+            items_str = ", ".join([f"{i.name}:{i.value}" for i in b.items])
+        except AttributeError:
+            items_str = ", ".join([f"{i['name']}:{i['value']}" for i in b.items])
+            
+        context += f"[{b.timestamp}] {b.type}({b.title}): {items_str}\n"
+
+    prompt = f"""
+    당신은 매장의 '경영 분석가'입니다. 아래의 '지식 창고' 데이터를 바탕으로 사용자의 질문에 친절하고 정확하게 답변하세요.
+    데이터에 없는 내용은 추측하지 말고 모른다고 하거나, 데이터가 더 필요하다고 답하세요.
+
+    [지식 창고 데이터 요약]
+    {context}
+
+    [사용자 질문]
+    "{query}"
+    
+    답변은 한국어로, 핵심 위주로 명확하게 하세요. 마크다운 형식을 사용하여 가독성 있게 답변하세요.
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        print(f"Analysis Error: {e}")
+        return f"분석 중 오류가 발생했습니다: {str(e)}"

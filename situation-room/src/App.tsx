@@ -35,18 +35,27 @@ function App() {
       });
 
       if (!response.ok) throw new Error('API Error');
-      const newBundle: BundleData = await response.json();
+      const result = await response.json();
 
-      let aiReply = `AI 분석 완료! '${newBundle.title}' 바구니를 생성하여 지식 풀에 저장했습니다. ✨`;
-      if (newBundle.title.includes('API 키 필요')) {
-         aiReply = `AI 분석기(Gemini)가 연결되지 않아 가짜 바구니를 생성했습니다. 백엔드 코드(.env)에 GEMINI_API_KEY를 넣어주세요! 🔑`;
+      if (result.type === 'Analysis') {
+        // Handle analysis query response
+        setMessages((prev) => prev.map(msg => 
+          msg.id === loadingMsgId ? { ...msg, text: result.answer } : msg
+        ));
+      } else {
+        // Handle regular situation bundle
+        const newBundle: BundleData = result;
+        let aiReply = `AI 분석 완료! '${newBundle.title}' 바구니를 생성하여 지식 풀에 저장했습니다. ✨`;
+        if (newBundle.title.includes('API 키 필요')) {
+           aiReply = `AI 분석기(Gemini)가 연결되지 않아 가짜 바구니를 생성했습니다. 백엔드 코드(.env)에 GEMINI_API_KEY를 넣어주세요! 🔑`;
+        }
+
+        setMessages((prev) => prev.map(msg => 
+          msg.id === loadingMsgId ? { ...msg, text: aiReply } : msg
+        ));
+
+        setBundles((prev) => [newBundle, ...prev]);
       }
-
-      setMessages((prev) => prev.map(msg => 
-        msg.id === loadingMsgId ? { ...msg, text: aiReply } : msg
-      ));
-
-      setBundles((prev) => [newBundle, ...prev]);
     } catch (error) {
       console.error(error);
       setMessages((prev) => prev.map(msg => 

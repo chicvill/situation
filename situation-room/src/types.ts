@@ -1,4 +1,4 @@
-export type BundleType = 'Menus' | 'PersonalInfos' | 'Orders' | 'Log';
+export type BundleType = 'Menus' | 'PersonalInfos' | 'Orders' | 'Log' | 'Analysis';
 
 export interface BundleData {
   id: string;
