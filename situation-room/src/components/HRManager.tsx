@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 export const HRManager: React.FC<{ bundles: any[] }> = ({ bundles }) => {
     const employees = bundles.filter(b => b.type === 'Employee');

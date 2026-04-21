@@ -42,7 +42,7 @@ function App() {
     return storeBundle?.items.find((i: any) => i.name.includes('상호'))?.value || 'MQnet';
   }, [bundles]);
 
-  const hasCall = useMemo(() => bundles.some(b => b.type === 'Orders' && b.status === 'call'), [bundles]);
+  const hasCall = useMemo(() => bundles.some(b => b.type === 'Orders' && b.items.some((i: any) => i.name === '호출')), [bundles]);
   const hasWaiting = useMemo(() => bundles.some(b => b.type === 'Waiting'), [bundles]);
 
   const navigateTo = (tab: MainTab, setting: SettingTab | null = null) => {

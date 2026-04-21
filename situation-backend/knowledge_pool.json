@@ -1,5 +1,18 @@
 [
   {
+    "id": "15b7014a-4eed-4248-aa95-6be79c18a591",
+    "type": "Orders",
+    "title": "테이블 3 - 디지털 주문",
+    "timestamp": "06:54:28",
+    "items": [
+      {
+        "name": "️ 묵은지 고등어 조림 2인",
+        "value": "x1"
+      }
+    ],
+    "status": "cooking"
+  },
+  {
     "id": "8d2420c2-c7dc-4da2-b3f9-799f27b8f5e7",
     "type": "Orders",
     "title": "테이블 3 - 디지털 주문",
