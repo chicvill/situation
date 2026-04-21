@@ -37,3 +37,4 @@ typing_extensions==4.15.0
 uritemplate==4.2.0
 urllib3==2.6.3
 uvicorn==0.44.0
+python-multipart==0.0.9

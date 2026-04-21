@@ -4,7 +4,7 @@ import type { Message } from '../types';
 
 interface Props {
   messages: Message[];
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string, targetId?: string) => void;
 }
 
 export const SituationConsole: React.FC<Props> = ({ messages, onSendMessage }) => {
@@ -82,6 +82,19 @@ export const SituationConsole: React.FC<Props> = ({ messages, onSendMessage }) =
         {messages.map((msg) => (
           <div key={msg.id} className={`message ${msg.sender}`}>
             {msg.text}
+            {msg.selection && (
+                <div className="selection-container" style={{ marginTop: '10px' }}>
+                    <p style={{ fontSize: '0.9rem', marginBottom: '8px', color: '#94a3b8' }}>{msg.selection.message}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        {msg.selection.candidates.map((c: any, idx: number) => (
+                            <button key={c.id} className="mode-switch-btn" onClick={() => onSendMessage(msg.text, c.id)}>
+                               [{idx + 1}] {c.timestamp} - {c.title} 업데이트
+                            </button>
+                        ))}
+                        <button className="mode-switch-btn" style={{ background: '#10b981' }} onClick={() => onSendMessage(msg.text, "new")}>[+] 새 바구니로 생성</button>
+                    </div>
+                </div>
+            )}
           </div>
         ))}
         <div ref={messagesEndRef} />

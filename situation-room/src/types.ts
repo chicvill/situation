@@ -1,4 +1,5 @@
-export type BundleType = 'Menus' | 'PersonalInfos' | 'Orders' | 'Log' | 'Analysis';
+export type ViewMode = 'admin' | 'kitchen' | 'customer' | 'display' | 'store' | 'hr' | 'menu' | 'stats' | 'counter' | 'waiting' | 'qr';
+export type BundleType = 'Menus' | 'PersonalInfos' | 'Orders' | 'Log' | 'Analysis' | 'StoreConfig' | 'Employee' | 'Attendance' | 'Waiting';
 
 export interface BundleData {
   id: string;
@@ -6,6 +7,7 @@ export interface BundleData {
   title: string;
   items: any[];
   timestamp: string;
+  status?: 'pending' | 'cooking' | 'ready' | 'served' | 'archived';
 }
 
 export interface Message {
@@ -13,4 +15,5 @@ export interface Message {
   text: string;
   sender: 'user' | 'ai';
   timestamp: string;
+  selection?: any;
 }

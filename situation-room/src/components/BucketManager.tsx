@@ -26,11 +26,22 @@ export const BucketManager: React.FC<Props> = ({ bundles }) => {
         </div>
       ) : (
         bundles.map((bundle) => (
-          <div key={bundle.id} className="glass-panel bucket-card">
+          <div key={bundle.id} className={`glass-panel bucket-card ${bundle.status === 'ready' ? 'status-ready' : ''}`}>
             <div className="bucket-header">
-              <h3>
-                {getIconForType(bundle.type)} {bundle.title}
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3>
+                  {getIconForType(bundle.type)} {bundle.title}
+                </h3>
+                {bundle.status === 'ready' && (
+                  <span className="status-badge-ready" style={{ 
+                    background: '#10b981', color: 'white', fontSize: '0.7rem', 
+                    padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold',
+                    animation: 'pulse 1.5s infinite'
+                  }}>
+                    서빙 대기
+                  </span>
+                )}
+              </div>
               <span className="bucket-time">{bundle.timestamp}</span>
             </div>
             <div className="bucket-content">
@@ -41,6 +52,20 @@ export const BucketManager: React.FC<Props> = ({ bundles }) => {
                 </div>
               ))}
             </div>
+            
+            {bundle.status === 'ready' && (
+              <div className="bucket-footer" style={{ marginTop: '12px', padding: '8px 0', borderTop: '1px solid var(--panel-border)' }}>
+                <button 
+                  style={{ 
+                    width: '100%', padding: '8px', borderRadius: '8px', color: 'white',
+                    background: 'var(--accent-color)', border: 'none', fontWeight: 'bold'
+                  }}
+                  onClick={() => alert(`[${bundle.title}] 서빙 완료 처리되었습니다.`)}
+                >
+                  🛎️ 서빙 완료 (손님 전달)
+                </button>
+              </div>
+            )}
           </div>
         ))
       )}

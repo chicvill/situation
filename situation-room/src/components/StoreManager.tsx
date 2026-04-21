@@ -1,0 +1,149 @@
+import React, { useState, useEffect } from 'react';
+import type { BundleData } from '../types';
+import { useImageScan, ScanningOverlay, ScanChoiceModal } from '../hooks/useImageScan';
+
+interface StoreManagerProps {
+  bundles: BundleData[];
+  onNavigate: (mode: any, tab?: any) => void;
+}
+
+export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate }) => {
+  const [storeData, setStoreData] = useState<any>({
+    brand: '', regNo: '', address: '', owner: '', bundleId: null
+  });
+
+  useEffect(() => {
+    const storeBundle = bundles.find(b => b.type === 'StoreConfig');
+    if (storeBundle) {
+      const findValue = (keys: string[]) => storeBundle.items.find((i: any) => keys.some(k => i.name.includes(k)))?.value || '';
+      setStoreData({
+        brand:    findValue(['상호', '브랜드', 'brand']),
+        regNo:    findValue(['사업자', '번호', 'reg']),
+        address:  findValue(['주소', '위치', 'address']),
+        owner:    findValue(['대표', '이름', 'owner', '점주']),
+        bundleId: storeBundle.id
+      });
+    }
+  }, [bundles]);
+
+  const handleSave = async (dataToSave?: any) => {
+    const activeData = dataToSave || storeData;
+    const items = [
+      { name: '상호명',     value: activeData.brand },
+      { name: '사업자번호', value: activeData.regNo },
+      { name: '주소',       value: activeData.address },
+      { name: '대표자',     value: activeData.owner },
+    ].filter(i => i.value);
+
+    const bundleId = activeData.bundleId || 'store-1';
+
+    try {
+      const response = await fetch(`http://localhost:8000/api/bundle/${bundleId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, type: 'StoreConfig', title: '매장 정보' }),
+      });
+      if (response.ok) {
+        alert('✅ 매장 정보가 지식 풀에 성공적으로 업데이트되었습니다!');
+        onNavigate('admin', 'dashboard');
+      } else throw new Error('Server error');
+    } catch {
+      alert('저장 중 오류가 발생했습니다.');
+    }
+  };
+
+  const { 
+    isScanning, 
+    showChoiceModal, 
+    setShowChoiceModal,
+    fileInputRef, 
+    startScanFlow, 
+    proceedToPickFile,
+    handleFileChange 
+  } = useImageScan({
+    docType: 'reg',
+    onSuccess: (result, _overwrite) => {
+      setStoreData((prev: any) => ({
+        ...prev,
+        brand:   result.brand   || prev.brand,
+        regNo:   result.regNo   || prev.regNo,
+        address: result.address || prev.address,
+        owner:   result.owner   || prev.owner,
+      }));
+      alert('✅ 사진 속 정보를 읽어왔습니다!\n오탈자가 없는지 확인하신 후 하단의 "저장" 버튼을 눌러주세요.');
+    },
+  });
+
+  const handleChange = (field: string, value: string) => {
+    setStoreData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <div className="admin-page animate-fade-in">
+      <ScanningOverlay isScanning={isScanning} docType="reg" />
+      <ScanChoiceModal 
+        show={showChoiceModal} 
+        onClose={() => setShowChoiceModal(false)} 
+        onChoice={proceedToPickFile}
+        title="사업자등록증 분석 및 업데이트"
+        docType="reg"
+      />
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+            <h2>🏬 매장 정보 마스터 관리</h2>
+            <p>사업자 정보, 주소 등 매장의 핵심 지식을 관리하고 업데이트하세요.</p>
+        </div>
+        <div className="header-actions" style={{ marginBottom: '5px' }}>
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileChange} />
+            <button className="confirm-btn premium-orange" onClick={startScanFlow} disabled={isScanning}>
+                {isScanning ? '🧠 AI 분석 중...' : '📄 사업자 등록증 스캔 등록'}
+            </button>
+        </div>
+      </header>
+
+      <div className="glass-panel setup-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
+        <div className="ocr-result edit-mode animate-fade-in">
+          <div className="result-field highlight">
+            <label>상호명</label>
+            <input 
+              value={storeData.brand} 
+              onChange={(e) => handleChange('brand', e.target.value)} 
+              placeholder="상호명 입력" 
+              style={{ background: 'white !important', color: '#111827 !important' }}
+            />
+          </div>
+          <div className="result-field highlight">
+            <label>사업자등록번호</label>
+            <input 
+              value={storeData.regNo} 
+              onChange={(e) => handleChange('regNo', e.target.value)} 
+              placeholder="000-00-00000" 
+              style={{ background: 'white !important', color: '#111827 !important' }}
+            />
+          </div>
+          <div className="result-field highlight">
+            <label>사업장 주소</label>
+            <input 
+              value={storeData.address} 
+              onChange={(e) => handleChange('address', e.target.value)} 
+              placeholder="전체 주소 입력" 
+              style={{ background: 'white !important', color: '#111827 !important' }}
+            />
+          </div>
+          <div className="result-field highlight">
+            <label>대표자명</label>
+            <input 
+              value={storeData.owner} 
+              onChange={(e) => handleChange('owner', e.target.value)} 
+              placeholder="성함 입력" 
+              style={{ background: 'white !important', color: '#111827 !important' }}
+            />
+          </div>
+          <button className="confirm-btn success-green" onClick={() => handleSave()} style={{ width: '100%', marginTop: '20px', padding: '1rem' }}>
+            💾 매장 정보 최종 현행화
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};

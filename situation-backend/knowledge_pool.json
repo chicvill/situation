@@ -1,0 +1,308 @@
+[
+  {
+    "id": "8d2420c2-c7dc-4da2-b3f9-799f27b8f5e7",
+    "type": "Orders",
+    "title": "테이블 3 - 디지털 주문",
+    "timestamp": "22:06:57",
+    "items": [
+      {
+        "name": "불고기",
+        "value": "x1"
+      }
+    ],
+    "status": "cooking"
+  },
+  {
+    "id": "90394c2b-0f43-4eb5-9a9a-e924655eefba",
+    "type": "Orders",
+    "title": "테이블 3 - 디지털 주문",
+    "timestamp": "22:05:03",
+    "items": [
+      {
+        "name": "평양냉면",
+        "value": "x1"
+      }
+    ],
+    "status": "cooking"
+  },
+  {
+    "id": "7f212f82-9cf0-44df-b319-87a61cf67729",
+    "type": "Orders",
+    "title": "테이블 3 - 디지털 주문",
+    "timestamp": "22:04:07",
+    "items": [
+      {
+        "name": "김치찌개",
+        "value": "x1"
+      }
+    ],
+    "status": "cooking"
+  },
+  {
+    "id": "a1a0d063-80a1-435e-9814-f05e6068b7d1",
+    "type": "Orders",
+    "title": "테이블 3 - 디지털 주문",
+    "timestamp": "22:02:08",
+    "items": [
+      {
+        "name": "불고기",
+        "value": "x1"
+      }
+    ],
+    "status": "cooking"
+  },
+  {
+    "id": "3596fb4b-2ede-4e05-b7c7-224a49c2fe4a",
+    "type": "Orders",
+    "title": "테이블 3 - 디지털 주문",
+    "timestamp": "21:59:40",
+    "items": [
+      {
+        "name": "불고기",
+        "value": "x1"
+      }
+    ],
+    "status": "cooking"
+  },
+  {
+    "id": "ff233422-2f3b-421d-96d0-95712d1d304d",
+    "type": "Orders",
+    "title": "테이블 3 - 디지털 주문",
+    "timestamp": "21:51:37",
+    "items": [
+      {
+        "name": "불고기",
+        "value": "x1"
+      }
+    ],
+    "status": "ready"
+  },
+  {
+    "id": "da4903f2-238f-4efe-890c-2ee46db364b2",
+    "type": "Menus",
+    "title": "메뉴 카탈로그",
+    "timestamp": "21:43:27",
+    "items": [
+      {
+        "name": "🍽️ 불고기",
+        "value": "15,000원"
+      },
+      {
+        "name": "🍽️ 김치찌개",
+        "value": "8,000원"
+      },
+      {
+        "name": "🍽️ 평양냉면",
+        "value": "12,000원"
+      },
+      {
+        "name": "🍽️ 소주",
+        "value": "5,000원"
+      },
+      {
+        "name": "🍽️ 된장찌게",
+        "value": "10000원"
+      },
+      {
+        "name": "🍽 ️ 모둠 생선구이 정식 2인",
+        "value": "37,000"
+      },
+      {
+        "name": "🍽 ️ 소 왕갈비찜 정식",
+        "value": "29,000"
+      },
+      {
+        "name": "🍽 ️ 법성포 골비 정식",
+        "value": "25,000"
+      },
+      {
+        "name": "🍽 ️ 임연수구이 정식",
+        "value": "19,000"
+      },
+      {
+        "name": "🍽 ️ 볼락구이 정식",
+        "value": "18,000"
+      },
+      {
+        "name": "🍽 ️ 가자미구이 정식",
+        "value": "18,000"
+      },
+      {
+        "name": "🍽 ️ 고등어구이 정식",
+        "value": "18,000"
+      },
+      {
+        "name": "🍽 ️ 어린이 정식(5-7세/반마리)",
+        "value": "9,000"
+      },
+      {
+        "name": "🍽 ️ 가브리수육 정식",
+        "value": "18,000"
+      },
+      {
+        "name": "🍽 ️ 묵은지 고등어 조림 2인",
+        "value": "36,000"
+      }
+    ],
+    "status": null
+  },
+  {
+    "id": "81d2ed53-fab8-42ca-9443-8a238e7a3ce0",
+    "type": "Menus",
+    "title": "전체 메뉴판 데이터 통합 업데이트",
+    "timestamp": "17:22:44",
+    "items": [
+      {
+        "name": "된장찌게",
+        "value": "10000원"
+      },
+      {
+        "name": "불고기",
+        "value": "15000원"
+      },
+      {
+        "name": "김치찌개",
+        "value": "8000원"
+      },
+      {
+        "name": "평양냉면",
+        "value": "12000원"
+      },
+      {
+        "name": "소주",
+        "value": "5000원"
+      }
+    ],
+    "status": null
+  },
+  {
+    "id": "ea5112bb-91b7-498d-993a-e34eda0ab7d5",
+    "type": "Log",
+    "title": "신규 고객 입장",
+    "timestamp": "17:20:37",
+    "items": [],
+    "status": null
+  },
+  {
+    "id": "store-1",
+    "type": "StoreConfig",
+    "title": "매장 정보",
+    "timestamp": "21:41:16",
+    "items": [
+      {
+        "name": "상호명",
+        "value": "시블"
+      },
+      {
+        "name": "사업자번호",
+        "value": "587-13-01146"
+      },
+      {
+        "name": "주소",
+        "value": "인천광역시 서구 마누리로 26"
+      },
+      {
+        "name": "대표자",
+        "value": "김종천"
+      }
+    ],
+    "status": null
+  },
+  {
+    "id": "menu-1",
+    "type": "Menus",
+    "title": "메인 메뉴판",
+    "timestamp": "16:28:10",
+    "items": [
+      {
+        "name": "불고기",
+        "value": "15,000원"
+      },
+      {
+        "name": "김치찌개",
+        "value": "8,000원"
+      },
+      {
+        "name": "평양냉면",
+        "value": "12,000원"
+      },
+      {
+        "name": "소주",
+        "value": "5,000원"
+      }
+    ],
+    "status": null
+  },
+  {
+    "id": "order-1",
+    "type": "Orders",
+    "title": "테이블 5 주문 내역",
+    "timestamp": "16:15:22",
+    "items": [
+      {
+        "name": "불고기",
+        "value": "2인분"
+      },
+      {
+        "name": "소주",
+        "value": "1병"
+      },
+      {
+        "name": "테이블",
+        "value": "5"
+      }
+    ],
+    "status": "ready"
+  },
+  {
+    "id": "order-2",
+    "type": "Orders",
+    "title": "테이블 3 주문 내역",
+    "timestamp": "16:25:44",
+    "items": [
+      {
+        "name": "평양냉면",
+        "value": "1그릇"
+      },
+      {
+        "name": "테이블",
+        "value": "3"
+      }
+    ],
+    "status": "cooking"
+  },
+  {
+    "id": "call-1",
+    "type": "Orders",
+    "title": "테이블 3 서비스 벨",
+    "timestamp": "16:26:00",
+    "items": [
+      {
+        "name": "호출",
+        "value": "벨 호출"
+      },
+      {
+        "name": "테이블",
+        "value": "3"
+      }
+    ],
+    "status": "pending"
+  },
+  {
+    "id": "att-1",
+    "type": "Attendance",
+    "title": "홍길동 출근",
+    "timestamp": "09:00:15",
+    "items": [
+      {
+        "name": "이름",
+        "value": "홍길동"
+      },
+      {
+        "name": "상태",
+        "value": "출근 완료"
+      }
+    ],
+    "status": null
+  }
+]
