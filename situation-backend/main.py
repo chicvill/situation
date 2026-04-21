@@ -4,8 +4,15 @@ from pydantic import BaseModel
 from typing import List, Optional
 import uuid
 import json
+import os
 from datetime import datetime
 from ai_engine import parse_situation_text, analyze_history, analyze_document_image
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
+
+load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 app = FastAPI()
 
@@ -87,32 +94,114 @@ class BundleData(BaseModel):
 SituationRequest.model_rebuild()
 BundleData.model_rebuild()
 
-# Persistence File Path
-KNOWLEDGE_DB = "knowledge_pool.json"
+# Persistence Settings
+KNOWLEDGE_DB = "knowledge_pool.json" # Legacy local fallback
 knowledge_pool: List[BundleData] = []
 
-def save_pool():
+def init_db():
+    if not DATABASE_URL:
+        print("⚠️ DATABASE_URL not found in .env. Falling back to local JSON.")
+        return
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS knowledge_bundles (
+                id TEXT PRIMARY KEY,
+                type TEXT NOT NULL,
+                title TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                items JSONB NOT NULL,
+                status TEXT
+            );
+        """)
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("✅ Supabase DB initialized (knowledge_bundles table ready).")
+    except Exception as e:
+        print(f"❌ DB Init Error: {e}")
+
+def save_bundle_to_db(bundle: BundleData):
+    """Sync a single bundle to Supabase."""
+    if not DATABASE_URL:
+        save_pool_local()
+        return
+    try:
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO knowledge_bundles (id, type, title, timestamp, items, status)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT (id) DO UPDATE SET
+                type = EXCLUDED.type,
+                title = EXCLUDED.title,
+                timestamp = EXCLUDED.timestamp,
+                items = EXCLUDED.items,
+                status = EXCLUDED.status;
+        """, (
+            bundle.id, 
+            bundle.type, 
+            bundle.title, 
+            bundle.timestamp, 
+            json.dumps([i.model_dump() for i in bundle.items]), 
+            bundle.status
+        ))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"❌ Supabase Sync Error: {e}")
+        save_pool_local()
+
+def save_pool_local():
+    """Legacy local backup."""
     try:
         with open(KNOWLEDGE_DB, "w", encoding="utf-8") as f:
-            # Convert models to dict for serialization
             data = [b.model_dump() for b in knowledge_pool]
             json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        print(f"Failed to save pool: {e}")
+        print(f"Failed to save local pool: {e}")
 
 def load_pool():
     global knowledge_pool
+    if DATABASE_URL:
+        try:
+            print("📡 Loading knowledge from Supabase...")
+            conn = psycopg2.connect(DATABASE_URL)
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            # Load all bundles, ordered by timestamp
+            cur.execute("SELECT * FROM knowledge_bundles ORDER BY timestamp DESC;")
+            rows = cur.fetchall()
+            cur.close()
+            conn.close()
+            
+            knowledge_pool = []
+            for row in rows:
+                knowledge_pool.append(BundleData(
+                    id=row['id'],
+                    type=row['type'],
+                    title=row['title'],
+                    timestamp=row['timestamp'],
+                    items=[BundleItem(**i) for i in row['items']],
+                    status=row['status']
+                ))
+            print(f"✅ Loaded {len(knowledge_pool)} bundles from Supabase.")
+            return
+        except Exception as e:
+            print(f"⚠️ Supabase Load Error: {e}. Falling back to local JSON.")
+    
+    # Fallback to local JSON
     try:
         with open(KNOWLEDGE_DB, "r", encoding="utf-8") as f:
             data = json.load(f)
             knowledge_pool = [BundleData(**b) for b in data]
-            print(f"Loaded {len(knowledge_pool)} bundles from {KNOWLEDGE_DB}")
-    except FileNotFoundError:
-        print("No persistence file found. Starting with empty pool.")
-    except Exception as e:
-        print(f"Failed to load pool: {e}")
+            print(f"Loaded {len(knowledge_pool)} bundles from local {KNOWLEDGE_DB}")
+    except Exception:
+        print("No local persistence found.")
 
-# Initial load
+# Initialize DB and Load Data
+init_db()
 load_pool()
 
 @app.post("/api/situation")
@@ -144,7 +233,7 @@ async def process_situation(request: SituationRequest):
             else:
                 return {"error": "Target not found"}
 
-        save_pool()
+        save_bundle_to_db(target)
         await manager.broadcast(target.model_dump())
         return target
 
@@ -180,9 +269,8 @@ async def process_situation(request: SituationRequest):
     if ai_result.get("type") == "Settlement" and identifier_item:
         for b in knowledge_pool:
             if any(i.value == identifier_item.value for i in b.items):
-                b.status = "archived" # Mark as archived instead of deleting
-        
-        save_pool()
+                b.status = "archived" 
+                save_bundle_to_db(b) # Update each archived bundle
         await manager.broadcast({
             "type": "POOL_CLEARED",
             "subject": identifier_item.value
@@ -223,7 +311,7 @@ async def process_situation(request: SituationRequest):
         status="cooking" if ai_result.get("type") == "Orders" else None
     )
     knowledge_pool.insert(0, new_bundle)
-    save_pool()
+    save_bundle_to_db(new_bundle)
     await manager.broadcast(new_bundle.model_dump())
     return new_bundle
 
@@ -242,7 +330,7 @@ async def process_direct_order(request: dict):
     )
     
     knowledge_pool.insert(0, new_bundle)
-    save_pool()
+    save_bundle_to_db(new_bundle)
     await manager.broadcast(new_bundle.model_dump())
     return new_bundle
 
@@ -266,7 +354,7 @@ async def direct_update_bundle(bundle_id: str, request: DirectUpdateRequest):
             items=request.items
         )
         knowledge_pool.insert(0, new_bundle)
-        save_pool()
+        save_bundle_to_db(new_bundle)
         await manager.broadcast(new_bundle.model_dump())
         return new_bundle
     
@@ -279,7 +367,7 @@ async def direct_update_bundle(bundle_id: str, request: DirectUpdateRequest):
         target.title = request.title
     
     target.timestamp = datetime.now().strftime("%H:%M:%S")
-    save_pool()
+    save_bundle_to_db(target)
     await manager.broadcast(target.model_dump())
     return target
 
@@ -295,8 +383,8 @@ async def websocket_kitchen(websocket: WebSocket):
                 for b in knowledge_pool:
                     if b.id == target_id:
                         b.status = "ready"
+                        save_bundle_to_db(b)
                         break
-                save_pool()
             await manager.broadcast(data)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
