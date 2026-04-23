@@ -23,9 +23,13 @@ if openai_key and not openai_key.startswith("MY_"):
 gemini_model = None
 if gemini_key and not gemini_key.startswith("MY_"):
     genai.configure(api_key=gemini_key)
-    # Using gemini-1.5-flash for speed and efficiency
-    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
-    print("✅ Gemini Engine Ready.")
+    # 모델명을 'models/gemini-1.5-flash'로 명시하거나 'gemini-1.5-flash' 사용
+    try:
+        gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+        print("✅ Gemini Engine Ready (gemini-1.5-flash).")
+    except Exception as e:
+        print(f"⚠️ Gemini 1.5 Flash 초기화 실패, 대안 시도: {e}")
+        gemini_model = genai.GenerativeModel('gemini-pro') # Fallback to Pro
 
 if not client and not gemini_model:
     print("⚠️ Warning: No valid AI API keys found. Using mock responses.")
