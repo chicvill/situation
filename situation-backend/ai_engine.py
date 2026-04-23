@@ -4,17 +4,31 @@ from datetime import datetime
 from dotenv import load_dotenv
 import base64
 import openai
+import google.generativeai as genai
 
 load_dotenv()
 
-# Set up OpenAI
-api_key = os.getenv("OPENAI_API_KEY")
+# --- AI Engine Configuration ---
+openai_key = os.getenv("OPENAI_API_KEY")
+gemini_key = os.getenv("GEMINI_API_KEY")
+
+# OpenAI Client
 client = None
-if api_key:
-    client = openai.OpenAI(api_key=api_key)
-    model_name = "gpt-4o-mini" # Vision-capable
-else:
-    print("Warning: OPENAI_API_KEY is not set. Using mock responses.")
+if openai_key and not openai_key.startswith("MY_"):
+    client = openai.OpenAI(api_key=openai_key)
+    openai_model = "gpt-4o-mini"
+    print("✅ OpenAI Engine Ready.")
+
+# Gemini Client
+gemini_model = None
+if gemini_key and not gemini_key.startswith("MY_"):
+    genai.configure(api_key=gemini_key)
+    # Using gemini-1.5-flash for speed and efficiency
+    gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+    print("✅ Gemini Engine Ready.")
+
+if not client and not gemini_model:
+    print("⚠️ Warning: No valid AI API keys found. Using mock responses.")
 
 def analyze_document_image(image_bytes: bytes, doc_type: str) -> dict:
     print(f"[DEBUG] 📥 analyze_document_image 진입 (타입: {doc_type})")
@@ -34,41 +48,81 @@ def analyze_document_image(image_bytes: bytes, doc_type: str) -> dict:
 메뉴가 없거나 읽을 수 없으면 {"menus": []} 를 반환하세요."""
     }
     
-    print(f"[DEBUG] 🚀 OpenAI Vision API 호출 중... (모델: {model_name})")
     try:
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompts.get(doc_type, "텍스트를 추출하세요.")},
-                        {
-                            "type": "image_url",
-                            "image_url": { "url": f"data:image/jpeg;base64,{base64_image}" }
-                        }
-                    ],
-                }
-            ],
-            response_format={ "type": "json_object" }
-        )
+        if gemini_model:
+            print(f"[DEBUG] 🚀 Gemini Vision API 호출 중...")
+            img = {
+                'mime_type': 'image/jpeg',
+                'data': image_bytes
+            }
+            prompt = prompts.get(doc_type, "Extract text from image.") + "\nReturn ONLY a JSON object."
+            response = gemini_model.generate_content([prompt, img], generation_config={"response_mime_type": "application/json"})
+            parsed = json.loads(response.text)
+            print("[DEBUG] ✅ Gemini Vision 파싱 성공")
+            return parsed
         
-        raw_content = response.choices[0].message.content
-        print(f"[DEBUG] 📥 OpenAI 응답 수신 성공: {raw_content[:100]}...")
-        
-        parsed = json.loads(raw_content)
-        print("[DEBUG] ✅ JSON 파싱 성공")
-        return parsed
+        elif client:
+            print(f"[DEBUG] 🚀 OpenAI Vision API 호출 중...")
+            # ... (Existing OpenAI Vision logic)
+            base64_image = base64.b64encode(image_bytes).decode('utf-8')
+            response = client.chat.completions.create(
+                model=openai_model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompts.get(doc_type, "텍스트를 추출하세요.")},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                        ],
+                    }
+                ],
+                response_format={"type": "json_object"}
+            )
+            parsed = json.loads(response.choices[0].message.content)
+            return parsed
         
     except Exception as e:
         print(f"[DEBUG] 🚨 Vision Analysis Error: {str(e)}")
         return {"error": str(e)}
 
+# --- 목표(Goal) 정의 ---
+GOALS = {
+    "Orders": {
+        "description": "주문 발생 및 조리 관련",
+        "required": ["메뉴", "테이블"],
+        "optional": ["주문번호", "수량", "요청사항"]
+    },
+    "Settlement": {
+        "description": "결제 및 정산, 고객 퇴장",
+        "required": ["테이블" or "주문번호"],
+        "optional": ["결제금액", "결제수단"]
+    },
+    "Attendance": {
+        "description": "직원 출퇴근 및 근태",
+        "required": ["직원명", "액션(출근/퇴근)"],
+        "optional": ["시간"]
+    },
+    "Employee": {
+        "description": "사원 등록 및 근로 조건 설정",
+        "required": ["직원명", "시급"],
+        "optional": ["연락처", "근로기간"]
+    },
+    "StoreConfig": {
+        "description": "매장 정보 및 사업자 설정",
+        "required": ["상호명", "사업자번호"],
+        "optional": ["주소", "대표자"]
+    },
+    "Log": {
+        "description": "기타 일반 기록",
+        "required": ["내용"],
+        "optional": []
+    }
+}
+
 def parse_situation_text(text: str) -> dict:
     time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     if not client:
-        # Fallback Mock if no API key
         return {
             "type": "Log",
             "title": "임시 AI 분석 결과 (API 키 필요)",
@@ -76,55 +130,46 @@ def parse_situation_text(text: str) -> dict:
             "timestamp": time_str
         }
 
+    goals_summary = "\n".join([f"- {k}: {v['description']} (필수: {', '.join(v['required'])})" for k, v in GOALS.items()])
+
     prompt = f"""
 당신은 매장의 '상황 지능형 엔진'입니다. 
-사용자가 매장에서 발생한 상황을 텍스트로 입력하면, 이를 분석하여 지정된 JSON 구조로 변환해야 합니다.
+사용자의 입력을 분석하여 '목표 처리 결과'를 얻는 데 필요한 **핵심 정보만 필터링**하여 JSON으로 변환하세요.
 
 현재 시간: {time_str}
 입력된 상황: "{text}"
 
-지침:
-1. 상황을 분석하여 다음 타입 중 가장 적절한 것을 고르세요:
-   - "Orders": 주문 발생, 조리 완료 등 주문 관련 상황.
-   - "Settlement": 결제 완료, 퇴장 등 데이터 정리 상황 (예: "1번 테이블 계산", "나감").
-   - "Menus": 메뉴 등록, 가격 변경 (예: "삼겹살 15,000원, 목살 14,000원 등록").
-     * 중요: 여러 메뉴가 나열된 경우, 각각을 개별 아이템으로 분리하여 items 리스트에 넣으세요.
-     * 형식: {{"name": "메뉴명", "value": "가격"}}
-   - "Employee": 사원 등록, 근로 조건 (예: "알바생 홍길동 시급 만원으로 등록").
-   - "Attendance": 출퇴근 기록 (예: "나 출근했어", "퇴근한다").
-   - "StoreConfig": 매장 정보, 사업자 정보 (예: "우리 매장 상호는 MQ카페야").
-     * 중요: 반드시 '상호명', '사업자번호', '주소', '대표자'라는 키워드를 사용하여 items를 구성하세요.
-   - "Log": 일상적인 기록 및 기타 상황.
+[분석 목표(Goals) 목록]
+{goals_summary}
 
-2. 'title'은 상황을 요약하는 짧은 제목으로 만드세요.
-3. 'items'는 핵심 정보들을 [{{"name": "...", "value": "..."}}] 형식으로 구성하세요.
-   - 주문(Orders)의 경우:
-     * 메뉴: (예: 아메리카노 2잔)
-     * 테이블: (예: 5번) - 언급 없으면 "포장" 혹은 "확인불가"
-     * 주문번호: (예: 102) - 언급 없으면 "신규"
-
-4. 응답은 오직 JSON 구조에 맞는 데이터만 반환하세요.
+[지침]
+1. 위 목표 중 가장 적합한 하나를 선택하세요.
+2. 선택한 목표의 '필수 정보'를 포함하지 못하는 노이즈 정보는 과감히 삭제하세요.
+3. 'items'는 [{{"name": "...", "value": "..."}}] 형식으로 구성하며, 필드명은 위 필수/선택 항목의 키워드를 최대한 활용하세요.
+4. 'title'은 분석된 목표와 핵심 내용을 담은 짧은 제목으로 작성하세요.
+5. 결과는 오직 JSON 객체만 반환하세요.
 """
 
     try:
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}
-        )
-        try:
+        if gemini_model:
+            response = gemini_model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+            result = json.loads(response.text)
+            result["timestamp"] = time_str
+            return result
+        elif client:
+            response = client.chat.completions.create(
+                model=openai_model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"}
+            )
             result = json.loads(response.choices[0].message.content)
             result["timestamp"] = time_str
             return result
-        except json.JSONDecodeError:
-            return {
-                "type": "Log",
-                "title": "JSON 파싱 에러",
-                "items": [{"name": "원문", "value": response.choices[0].message.content}],
-                "timestamp": time_str
-            }
+        else:
+            return {"type": "Log", "title": "AI 엔진 미설정", "items": [{"name": "입력", "value": text}], "timestamp": time_str}
+            
     except Exception as e:
-        print(f"OpenAI API Error: {e}")
+        print(f"AI API Error: {e}")
         return {
             "type": "Log",
             "title": "AI 엔진 오류",
@@ -136,8 +181,8 @@ def analyze_history(query: str, history: list) -> str:
     """지식 창고(history)를 분석하여 질문에 대답합니다."""
     time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    if not client:
-        return "OPENAI_API_KEY가 설정되지 않아 실제 분석을 수행할 수 없습니다. .env 파일을 확인해 주세요!"
+    if not client and not gemini_model:
+        return "AI 엔진이 설정되지 않아 실제 분석을 수행할 수 없습니다. .env 파일을 확인해 주세요!"
 
     # 지식 창고 데이터를 텍스트로 요약 (최근 50개만)
     context = ""
@@ -163,11 +208,15 @@ def analyze_history(query: str, history: list) -> str:
 """
     
     try:
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content
+        if gemini_model:
+            response = gemini_model.generate_content(prompt)
+            return response.text
+        elif client:
+            response = client.chat.completions.create(
+                model=openai_model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.choices[0].message.content
     except Exception as e:
         print(f"Analysis Error: {e}")
         return f"분석 중 오류가 발생했습니다: {str(e)}"

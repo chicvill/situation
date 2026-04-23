@@ -114,11 +114,13 @@ def init_db():
                 items JSONB NOT NULL,
                 status TEXT
             );
+            CREATE INDEX IF NOT EXISTS idx_bundle_type ON knowledge_bundles(type);
+            CREATE INDEX IF NOT EXISTS idx_bundle_timestamp ON knowledge_bundles(timestamp DESC);
         """)
         conn.commit()
         cur.close()
         conn.close()
-        print("✅ Supabase DB initialized (knowledge_bundles table ready).")
+        print("✅ Supabase DB initialized (Optimized with Goal-based Indexing).")
     except Exception as e:
         print(f"❌ DB Init Error: {e}")
 
