@@ -1,79 +1,99 @@
-import React from 'react';
-import { useSituation } from '../hooks/useSituation';
+import React, { useEffect, useState } from 'react';
+import type { BundleData } from '../types';
 
 export const KitchenDisplay: React.FC = () => {
-    const { bundles, setBundles } = useSituation();
+    const [bundles, setBundles] = useState<BundleData[]>([]);
 
-    // Only show active orders that are NOT archived and NOT yet finished (opt-in based on status)
-    const kitchenOrders = bundles.filter(b => b.type === 'Orders' && b.status !== 'archived');
+    const fetchPool = async () => {
+        try {
+            const res = await fetch('http://localhost:8000/api/pool');
+            const data = await res.json();
+            // 주방에서는 'Orders' 중 조리가 필요한 것만 필터링
+            setBundles(data.filter((b: BundleData) => b.type === 'Orders' && b.status !== 'ready' && b.status !== 'archived'));
+        } catch (e) {
+            console.error('Kitchen Fetch Error:', e);
+        }
+    };
 
-    const removeOrder = (id: string) => {
-        // Broadcast the done signal
-        const host = window.location.hostname;
-        const socket = new WebSocket(`ws://${host}:8000/ws/kitchen`);
-        socket.onopen = () => {
-            socket.send(JSON.stringify({
-                type: 'KITCHEN_DONE',
-                bundleId: id
-            }));
-            socket.close();
-        };
-        // Local Optimistic Update
-        setBundles(prev => prev.map(b => b.id === id ? { ...b, status: 'ready' } : b));
+    useEffect(() => {
+        fetchPool();
+        const ws = new WebSocket('ws://localhost:8000/ws/kitchen');
+        ws.onmessage = () => fetchPool();
+        return () => ws.close();
+    }, []);
+
+    const markAsDone = async (bundleId: string) => {
+        try {
+            const ws = new WebSocket('ws://localhost:8000/ws/kitchen');
+            ws.onopen = () => {
+                ws.send(JSON.stringify({ type: 'KITCHEN_DONE', bundleId }));
+                ws.close();
+            };
+        } catch (e) {
+            console.error('Mark Done Error:', e);
+        }
     };
 
     return (
-        <div className="kds-container animate-fade-in">
-            <div className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px' }}>
-                <div>
-                    <h1 style={{ margin: 0, fontSize: '2.5rem', color: '#10b981' }}>KITCHEN DISPLAY</h1>
-                    <p style={{ margin: 0, color: '#94a3b8' }}>실시간 주방 주문 현황</p>
-                </div>
-            </div>
+        <div className="kitchen-display-premium" style={{ padding: '10px' }}>
+            <h2 style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                👨‍🍳 주방 조리 현황 <span style={{ fontSize: '1rem', color: 'var(--accent-orange)' }}>{bundles.length}건 대기 중</span>
+            </h2>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
+                {bundles.map(b => {
+                    // 고도화된 데이터 구조 활용
+                    const tableDisplay = b.table === '포장' ? 'Table : [포장]' : `Table : ${b.table}`;
+                    const orderCode = b.order_code || b.id.substring(0, 4).toUpperCase();
 
-            <div className="kds-grid">
-                {kitchenOrders.length === 0 ? (
-                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '100px', opacity: 0.5 }}>
-                        <div style={{ fontSize: '4rem' }}>🍳</div>
-                        <h2>현재 들어온 주문이 없습니다.</h2>
-                    </div>
-                ) : (
-                    kitchenOrders.map(order => {
-                        const isReady = order.status === 'ready';
-                        const orderNum = order.items.find(i => i.name.includes('번호'))?.value || 'New';
-                        const tableNum = order.items.find(i => i.name.includes('테이블'))?.value || '-';
-                        const menuItems = order.items.filter(i => i.name.includes('메뉴') || (!i.name.includes('테이블') && !i.name.includes('번호')));
-
-                        return (
-                            <div key={order.id} className={`glass-panel order-card ${isReady ? 'is-ready' : ''}`} style={{ opacity: isReady ? 0.4 : 1 }}>
-                                <div className="order-card-header">
-                                    <span className="order-number">#{orderNum}</span>
-                                    <span className="table-number">Table {tableNum}</span>
+                    return (
+                        <div key={b.id} className="kitchen-card glass-panel animate-pop-in" style={{ 
+                            padding: '12px', 
+                            background: 'rgba(30, 41, 59, 0.7)', 
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '16px'
+                        }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={{ fontWeight: '900', color: 'white', fontSize: '1.1rem' }}>{tableDisplay}</span>
+                                    <span style={{ fontWeight: '900', color: 'var(--accent-orange)', fontSize: '1.1rem' }}>#{orderCode}</span>
                                 </div>
-                                <div className="order-card-body">
-                                    {menuItems.map((item, idx) => (
-                                        <div key={idx} className="order-item-row">
-                                            <span>{item.value}</span>
-                                            <span style={{ fontSize: '0.8rem', opacity: 0.6 }}>{item.name}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="order-card-footer">
-                                    <span>{order.timestamp}</span>
-                                    {!isReady && (
-                                        <button 
-                                            className="complete-btn" 
-                                            onClick={() => removeOrder(order.id)}
-                                            style={{ background: '#10b981', border: 'none', color: 'white', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
-                                        >
-                                            조리 완료
-                                        </button>
-                                    )}
-                                    {isReady && <span style={{ color: '#10b981', fontWeight: 'bold' }}>✅ 준비됨</span>}
-                                </div>
+                                <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>{b.timestamp.split('.').pop()}</span>
                             </div>
-                        );
-                    })
+
+                            <div className="kitchen-items" style={{ minHeight: '60px', marginBottom: '15px' }}>
+                                {b.items.map((item, idx) => (
+                                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                        <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'white' }}>{item.name}</span>
+                                        <span style={{ fontSize: '1.2rem', color: 'var(--accent-orange)', fontWeight: '900' }}>{item.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <button 
+                                onClick={() => markAsDone(b.id)}
+                                style={{ 
+                                    width: '100%', 
+                                    padding: '12px', 
+                                    borderRadius: '12px', 
+                                    background: 'linear-gradient(to bottom, rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.1))', 
+                                    border: '1px solid #10b981', 
+                                    color: '#10b981', 
+                                    fontWeight: '900',
+                                    fontSize: '1rem'
+                                }}
+                            >
+                                ✅ 조리 완료
+                            </button>
+                        </div>
+                    );
+                })}
+
+                {bundles.length === 0 && (
+                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '50px', color: '#94a3b8', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '20px' }}>
+                        <div style={{ fontSize: '3rem' }}>💤</div>
+                        <h3>현재 조리할 음식이 없습니다.</h3>
+                    </div>
                 )}
             </div>
         </div>

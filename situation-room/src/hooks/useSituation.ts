@@ -45,7 +45,11 @@ export const useSituation = () => {
                 }
 
                 // Internal App Events
-                if (data.type === 'KITCHEN_DONE') {
+                if (data.type === 'STATUS_UPDATED') {
+                    setBundles(prev => prev.map(b => 
+                        data.ids.includes(b.id) ? { ...b, status: data.status } : b
+                    ));
+                } else if (data.type === 'KITCHEN_DONE') {
                     setBundles(prev => prev.map(b => b.id === data.bundleId ? { ...b, status: 'ready' } : b));
                 } else if (data.type === 'POOL_CLEARED') {
                     const subject = data.subject;

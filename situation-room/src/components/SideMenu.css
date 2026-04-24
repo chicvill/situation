@@ -1,0 +1,95 @@
+/* 🌑 사이드 메뉴 패널 (Drawer) 디자인 */
+.side-menu-drawer {
+    position: fixed;
+    top: 0;
+    left: -300px; /* 숨겨진 상태 */
+    width: 280px;
+    height: 100vh;
+    background: #0f172a;
+    z-index: 200000;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.side-menu-drawer.open {
+    left: 0;
+}
+
+.drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 199999;
+}
+
+.drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.drawer-logo {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: white;
+}
+
+.drawer-logo span {
+    font-size: 0.7rem;
+    background: var(--accent-orange);
+    padding: 2px 6px;
+    border-radius: 4px;
+    vertical-align: middle;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 2rem;
+    cursor: pointer;
+}
+
+.drawer-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    flex: 1;
+}
+
+.nav-group {
+    font-size: 0.75rem;
+    color: var(--accent-orange);
+    text-transform: uppercase;
+    font-weight: 900;
+    margin-top: 10px;
+}
+
+.drawer-nav button {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    color: #cbd5e1;
+    padding: 15px;
+    text-align: left;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.drawer-nav button:active {
+    background: rgba(249, 115, 22, 0.1);
+    border-color: var(--accent-orange);
+    color: white;
+}

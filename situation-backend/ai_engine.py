@@ -23,13 +23,18 @@ if openai_key and not openai_key.startswith("MY_"):
 gemini_model = None
 if gemini_key and not gemini_key.startswith("MY_"):
     genai.configure(api_key=gemini_key)
-    # 모델명을 'models/gemini-1.5-flash'로 명시하거나 'gemini-1.5-flash' 사용
+    # 확인된 모델 리스트 기반 최적 모델 설정
     try:
-        gemini_model = genai.GenerativeModel('gemini-1.5-flash')
-        print("✅ Gemini Engine Ready (gemini-1.5-flash).")
-    except Exception as e:
-        print(f"⚠️ Gemini 1.5 Flash 초기화 실패, 대안 시도: {e}")
-        gemini_model = genai.GenerativeModel('gemini-pro') # Fallback to Pro
+        # 사장님 환경에서 확인된 2.0 버전 사용
+        gemini_model = genai.GenerativeModel('gemini-2.0-flash')
+        print("✅ Gemini Engine Ready (gemini-2.0-flash).")
+    except Exception:
+        try:
+            # 대안으로 최신 플래시 모델 시도
+            gemini_model = genai.GenerativeModel('gemini-flash-latest')
+            print("✅ Gemini Engine Ready (gemini-flash-latest).")
+        except Exception as e:
+            print(f"❌ Gemini 초기화 최종 실패: {e}")
 
 if not client and not gemini_model:
     print("⚠️ Warning: No valid AI API keys found. Using mock responses.")
@@ -154,29 +159,47 @@ def parse_situation_text(text: str) -> dict:
 5. 결과는 오직 JSON 객체만 반환하세요.
 """
 
+    print(f"\n[DEBUG] >>> AI 분석 시작: '{text[:20]}...'")
+    # --- 테스트: OpenAI를 먼저 시도하여 정상 작동 여부 확인 ---
     try:
+        # 1. OpenAI 시도 (우선순위 변경)
+        if client:
+            try:
+                print("[DEBUG] 1. OpenAI 엔진 시도 중...")
+                response = client.chat.completions.create(
+                    model=openai_model,
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"}
+                )
+                result = json.loads(response.choices[0].message.content)
+                result["timestamp"] = time_str
+                print("✅ [DEBUG] OpenAI 분석 성공!")
+                return result
+            except Exception as oa_err:
+                print(f"⚠️ [DEBUG] OpenAI 실패: {oa_err}")
+                print("🔄 [DEBUG] Gemini로 전환을 시도합니다...")
+
+        # 2. Gemini 시도
         if gemini_model:
+            print("[DEBUG] 2. Gemini 엔진 시도 중...")
             response = gemini_model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
             result = json.loads(response.text)
             result["timestamp"] = time_str
+            print("✅ [DEBUG] Gemini 분석 성공!")
             return result
-        elif client:
-            response = client.chat.completions.create(
-                model=openai_model,
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"}
-            )
-            result = json.loads(response.choices[0].message.content)
-            result["timestamp"] = time_str
-            return result
-        else:
-            return {"type": "Log", "title": "AI 엔진 미설정", "items": [{"name": "입력", "value": text}], "timestamp": time_str}
+        
+        return {
+            "type": "Log", 
+            "title": "AI 엔진 연결 실패", 
+            "items": [{"name": "원인", "value": "모든 AI 엔진이 응답하지 않습니다."}], 
+            "timestamp": time_str
+        }
             
     except Exception as e:
-        print(f"AI API Error: {e}")
+        print(f"🚨 [DEBUG] 최종 분석 오류 발생: {e}")
         return {
             "type": "Log",
-            "title": "AI 엔진 오류",
+            "title": "AI 시스템 최종 오류",
             "items": [{"name": "에러", "value": str(e)}],
             "timestamp": time_str
         }
@@ -213,14 +236,20 @@ def analyze_history(query: str, history: list) -> str:
     
     try:
         if gemini_model:
-            response = gemini_model.generate_content(prompt)
-            return response.text
-        elif client:
+            try:
+                response = gemini_model.generate_content(prompt)
+                return response.text
+            except Exception as gem_err:
+                print(f"⚠️ Gemini 분석 실패 (폴백 시도): {gem_err}")
+
+        if client:
             response = client.chat.completions.create(
                 model=openai_model,
                 messages=[{"role": "user", "content": prompt}]
             )
             return response.choices[0].message.content
+        else:
+            return "현재 사용 가능한 AI 엔진이 없습니다."
     except Exception as e:
         print(f"Analysis Error: {e}")
         return f"분석 중 오류가 발생했습니다: {str(e)}"
