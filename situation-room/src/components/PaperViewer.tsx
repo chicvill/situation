@@ -4,7 +4,8 @@ export const PaperViewer: React.FC = () => {
     const [content, setContent] = useState<string>('로딩 중...');
 
     useEffect(() => {
-        fetch('http://localhost:8000/api/paper')
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        fetch(`${apiUrl}/api/paper`)
             .then(res => res.json())
             .then(data => {
                 if (data.content) {

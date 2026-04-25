@@ -9,7 +9,8 @@ export const QRManager: React.FC = () => {
     const port = window.location.port || '5173';
     
     useEffect(() => {
-        fetch('http://localhost:8000/api/server-ip')
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        fetch(`${apiUrl}/api/server-ip`)
             .then(res => res.json())
             .then(data => {
                 if (data.ip) setServerIp(data.ip);

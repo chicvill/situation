@@ -38,7 +38,8 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
     const bundleId = activeData.bundleId || 'store-1';
 
     try {
-      const response = await fetch(`http://localhost:8000/api/bundle/${bundleId}`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/bundle/${bundleId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items, type: 'StoreConfig', title: '매장 정보' }),
@@ -55,7 +56,8 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
   const handleResetPool = async () => {
     if (window.confirm("⚠️ 지식창고를 초기화하시겠습니까?\n이 작업은 모든 메뉴, 주문, 로그 데이터를 영구적으로 삭제하며 되돌릴 수 없습니다.")) {
         try {
-            await fetch('http://localhost:8000/api/pool', { method: 'DELETE' });
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            await fetch(`${apiUrl}/api/pool`, { method: 'DELETE' });
             alert('지식창고가 초기화되었습니다.');
             window.location.reload();
         } catch {

@@ -17,7 +17,8 @@ export const StoreSetup: React.FC = () => {
         
         try {
             if (type === 'reg') setUploadingReg(true); else setUploadingMenu(true);
-            const response = await fetch(`http://localhost:8000/api/analyze-image?doc_type=${type}`, {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${apiUrl}/api/analyze-image?doc_type=${type}`, {
                 method: 'POST',
                 body: formData,
             });
@@ -87,7 +88,8 @@ export const StoreSetup: React.FC = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:8000/api/situation', {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${apiUrl}/api/situation`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text }),

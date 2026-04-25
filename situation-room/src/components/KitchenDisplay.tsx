@@ -6,7 +6,8 @@ export const KitchenDisplay: React.FC = () => {
 
     const fetchPool = async () => {
         try {
-            const res = await fetch('http://localhost:8000/api/pool');
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const res = await fetch(`${apiUrl}/api/pool`);
             const data = await res.json();
             // 주방에서는 'Orders' 중 조리가 필요한 것만 필터링
             setBundles(data.filter((b: BundleData) => b.type === 'Orders' && b.status !== 'ready' && b.status !== 'archived'));
@@ -17,7 +18,8 @@ export const KitchenDisplay: React.FC = () => {
 
     useEffect(() => {
         fetchPool();
-        const ws = new WebSocket('ws://localhost:8000/ws/kitchen');
+        const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+        const ws = new WebSocket(`${wsUrl}/ws/kitchen`);
         ws.onmessage = () => fetchPool();
         return () => ws.close();
     }, []);

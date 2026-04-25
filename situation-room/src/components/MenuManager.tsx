@@ -70,7 +70,8 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
         const idToUse = bundleId || `MENUS_${Date.now()}`;
         
         try {
-            const response = await fetch(`http://localhost:8000/api/bundle/${idToUse}`, {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${apiUrl}/api/bundle/${idToUse}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
