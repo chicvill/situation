@@ -8,6 +8,13 @@ import os
 from datetime import datetime
 # AI 엔진 모듈 임포트
 from ai_engine import parse_situation_text, analyze_history, analyze_document_image
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
+
+# .env 파일 로드 (상위 디렉토리 확인)
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 app = FastAPI()
 
@@ -61,21 +68,115 @@ class BundleData(BaseModel):
 
 knowledge_pool: List[BundleData] = []
 
+def get_db_conn():
+    """Supabase PostgreSQL 연결"""
+    if not DATABASE_URL:
+        return None
+    try:
+        return psycopg2.connect(DATABASE_URL)
+    except Exception as e:
+        print(f"DB Connection Error: {e}")
+        return None
+
 def save_pool():
+    """지식 풀을 로컬 JSON 및 Supabase에 저장"""
+    # 1. 로컬 저장 (백업용)
     try:
         with open(POOL_FILE, "w", encoding="utf-8") as f:
             json.dump([b.model_dump() for b in knowledge_pool], f, ensure_ascii=False, indent=2)
     except Exception as e:
-        print(f"Save Error: {e}")
+        print(f"Local Save Error: {e}")
+
+    # 2. Supabase 저장
+    conn = get_db_conn()
+    if conn:
+        try:
+            cur = conn.cursor()
+            # 테이블 및 컬럼 보장
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS knowledge_bundles (
+                    id TEXT PRIMARY KEY,
+                    type TEXT,
+                    title TEXT,
+                    timestamp TEXT,
+                    items JSONB,
+                    status TEXT,
+                    order_code TEXT,
+                    store TEXT,
+                    "table" TEXT,
+                    package TEXT,
+                    payment TEXT
+                )
+            """)
+            
+            # 현재 지식 풀의 모든 번들 업서트 (Upsert)
+            for b in knowledge_pool:
+                data = b.model_dump()
+                cur.execute("""
+                    INSERT INTO knowledge_bundles (id, type, title, timestamp, items, status, order_code, store, "table", package, payment)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (id) DO UPDATE SET
+                        type = EXCLUDED.type,
+                        title = EXCLUDED.title,
+                        timestamp = EXCLUDED.timestamp,
+                        items = EXCLUDED.items,
+                        status = EXCLUDED.status,
+                        order_code = EXCLUDED.order_code,
+                        store = EXCLUDED.store,
+                        "table" = EXCLUDED.table,
+                        package = EXCLUDED.package,
+                        payment = EXCLUDED.payment
+                """, (
+                    data['id'], data['type'], data['title'], data['timestamp'], 
+                    json.dumps(data['items']), data.get('status'), data.get('order_code'),
+                    data.get('store'), data.get('table'), data.get('Package'), data.get('payment')
+                ))
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"Supabase Save Error: {e}")
 
 def load_pool():
+    """Supabase에서 지식 풀 로드 (실패 시 로컬 파일 사용)"""
     global knowledge_pool
+    
+    # 1. Supabase 시도
+    conn = get_db_conn()
+    if conn:
+        try:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            cur.execute("SELECT * FROM knowledge_bundles ORDER BY timestamp DESC")
+            rows = cur.fetchall()
+            if rows:
+                new_pool = []
+                allowed_keys = BundleData.model_fields.keys()
+                for row in rows:
+                    if 'package' in row:
+                        row['Package'] = row.pop('package')
+                    # BundleData 필드에 해당하는 것만 추출
+                    filtered_row = {k: v for k, v in row.items() if k in allowed_keys}
+                    new_pool.append(BundleData(**filtered_row))
+                
+                knowledge_pool = new_pool
+                print(f"✅ Supabase에서 {len(knowledge_pool)}개의 번들을 로드했습니다.")
+                cur.close()
+                conn.close()
+                return
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"Supabase Load Error: {e}")
+
+    # 2. 로컬 파일 시도
     if os.path.exists(POOL_FILE):
         try:
             with open(POOL_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 knowledge_pool = [BundleData(**d) for d in data]
+                print(f"✅ 로컬 파일에서 {len(knowledge_pool)}개의 번들을 로드했습니다.")
         except Exception as e:
+            print(f"Local Load Error: {e}")
             knowledge_pool = []
     else:
         knowledge_pool = []
@@ -264,9 +365,22 @@ async def get_server_ip():
 
 @app.delete("/api/pool")
 async def clear_pool():
-    """지식 풀 전체 초기화 (메모리 및 파일 모두 삭제)"""
+    """지식 풀 전체 초기화 (메모리, 파일, DB 모두 삭제)"""
     global knowledge_pool
     knowledge_pool = []
+    
+    # Supabase 삭제
+    conn = get_db_conn()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM knowledge_bundles")
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"Supabase Clear Error: {e}")
+            
     save_pool()
     await manager.broadcast({"type": "POOL_UPDATED"})
     return {"status": "success", "message": "Knowledge pool has been reset."}
@@ -276,6 +390,19 @@ async def clear_orders():
     """주문 내역만 초기화"""
     global knowledge_pool
     knowledge_pool = [b for b in knowledge_pool if b.type != "Orders"]
+    
+    # Supabase 삭제
+    conn = get_db_conn()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM knowledge_bundles WHERE type = 'Orders'")
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"Supabase Clear Orders Error: {e}")
+            
     save_pool()
     await manager.broadcast({"type": "POOL_UPDATED"})
     return {"status": "success", "message": "Order history has been cleared."}

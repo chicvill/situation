@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 venv/
 .env
+Backup_env.txt
 
 # Node.js
 node_modules/

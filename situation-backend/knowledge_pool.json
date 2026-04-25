@@ -1,121 +1,113 @@
 [
   {
-    "id": "ORD_481FF4C2",
-    "type": "Orders",
-    "title": "Table 4 Order",
-    "timestamp": "2026.04.25.19:43:49",
-    "items": [
-      {
-        "name": "소 왕갈비찜 정식",
-        "value": "x1"
-      }
-    ],
-    "status": "archived",
-    "order_code": "8855",
-    "store": "시크앤프레시",
-    "table": "4",
-    "Package": "매장",
-    "payment": "선결제"
-  },
-  {
-    "id": "ORD_5948646F",
-    "type": "Orders",
-    "title": "Table 3 Order",
-    "timestamp": "2026.04.25.19:42:40",
-    "items": [
-      {
-        "name": "모둠 생선구이",
-        "value": "x1"
-      }
-    ],
-    "status": "archived",
-    "order_code": "E277",
-    "store": "시크앤프레시",
-    "table": "3",
-    "Package": "매장",
-    "payment": "현금"
-  },
-  {
-    "id": "ORD_2D475E0C",
-    "type": "Orders",
-    "title": "Table 2 Order",
-    "timestamp": "2026.04.25.19:41:39",
-    "items": [
-      {
-        "name": "모둠 생선구이",
-        "value": "x1"
-      }
-    ],
-    "status": "archived",
-    "order_code": "7CB7",
-    "store": "시크앤프레시",
-    "table": "2",
-    "Package": "매장",
-    "payment": "현금"
-  },
-  {
-    "id": "ORD_15863C5B",
-    "type": "Orders",
-    "title": "Table 3 Order",
-    "timestamp": "2026.04.25.10:40:47",
-    "items": [
-      {
-        "name": "모둠 생선구이",
-        "value": "x1"
-      }
-    ],
-    "status": "archived",
-    "order_code": "9007",
-    "store": "시크앤프레시",
-    "table": "3",
-    "Package": "매장",
-    "payment": "현금"
-  },
-  {
-    "id": "MENUS_1777079670381",
+    "id": "MENUS_1777114714778",
     "type": "Menus",
     "title": "메뉴 정보",
-    "timestamp": "2026.04.25.10:15:15",
+    "timestamp": "2026.04.25.19:58:35",
     "items": [
       {
-        "name": "모둠 생선구이",
-        "value": "37,000원"
+        "name": "에스프레소",
+        "value": "3,500"
       },
       {
-        "name": "소 왕갈비찜 정식",
-        "value": "29,000원"
+        "name": "아메리카노",
+        "value": "3,500"
       },
       {
-        "name": "법성포 굴비 정식",
-        "value": "25,000원"
+        "name": "다방커피",
+        "value": "3,500"
       },
       {
-        "name": "임연수구이 정식",
-        "value": "19,000원"
+        "name": "카페라떼",
+        "value": "4,500"
       },
       {
-        "name": "볼락구이 정식",
-        "value": "18,000원"
+        "name": "카라멜라떼",
+        "value": "5,000"
       },
       {
-        "name": "가자미구이 정식",
-        "value": "18,000원"
+        "name": "맛있는녹차라떼",
+        "value": "5,500"
       },
       {
-        "name": "고등어구이 정식",
-        "value": "18,000원"
+        "name": "자몽라떼",
+        "value": "6,000"
       },
       {
-        "name": "어린이 정식(5-7세/반마리)",
-        "value": "9,000원"
+        "name": "블루베리라떼",
+        "value": "6,000"
       },
       {
-        "name": "가브리수육 정식",
-        "value": "18,000원"
+        "name": "바닐라라떼",
+        "value": "6,000"
       },
       {
-        "name": "묵은지 고등어 조림 2인",
-        "value": "36,000원"
+        "name": "바나나라떼",
+        "value": "6,000"
+      },
+      {
+        "name": "고구마라떼",
+        "value": "6,000"
+      },
+      {
+        "name": "모카",
+        "value": "5,500"
+      },
+      {
+        "name": "깔라만시",
+        "value": "5,500"
+      },
+      {
+        "name": "초코프레프",
+        "value": "5,000"
+      },
+      {
+        "name": "아이스티",
+        "value": "5,000"
+      },
+      {
+        "name": "고구마프레프",
+        "value": "5,000"
+      },
+      {
+        "name": "생강차",
+        "value": "6,000"
+      },
+      {
+        "name": "생강프레프",
+        "value": "5,500"
+      },
+      {
+        "name": "레모네이드",
+        "value": "5,000"
+      },
+      {
+        "name": "자몽에이드",
+        "value": "5,000"
+      },
+      {
+        "name": "계란찜",
+        "value": "5,000"
+      },
+      {
+        "name": "밀크티",
+        "value": "5,500"
+      },
+      {
+        "name": "밀크프리",
+        "value": "5,500"
+      },
+      {
+        "name": "밀크티2",
+        "value": "5,500"
+      },
+      {
+        "name": "자몽/파인애플/자몽/복숭아",
+        "value": "5,000"
+      },
+      {
+        "name": "디카페인",
+        "value": "6,000"
       }
     ],
     "status": null,
@@ -126,10 +118,10 @@
     "payment": null
   },
   {
-    "id": "SCAN_52BD3440",
+    "id": "store-1",
     "type": "StoreConfig",
     "title": "매장 정보",
-    "timestamp": "2026.04.25.11:21:17",
+    "timestamp": "2026.04.25.19:47:55",
     "items": [
       {
         "name": "상호명",
@@ -141,11 +133,11 @@
       },
       {
         "name": "주소",
-        "value": "인천광역시 서구 울타리로26번길 14"
+        "value": "인천광역시 서구 물류단지26로 14(검단동)"
       },
       {
         "name": "대표자",
-        "value": "김종선"
+        "value": "김종현"
       }
     ],
     "status": null,
