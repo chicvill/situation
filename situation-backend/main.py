@@ -18,6 +18,14 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 app = FastAPI()
 
+@app.get("/")
+async def root():
+    return {
+        "status": "online",
+        "message": "Knowledge Pool API is running successfully!",
+        "database": "Connected to Supabase"
+    }
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
