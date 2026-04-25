@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, File, UploadFile
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, File, UploadFile, Query, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -6,13 +6,8 @@ import uuid
 import json
 import os
 from datetime import datetime
+# AI 엔진 모듈 임포트
 from ai_engine import parse_situation_text, analyze_history, analyze_document_image
-import psycopg2
-from psycopg2.extras import RealDictCursor
-from dotenv import load_dotenv
-
-load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
 
 app = FastAPI()
 
@@ -23,6 +18,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 파일 경로 설정
+POOL_FILE = "knowledge_pool.json"
 
 class ConnectionManager:
     def __init__(self):
@@ -55,215 +53,232 @@ class BundleData(BaseModel):
     timestamp: str
     items: List[BundleItem]
     status: Optional[str] = None
-    # 확장 필드 (사장님 요청 반영)
     order_code: Optional[str] = None
     store: Optional[str] = None
     table: Optional[str] = None
     Package: Optional[str] = "매장"
     payment: Optional[str] = None
 
-def init_db():
-    if not DATABASE_URL: return
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS knowledge_bundles (
-                id TEXT PRIMARY KEY,
-                type TEXT NOT NULL,
-                title TEXT NOT NULL,
-                timestamp TEXT NOT NULL,
-                items JSONB NOT NULL,
-                status TEXT,
-                order_code TEXT,
-                store TEXT,
-                "table" TEXT,
-                "Package" TEXT,
-                payment TEXT
-            );
-        """)
-        conn.commit()
-        cur.close()
-        conn.close()
-    except Exception as e:
-        print(f"DB Init Error: {e}")
-
-def save_bundle_to_db(bundle: BundleData):
-    if not DATABASE_URL: return
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cur = conn.cursor()
-        cur.execute("""
-            INSERT INTO knowledge_bundles (id, type, title, timestamp, items, status, order_code, store, "table", "Package", payment)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (id) DO UPDATE SET
-                status = EXCLUDED.status,
-                payment = EXCLUDED.payment,
-                order_code = EXCLUDED.order_code,
-                "Package" = EXCLUDED."Package";
-        """, (
-            bundle.id, bundle.type, bundle.title, bundle.timestamp, 
-            json.dumps([i.model_dump() for i in bundle.items]), 
-            bundle.status, bundle.order_code, bundle.store, bundle.table, bundle.Package, bundle.payment
-        ))
-        conn.commit()
-        cur.close()
-        conn.close()
-    except Exception as e:
-        print(f"Sync Error: {e}")
-
 knowledge_pool: List[BundleData] = []
+
+def save_pool():
+    try:
+        with open(POOL_FILE, "w", encoding="utf-8") as f:
+            json.dump([b.model_dump() for b in knowledge_pool], f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Save Error: {e}")
 
 def load_pool():
     global knowledge_pool
-    if not DATABASE_URL: return
-    try:
-        conn = psycopg2.connect(DATABASE_URL)
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM knowledge_bundles ORDER BY timestamp DESC;")
-        rows = cur.fetchall()
-        knowledge_pool = [BundleData(**row) for row in rows]
-        cur.close()
-        conn.close()
-    except Exception as e:
-        print(f"Load Error: {e}")
+    if os.path.exists(POOL_FILE):
+        try:
+            with open(POOL_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                knowledge_pool = [BundleData(**d) for d in data]
+        except Exception as e:
+            knowledge_pool = []
+    else:
+        knowledge_pool = []
 
-init_db()
 load_pool()
+
+# --- 번들 업데이트 (StoreManager 및 메뉴 설정용) ---
+
+@app.put("/api/bundle/{bundle_id}")
+async def update_bundle(bundle_id: str, request: dict):
+    """지식 풀 내의 특정 번들을 업데이트. StoreConfig/Menus 타입은 하나만 유지하도록 강제."""
+    items = [BundleItem(**i) for i in request.get("items", [])]
+    b_type = request.get("type", "Log")
+    title = request.get("title", "업데이트된 정보")
+    
+    # StoreConfig나 Menus는 시스템에 하나만 존재해야 하는 데이터임
+    if b_type in ["StoreConfig", "Menus"]:
+        found_by_type = False
+        for b in knowledge_pool:
+            if b.type == b_type:
+                b.items = items
+                b.title = title
+                b.timestamp = datetime.now().strftime("%Y.%m.%d.%H:%M:%S")
+                found_by_type = True
+                break
+        if found_by_type:
+            save_pool()
+            await manager.broadcast({"type": "POOL_UPDATED"})
+            return {"status": "success", "mode": "updated_by_type"}
+
+    # ID로 찾아서 업데이트
+    found = False
+    for b in knowledge_pool:
+        if b.id == bundle_id:
+            b.items = items
+            b.type = b_type
+            b.title = title
+            b.timestamp = datetime.now().strftime("%Y.%m.%d.%H:%M:%S")
+            found = True
+            break
+            
+    if not found:
+        # 해당 ID가 없으면 새로 생성
+        new_bundle = BundleData(
+            id=bundle_id,
+            type=b_type,
+            title=title,
+            timestamp=datetime.now().strftime("%Y.%m.%d.%H:%M:%S"),
+            items=items
+        )
+        knowledge_pool.insert(0, new_bundle)
+    
+    save_pool()
+    await manager.broadcast({"type": "POOL_UPDATED"})
+    return {"status": "success"}
+
+# --- 프론트엔드 규격에 맞춘 이미지 분석 엔드포인트 ---
+
+@app.post("/api/analyze-image")
+async def analyze_image(
+    file: UploadFile = File(...), 
+    doc_type: str = Query("reg")
+):
+    try:
+        contents = await file.read()
+        analysis_result = analyze_document_image(contents, doc_type)
+        
+        if "error" in analysis_result:
+            return {"error": analysis_result["error"]}
+
+        # UI가 기대하는 JSON 형식으로 즉시 반환 (StoreManager 호환)
+        if doc_type == "reg":
+            return {
+                "brand": analysis_result.get("brand", ""),
+                "regNo": analysis_result.get("regNo", ""),
+                "address": analysis_result.get("address", ""),
+                "owner": analysis_result.get("owner", "")
+            }
+        else:
+            return analysis_result # 메뉴판의 경우 {"menus": [...]} 반환
+            
+    except Exception as e:
+        print(f"Analysis Error: {e}")
+        return {"error": str(e)}
 
 @app.post("/api/situation")
 async def process_situation(request: dict):
-    # (기존 AI 처리 로직은 유지하되, 정산 시 payment 필드 업데이트 추가)
-    pass
+    text = request.get("text", "")
+    try:
+        analysis_result = parse_situation_text(text)
+        new_bundle = BundleData(
+            id=f"SIT_{uuid.uuid4().hex[:8].upper()}",
+            type=analysis_result.get("type", "Log"),
+            title=analysis_result.get("title", "AI 분석 리포트"),
+            timestamp=datetime.now().strftime("%Y.%m.%d.%H:%M:%S"),
+            items=[BundleItem(**i) for i in analysis_result.get("items", [])],
+            status=analysis_result.get("status")
+        )
+        knowledge_pool.insert(0, new_bundle)
+        save_pool()
+        await manager.broadcast(new_bundle.model_dump())
+        return new_bundle
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.post("/api/order/direct")
 async def process_direct_order(request: dict):
     table_no = str(request.get("tableNo", "포장"))
     items = [BundleItem(**item) for item in request.get("items", [])]
+    order_code = str(uuid.uuid4().hex[:4]).upper()
     
-    # 무한 확장형 ID 생성 (매장명 + 객체유형 + 고유해시)
-    store_name = "우리식당"
-    unique_id = f"{store_name.replace(' ', '_')}_ORD_{uuid.uuid4().hex[:8].upper()}"
-    
+    # 지식 풀에서 현재 상호명 검색
+    store_name = "미지정 매장"
+    for b in knowledge_pool:
+        if b.type == "StoreConfig":
+            for item in b.items:
+                if "상호" in item.name or "brand" in item.name:
+                    store_name = item.value
+                    break
+            break
+
     new_bundle = BundleData(
-        id=unique_id,
-        order_code=str(uuid.uuid4())[:4].upper(),
+        id=f"ORD_{uuid.uuid4().hex[:8].upper()}",
+        order_code=order_code,
         store=store_name,
         table=table_no,
         Package="포장" if table_no == "포장" else "매장",
         type="Orders",
-        title=f"{store_name}-Table : {table_no}",
+        title=f"Table {table_no} Order",
         timestamp=datetime.now().strftime("%Y.%m.%d.%H:%M:%S"),
         items=items,
         status="cooking"
     )
-    
     knowledge_pool.insert(0, new_bundle)
-    save_bundle_to_db(new_bundle)
+    save_pool()
     await manager.broadcast(new_bundle.model_dump())
     return new_bundle
 
 @app.post("/api/order/update-status")
 async def update_order_status(request: dict):
     target_ids = request.get("bundleIds", [])
-    new_status = request.get("status") # 'ready', 'serving', 'archived'
+    new_status = request.get("status")
     payment_method = request.get("payment", "카드")
-    
-    print(f"DEBUG: 상태 업데이트 요청 수신! 대상: {len(target_ids)}건, 변경상태: {new_status}")
-    
     updated_ids = []
     for b in knowledge_pool:
         if b.id in target_ids:
-            print(f"DEBUG: 주문ID {b.id} 상태 변경: {b.status} -> {new_status}")
             b.status = new_status
             if new_status == "archived":
                 b.payment = payment_method
-            save_bundle_to_db(b)
             updated_ids.append(b.id)
-            
     if updated_ids:
+        save_pool()
         await manager.broadcast({"type": "STATUS_UPDATED", "status": new_status, "ids": updated_ids})
-        
     return {"status": "success", "updatedCount": len(updated_ids)}
-
-@app.post("/api/order/settle")
-async def settle_order(request: dict):
-    raw_table_no = str(request.get("tableNo", "")).strip()
-    clean_table_no = raw_table_no.replace("[", "").replace("]", "")
-    target_order_code = str(request.get("orderCode", "")).upper().strip()
-    target_bundle_id = str(request.get("bundleId", "")).strip()
-    target_bundle_ids = request.get("bundleIds", []) # 리스트 형태의 ID들
-    
-    updated_ids = []
-    print(f"DEBUG: 정산 요청 수신 - 테이블: {raw_table_no}, ID개수: {len(target_bundle_ids)}")
-    
-    for b in knowledge_pool:
-        if b.type == "Orders" and b.status != "archived":
-            match = False
-            
-            # 0. 전달받은 고유 ID 리스트에 포함되어 있는지 확인 (가장 확실함)
-            if b.id in target_bundle_ids:
-                match = True
-            
-            # 1. 주문 번호(order_code) 직접 매칭
-            elif target_order_code and (b.order_code == target_order_code or b.id.upper().startswith(target_order_code)):
-                match = True
-            
-            # 2. 고유 ID 직접 매칭
-            elif target_bundle_id and b.id == target_bundle_id:
-                match = True
-                
-            # 3. 테이블 명칭 기반 매칭 (기존 로직)
-            elif raw_table_no or clean_table_no:
-                b_table = str(b.table or "").strip().replace("[", "").replace("]", "")
-                b_title = b.title or ""
-                
-                if b_table == clean_table_no or b_table == raw_table_no:
-                    match = True
-                elif f"테이블 {clean_table_no}" in b_title or f"Table {clean_table_no}" in b_title:
-                    match = True
-                elif clean_table_no == "포장" and "포장" in b_title:
-                    match = True
-                else:
-                    for item in b.items:
-                        if item.name in ["테이블", "table"]:
-                            val = str(item.value).strip().replace("[", "").replace("]", "")
-                            if val == clean_table_no or val == raw_table_no:
-                                match = True
-                                break
-            
-            if match:
-                print(f"DEBUG: [매칭 성공] ID: {b.id}, 주문번호: {b.order_code} -> archived")
-                b.status = "archived"
-                b.payment = request.get("payment", "카드")
-                save_bundle_to_db(b)
-                updated_ids.append(b.id)
-    
-    print(f"DEBUG: 정산 완료 - 총 {len(updated_ids)}개의 주문이 아카이빙되었습니다.")
-    
-    if updated_ids:
-        await manager.broadcast({"type": "SETTLEMENT_DONE", "tableNo": raw_table_no, "ids": updated_ids})
-    
-    return {"status": "success", "archivedCount": len(updated_ids)}
-
-@app.get("/api/debug/search/{code}")
-async def debug_search_order(code: str):
-    found = []
-    code_upper = code.upper()
-    for b in knowledge_pool:
-        # order_code 대조 또는 ID 포함 여부 확인
-        b_code = (b.order_code or "").upper()
-        if code_upper in b_code or code_upper in b.id.upper():
-            found.append(b.model_dump())
-    
-    if not found:
-        return {"status": "not_found", "message": f"'{code}'를 포함하는 주문을 찾을 수 없습니다."}
-    
-    return {"status": "found", "count": len(found), "data": found}
 
 @app.get("/api/pool")
 async def get_pool():
     return [b.model_dump() for b in knowledge_pool]
+
+@app.get("/api/paper")
+async def get_paper():
+    """논문 마크다운 파일 읽기 (경로 유연성 확보)"""
+    # 1. 상위 디렉토리 확인 (프로젝트 루트)
+    # 2. 현재 디렉토리 확인
+    paths = ["../AI_지능형_운영_시스템_논문.md", "AI_지능형_운영_시스템_논문.md"]
+    
+    for paper_path in paths:
+        if os.path.exists(paper_path):
+            with open(paper_path, "r", encoding="utf-8") as f:
+                return {"content": f.read()}
+                
+    return {"error": "Paper not found at " + os.getcwd()}
+
+@app.get("/api/server-ip")
+async def get_server_ip():
+    """서버의 로컬 IP 주소 반환"""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return {"ip": ip}
+    except Exception:
+        return {"ip": "localhost"}
+
+@app.delete("/api/pool")
+async def clear_pool():
+    """지식 풀 전체 초기화 (메모리 및 파일 모두 삭제)"""
+    global knowledge_pool
+    knowledge_pool = []
+    save_pool()
+    await manager.broadcast({"type": "POOL_UPDATED"})
+    return {"status": "success", "message": "Knowledge pool has been reset."}
+
+@app.delete("/api/orders")
+async def clear_orders():
+    """주문 내역만 초기화"""
+    global knowledge_pool
+    knowledge_pool = [b for b in knowledge_pool if b.type != "Orders"]
+    save_pool()
+    await manager.broadcast({"type": "POOL_UPDATED"})
+    return {"status": "success", "message": "Order history has been cleared."}
 
 @app.websocket("/ws/kitchen")
 async def websocket_kitchen(websocket: WebSocket):
@@ -271,13 +286,10 @@ async def websocket_kitchen(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_json()
-            if data.get("type") == "KITCHEN_DONE":
-                target_id = data.get("bundleId")
-                for b in knowledge_pool:
-                    if b.id == target_id:
-                        b.status = "ready"
-                        save_bundle_to_db(b)
-                        break
             await manager.broadcast(data)
     except Exception:
         manager.disconnect(websocket)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

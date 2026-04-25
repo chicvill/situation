@@ -8,19 +8,20 @@ export const useSituation = () => {
     const [isLoading, setIsLoading] = useState(false);
     const socketRef = useRef<WebSocket | null>(null);
 
+    const fetchInitialData = useCallback(async () => {
+        try {
+            const response = await fetch(`${API_BASE}/api/pool`);
+            const data = await response.json();
+            setBundles(data);
+        } catch (err) {
+            console.error("Initial fetch failed:", err);
+        }
+    }, []);
+
     // Initial Data Fetch
     useEffect(() => {
-        const fetchInitialData = async () => {
-            try {
-                const response = await fetch(`${API_BASE}/api/pool`);
-                const data = await response.json();
-                setBundles(data);
-            } catch (err) {
-                console.error("Initial fetch failed:", err);
-            }
-        };
         fetchInitialData();
-    }, []);
+    }, [fetchInitialData]);
 
     // WebSocket Connection
     useEffect(() => {
@@ -32,7 +33,7 @@ export const useSituation = () => {
                 const data = JSON.parse(event.data);
                 
                 // Handle Bundle Updates
-                if (data.id && ['Orders', 'Log', 'Menus', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting'].includes(data.type)) {
+                if (data.id && ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting'].includes(data.type)) {
                     setBundles(prev => {
                         const index = prev.findIndex(b => b.id === data.id);
                         if (index !== -1) {
@@ -54,6 +55,9 @@ export const useSituation = () => {
                 } else if (data.type === 'POOL_CLEARED') {
                     const subject = data.subject;
                     setBundles(prev => prev.filter(b => !b.items.some(i => i.value === subject)));
+                } else if (data.type === 'POOL_UPDATED') {
+                    console.log("Pool updated from server. Refreshing...");
+                    fetchInitialData();
                 }
             };
 

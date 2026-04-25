@@ -24,13 +24,19 @@ export const KitchenDisplay: React.FC = () => {
 
     const markAsDone = async (bundleId: string) => {
         try {
-            const ws = new WebSocket('ws://localhost:8000/ws/kitchen');
-            ws.onopen = () => {
-                ws.send(JSON.stringify({ type: 'KITCHEN_DONE', bundleId }));
-                ws.close();
-            };
+            const serverIp = window.location.hostname;
+            const res = await fetch(`http://${serverIp}:8000/api/order/update-status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    bundleIds: [bundleId], 
+                    status: 'ready' 
+                })
+            });
+            if (!res.ok) throw new Error('Update failed');
         } catch (e) {
             console.error('Mark Done Error:', e);
+            alert("조리 완료 처리 중 오류가 발생했습니다.");
         }
     };
 

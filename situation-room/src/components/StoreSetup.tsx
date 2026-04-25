@@ -28,15 +28,26 @@ export const StoreSetup: React.FC = () => {
             }
             
             const result = await response.json();
+            
+            // 백엔드가 보낸 Bundle 형태에서 데이터 추출
             if (type === 'reg') {
+                const items = result.items || [];
+                const getValue = (name: string) => items.find((i: any) => i.name === name)?.value || '';
+                
                 setStoreData({
-                    brand: result.brand || '',
-                    regNo: result.regNo || '',
-                    address: result.address || '',
-                    owner: result.owner || ''
+                    brand: getValue('상호명') || getValue('brand'),
+                    regNo: getValue('사업자번호') || getValue('regNo'),
+                    address: getValue('주소') || getValue('address'),
+                    owner: getValue('대표자') || getValue('owner')
                 });
             } else {
-                setMenuData(Array.isArray(result) ? result : Object.values(result)[0] as any[] || []);
+                // 메뉴 데이터 추출
+                const items = result.items || [];
+                if (items.length > 0) {
+                    setMenuData(items.map((i: any) => ({ name: i.name, price: i.value })));
+                } else {
+                    setMenuData([{ name: '', price: '' }]); // 기본 행 추가
+                }
             }
         } catch (err: any) {
             console.error("AI Analysis failed:", err);

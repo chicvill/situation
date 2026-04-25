@@ -1,84 +1,98 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export const QRManager: React.FC = () => {
     const [wifiSSID, setWifiSSID] = useState('MQnet_Wifi');
     const [wifiPass, setWifiPass] = useState('12345678');
+    const [serverIp, setServerIp] = useState('192.168.219.106');
     const host = window.location.host;
     const protocol = window.location.protocol;
-    const baseUrl = `${protocol}//${host}`;
+    const port = window.location.port || '5173';
+    
+    useEffect(() => {
+        fetch('http://localhost:8000/api/server-ip')
+            .then(res => res.json())
+            .then(data => {
+                if (data.ip) setServerIp(data.ip);
+            })
+            .catch(err => console.error("IP Fetch Error:", err));
+    }, []);
+
+    const baseUrl = `${protocol}//${serverIp}:${port}`;
 
     const qrItems = [
         {
-            title: "📶 매장 WiFi 프리패스",
-            desc: "손님이 카메라를 대면 즉시 로그인이 됩니다.",
+            title: "📶 매장 WiFi",
+            label: "WIFI",
             data: `WIFI:S:${wifiSSID};T:WPA;P:${wifiPass};;`,
             fields: (
-                <div className="qr-inputs">
+                <div className="qr-inputs no-print">
                     <input type="text" value={wifiSSID} onChange={(e) => setWifiSSID(e.target.value)} placeholder="SSID" />
                     <input type="text" value={wifiPass} onChange={(e) => setWifiPass(e.target.value)} placeholder="비밀번호" />
                 </div>
             )
         },
         {
-            title: "🛎️ 무인 웨이팅 등록",
-            desc: "매장 입구에 비치하여 대기 명단을 받습니다.",
+            title: "🛎️ 웨이팅 등록",
+            label: "WT",
             data: `${baseUrl}/?mode=waiting&action=register`
         },
         {
-            title: "👥 직원 스마트 출퇴근",
-            desc: "게시판에 붙여두어 직원이 출퇴근을 찍게 합니다.",
+            title: "👥 직원 출퇴근",
+            label: "AB",
             data: `${baseUrl}/?mode=hr&action=checkin`
         },
         {
             title: "📚 사용자 매뉴얼",
-            desc: "시스템 사용법 및 가이드를 확인합니다.",
+            label: "MU",
             data: `${baseUrl}/?mode=admin&tab=manual`
         },
         {
-            title: "💳 자리에서 결제하기",
-            desc: "각 테이블에서 정산창으로 연결됩니다.",
+            title: "💳 자리에서 결제",
+            label: "PY",
             data: `${baseUrl}/?mode=customer&action=pay`
         }
     ];
 
-    const getQRUri = (data: string) => `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data)}`;
+    const getQRUri = (data: string) => `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(data)}`;
 
     return (
         <div className="qr-manager-container animate-fade-in">
-            <header className="page-header">
-                <h2>🔳 QR 마스터 관리 센터</h2>
-                <p>매장 곳곳에 배치할 QR코드를 생성하고 인쇄하세요.</p>
+            <header className="page-header no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                    <h2>🔳 QR 마스터 인쇄 센터</h2>
+                    <p>A4 한 장에 모든 QR코드가 배치됩니다.</p>
+                </div>
+                <button className="premium-btn" onClick={() => window.print()} style={{ padding: '10px 30px' }}>
+                    🖨️ 페이지 전체 인쇄하기
+                </button>
             </header>
 
-            <div className="qr-grid">
-                {qrItems.map((item, idx) => (
-                    <div key={idx} className="glass-panel qr-card">
-                        <div className="qr-info">
-                            <h3>{item.title}</h3>
-                            <p>{item.desc}</p>
+            <div className="qr-print-layout">
+                <div className="qr-grid">
+                    {qrItems.map((item, idx) => (
+                        <div key={idx} className="qr-card-v2">
+                            <h3 className="qr-title-v2">{item.title}</h3>
+                            <div className="qr-image-wrapper-v2">
+                                <img src={getQRUri(item.data)} alt="QR Code" />
+                            </div>
+                            <div className="qr-badge-v2">{item.label}</div>
+                            <div className="qr-url-text">{item.data}</div>
                             {item.fields}
                         </div>
-                        <div className="qr-image-wrapper">
-                            <img src={getQRUri(item.data)} alt="QR Code" />
-                            <button className="print-btn" onClick={() => window.print()}>인쇄하기</button>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            <section className="table-qr-section">
-                <h3>🍽️ 테이블별 주문 QR 생성</h3>
-                <p>각 테이블 번호가 내장된 전용 주문 QR입니다.</p>
-                <div className="table-qr-grid">
+                    ))}
+                    
                     {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
-                        <div key={num} className="glass-panel table-qr-card">
-                            <span>Table {num}</span>
-                            <img src={getQRUri(`${baseUrl}/?mode=customer&table=${num}`)} alt={`Table ${num} QR`} />
-                            <small>스캔 시 {num}번 테이블 주문창 연결</small>
+                        <div key={num} className="qr-card-v2">
+                            <h3 className="qr-title-v2">Table {num}</h3>
+                            <div className="qr-image-wrapper-v2">
+                                <img src={getQRUri(`${baseUrl}/?mode=customer&table=${num}`)} alt={`Table ${num} QR`} />
+                            </div>
+                            <div className="qr-badge-v2">{`T${num}`}</div>
+                            <div className="qr-url-text">{`${baseUrl}/?mode=customer&table=${num}`}</div>
                         </div>
                     ))}
                 </div>
-            </section>
+            </div>
         </div>
     );
 };

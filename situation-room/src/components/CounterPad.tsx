@@ -83,10 +83,15 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
                     {(() => {
                         const activeOrder = bundles.find(b => 
                             b.type === 'Orders' && 
-                            b.items.some(i => i.name === '테이블' && i.value === selectedTableForPay) &&
+                            (b.table === selectedTableForPay || b.items.some(i => i.name === '테이블' && i.value === selectedTableForPay)) &&
                             b.status !== 'archived'
                         );
-                        const orderNo = activeOrder ? `#${activeOrder.id.slice(-4).toUpperCase()}` : '----';
+                        
+                        // 전광판과 일치하도록 'order_code' 우선 참조
+                        let orderNo = '----';
+                        if (activeOrder) {
+                            orderNo = activeOrder.order_code || `#${activeOrder.id.slice(-4).toUpperCase()}`;
+                        }
 
                         return (
                             <div className="payment-modal animate-pop-in" style={{ width: '550px', padding: '40px', background: '#1e293b', border: '2px solid var(--accent-orange)', borderRadius: '30px', boxShadow: '0 30px 60px rgba(0,0,0,0.8)' }}>
@@ -138,17 +143,40 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
                                             </span>
                                             <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.4)' }}>|</span>
                                             <span style={{ fontSize: '1.1rem', color: 'var(--accent-orange)', fontWeight: 'bold' }}>
-                                                Order No : #{orders[0].id.slice(-4).toUpperCase()}
+                                                Order No : {
+                                                    orders[0].order_code || 
+                                                    `#${orders[0].id.slice(-4).toUpperCase()}`
+                                                }
                                             </span>
                                         </div>
                                         {hasReady && <span style={{ fontSize: '0.8rem', background: '#f97316', color: 'white', padding: '3px 10px', borderRadius: '6px', fontWeight: 'bold', boxShadow: '0 2px 8px rgba(249,115,22,0.3)' }}>조리완료</span>}
                                     </div>
                                     
-                                    {hasReady ? (
-                                        <button onClick={() => handleStatusUpdate(tableKey, 'serving')} style={{ background: 'white', color: '#1e293b', border: 'none', padding: '10px 22px', borderRadius: '14px', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 4px 15px rgba(255,255,255,0.2)' }}>서빙하기</button>
-                                    ) : (
-                                        <button onClick={() => setSelectedTableForPay(tableKey)} style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid #10b981', padding: '10px 22px', borderRadius: '14px', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer' }}>정산하기</button>
-                                    )}
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        {hasReady && (
+                                            <button 
+                                                onClick={() => handleStatusUpdate(tableKey, 'serving')}
+                                                style={{ background: 'white', color: '#1e293b', border: 'none', padding: '10px 22px', borderRadius: '14px', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 4px 15px rgba(255,255,255,0.2)' }}
+                                            >
+                                                서빙하기
+                                            </button>
+                                        )}
+                                        <button 
+                                            onClick={() => setSelectedTableForPay(tableKey)}
+                                            style={{ 
+                                                background: hasReady ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.2)', 
+                                                color: '#10b981', 
+                                                border: '1px solid #10b981', 
+                                                padding: '10px 22px', 
+                                                borderRadius: '14px', 
+                                                fontWeight: '900', 
+                                                fontSize: '1.1rem',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            {hasReady ? '결제(정산)' : '정산하기'}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div style={{ fontSize: '1.1rem', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60%' }}>🍱 {itemSummary}</div>

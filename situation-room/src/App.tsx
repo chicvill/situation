@@ -1,33 +1,53 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import { KitchenDisplay } from './components/KitchenDisplay';
 import { CustomerOrder } from './components/CustomerOrder';
 import { AdminDashboard } from './components/AdminDashboard';
-import { HRManager } from './components/HRManager';
 import { MenuManager } from './components/MenuManager';
 import { DisplayBoard } from './components/DisplayBoard';
 import { StoreManager } from './components/StoreManager';
 import { CounterPad } from './components/CounterPad';
-import { WaitingManager } from './components/WaitingManager';
 import { QRManager } from './components/QRManager';
+import { PaperViewer } from './components/PaperViewer';
 import { LogicInventory } from './components/LogicInventory';
 import { ConversationalUI } from './components/ConversationalUI';
 import { useSituation } from './hooks/useSituation';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
 
-type MainTab = 'guide' | 'order' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory';
+type MainTab = 'guide' | 'order' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper';
 
 function App() {
   const { bundles, handleSendMessage } = useSituation();
   const [activeTab, setActiveTab] = useState<MainTab>('guide');
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // 메뉴 상태 추가
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // 매장 정보에서 상호명 추출 (방어 코드 추가)
+  const safeBundles = Array.isArray(bundles) ? bundles : [];
+  const storeBundle = safeBundles.find(b => b.type === 'StoreConfig' && (b.title === '매장 정보' || b.title === '사업자 정보 자동 인식'));
+  const storeName = storeBundle?.items.find(i => i.name === '상호명')?.value || '우리식당';
 
   // 실시간 시계 로직
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // URL 파라미터에 따른 자동 탭 전환 로직 추가
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('mode');
+    
+    if (mode === 'customer') {
+      setActiveTab('order');
+    } else if (mode === 'kitchen') {
+      setActiveTab('kitchen');
+    } else if (mode === 'counter') {
+      setActiveTab('counter');
+    } else if (mode === 'waiting') {
+      setActiveTab('qr'); // 웨이팅은 QR 관리에서 확인 (또는 전용 탭)
+    }
   }, []);
 
   const formatDateTime = (date: Date) => {
@@ -39,7 +59,7 @@ function App() {
     return `${y}.${m}.${d} ${hh}:${mm}`;
   };
 
-  const navigateTo = (tab: MainTab, setting: string | null = null) => {
+  const navigateTo = (tab: MainTab) => {
     setActiveTab(tab);
     setIsMenuOpen(false); // 이동 시 메뉴 닫기
   };
@@ -52,40 +72,95 @@ function App() {
     { label: '비서', icon: '🎤', tab: 'guide', special: true },
     { label: 'QR', icon: '📱', tab: 'qr' },
     { label: '통계', icon: '📊', tab: 'home' },
-    { label: '메뉴', icon: 'menu', tab: 'menu' },
+    { label: '메뉴', icon: '📔', tab: 'menu' },
     { label: '매장', icon: '🏠', tab: 'settings' }
   ];
+
+  const [isListening, setIsListening] = useState(false);
+
+  // 음성 인식 설정
+  const startVoiceRecognition = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("이 브라우저는 음성 인식을 지원하지 않습니다. 크롬을 권장합니다.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ko-KR';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      navigateTo('guide'); // 비서 화면으로 이동
+    };
+
+    recognition.onresult = (event: any) => {
+      const speechToText = event.results[0][0].transcript;
+      handleSendMessage(speechToText);
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  };
 
   const isCustomerMode = new URLSearchParams(window.location.search).get('mode') === 'customer';
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'guide': return <ConversationalUI bundles={bundles} onNavigate={navigateTo as any} />;
+      case 'guide': return <ConversationalUI bundles={bundles} storeName={storeName} />;
       case 'order': return <CustomerOrder bundles={bundles} />;
       case 'kitchen': return <KitchenDisplay />;
       case 'counter': return <CounterPad bundles={bundles} messages={[]} onSendMessage={handleSendMessage} />;
       case 'display': return <DisplayBoard bundles={bundles} />;
+      case 'menu': return <MenuManager bundles={bundles} />;
       case 'settings': return <StoreManager bundles={bundles} onNavigate={navigateTo as any} />;
+      case 'qr': return <QRManager />;
+      case 'paper': return <PaperViewer />;
       case 'home': return <AdminDashboard bundles={bundles} />;
       case 'inventory': return <LogicInventory />;
-      default: return <ConversationalUI bundles={bundles} onNavigate={navigateTo as any} />;
+      default: return <ConversationalUI bundles={bundles} storeName={storeName} />;
     }
   };
 
   return (
     <div className={`saas-container mobile-full-mode ${isCustomerMode ? 'customer-mode' : ''}`}>
+      {/* 🎙️ 음성 인식 오버레이 */}
+      {isListening && (
+        <div className="voice-overlay animate-fade-in" style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          background: 'rgba(15, 23, 42, 0.9)', zIndex: 99999,
+          display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+          backdropFilter: 'blur(10px)'
+        }}>
+          <div className="voice-wave" style={{ fontSize: '5rem', marginBottom: '20px' }}>🎙️</div>
+          <h2 style={{ color: 'white' }}>듣고 있습니다...</h2>
+          <p style={{ color: 'var(--accent-orange)' }}>원하시는 작업을 말씀해 주세요</p>
+          <div className="pulse-ring"></div>
+        </div>
+      )}
+
       {/* 🌑 사이드 메뉴 패널 (Drawer) - 고객 모드에선 숨김 */}
       {!isCustomerMode && (
         <>
           <div className={`side-menu-drawer ${isMenuOpen ? 'open' : ''}`}>
               <div className="drawer-header">
-                  <div className="drawer-logo">우리식당 <span>PRO</span></div>
+                  <div className="drawer-logo">{storeName} <span>PRO</span></div>
                   <button className="close-btn" onClick={() => setIsMenuOpen(false)}>×</button>
               </div>
               <nav className="drawer-nav">
                   <div className="nav-group">시스템 관리</div>
                   <button onClick={() => navigateTo('settings')}>⚙️ 매장 마스터 설정</button>
                   <button onClick={() => navigateTo('inventory')}>🧠 AI 지식 인벤토리</button>
+                  <button onClick={() => navigateTo('paper')}>📄 AI 운영 시스템 논문 보기</button>
                   <div className="nav-group">고급 기능</div>
                   <button>🎙️ AI 음성 비서 튜닝</button>
                   <button>📂 운영 로그 분석</button>
@@ -103,7 +178,7 @@ function App() {
               <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)}>≡</button>
           </div>
         )}
-        <div className="top-bar-center"><span className="store-name">우리식당</span></div>
+        <div className="top-bar-center"><span className="store-name">{storeName}</span></div>
         <div className="top-bar-right"><span className="current-datetime">{formatDateTime(currentTime)}</span></div>
       </header>
 
@@ -116,7 +191,17 @@ function App() {
       {!isCustomerMode && (
         <nav className="bottom-nav-bar-9">
           {navItems.map((item, idx) => (
-            <div key={idx} className={`nav-item-9 ${item.special ? 'mic-special' : ''}`} onClick={() => navigateTo(item.tab as MainTab)}>
+            <div 
+              key={idx} 
+              className={`nav-item-9 ${item.special ? 'mic-special' : ''} ${activeTab === item.tab ? 'active' : ''}`} 
+              onClick={() => {
+                if (item.special) {
+                  startVoiceRecognition();
+                } else {
+                  navigateTo(item.tab as MainTab);
+                }
+              }}
+            >
               <div className="nav-icon">{item.label === '메뉴' ? '📔' : item.icon}</div>
               <div className="nav-label">{item.label}</div>
             </div>

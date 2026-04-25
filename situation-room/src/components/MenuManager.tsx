@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import type { BundleData, BundleItem } from '../types';
+import { useImageScan, ScanningOverlay, ScanChoiceModal } from '../hooks/useImageScan';
+import type { BundleData } from '../types';
 
 interface MenuManagerProps {
     bundles: BundleData[];
@@ -8,15 +9,19 @@ interface MenuManagerProps {
 
 export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) => {
     const [menuItems, setMenuItems] = useState<any[]>([]);
+    const [bundleId, setBundleId] = useState<string | null>(null);
 
     useEffect(() => {
+        if (!bundles) return; // 데이터가 없으면 대기
+        
         const menuBundle = bundles.find(b => b.type === 'Menus');
         if (menuBundle) {
+            setBundleId(menuBundle.id);
             setMenuItems(menuBundle.items.map(item => ({
                 ...item,
-                icon: item.icon || '🍴',
-                category: item.category || '기타',
-                description: item.description || '신선한 재료로 준비했습니다.'
+                icon: (item as any).icon || '🍴',
+                category: (item as any).category || '기타',
+                description: (item as any).description || '신선한 재료로 준비했습니다.'
             })));
         }
     }, [bundles]);
@@ -32,84 +37,130 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
         setMenuItems(updated);
     };
 
-    const handleSave = () => {
-        if (onUpdate) onUpdate(menuItems);
-        alert("✅ 메뉴 정보가 지식 창고에 안전하게 저장되었습니다.");
+    const { 
+        isScanning, 
+        showChoiceModal, 
+        setShowChoiceModal,
+        fileInputRef, 
+        startScanFlow, 
+        proceedToPickFile,
+        handleFileChange 
+    } = useImageScan({
+        docType: 'menu',
+        onSuccess: (result, overwrite) => {
+            // AI 엔진이 반환하는 다양한 필드명(menus, items) 및 가격 필드명(price, value) 대응
+            const rawItems = result.menus || result.items || [];
+            const newItems = rawItems.map((i: any) => ({
+                name: i.name || '',
+                value: String(i.price || i.value || '0'),
+                icon: '🍴',
+                category: '추천',
+                description: 'AI 스캔으로 등록된 메뉴입니다.'
+            }));
+
+            if (overwrite) {
+                setMenuItems(newItems);
+            } else {
+                setMenuItems(prev => [...prev, ...newItems]);
+            }
+        },
+    });
+
+    const handleSave = async () => {
+        const idToUse = bundleId || `MENUS_${Date.now()}`;
+        
+        try {
+            const response = await fetch(`http://localhost:8000/api/bundle/${idToUse}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    items: menuItems.map(item => ({ name: item.name, value: item.value })),
+                    type: 'Menus',
+                    title: '메뉴 정보'
+                }),
+            });
+
+            if (response.ok) {
+                if (onUpdate) onUpdate(menuItems);
+            } else {
+                throw new Error('저장 실패');
+            }
+        } catch (err) {
+            console.error("Save error:", err);
+            alert("❌ 저장 중 오류가 발생했습니다. 서버 연결을 확인하세요.");
+        }
     };
 
     return (
         <div className="menu-manager-compact animate-fade-in" style={{ padding: '5px' }}>
+            <ScanningOverlay isScanning={isScanning} docType="menu" />
+            <ScanChoiceModal 
+                show={showChoiceModal} 
+                onClose={() => setShowChoiceModal(false)} 
+                onChoice={proceedToPickFile}
+                title="메뉴판 사진 스캔 분석"
+                docType="menu"
+            />
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileChange} />
+            
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h2 style={{ margin: 0, fontSize: '1.1rem' }}>📔 메뉴 마스터 편집</h2>
+                <h2 style={{ margin: 0, fontSize: '1.1rem' }}>📔 메뉴 관리</h2>
                 <div style={{ display: 'flex', gap: '6px' }}>
-                    <button className="premium-btn-sm" style={{ padding: '6px 12px', fontSize: '0.8rem', background: 'var(--accent-orange)' }}>📸 사진 스캔</button>
+                    <button 
+                        className="premium-btn-sm" 
+                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: 'var(--accent-orange)' }}
+                        onClick={startScanFlow}
+                    >
+                        📸 사진 스캔
+                    </button>
                     <button onClick={handleSave} className="premium-btn-sm" style={{ background: '#10b981', padding: '6px 12px', fontSize: '0.8rem' }}>💾 저장</button>
                 </div>
             </header>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 {menuItems.map((item, idx) => (
-                    <div key={idx} style={{ 
-                        background: 'rgba(255,255,255,0.03)', 
-                        padding: '8px 12px', 
-                        borderRadius: '16px',
-                        border: '1px solid rgba(255,255,255,0.05)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px'
-                    }}>
+                    <div key={idx} className="editor-row">
                         {/* 1. 아이콘 */}
                         <input 
                             value={item.icon} 
                             onChange={(e) => handleChange(idx, 'icon', e.target.value)}
-                            style={{ width: '40px', height: '40px', textAlign: 'center', fontSize: '1.4rem', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '12px', color: 'white' }}
+                            style={{ width: '35px', textAlign: 'center', fontSize: '1.2rem', padding: '0 !important' }}
                         />
 
-                        {/* 2. 중앙 메뉴 정보 */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2px', minWidth: 0 }}>
-                            <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-                                <input 
-                                    value={item.category}
-                                    onChange={(e) => handleChange(idx, 'category', e.target.value)}
-                                    style={{ fontSize: '0.65rem', width: '60px', padding: '2px 4px', background: 'var(--accent-orange)', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', textAlign: 'center' }}
-                                />
-                                <input 
-                                    value={item.name}
-                                    onChange={(e) => handleChange(idx, 'name', e.target.value)}
-                                    style={{ flex: 1, fontSize: '1.1rem', fontWeight: '900', background: 'transparent', border: 'none', color: 'white', outline: 'none' }}
-                                />
-                            </div>
+                        {/* 2. 메뉴명 */}
+                        <input 
+                            className="name-field"
+                            value={item.name}
+                            onChange={(e) => handleChange(idx, 'name', e.target.value)}
+                            placeholder="메뉴명"
+                        />
+
+                        {/* 3. 가격 */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <input 
-                                value={item.description}
-                                onChange={(e) => handleChange(idx, 'description', e.target.value)}
-                                style={{ fontSize: '0.8rem', color: '#94a3b8', background: 'transparent', border: 'none', width: '100%', outline: 'none', opacity: 0.8 }}
+                                className="value-field"
+                                value={item.value}
+                                onChange={(e) => handleChange(idx, 'value', e.target.value)}
+                                placeholder="0"
+                                style={{ width: '80px' }}
                             />
+                            <span style={{ fontSize: '0.8rem', color: 'var(--accent-orange)', fontWeight: 'bold' }}>원</span>
                         </div>
 
-                        {/* 3. 우측 가격 & 삭제 세로 정렬 */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px', minWidth: '90px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center' }}>
-                                <input 
-                                    value={item.value}
-                                    onChange={(e) => handleChange(idx, 'value', e.target.value)}
-                                    style={{ width: '70px', fontSize: '1.15rem', fontWeight: '950', color: 'var(--accent-orange)', background: 'transparent', border: 'none', textAlign: 'right', outline: 'none' }}
-                                />
-                                <span style={{ fontSize: '0.85rem', color: 'var(--accent-orange)', fontWeight: 'bold', marginLeft: '2px' }}>원</span>
-                            </div>
-                            <button 
-                                onClick={() => handleDelete(idx)}
-                                style={{ 
-                                    background: 'rgba(239, 68, 68, 0.1)', 
-                                    color: '#ef4444', 
-                                    border: '1px solid rgba(239, 68, 68, 0.2)', 
-                                    borderRadius: '6px', 
-                                    width: '30px', height: '22px', 
-                                    fontSize: '1rem', 
-                                    display: 'flex', justifyContent: 'center', alignItems: 'center',
-                                    cursor: 'pointer'
-                                }}
-                            >×</button>
-                        </div>
+                        {/* 4. 삭제 버튼 */}
+                        <button 
+                            onClick={() => handleDelete(idx)}
+                            style={{ 
+                                background: 'rgba(239, 68, 68, 0.1)', 
+                                color: '#ef4444', 
+                                border: 'none', 
+                                borderRadius: '8px', 
+                                width: '28px', height: '28px', 
+                                fontSize: '1.2rem', 
+                                cursor: 'pointer',
+                                display: 'flex', justifyContent: 'center', alignItems: 'center'
+                            }}
+                        >×</button>
                     </div>
                 ))}
             </div>

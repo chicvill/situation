@@ -14,8 +14,24 @@ body {
   color: var(--text-main);
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow-y: auto;
   font-family: 'Pretendard', sans-serif;
+}
+
+/* Glassmorphism System */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
 }
 
 .saas-container.mobile-full-mode {
@@ -39,6 +55,71 @@ body {
 
 /* 기존 사이드바 숨김 강제 */
 .sidebar { display: none !important; }
+
+/* Premium Top Bar */
+.premium-top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(15px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 1000;
+}
+
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  z-index: 1001;
+}
+
+.hamburger-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 5px;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.hamburger-btn:hover { opacity: 1; }
+
+.top-bar-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.store-name {
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: var(--accent-orange);
+  text-transform: uppercase;
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.current-datetime {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: 'Courier New', Courier, monospace;
+}
 
 /* Floating Bottom Tab Bar */
 .floating-tab-bar {
@@ -949,24 +1030,107 @@ td {
     margin-top: 20px;
 }
 
-/* QR Manager Styles */
+/* QR Manager & Printing Styles */
+.qr-print-layout {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+@media screen {
+    .qr-print-layout {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+}
+
 .qr-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-    margin-bottom: 40px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 30px;
 }
 
-.qr-card {
+.qr-card-v2 {
     display: flex;
-    padding: 20px;
-    gap: 20px;
+    flex-direction: column;
     align-items: center;
+    padding: 15px;
+    background: white;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    text-align: center;
 }
 
-.qr-info { flex: 1; }
-.qr-info h3 { margin: 0 0 10px 0; color: var(--premium-orange); }
-.qr-info p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
+.qr-title-v2 {
+    margin: 0 0 10px 0;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #1e293b;
+}
+
+.qr-image-wrapper-v2 {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    background: white;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.qr-image-wrapper-v2 img {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.qr-badge-v2 {
+    margin-top: 10px;
+    background: #000;
+    color: #fff;
+    padding: 4px 15px;
+    border-radius: 50px;
+    font-weight: 900;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
+
+.qr-url-text {
+    margin-top: 10px;
+    font-size: 0.65rem;
+    color: #64748b;
+    word-break: break-all;
+    max-width: 180px;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* Printing logic */
+@media print {
+    body { background: white !important; }
+    .no-print, .floating-tab-bar, .premium-top-bar, .drawer-overlay, .side-menu-drawer {
+        display: none !important;
+    }
+    .saas-main-full {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    .qr-manager-container {
+        padding: 0 !important;
+        background: white !important;
+    }
+    .qr-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 15px !important;
+    }
+    .qr-card-v2 {
+        break-inside: avoid;
+        border: 1px solid #eee !important;
+        box-shadow: none !important;
+    }
+    .qr-print-layout {
+        padding: 0 !important;
+    }
+}
 
 .qr-inputs {
     margin-top: 15px;
@@ -1028,3 +1192,114 @@ td {
 .table-qr-card span { font-weight: bold; color: var(--premium-orange); }
 .table-qr-card img { width: 120px; background: white; padding: 5px; border-radius: 4px; }
 .table-qr-card small { font-size: 0.7rem; color: var(--text-muted); }
+/* Admin Form Design System (Unified) */
+.admin-form-card {
+  background: rgba(31, 41, 55, 0.4) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 24px;
+  padding: 32px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.admin-form-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding-left: 4px;
+}
+
+.admin-form-input {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 14px !important;
+  color: white !important;
+  padding: 14px 18px !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-form-input:focus {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: var(--accent-orange) !important;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+  outline: none;
+}
+
+.admin-form-input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* Row-based Editor (Menu Manager) */
+.editor-row {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  transition: all 0.2s;
+}
+
+.editor-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.editor-row input {
+  background: transparent !important;
+  border: none !important;
+  color: white !important;
+  padding: 8px !important;
+  font-size: 0.95rem !important;
+  outline: none !important;
+}
+
+.editor-row .name-field {
+  flex: 2;
+  font-weight: 700;
+}
+
+.editor-row .value-field {
+  flex: 1;
+  font-weight: 800;
+  color: var(--accent-orange);
+  text-align: right;
+}
+
+.premium-btn {
+  background: var(--accent-orange);
+  color: white;
+  border: none;
+  border-radius: 14px;
+  padding: 14px 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.premium-btn:active {
+  transform: scale(0.97);
+}
+
+.premium-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
