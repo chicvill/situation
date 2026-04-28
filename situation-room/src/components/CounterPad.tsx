@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import type { BundleData } from '../types';
 import { PaymentModal } from './PaymentModal';
+import { OrderRow } from './OrderRow';
 
 interface CounterPadProps {
     bundles: BundleData[];
@@ -114,42 +115,41 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
                         const itemSummary = orders.flatMap(o => o.items).map(i => `${i.name} ${i.value}`).join(', ');
                         const total = calculateTableTotal(tableKey);
 
+                        const orderCode = orders[0].order_code || `#${orders[0].id.slice(-4).toUpperCase()}`;
+
                         return (
-                            <div key={tableKey} style={{ 
-                                background: hasReady ? 'rgba(249, 115, 22, 0.12)' : 'rgba(59, 130, 246, 0.08)', 
-                                border: hasReady ? '1px solid rgba(249, 115, 22, 0.4)' : '1px solid rgba(59, 130, 246, 0.3)', 
-                                borderRadius: '18px', padding: '16px', marginBottom: '10px'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
-                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                                            <span style={{ fontSize: '1.4rem', fontWeight: '900', color: 'white' }}>
-                                                {tableKey === '포장' ? 'Table : [포장]' : `Table : ${tableKey}`}
-                                            </span>
-                                            <span style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.4)' }}>|</span>
-                                            <span style={{ fontSize: '1.1rem', color: 'var(--accent-orange)', fontWeight: 'bold' }}>
-                                                Order No : {
-                                                    orders[0].order_code || 
-                                                    `#${orders[0].id.slice(-4).toUpperCase()}`
-                                                }
-                                            </span>
-                                        </div>
-                                        {hasReady ? (
-                                            <span style={{ fontSize: '0.8rem', background: '#f97316', color: 'white', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 2px 8px rgba(249,115,22,0.3)' }}>✅ 조리완료</span>
-                                        ) : (
-                                            <span style={{ fontSize: '0.8rem', background: '#3b82f6', color: 'white', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 2px 8px rgba(59,130,246,0.3)' }}>🍳 조리중</span>
-                                        )}
-                                    </div>
-                                    
-                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                        {hasReady && (
-                                            <button 
-                                                onClick={() => handleStatusUpdate(tableKey, 'serving')}
-                                                style={{ background: 'white', color: '#1e293b', border: 'none', padding: '10px 22px', borderRadius: '14px', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 4px 15px rgba(255,255,255,0.2)' }}
-                                            >
-                                                서빙하기
-                                            </button>
-                                        )}
+                            <OrderRow
+                                key={tableKey}
+                                tableKey={tableKey}
+                                orderCode={orderCode}
+                                itemSummary={itemSummary}
+                                totalPrice={total}
+                                hasReady={hasReady}
+                                statusBadge={
+                                    hasReady ? (
+                                        <span style={{ fontSize: '0.8rem', background: '#f97316', color: 'white', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 2px 8px rgba(249,115,22,0.3)' }}>✅ 조리완료</span>
+                                    ) : (
+                                        <span style={{ fontSize: '0.8rem', background: '#3b82f6', color: 'white', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 2px 8px rgba(59,130,246,0.3)' }}>🍳 조리중</span>
+                                    )
+                                }
+                                actionButtons={
+                                    <>
+                                        <button 
+                                            onClick={() => handleStatusUpdate(tableKey, 'serving')}
+                                            style={{ 
+                                                background: hasReady ? 'white' : 'rgba(255,255,255,0.1)', 
+                                                color: hasReady ? '#1e293b' : 'rgba(255,255,255,0.6)', 
+                                                border: '1px solid rgba(255,255,255,0.2)', 
+                                                padding: '10px 22px', 
+                                                borderRadius: '14px', 
+                                                fontWeight: '900', 
+                                                fontSize: '1.1rem', 
+                                                cursor: 'pointer', 
+                                                boxShadow: hasReady ? '0 4px 15px rgba(255,255,255,0.2)' : 'none' 
+                                            }}
+                                        >
+                                            서빙하기
+                                        </button>
                                         <button 
                                             onClick={() => {
                                                 if(window.confirm(`Table ${tableKey}의 전체 주문을 취소하시겠습니까?\n이 작업은 복구할 수 없습니다.`)) {
@@ -167,7 +167,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
                                                 cursor: 'pointer'
                                             }}
                                         >
-                                            취소
+                                            주문취소
                                         </button>
                                         <button 
                                             onClick={() => setSelectedTableForPay(tableKey)}
@@ -184,13 +184,9 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
                                         >
                                             {hasReady ? '결제(정산)' : '정산하기'}
                                         </button>
-                                    </div>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '12px' }}>
-                                    <div style={{ fontSize: '1.1rem', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60%' }}>🍱 {itemSummary}</div>
-                                    <div style={{ fontSize: '1.4rem', fontWeight: '900', color: hasReady ? 'white' : '#60a5fa' }}>{total.toLocaleString()}원</div>
-                                </div>
-                            </div>
+                                    </>
+                                }
+                            />
                         );
                     })
                 )}
