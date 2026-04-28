@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { BundleData } from '../types';
+import { PaymentModal } from './PaymentModal';
 
 interface CounterPadProps {
     bundles: BundleData[];
@@ -16,7 +17,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
     const tableOrders = useMemo(() => {
         const groups: Record<string, BundleData[]> = {};
         bundles.forEach(b => {
-            if (b.type === 'Orders' && b.status !== 'archived' && !localHiddenTables.includes(b.table || '')) {
+            if (b.type === 'Orders' && b.status !== 'archived' && b.status !== 'canceled' && !localHiddenTables.includes(b.table || '')) {
                 let t = b.table || '';
                 if (!t) {
                     const titleMatch = b.title.match(/테이블\s*(\d+)/) || b.title.match(/Table\s*(\d+)/i);
@@ -45,7 +46,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
         }, 0);
     };
 
-    const handleStatusUpdate = async (tableName: string, newStatus: 'serving' | 'archived', payment?: string) => {
+    const handleStatusUpdate = async (tableName: string, newStatus: 'serving' | 'archived' | 'canceled', payment?: string) => {
         const orders = tableOrders[tableName] || [];
         const orderIds = orders.map(o => o.id);
         
@@ -78,44 +79,33 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
     return (
         <div className="counter-pad-premium" style={{ padding: '0 2px' }}>
             {/* 정산 모달 (Table 번호 및 Order No 표시) */}
-            {selectedTableForPay && (
-                <div className="modal-overlay flex-center" style={{ zIndex: 4000, background: 'rgba(0,0,0,0.9)', position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backdropFilter: 'blur(10px)' }}>
-                    {(() => {
-                        const activeOrder = bundles.find(b => 
-                            b.type === 'Orders' && 
-                            (b.table === selectedTableForPay || b.items.some(i => i.name === '테이블' && i.value === selectedTableForPay)) &&
-                            b.status !== 'archived'
-                        );
-                        
-                        // 전광판과 일치하도록 'order_code' 우선 참조
-                        let orderNo = '----';
-                        if (activeOrder) {
-                            orderNo = activeOrder.order_code || `#${activeOrder.id.slice(-4).toUpperCase()}`;
-                        }
+            {selectedTableForPay && (() => {
+                const activeOrder = bundles.find(b => 
+                    b.type === 'Orders' && 
+                    (b.table === selectedTableForPay || b.items.some(i => i.name === '테이블' && i.value === selectedTableForPay)) &&
+                    b.status !== 'archived' && b.status !== 'canceled'
+                );
+                
+                let orderNo = '----';
+                let prepaidMethod = null;
+                if (activeOrder) {
+                    orderNo = activeOrder.order_code || `#${activeOrder.id.slice(-4).toUpperCase()}`;
+                    prepaidMethod = activeOrder.payment;
+                }
+                const totalPrice = calculateTableTotal(selectedTableForPay);
 
-                        return (
-                            <div className="payment-modal animate-pop-in" style={{ width: '550px', padding: '40px', background: '#1e293b', border: '2px solid var(--accent-orange)', borderRadius: '30px', boxShadow: '0 30px 60px rgba(0,0,0,0.8)' }}>
-                                <header style={{ textAlign: 'center', marginBottom: '35px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '20px' }}>
-                                    <h2 style={{ fontSize: '2.2rem', margin: 0, color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'baseline', gap: '15px' }}>
-                                        <span>Table : <span style={{ color: 'var(--accent-orange)' }}>{selectedTableForPay}</span></span>
-                                        <span style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.4)' }}>|</span>
-                                        <span style={{ fontSize: '1.5rem' }}>Order No : <span style={{ color: 'var(--accent-orange)' }}>{orderNo}</span></span>
-                                    </h2>
-                                </header>
-                                
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '25px' }}>
-                                    <button onClick={() => handleStatusUpdate(selectedTableForPay, 'archived', '선결제')} style={{ background: '#3b82f6', color: 'white', padding: '30px 10px', borderRadius: '20px', border: 'none', fontSize: '1.4rem', fontWeight: '900', cursor: 'pointer' }}>✅ 선결제</button>
-                                    <button onClick={() => handleStatusUpdate(selectedTableForPay, 'archived', '카드')} style={{ background: 'var(--accent-orange)', color: 'white', padding: '30px 10px', borderRadius: '20px', border: 'none', fontSize: '1.4rem', fontWeight: '900', cursor: 'pointer' }}>💳 카드</button>
-                                    <button onClick={() => handleStatusUpdate(selectedTableForPay, 'archived', '현금')} style={{ background: '#10b981', color: 'white', padding: '30px 10px', borderRadius: '20px', border: 'none', fontSize: '1.4rem', fontWeight: '900', cursor: 'pointer' }}>💵 현금</button>
-                                    <button onClick={() => handleStatusUpdate(selectedTableForPay, 'archived', '이체')} style={{ background: '#8b5cf6', color: 'white', padding: '30px 10px', borderRadius: '20px', border: 'none', fontSize: '1.4rem', fontWeight: '900', cursor: 'pointer' }}>🏦 이체</button>
-                                </div>
-                                
-                                <button onClick={() => setSelectedTableForPay(null)} style={{ width: '100%', padding: '20px', background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '15px', fontSize: '1.2rem', fontWeight: 'bold', cursor: 'pointer' }}>닫기 (정산 취소)</button>
-                            </div>
-                        );
-                    })()}
-                </div>
-            )}
+                return (
+                    <PaymentModal 
+                        totalPrice={totalPrice}
+                        onClose={() => setSelectedTableForPay(null)}
+                        onSubmit={(method) => handleStatusUpdate(selectedTableForPay, 'archived', method)}
+                        isCounter={true}
+                        prepaidMethod={prepaidMethod}
+                        tableNo={selectedTableForPay}
+                        orderNo={orderNo}
+                    />
+                );
+            })()}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {Object.keys(tableOrders).length === 0 ? (
@@ -161,6 +151,25 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
                                                 서빙하기
                                             </button>
                                         )}
+                                        <button 
+                                            onClick={() => {
+                                                if(window.confirm(`Table ${tableKey}의 전체 주문을 취소하시겠습니까?\n이 작업은 복구할 수 없습니다.`)) {
+                                                    handleStatusUpdate(tableKey, 'canceled', '취소됨');
+                                                }
+                                            }}
+                                            style={{ 
+                                                background: 'rgba(239, 68, 68, 0.1)', 
+                                                color: '#ef4444', 
+                                                border: '1px solid #ef4444', 
+                                                padding: '10px 22px', 
+                                                borderRadius: '14px', 
+                                                fontWeight: '900', 
+                                                fontSize: '1.1rem',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            취소
+                                        </button>
                                         <button 
                                             onClick={() => setSelectedTableForPay(tableKey)}
                                             style={{ 

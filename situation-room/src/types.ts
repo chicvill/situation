@@ -12,7 +12,7 @@ export interface BundleData {
   title: string;
   items: BundleItem[];
   timestamp: string;
-  status?: 'pending' | 'cooking' | 'ready' | 'served' | 'archived';
+  status?: 'pending' | 'cooking' | 'ready' | 'served' | 'archived' | 'canceled';
   order_code?: string;
   table?: string;
 }

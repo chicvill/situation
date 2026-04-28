@@ -10,7 +10,7 @@ export const KitchenDisplay: React.FC = () => {
             const res = await fetch(`${apiUrl}/api/pool`);
             const data = await res.json();
             // 주방에서는 'Orders' 중 조리가 필요한 것만 필터링
-            setBundles(data.filter((b: BundleData) => b.type === 'Orders' && b.status !== 'ready' && b.status !== 'archived'));
+            setBundles(data.filter((b: BundleData) => b.type === 'Orders' && b.status !== 'ready' && b.status !== 'archived' && b.status !== 'canceled'));
         } catch (e) {
             console.error('Kitchen Fetch Error:', e);
         }

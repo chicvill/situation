@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { BundleData } from '../types';
+import { PaymentModal } from './PaymentModal';
 
 interface Props {
   bundles: BundleData[];
@@ -13,8 +14,6 @@ interface MenuItem {
   category: string;
   desc: string;
 }
-
-const DEFAULT_CATEGORIES = ['전체', '식사', '안주', '주류', '음료'];
 
 export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
   const [activeCategory, setActiveCategory] = useState('전체');
@@ -77,6 +76,25 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
     return Array.from(menuMap.values());
   }, [bundles]);
 
+  const dynamicCategories = useMemo(() => {
+    const cats = new Set<string>();
+    menuItems.forEach(item => {
+      if (item.category) cats.add(item.category);
+    });
+    
+    const priority = ['식사', '주메뉴', '메인메뉴', '세트', '안주', '주류', '음료', '사이드', '기타'];
+    const sortedCats = Array.from(cats).sort((a, b) => {
+        const indexA = priority.indexOf(a);
+        const indexB = priority.indexOf(b);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        return a.localeCompare(b);
+    });
+
+    return ['전체', ...sortedCats];
+  }, [menuItems]);
+
   const filteredItems = useMemo(() => {
     if (activeCategory === '전체') return menuItems;
     return menuItems.filter(item => item.category === activeCategory);
@@ -102,8 +120,8 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
       return { ...item, qty };
     });
 
-  const handleSubmit = async (isCall: boolean = false) => {
-    if (!isCall && !selectedMethod && showPayModal) {
+  const handleSubmit = async (method: string | null = null, isCall: boolean = false) => {
+    if (!isCall && !method && showPayModal) {
       alert("결제 수단을 선택해 주세요!");
       return;
     }
@@ -121,7 +139,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
           tableNo,
           orderNo: isCall ? 'CALL' : Math.floor(Math.random() * 900 + 100).toString(),
           items: orderItems,
-          payment: isCall ? 'CALL' : selectedMethod
+          payment: isCall ? 'CALL' : method
         }),
       });
       setIsOrdered(true);
@@ -162,7 +180,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
         <>
           <div className="category-chips-wrapper">
             <div className="category-chips">
-              {DEFAULT_CATEGORIES.map(cat => (
+              {dynamicCategories.map(cat => (
                 <div key={cat} className={`chip ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>{cat}</div>
               ))}
             </div>
@@ -244,7 +262,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
             ))}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '12px' }}>
-            <button onClick={() => setIsCartView(false)} style={{ padding: '15px', borderRadius: '15px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold' }}>+ 추가주문</button>
+            <button onClick={() => setIsCartView(false)} style={{ padding: '15px', borderRadius: '15px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '1.4rem' }}>+ 추가주문</button>
             <button onClick={() => setShowPayModal(true)} style={{ padding: '15px', borderRadius: '15px', background: 'var(--accent-orange)', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '1.1rem', boxShadow: '0 4px 15px rgba(249,115,22,0.3)' }}>✅ {totalPrice.toLocaleString()}원 주문하기</button>
           </div>
         </div>
@@ -268,50 +286,21 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
                 {totalPrice.toLocaleString()}원
              </div>
           </div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--accent-orange)', fontWeight: 'bold', marginTop: '4px', textAlign: 'center', opacity: 0.8 }}>
-             장바구니 확인 및 주문하기 👆
+          <div style={{ fontSize: '1.4rem', color: 'var(--accent-orange)', fontWeight: 'bold', marginTop: '8px', textAlign: 'center', opacity: 0.9, border: '2px solid var(--accent-orange)', borderRadius: '12px', padding: '10px', background: 'rgba(249, 115, 22, 0.1)' }}>
+             🛒 주 문
           </div>
         </div>
       )}
 
       {showPayModal && (
-        <div className="payment-modal-overlay animate-fade-in" style={{ zIndex: 2000 }}>
-          <div className="payment-modal animate-pop-in premium-scroll" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-            <header>
-              <h3>💳 결제 수단 선택</h3>
-              <button className="close-btn" onClick={() => setShowPayModal(false)}>×</button>
-            </header>
-
-            <div className="pay-section" style={{ marginBottom: '20px' }}>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '10px' }}>간편 결제</p>
-              <div className="method-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                {payMethods.pays.map(m => (
-                  <button key={m.id} className={`method-btn ${selectedMethod === m.id ? 'active' : ''}`} onClick={() => setSelectedMethod(m.id)} style={{ borderColor: selectedMethod === m.id ? m.color : 'rgba(255,255,255,0.1)', background: selectedMethod === m.id ? `${m.color}22` : 'rgba(255,255,255,0.05)', color: selectedMethod === m.id ? 'white' : 'var(--text-muted)', borderWidth: '2px' }}>{m.name}</button>
-                ))}
-              </div>
-            </div>
-
-            <div className="pay-section" style={{ marginBottom: '20px' }}>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '10px' }}>신용카드사 선택</p>
-              <div className="method-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                {payMethods.cards.map(m => (
-                  <button key={m.id} className={`method-btn ${selectedMethod === m.id ? 'active' : ''}`} onClick={() => setSelectedMethod(m.id)} style={{ fontSize: '0.85rem', padding: '10px 5px', borderColor: selectedMethod === m.id ? 'var(--accent-orange)' : 'rgba(255,255,255,0.1)', background: selectedMethod === m.id ? 'rgba(249, 115, 22, 0.1)' : 'rgba(255, 255, 255, 0.05)', color: selectedMethod === m.id ? 'white' : 'var(--text-muted)' }}>{m.name}</button>
-                ))}
-              </div>
-            </div>
-
-            <div className="pay-section" style={{ marginBottom: '20px' }}>
-               <button className={`method-btn ${selectedMethod === 'onsite' ? 'active' : ''}`} onClick={() => setSelectedMethod('onsite')} style={{ width: '100%', padding: '12px', borderColor: selectedMethod === 'onsite' ? 'var(--accent-orange)' : 'rgba(255,255,255,0.1)' }}>🏦 카운터에서 직접 결제 (현금/기타)</button>
-            </div>
-
-            <button className={`final-pay-btn ${selectedMethod ? 'ready' : ''}`} onClick={() => handleSubmit()} disabled={!selectedMethod} style={{ width: '100%', padding: '18px', borderRadius: '15px', background: selectedMethod ? 'var(--accent-orange)' : '#333', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '1.2rem' }}>
-              {selectedMethod ? `${totalPrice.toLocaleString()}원 결제하기` : '결제 수단을 선택해 주세요'}
-            </button>
-          </div>
-        </div>
+        <PaymentModal 
+          totalPrice={totalPrice}
+          onClose={() => setShowPayModal(false)}
+          onSubmit={(method) => handleSubmit(method, false)}
+        />
       )}
 
-      <button className="service-call-btn" onClick={() => handleSubmit(true)} style={{ position: 'fixed', bottom: totalItems > 0 && !isCartView ? '200px' : '30px', right: '20px', zIndex: 90, width: '60px', height: '60px', borderRadius: '50%', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', color: 'white', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>🔔</button>
+      <button className="service-call-btn" onClick={() => handleSubmit(null, true)} style={{ position: 'fixed', bottom: totalItems > 0 && !isCartView ? '200px' : '30px', right: '20px', zIndex: 90, width: '60px', height: '60px', borderRadius: '50%', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', color: 'white', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>🔔</button>
     </div>
   );
 };

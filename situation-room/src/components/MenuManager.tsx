@@ -134,6 +134,22 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
                             style={{ width: '35px', textAlign: 'center', fontSize: '1.2rem', padding: '0 !important' }}
                         />
 
+                        {/* 카테고리 입력 */}
+                        <input
+                            value={item.category ?? '식사'}
+                            onChange={(e) => handleChange(idx, 'category', e.target.value)}
+                            placeholder="카테고리"
+                            style={{ 
+                                padding: '4px 8px', 
+                                borderRadius: '8px', 
+                                background: 'rgba(255,255,255,0.05)', 
+                                color: 'white', 
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                fontSize: '0.9rem',
+                                width: '60px'
+                            }}
+                        />
+
                         {/* 2. 메뉴명 */}
                         <input 
                             className="name-field"
@@ -153,26 +169,6 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
                             />
                             <span style={{ fontSize: '0.8rem', color: 'var(--accent-orange)', fontWeight: 'bold' }}>원</span>
                         </div>
-
-                        {/* 카테고리 선택 */}
-                        <select
-                            value={item.category || '식사'}
-                            onChange={(e) => handleChange(idx, 'category', e.target.value)}
-                            style={{ 
-                                padding: '4px 8px', 
-                                borderRadius: '8px', 
-                                background: 'rgba(255,255,255,0.05)', 
-                                color: 'white', 
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                fontSize: '0.9rem'
-                            }}
-                        >
-                            <option value="식사" style={{ background: '#1e293b', color: 'white' }}>식사</option>
-                            <option value="안주" style={{ background: '#1e293b', color: 'white' }}>안주</option>
-                            <option value="주류" style={{ background: '#1e293b', color: 'white' }}>주류</option>
-                            <option value="음료" style={{ background: '#1e293b', color: 'white' }}>음료</option>
-                            <option value="기타" style={{ background: '#1e293b', color: 'white' }}>기타</option>
-                        </select>
 
                         {/* 4. 삭제 버튼 */}
                         <button 
