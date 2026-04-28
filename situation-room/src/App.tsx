@@ -11,6 +11,7 @@ import { QRManager } from './components/QRManager';
 import { PaperViewer } from './components/PaperViewer';
 import { LogicInventory } from './components/LogicInventory';
 import { ConversationalUI } from './components/ConversationalUI';
+import { ReceiptModal } from './components/ReceiptModal';
 import { useSituation } from './hooks/useSituation';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
@@ -22,6 +23,15 @@ function App() {
   const [activeTab, setActiveTab] = useState<MainTab>('guide');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // 영수증 데이터 상태
+  const [receiptData, setReceiptData] = useState<{
+    orderId: string;
+    totalPrice: number;
+    paymentMethod: string;
+    items: { name: string; value: string }[];
+    receiptUrl?: string;
+  } | null>(null);
 
   // 매장 정보에서 상호명 추출 (방어 코드 추가)
   const safeBundles = Array.isArray(bundles) ? bundles : [];
@@ -57,7 +67,8 @@ function App() {
     const isFail = params.get('payment_fail') === 'true';
     const paymentKey = params.get('paymentKey');
     const orderId = params.get('order_id') || params.get('orderId');
-    const amount = params.get('amount');
+    const amount = Number(params.get('amount') || 0);
+    const methodType = params.get('method') === '가상계좌' ? '계좌이체' : '신용카드';
 
     if (isSuccess && orderId) {
       const confirmPayment = async () => {
@@ -70,7 +81,18 @@ function App() {
           });
           const result = await res.json();
           if (result.status === 'success') {
-            alert("✅ 결제가 성공적으로 완료되었습니다!");
+            // 영수증에 보여줄 아이템 찾기
+            const targetBundle = safeBundles.find(b => b.order_code === orderId || b.id === orderId);
+            const items = targetBundle?.items.filter(i => i.name !== '결제수단' && i.name !== '테이블') || [];
+            
+            setReceiptData({
+              orderId,
+              totalPrice: amount,
+              paymentMethod: methodType,
+              items: items,
+              receiptUrl: `https://dashboard.tosspayments.com/receipt/${paymentKey}` // 데모용 링크
+            });
+
             window.history.replaceState({}, document.title, window.location.pathname);
           }
         } catch (err) {
@@ -82,7 +104,7 @@ function App() {
       alert("❌ 결제에 실패하였습니다. 다시 시도해 주세요.");
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, []);
+  }, [safeBundles]); // bundles가 로드된 후 아이템을 찾을 수 있도록 의존성 추가
 
   const formatDateTime = (date: Date) => {
     const y = date.getFullYear();
@@ -167,6 +189,14 @@ function App() {
 
   return (
     <div className={`saas-container mobile-full-mode ${isCustomerMode ? 'customer-mode' : ''}`}>
+      {/* 🧾 영수증 모달 */}
+      {receiptData && (
+        <ReceiptModal 
+          {...receiptData} 
+          onClose={() => setReceiptData(null)} 
+        />
+      )}
+
       {/* 🎙️ 음성 인식 오버레이 */}
       {isListening && (
         <div className="voice-overlay animate-fade-in" style={{

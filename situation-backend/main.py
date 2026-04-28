@@ -427,6 +427,29 @@ async def clear_orders():
     """주문 내역만 초기화"""
     global knowledge_pool
     knowledge_pool = [b for b in knowledge_pool if b.type != "Orders"]
+    save_pool()
+    await manager.broadcast({"type": "POOL_UPDATED"})
+    return {"status": "success"}
+
+# 포인트 관리 (데모용 메모리 DB)
+points_db = {}
+
+@app.get("/api/points/{phone}")
+async def get_points(phone: str):
+    return {"points": points_db.get(phone, 0)}
+
+@app.post("/api/points/update")
+async def update_points(request: dict):
+    phone = request.get("phone")
+    add_points = request.get("addPoints", 0)
+    use_points = request.get("usePoints", 0)
+    
+    current = points_db.get(phone, 0)
+    new_total = current + add_points - use_points
+    points_db[phone] = max(0, new_total)
+    
+    return {"status": "success", "newPoints": points_db[phone]}
+
     
     # Supabase 삭제
     conn = get_db_conn()
