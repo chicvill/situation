@@ -167,11 +167,11 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
                                 fontSize: '0.9rem'
                             }}
                         >
-                            <option value="식사">식사</option>
-                            <option value="안주">안주</option>
-                            <option value="주류">주류</option>
-                            <option value="음료">음료</option>
-                            <option value="기타">기타</option>
+                            <option value="식사" style={{ background: '#1e293b', color: 'white' }}>식사</option>
+                            <option value="안주" style={{ background: '#1e293b', color: 'white' }}>안주</option>
+                            <option value="주류" style={{ background: '#1e293b', color: 'white' }}>주류</option>
+                            <option value="음료" style={{ background: '#1e293b', color: 'white' }}>음료</option>
+                            <option value="기타" style={{ background: '#1e293b', color: 'white' }}>기타</option>
                         </select>
 
                         {/* 4. 삭제 버튼 */}
