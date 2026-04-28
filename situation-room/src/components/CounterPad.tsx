@@ -10,14 +10,13 @@ interface CounterPadProps {
 
 export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
     const [selectedTableForPay, setSelectedTableForPay] = useState<string | null>(null);
-    const [localHiddenTables, setLocalHiddenTables] = useState<string[]>([]);
 
     const menus = bundles.filter(b => b.type === 'Menus').flatMap(b => b.items);
 
     const tableOrders = useMemo(() => {
         const groups: Record<string, BundleData[]> = {};
         bundles.forEach(b => {
-            if (b.type === 'Orders' && b.status !== 'archived' && b.status !== 'canceled' && !localHiddenTables.includes(b.table || '')) {
+            if (b.type === 'Orders' && b.status !== 'archived' && b.status !== 'canceled') {
                 let t = b.table || '';
                 if (!t) {
                     const titleMatch = b.title.match(/테이블\s*(\d+)/) || b.title.match(/Table\s*(\d+)/i);
@@ -30,7 +29,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
             }
         });
         return groups;
-    }, [bundles, localHiddenTables]);
+    }, [bundles]);
 
     const calculateTableTotal = (tableName: string) => {
         const orders = tableOrders[tableName] || [];
@@ -66,10 +65,6 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
                     payment: payment
                 })
             });
-
-            if (newStatus === 'archived') {
-                setLocalHiddenTables(prev => [...prev, tableName]);
-            }
         } catch (e) {
             alert('업데이트 오류!');
         }
@@ -121,11 +116,11 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
 
                         return (
                             <div key={tableKey} style={{ 
-                                background: hasReady ? 'rgba(249, 115, 22, 0.08)' : 'rgba(30, 41, 59, 0.5)', 
-                                border: hasReady ? '1px solid rgba(249, 115, 22, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)', 
-                                borderRadius: '18px', padding: '14px' 
+                                background: hasReady ? 'rgba(249, 115, 22, 0.12)' : 'rgba(59, 130, 246, 0.08)', 
+                                border: hasReady ? '1px solid rgba(249, 115, 22, 0.4)' : '1px solid rgba(59, 130, 246, 0.3)', 
+                                borderRadius: '18px', padding: '16px', marginBottom: '10px'
                             }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap' }}>
                                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
                                             <span style={{ fontSize: '1.4rem', fontWeight: '900', color: 'white' }}>
@@ -139,7 +134,11 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
                                                 }
                                             </span>
                                         </div>
-                                        {hasReady && <span style={{ fontSize: '0.8rem', background: '#f97316', color: 'white', padding: '3px 10px', borderRadius: '6px', fontWeight: 'bold', boxShadow: '0 2px 8px rgba(249,115,22,0.3)' }}>조리완료</span>}
+                                        {hasReady ? (
+                                            <span style={{ fontSize: '0.8rem', background: '#f97316', color: 'white', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 2px 8px rgba(249,115,22,0.3)' }}>✅ 조리완료</span>
+                                        ) : (
+                                            <span style={{ fontSize: '0.8rem', background: '#3b82f6', color: 'white', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 2px 8px rgba(59,130,246,0.3)' }}>🍳 조리중</span>
+                                        )}
                                     </div>
                                     
                                     <div style={{ display: 'flex', gap: '10px' }}>
@@ -187,9 +186,9 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
                                         </button>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ fontSize: '1.1rem', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60%' }}>🍱 {itemSummary}</div>
-                                    <div style={{ fontSize: '1.4rem', fontWeight: '900', color: hasReady ? 'white' : '#10b981' }}>{total.toLocaleString()}원</div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '12px' }}>
+                                    <div style={{ fontSize: '1.1rem', color: '#e2e8f0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '60%' }}>🍱 {itemSummary}</div>
+                                    <div style={{ fontSize: '1.4rem', fontWeight: '900', color: hasReady ? 'white' : '#60a5fa' }}>{total.toLocaleString()}원</div>
                                 </div>
                             </div>
                         );
