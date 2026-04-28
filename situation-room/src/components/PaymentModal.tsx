@@ -1,4 +1,5 @@
 import React from 'react';
+import type { BundleData } from '../types';
 
 interface PaymentModalProps {
   totalPrice: number;
@@ -8,12 +9,13 @@ interface PaymentModalProps {
   prepaidMethod?: string | null;
   tableNo?: string;
   orderNo?: string;
+  bundles?: BundleData[];
 }
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({ 
-  totalPrice: initialTotalPrice, onClose, onSubmit, isCounter, prepaidMethod, tableNo, orderNo 
+  totalPrice: initialTotalPrice, onClose, onSubmit, isCounter, prepaidMethod, tableNo, orderNo, bundles 
 }) => {
-  const [step, setStep] = React.useState<'select' | 'points' | 'transfer'>('select');
+  const [step, setStep] = React.useState<'select' | 'points' | 'transfer_select'>('select');
   const [selectedMethod, setSelectedMethod] = React.useState<string | null>(null);
   const [phoneForPoints, setPhoneForPoints] = React.useState('');
   const [existingPoints, setExistingPoints] = React.useState(0);
@@ -24,7 +26,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const potentialPoints = Math.floor(initialTotalPrice * 0.001); // 0.1% 적립
   const finalTotalPrice = initialTotalPrice - usePoints;
 
-  // 포인트 조회
+  // 매장 설정에서 은행 정보 추출 (안내용)
+  const storeBundle = bundles?.find(b => b.type === 'StoreConfig');
+  const bankInfo = storeBundle ? {
+    name: storeBundle.items.find(i => i.name === '은행명')?.value || '국민은행',
+    account: storeBundle.items.find(i => i.name === '계좌번호')?.value || '123-456789-01-012',
+    holder: storeBundle.items.find(i => i.name === '예금주')?.value || '시크앤프레시'
+  } : { name: '국민은행', account: '123-456789-01-012', holder: '시크앤프레시' };
+
   const handleCheckPoints = async () => {
     if (phoneForPoints.length < 10) return;
     try {
@@ -39,7 +48,31 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const handleMethodSelect = (method: string) => {
     setSelectedMethod(method);
-    setStep('points');
+    if (method === '계좌이체') {
+        setStep('transfer_select');
+    } else {
+        setStep('points');
+    }
+  };
+
+  const startTossPayment = async (type: '카드' | '계좌이체' | '가상계좌') => {
+    if (!(window as any).TossPayments) return;
+    
+    try {
+      const tossPayments = (window as any).TossPayments('test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq');
+      const orderId = orderNo || `ORD_${Date.now()}`;
+      
+      await tossPayments.requestPayment(type, {
+        amount: finalTotalPrice,
+        orderId: orderId,
+        orderName: `${tableNo ? 'Table ' + tableNo : '주문'} 결제`,
+        successUrl: `${window.location.origin}/?payment_success=true&order_id=${orderId}&amount=${finalTotalPrice}&method=${type === '카드' ? '카드' : '계좌이체'}`,
+        failUrl: `${window.location.origin}/?payment_fail=true`,
+      });
+    } catch (err) {
+      console.error("Toss Payment Error:", err);
+      alert("결제창을 여는 중 오류가 발생했습니다.");
+    }
   };
 
   const executePayment = async () => {
@@ -49,151 +82,148 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       earnedPoints: potentialPoints,
       usedPoints: usePoints,
       requestCashReceipt,
-      cashReceiptPhone: cashReceiptPhone || phoneForPoints // 포인트 번호와 동일할 확률이 높음
+      cashReceiptPhone: cashReceiptPhone || phoneForPoints
     };
 
-    // 토스페이먼츠 연동
-    if ((method === '카드/간편결제' || method === '계좌이체') && (window as any).TossPayments) {
-      try {
-        const tossPayments = (window as any).TossPayments('test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq');
-        const orderId = orderNo || `ORD_${Date.now()}`;
-        const tossType = method === '카드/간편결제' ? '카드' : '가상계좌';
-        
-        await tossPayments.requestPayment(tossType, {
-          amount: finalTotalPrice,
-          orderId: orderId,
-          orderName: `${tableNo ? 'Table ' + tableNo : '주문'} 결제`,
-          successUrl: `${window.location.origin}/?payment_success=true&order_id=${orderId}&method=${tossType}&amount=${finalTotalPrice}`,
-          failUrl: `${window.location.origin}/?payment_fail=true`,
-        });
-        return; 
-      } catch (err) {
-        console.error("Toss Payment Error:", err);
-        alert("결제창을 여는 중 오류가 발생했습니다.");
+    if (method === '카드/간편결제') {
+      await startTossPayment('카드');
+      return;
+    }
+
+    if (method === '계좌이체') {
+        // 실시간 계좌이체 호출 (이미지에서의 은행 선택은 토스 창에서 한 번 더 세밀하게 이루어짐)
+        await startTossPayment('계좌이체');
         return;
-      }
     }
 
     onSubmit(method, extraData);
   };
 
-  // 1. 선결제 완료 뷰
-  if (isCounter && prepaidMethod && prepaidMethod !== '현장결제' && prepaidMethod !== 'CALL') {
-    return (
-      <div className="payment-modal-overlay" style={{ zIndex: 4000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
-        <div className="payment-modal animate-pop-in" style={{ width: '450px', padding: '40px', background: '#1e293b', border: '2px solid #10b981', borderRadius: '30px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: '2rem', color: '#10b981', marginBottom: '20px' }}>✅ 선결제 완료</h2>
-          <p style={{ fontSize: '1.2rem', color: 'white', marginBottom: '30px' }}>결제수단: <strong>{prepaidMethod}</strong></p>
-          <button onClick={() => onSubmit(prepaidMethod!)} style={{ width: '100%', padding: '20px', background: '#10b981', color: 'white', border: 'none', borderRadius: '15px', fontSize: '1.4rem', fontWeight: 'bold' }}>확인</button>
-        </div>
+  const renderSelect = () => (
+    <div className="payment-modal animate-pop-in" style={{ width: '480px', background: 'linear-gradient(145deg, #1e293b, #0f172a)', borderRadius: '32px', padding: '32px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <h2 style={{ color: 'white', margin: 0 }}>결제 수단 선택</h2>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+      </header>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+        {[
+          { id: 'digital', name: '카드/간편결제', icon: '💳', desc: '신용카드, 삼성/애플페이, 토스페이', color: '#3b82f6' },
+          { id: 'transfer', name: '계좌이체', icon: '🏦', desc: '은행 선택 후 앱에서 바로 송금', color: '#8b5cf6' },
+          { id: 'cash', name: '현금결제', icon: '💵', desc: '매장 현장 결제', color: '#10b981' }
+        ].map(m => (
+          <button key={m.id} onClick={() => handleMethodSelect(m.name)} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.03)', textAlign: 'left', cursor: 'pointer', transition: '0.2s' }}>
+            <span style={{ fontSize: '2rem' }}>{m.icon}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'white' }}>{m.name}</div>
+              <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>{m.desc}</div>
+            </div>
+            <span style={{ color: 'rgba(255,255,255,0.2)' }}>❯</span>
+          </button>
+        ))}
       </div>
-    );
-  }
+      <div style={{ padding: '20px', borderRadius: '15px', background: 'rgba(255,255,255,0.05)', color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: '1.2rem' }}>
+        총 {initialTotalPrice.toLocaleString()}원 결제
+      </div>
+    </div>
+  );
 
-  // 2. 결제 수단 선택 뷰
-  if (step === 'select') {
-    const mainMethods = [
-      { id: 'digital', name: '카드/간편결제', icon: '💳', desc: '신용카드, 삼성/애플페이, 토스페이', color: '#3b82f6' },
-      { id: 'transfer', name: '계좌이체', icon: '🏦', desc: '가상계좌 발급 및 자동 입금 확인', color: '#8b5cf6' },
-      { id: 'cash', name: '현금결제', icon: '💵', desc: '매장 현장 결제', color: '#10b981' }
+  const renderTransferSelect = () => {
+    const banks = [
+        { name: '국민은행', logo: '🏦', id: 'kb' },
+        { name: '농협', logo: '🌾', id: 'nh' },
+        { name: '우리', logo: '🔵', id: 'woori' },
+        { name: '신한', logo: '🌀', id: 'shinhan' },
+        { name: '기업', logo: '💼', id: 'ibk' },
+        { name: '하나', logo: '🟢', id: 'hana' },
+        { name: '카카오', logo: '🟡', id: 'kakao' },
+        { name: '토스', logo: '🔵', id: 'toss' }
     ];
 
     return (
-      <div className="payment-modal-overlay" style={{ zIndex: 4000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="payment-modal animate-pop-in" style={{ width: '480px', background: 'linear-gradient(145deg, #1e293b, #0f172a)', borderRadius: '32px', padding: '32px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}>
-          <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
-            <h2 style={{ color: 'white', margin: 0 }}>결제 수단 선택</h2>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
-          </header>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-            {mainMethods.map(m => (
-              <button key={m.id} onClick={() => handleMethodSelect(m.name)} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.03)', textAlign: 'left', cursor: 'pointer', transition: '0.2s' }}>
-                <span style={{ fontSize: '2rem' }}>{m.icon}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'white' }}>{m.name}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>{m.desc}</div>
-                </div>
-                <span style={{ color: 'rgba(255,255,255,0.2)' }}>❯</span>
-              </button>
+      <div className="payment-modal animate-pop-in" style={{ width: '450px', background: '#fff', borderRadius: '40px', padding: '40px', color: '#1a1a1a', boxShadow: '0 30px 60px rgba(0,0,0,0.5)' }}>
+        <header style={{ textAlign: 'center', marginBottom: '30px' }}>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: '800', margin: '0 0 10px 0' }}>입금할 은행을 선택해주세요</h2>
+            <p style={{ color: '#888', margin: 0, fontWeight: '500' }}>주문 결제</p>
+        </header>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '30px' }}>
+            {banks.map(bank => (
+                <button 
+                    key={bank.id} 
+                    onClick={() => setStep('points')} // 은행 선택 후 포인트 적립 단계로
+                    style={{ 
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', 
+                        padding: '20px 10px', background: '#f8fafc', border: '1px solid #f1f5f9', 
+                        borderRadius: '24px', cursor: 'pointer', transition: '0.2s' 
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = '#f8fafc'}
+                >
+                    <span style={{ fontSize: '2.5rem' }}>{bank.logo}</span>
+                    <span style={{ fontSize: '0.95rem', fontWeight: '700', color: '#334155' }}>{bank.name}</span>
+                </button>
             ))}
-          </div>
-          <div style={{ padding: '20px', borderRadius: '15px', background: 'rgba(255,255,255,0.05)', color: 'white', textAlign: 'center', fontWeight: 'bold', fontSize: '1.2rem' }}>
-            총 {initialTotalPrice.toLocaleString()}원 결제
-          </div>
         </div>
+
+        <button onClick={() => setStep('select')} style={{ width: '100%', padding: '18px', background: '#f1f5f9', border: 'none', borderRadius: '20px', color: '#64748b', fontWeight: '800', fontSize: '1rem', cursor: 'pointer' }}>뒤로 가기</button>
       </div>
     );
-  }
+  };
 
-  // 3. 포인트 적립 및 최종 확인 뷰
-  return (
-    <div className="payment-modal-overlay" style={{ zIndex: 4000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
-      <div className="payment-modal animate-pop-in" style={{ width: '480px', background: '#1e293b', borderRadius: '30px', padding: '32px', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <h2 style={{ color: 'white', marginBottom: '24px', textAlign: 'center' }}>💰 포인트 적립 및 결제</h2>
-        
-        {/* 포인트 입력 영역 */}
-        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '24px', borderRadius: '20px', marginBottom: '20px' }}>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginBottom: '8px' }}>포인트 적립용 전화번호</p>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-            <input 
-              type="tel" 
-              placeholder="01012345678" 
-              value={phoneForPoints}
-              onChange={(e) => setPhoneForPoints(e.target.value)}
-              style={{ flex: 1, padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'white', fontSize: '1.1rem' }}
-            />
-            <button onClick={handleCheckPoints} style={{ padding: '0 20px', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>조회</button>
-          </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', color: 'white' }}>
-            <span>적립 예정: <strong style={{ color: 'var(--accent-orange)' }}>+{potentialPoints.toLocaleString()}P</strong></span>
-            <span>현재 포인트: <strong>{existingPoints.toLocaleString()}P</strong></span>
-          </div>
-
-          {/* 포인트 사용 버튼 (10000P 이상일 때만) */}
-          {existingPoints >= 10000 && (
-            <button 
-              onClick={() => setUsePoints(usePoints === 0 ? existingPoints : 0)}
-              style={{ width: '100%', marginTop: '15px', padding: '12px', background: usePoints > 0 ? 'var(--accent-orange)' : 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold' }}
-            >
-              {usePoints > 0 ? `사용 취소 (-${usePoints.toLocaleString()}원)` : `${existingPoints.toLocaleString()}P 전액 사용하기`}
-            </button>
-          )}
+  const renderPoints = () => (
+    <div className="payment-modal animate-pop-in" style={{ width: '480px', background: '#1e293b', borderRadius: '30px', padding: '32px', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <h2 style={{ color: 'white', marginBottom: '24px', textAlign: 'center' }}>💰 포인트 및 최종 확인</h2>
+      
+      {/* 계좌 정보 안내 (계좌이체일 때만 노출) */}
+      {selectedMethod === '계좌이체' && (
+        <div style={{ background: 'rgba(249, 115, 22, 0.1)', border: '1px solid var(--accent-orange)', padding: '20px', borderRadius: '20px', marginBottom: '20px' }}>
+            <div style={{ color: 'var(--accent-orange)', fontSize: '0.8rem', marginBottom: '5px', fontWeight: 'bold' }}>입금 받을 매장 계좌</div>
+            <div style={{ color: 'white', fontSize: '1.2rem', fontWeight: 'bold' }}>{bankInfo.name} {bankInfo.account}</div>
+            <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>예금주: {bankInfo.holder}</div>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', marginTop: '10px', margin: '10px 0 0 0' }}>※ 결제하기 클릭 시 고객님의 뱅킹 앱으로 연결됩니다.</p>
         </div>
+      )}
 
-        {/* 계좌이체/현금 시 현금영수증 옵션 */}
-        {(selectedMethod === '계좌이체' || selectedMethod === '현금결제') && (
-          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '15px', marginBottom: '20px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'white', cursor: 'pointer' }}>
-              <input type="checkbox" checked={requestCashReceipt} onChange={(e) => setRequestCashReceipt(e.target.checked)} style={{ width: '18px', height: '18px' }} />
-              <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>현금영수증 발행 신청</span>
-            </label>
-          </div>
-        )}
-
-        {/* 최종 결제 금액 요약 */}
-        <div style={{ borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '20px', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>
-            <span>주문 금액</span>
-            <span>{initialTotalPrice.toLocaleString()}원</span>
-          </div>
-          {usePoints > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--accent-orange)', marginBottom: '8px' }}>
-              <span>포인트 할인</span>
-              <span>-{usePoints.toLocaleString()}원</span>
-            </div>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: 'white', fontSize: '1.4rem', fontWeight: '900' }}>
-            <span>최종 결제액</span>
-            <span style={{ color: 'var(--accent-orange)' }}>{finalTotalPrice.toLocaleString()}원</span>
-          </div>
+      <div style={{ background: 'rgba(255,255,255,0.03)', padding: '24px', borderRadius: '20px', marginBottom: '20px' }}>
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginBottom: '8px' }}>포인트 적립용 전화번호</p>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+          <input type="tel" placeholder="01012345678" value={phoneForPoints} onChange={(e) => setPhoneForPoints(e.target.value)} style={{ flex: 1, padding: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', color: 'white', fontSize: '1.1rem' }} />
+          <button onClick={handleCheckPoints} style={{ padding: '0 20px', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>조회</button>
         </div>
-
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={() => setStep('select')} style={{ flex: 1, padding: '18px', background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '15px', fontWeight: 'bold' }}>뒤로</button>
-          <button onClick={executePayment} style={{ flex: 2, padding: '18px', background: 'var(--accent-orange)', color: 'white', border: 'none', borderRadius: '15px', fontSize: '1.2rem', fontWeight: 'bold', boxShadow: '0 10px 20px rgba(249,115,22,0.3)' }}>{finalTotalPrice.toLocaleString()}원 결제하기</button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', color: 'white' }}>
+          <span>적립 예정: <strong style={{ color: 'var(--accent-orange)' }}>+{potentialPoints.toLocaleString()}P</strong></span>
+          <span>현재 포인트: <strong>{existingPoints.toLocaleString()}P</strong></span>
         </div>
       </div>
+
+      {(selectedMethod === '계좌이체' || selectedMethod === '현금결제') && (
+        <div style={{ background: 'rgba(255,255,255,0.03)', padding: '20px', borderRadius: '15px', marginBottom: '20px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'white', cursor: 'pointer' }}>
+            <input type="checkbox" checked={requestCashReceipt} onChange={(e) => setRequestCashReceipt(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+            <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>현금영수증 발행 신청</span>
+          </label>
+        </div>
+      )}
+
+      <div style={{ borderTop: '1px dashed rgba(255,255,255,0.1)', paddingTop: '20px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', color: 'white', fontSize: '1.4rem', fontWeight: '900' }}>
+          <span>최종 결제액</span>
+          <span style={{ color: 'var(--accent-orange)' }}>{finalTotalPrice.toLocaleString()}원</span>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <button onClick={() => setStep(selectedMethod === '계좌이체' ? 'transfer_select' : 'select')} style={{ flex: 1, padding: '18px', background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '15px', fontWeight: 'bold' }}>뒤로</button>
+        <button onClick={executePayment} style={{ flex: 2, padding: '18px', background: 'var(--accent-orange)', color: 'white', border: 'none', borderRadius: '15px', fontSize: '1.2rem', fontWeight: 'bold' }}>{finalTotalPrice.toLocaleString()}원 결제하기</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="payment-modal-overlay" style={{ zIndex: 4000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
+      {step === 'select' && renderSelect()}
+      {step === 'transfer_select' && renderTransferSelect()}
+      {step === 'points' && renderPoints()}
     </div>
   );
 };

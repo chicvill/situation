@@ -297,7 +297,9 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
           totalPrice={totalPrice}
           onClose={() => setShowPayModal(false)}
           onSubmit={(method) => handleSubmit(method, false)}
+          bundles={bundles}
         />
+
       )}
 
       <button className="service-call-btn" onClick={() => handleSubmit(null, true)} style={{ position: 'fixed', bottom: totalItems > 0 && !isCartView ? '200px' : '30px', right: '20px', zIndex: 90, width: '60px', height: '60px', borderRadius: '50%', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', color: 'white', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>🔔</button>

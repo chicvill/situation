@@ -9,7 +9,7 @@ interface StoreManagerProps {
 
 export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate }) => {
   const [storeData, setStoreData] = useState<any>({
-    brand: '', regNo: '', address: '', owner: '', bundleId: null
+    brand: '', regNo: '', address: '', owner: '', bankName: '', accountNo: '', accountHolder: '', bundleId: null
   });
 
   useEffect(() => {
@@ -21,6 +21,9 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
         regNo:    findValue(['사업자', '번호', 'reg']),
         address:  findValue(['주소', '위치', 'address']),
         owner:    findValue(['대표', '이름', 'owner', '점주']),
+        bankName: findValue(['은행']),
+        accountNo: findValue(['계좌', '번호']),
+        accountHolder: findValue(['예금주']),
         bundleId: storeBundle.id
       });
     }
@@ -33,7 +36,11 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
       { name: '사업자번호', value: activeData.regNo },
       { name: '주소',       value: activeData.address },
       { name: '대표자',     value: activeData.owner },
+      { name: '은행명',     value: activeData.bankName },
+      { name: '계좌번호',   value: activeData.accountNo },
+      { name: '예금주',     value: activeData.accountHolder },
     ].filter(i => i.value);
+
 
     const bundleId = activeData.bundleId || 'store-1';
 
@@ -155,6 +162,38 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
               placeholder="성함 입력" 
             />
           </div>
+
+          <div style={{ marginTop: '30px', padding: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: '15px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+            <h3 style={{ color: 'var(--accent-orange)', marginBottom: '15px', fontSize: '1.1rem' }}>🏦 입금 계좌 설정 (계좌이체용)</h3>
+            <div className="admin-form-group">
+                <label className="admin-form-label">은행명</label>
+                <input 
+                    className="admin-form-input"
+                    value={storeData.bankName} 
+                    onChange={(e) => handleChange('bankName', e.target.value)} 
+                    placeholder="예: 국민은행" 
+                />
+            </div>
+            <div className="admin-form-group">
+                <label className="admin-form-label">계좌번호</label>
+                <input 
+                    className="admin-form-input"
+                    value={storeData.accountNo} 
+                    onChange={(e) => handleChange('accountNo', e.target.value)} 
+                    placeholder="하이픈(-) 포함 입력" 
+                />
+            </div>
+            <div className="admin-form-group">
+                <label className="admin-form-label">예금주</label>
+                <input 
+                    className="admin-form-input"
+                    value={storeData.accountHolder} 
+                    onChange={(e) => handleChange('accountHolder', e.target.value)} 
+                    placeholder="예금주명 입력" 
+                />
+            </div>
+          </div>
+
           <button className="premium-btn success-green" onClick={() => handleSave()} style={{ width: '100%', marginTop: '20px' }}>
             💾 저장 및 적용
           </button>
