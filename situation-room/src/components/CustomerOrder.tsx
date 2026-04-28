@@ -111,8 +111,8 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
       : cartList.map(item => ({ name: item.name || 'Unknown', value: `x${item.qty}` }));
 
     try {
-      const serverIp = window.location.hostname;
-      await fetch(`http://${serverIp}:8000/api/order/direct`, {
+      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      await fetch(`${apiUrl}/api/order/direct`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

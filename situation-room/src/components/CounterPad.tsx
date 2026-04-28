@@ -55,8 +55,8 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
         }
 
         try {
-            const serverIp = window.location.hostname;
-            await fetch(`http://${serverIp}:8000/api/order/update-status`, {
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            await fetch(`${apiUrl}/api/order/update-status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 

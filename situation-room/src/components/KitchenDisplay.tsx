@@ -26,8 +26,8 @@ export const KitchenDisplay: React.FC = () => {
 
     const markAsDone = async (bundleId: string) => {
         try {
-            const serverIp = window.location.hostname;
-            const res = await fetch(`http://${serverIp}:8000/api/order/update-status`, {
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const res = await fetch(`${apiUrl}/api/order/update-status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 

@@ -1,10 +1,13 @@
 import React from 'react';
 
 export const AdminDashboard: React.FC<{ bundles: any[] }> = ({ bundles }) => {
-    const orderCount = bundles.filter(b => b.type === 'Orders').length;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+
+    const orderCount = bundles.filter(b => b.type === 'Orders' && b.status !== 'archived').length;
     const employeeCount = bundles.filter(b => b.type === 'Employee').length;
     const todaySales = bundles
-        .filter(b => b.type === 'Orders')
+        .filter(b => b.type === 'Orders' && b.timestamp.startsWith(todayStr))
         .reduce((acc, b) => {
             const orderTotal = b.items.reduce((sum: number, item: any) => {
                 // Find matching menu in knowledge pool to get its price
