@@ -56,7 +56,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
   const menuItems = useMemo(() => {
     const menuMap = new Map<string, MenuItem>();
     [...bundles].reverse().filter(b => b.type === 'Menus').forEach((bundle) => {
-      bundle.items.forEach((item, idx) => {
+      bundle.items.forEach((item: any, idx) => {
         const priceNum = parseInt(item.value.replace(/[^0-9]/g, '')) || 0;
         const emojiMatch = item.name.match(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/);
         const nameClean = item.name.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/, '').trim();
@@ -65,9 +65,9 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
               id: `${bundle.id}-${idx}`,
               name: nameClean,
               price: priceNum,
-              emoji: emojiMatch ? emojiMatch[0] : '🍽️',
-              category: '식사', 
-              desc: 'MQnet AI가 등록한 메뉴입니다.'
+              emoji: item.icon || (emojiMatch ? emojiMatch[0] : '🍽️'),
+              category: item.category || '식사', 
+              desc: item.description || 'MQnet AI가 등록한 메뉴입니다.'
             });
         }
       });

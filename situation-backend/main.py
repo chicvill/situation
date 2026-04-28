@@ -60,6 +60,9 @@ manager = ConnectionManager()
 class BundleItem(BaseModel):
     name: str
     value: str
+    icon: Optional[str] = None
+    category: Optional[str] = None
+    description: Optional[str] = None
 
 class BundleData(BaseModel):
     id: str

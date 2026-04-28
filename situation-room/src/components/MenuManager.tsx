@@ -75,7 +75,13 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    items: menuItems.map(item => ({ name: item.name, value: item.value })),
+                    items: menuItems.map(item => ({ 
+                        name: item.name, 
+                        value: item.value, 
+                        icon: item.icon, 
+                        category: item.category, 
+                        description: item.description 
+                    })),
                     type: 'Menus',
                     title: '메뉴 정보'
                 }),
@@ -147,6 +153,26 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
                             />
                             <span style={{ fontSize: '0.8rem', color: 'var(--accent-orange)', fontWeight: 'bold' }}>원</span>
                         </div>
+
+                        {/* 카테고리 선택 */}
+                        <select
+                            value={item.category || '식사'}
+                            onChange={(e) => handleChange(idx, 'category', e.target.value)}
+                            style={{ 
+                                padding: '4px 8px', 
+                                borderRadius: '8px', 
+                                background: 'rgba(255,255,255,0.05)', 
+                                color: 'white', 
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                fontSize: '0.9rem'
+                            }}
+                        >
+                            <option value="식사">식사</option>
+                            <option value="안주">안주</option>
+                            <option value="주류">주류</option>
+                            <option value="음료">음료</option>
+                            <option value="기타">기타</option>
+                        </select>
 
                         {/* 4. 삭제 버튼 */}
                         <button 
