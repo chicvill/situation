@@ -46,7 +46,41 @@ function App() {
     } else if (mode === 'counter') {
       setActiveTab('counter');
     } else if (mode === 'waiting') {
-      setActiveTab('qr'); // 웨이팅은 QR 관리에서 확인 (또는 전용 탭)
+      setActiveTab('qr');
+    }
+  }, []);
+
+  // 토스페이먼츠 결과 처리
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isSuccess = params.get('payment_success') === 'true';
+    const isFail = params.get('payment_fail') === 'true';
+    const paymentKey = params.get('paymentKey');
+    const orderId = params.get('order_id') || params.get('orderId');
+    const amount = params.get('amount');
+
+    if (isSuccess && orderId) {
+      const confirmPayment = async () => {
+        try {
+          const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+          const res = await fetch(`${apiUrl}/api/payment/confirm`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentKey, orderId, amount })
+          });
+          const result = await res.json();
+          if (result.status === 'success') {
+            alert("✅ 결제가 성공적으로 완료되었습니다!");
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch (err) {
+          console.error("Payment Confirmation Error:", err);
+        }
+      };
+      confirmPayment();
+    } else if (isFail) {
+      alert("❌ 결제에 실패하였습니다. 다시 시도해 주세요.");
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 

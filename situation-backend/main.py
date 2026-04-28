@@ -343,6 +343,32 @@ async def update_order_status(request: dict):
         await manager.broadcast({"type": "STATUS_UPDATED", "status": new_status, "ids": updated_ids})
     return {"status": "success", "updatedCount": len(updated_ids)}
 
+@app.post("/api/payment/confirm")
+async def confirm_payment(request: dict):
+    """토스페이먼츠 결제 승인 샌드박스 (데모용)"""
+    payment_key = request.get("paymentKey")
+    order_id = request.get("orderId")
+    amount = request.get("amount")
+    
+    # 실제 환경에서는 여기서 토스 API 호출 (Secret Key 필요)
+    # 지금은 데모이므로 성공으로 간주하고 상태 업데이트
+    
+    target_bundle = None
+    for b in knowledge_pool:
+        if b.order_code == order_id or b.id == order_id:
+            b.status = "archived"
+            b.payment = "카드(토스)"
+            target_bundle = b
+            break
+            
+    if target_bundle:
+        save_pool()
+        await manager.broadcast({"type": "STATUS_UPDATED", "status": "archived", "ids": [target_bundle.id]})
+        return {"status": "success", "orderId": order_id}
+        
+    return {"status": "error", "message": "Order not found"}
+
+
 @app.get("/api/pool")
 async def get_pool():
     return [b.model_dump() for b in knowledge_pool]
