@@ -22,6 +22,8 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
   const [isCartView, setIsCartView] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isOrdered, setIsOrdered] = useState(false);
+  const [userPhone, setUserPhone] = useState('');
+
 
   const tableNo = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
@@ -298,7 +300,10 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
           onClose={() => setShowPayModal(false)}
           onSubmit={(method) => handleSubmit(method, false)}
           bundles={bundles}
+          initialPhone={userPhone}
+          onPhoneChange={setUserPhone}
         />
+
 
       )}
 
