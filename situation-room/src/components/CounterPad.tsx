@@ -12,7 +12,8 @@ interface CounterPadProps {
 export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
     const [selectedTableForPay, setSelectedTableForPay] = useState<string | null>(null);
 
-    const checkinRequests = bundles.filter(b => (b.type as string) === 'Checkins' && b.status === 'pending');
+    const safeBundles = Array.isArray(bundles) ? bundles : [];
+    const checkinRequests = safeBundles.filter(b => (b.type as string) === 'Checkins' && b.status === 'pending');
 
     const handleApproveCheckin = async (checkinId: string) => {
         try {
@@ -54,7 +55,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
             const safeItems = Array.isArray(order.items) ? order.items : [];
             return acc + safeItems.reduce((sum, item) => {
                 const menuNameClean = item.name.replace(/x\d+$/, '').trim();
-                const menu = menus.find(m => m.name.includes(menuNameClean) || menuNameClean.includes(m.name));
+                const menu = menus.find((m: any) => m.name.includes(menuNameClean) || menuNameClean.includes(m.name));
                 const price = menu ? parseInt(menu.value.replace(/[^0-9]/g, '')) : 10000;
                 const qtyMatch = item.value.match(/\d+/);
                 const qty = qtyMatch ? parseInt(qtyMatch[0]) : 1;
