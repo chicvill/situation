@@ -21,11 +21,18 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 app = FastAPI()
 
 # ── 프론트엔드 정적 파일 서빙 설정 ──────────────────────
-FRONT_DIST = os.path.join(os.path.dirname(__file__), "..", "situation-room", "dist")
+# Docker: /app/situation-room/dist  |  로컬: ../situation-room/dist
+_base = os.path.dirname(os.path.abspath(__file__))
+FRONT_DIST = os.path.join(_base, "..", "situation-room", "dist")
+if not os.path.exists(FRONT_DIST):
+    # Docker 환경에서 /app이 루트인 경우
+    FRONT_DIST = os.path.join("/app", "situation-room", "dist")
 
-@app.get("/", response_class=HTMLResponse)
-async def root():
+@app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse)
+async def root(request: Request):
     """React 앱의 index.html 서빙"""
+    if request.method == "HEAD":
+        return HTMLResponse(content="", status_code=200)
     index_path = os.path.join(FRONT_DIST, "index.html")
     if os.path.exists(index_path):
         with open(index_path, "r", encoding="utf-8") as f:
