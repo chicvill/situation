@@ -194,11 +194,30 @@ def load_pool():
             cur.execute("SELECT id, type, title, timestamp, items, status, order_code, store, \"table\", package, payment, device_id FROM knowledge_bundles")
             rows = cur.fetchall()
             if rows:
-                allowed_keys = BundleData.model_fields.keys()
                 knowledge_pool = []
                 for row in rows:
-                    filtered_row = {k: v for k, v in row.items() if k in allowed_keys}
-                    knowledge_pool.append(BundleData(**filtered_row))
+                    # items 필드가 문자열인 경우 객체로 변환
+                    items_data = row['items']
+                    if isinstance(items_data, str):
+                        items_data = json.loads(items_data)
+                    
+                    # Package 필드 대소문자 대응
+                    pkg = row.get('package') or row.get('Package') or "매장"
+
+                    knowledge_pool.append(BundleData(
+                        id=row['id'],
+                        type=row['type'],
+                        title=row['title'],
+                        timestamp=row['timestamp'],
+                        items=[BundleItem(**i) for i in items_data],
+                        status=row.get('status'),
+                        order_code=row.get('order_code'),
+                        store=row.get('store'),
+                        table=row.get('table'),
+                        Package=pkg,
+                        payment=row.get('payment'),
+                        device_id=row.get('device_id')
+                    ))
                 print(f"✅ Supabase에서 {len(knowledge_pool)}개의 번들을 로드했습니다.")
                 loaded_from_db = True
             cur.close()
@@ -222,6 +241,11 @@ def load_pool():
         knowledge_pool = []
 
 load_pool()
+
+@app.get("/api/pool")
+async def get_pool():
+    """지식 풀 전체 반환"""
+    return knowledge_pool
 
 # --- 번들 업데이트 (StoreManager 및 메뉴 설정용) ---
 
