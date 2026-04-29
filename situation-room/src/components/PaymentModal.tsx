@@ -88,8 +88,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       const client = toss('test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq');
       const orderId   = orderNo || `ORD_${Date.now()}`;
       const orderName = `${tableNo ? 'Table ' + tableNo : '주문'} 결제`;
-      // Toss test mode only accepts localhost URLs
-      const baseUrl = `http://localhost:${window.location.port || '5173'}`;
+      // Use current origin - works for both localhost and production domain
+      const baseUrl = window.location.origin;
       try {
         await client.requestPayment(method.id === 'card' ? '카드' : '계좌이체', {
           amount:    finalTotal,
