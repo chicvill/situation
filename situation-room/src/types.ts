@@ -1,5 +1,5 @@
 export type ViewMode = 'admin' | 'kitchen' | 'customer' | 'display' | 'store' | 'hr' | 'menu' | 'stats' | 'counter' | 'waiting' | 'qr';
-export type BundleType = 'Menus' | 'PersonalInfos' | 'Orders' | 'Log' | 'Analysis' | 'StoreConfig' | 'Employee' | 'Attendance' | 'Waiting';
+export type BundleType = 'Menus' | 'PersonalInfos' | 'Orders' | 'Log' | 'Analysis' | 'StoreConfig' | 'Employee' | 'Attendance' | 'Waiting' | 'Checkins';
 
 export interface BundleItem {
   name: string;
@@ -12,10 +12,11 @@ export interface BundleData {
   title: string;
   items: BundleItem[];
   timestamp: string;
-  status?: 'pending' | 'cooking' | 'ready' | 'served' | 'archived' | 'canceled';
+  status?: 'pending' | 'cooking' | 'ready' | 'served' | 'archived' | 'canceled' | 'paid' | 'approved';
   order_code?: string;
   table?: string;
   payment?: string;
+  device_id?: string;
 }
 
 export interface Message {

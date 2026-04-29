@@ -12,7 +12,7 @@ interface CounterPadProps {
 export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
     const [selectedTableForPay, setSelectedTableForPay] = useState<string | null>(null);
 
-    const checkinRequests = bundles.filter(b => b.type === 'Checkins' && b.status === 'pending');
+    const checkinRequests = bundles.filter(b => (b.type as string) === 'Checkins' && b.status === 'pending');
 
     const handleApproveCheckin = async (checkinId: string) => {
         try {
@@ -27,12 +27,12 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
         }
     };
 
-    const menus = bundles.filter(b => b.type === 'Menus').flatMap(b => b.items);
+    const menus = bundles.filter(b => (b.type as string) === 'Menus').flatMap(b => b.items);
 
     const tableOrders = useMemo(() => {
         const groups: Record<string, BundleData[]> = {};
         bundles.forEach(b => {
-            if (b.type === 'Orders' && b.status !== 'archived' && b.status !== 'canceled') {
+            if ((b.type as string) === 'Orders' && b.status !== 'archived' && b.status !== 'canceled') {
                 let t = b.table || '';
                 if (!t) {
                     const titleMatch = b.title.match(/테이블\s*(\d+)/) || b.title.match(/Table\s*(\d+)/i);

@@ -29,6 +29,20 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
     return params.get('table') || '3';
   }, []);
 
+  const deviceId = useMemo(() => {
+    let id = localStorage.getItem('mqnet_device_id');
+    if (!id) {
+      id = 'DEV_' + Math.random().toString(36).substring(2, 11).toUpperCase();
+      localStorage.setItem('mqnet_device_id', id);
+    }
+    return id;
+  }, []);
+
+  const storeName = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('store') || 'Unknown';
+  }, []);
+
   // 체크인 승인 상태 관리
   const isApproved = useMemo(() => {
     return bundles.some(b => 
@@ -128,20 +142,6 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
       const item = menuItems.find(m => m.id === id);
       return { ...item!, qty };
     });
-
-  const deviceId = useMemo(() => {
-    let id = localStorage.getItem('mqnet_device_id');
-    if (!id) {
-      id = 'DEV_' + Math.random().toString(36).substring(2, 11).toUpperCase();
-      localStorage.setItem('mqnet_device_id', id);
-    }
-    return id;
-  }, []);
-
-  const storeName = useMemo(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('store') || 'Unknown';
-  }, []);
 
   const handleSubmit = async (method: string | null = null, isCall: boolean = false) => {
     if (!isCall && !method && showPayModal) {
