@@ -44,7 +44,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
     const menuBundle = bundles.find(b => b.type === 'Menus');
     
     if (menuBundle) {
-      menuBundle.items.forEach((item: any, idx: number) => {
+      menuBundle.items.forEach((item: any) => {
         const priceNum = parseInt(item.value.replace(/[^0-9]/g, '')) || 0;
         const emojiMatch = item.name.match(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/);
         const nameClean = item.name.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/, '').trim();
