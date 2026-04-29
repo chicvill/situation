@@ -58,6 +58,11 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
                 description: 'AI 스캔으로 등록된 메뉴입니다.'
             }));
 
+            if (newItems.length === 0) {
+                alert("⚠️ 이미지에서 메뉴 정보를 추출하지 못했습니다. 선명한 사진으로 다시 시도해 주세요.");
+                return;
+            }
+
             if (overwrite) {
                 setMenuItems(newItems);
             } else {
@@ -66,11 +71,19 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
         },
     });
 
+    const [isSaving, setIsSaving] = useState(false);
+
     const handleSave = async () => {
+        if (menuItems.length === 0) {
+            alert("⚠️ 저장할 메뉴가 없습니다. 메뉴를 추가하거나 사진을 스캔해 주세요.");
+            return;
+        }
+
         const idToUse = bundleId || `MENUS_${Date.now()}`;
+        setIsSaving(true);
         
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
             const response = await fetch(`${apiUrl}/api/bundle/${idToUse}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -88,6 +101,7 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
             });
 
             if (response.ok) {
+                alert("✅ 메뉴 정보가 성공적으로 저장되었습니다.");
                 if (onUpdate) onUpdate(menuItems);
             } else {
                 throw new Error('저장 실패');
@@ -95,6 +109,8 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
         } catch (err) {
             console.error("Save error:", err);
             alert("❌ 저장 중 오류가 발생했습니다. 서버 연결을 확인하세요.");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -117,10 +133,18 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
                         className="premium-btn-sm" 
                         style={{ padding: '6px 12px', fontSize: '0.8rem', background: 'var(--accent-orange)' }}
                         onClick={startScanFlow}
+                        disabled={isSaving}
                     >
                         📸 사진 스캔
                     </button>
-                    <button onClick={handleSave} className="premium-btn-sm" style={{ background: '#10b981', padding: '6px 12px', fontSize: '0.8rem' }}>💾 저장</button>
+                    <button 
+                        onClick={handleSave} 
+                        className="premium-btn-sm" 
+                        style={{ background: isSaving ? '#64748b' : '#10b981', padding: '6px 12px', fontSize: '0.8rem', cursor: isSaving ? 'not-allowed' : 'pointer' }}
+                        disabled={isSaving}
+                    >
+                        {isSaving ? '⏳ 저장 중...' : '💾 저장'}
+                    </button>
                 </div>
             </header>
 
