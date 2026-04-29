@@ -128,7 +128,7 @@ GOALS = {
     }
 }
 
-def parse_situation_text(text: str) -> dict:
+def parse_situation_text(text: str, context: str = "") -> dict:
     time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     if not client:
@@ -141,22 +141,37 @@ def parse_situation_text(text: str) -> dict:
 
     goals_summary = "\n".join([f"- {k}: {v['description']} (필수: {', '.join(v['required'])})" for k, v in GOALS.items()])
 
+    # 화면 문맥에 따른 가이드 추가
+    context_guide = ""
+    if context == 'menu':
+        context_guide = "사용자는 현재 '메뉴 관리' 화면을 보고 있습니다. 입력된 텍스트는 메뉴 가격 수정, 품절 처리, 또는 신규 메뉴 추가에 관한 것일 확률이 매우 높습니다."
+    elif context == 'order':
+        context_guide = "사용자는 현재 '주문' 화면을 보고 있습니다. 입력된 텍스트는 특정 메뉴의 주문 생성이나 수량 변경일 확률이 높습니다."
+    elif context == 'settings':
+        context_guide = "사용자는 현재 '매장 설정' 화면을 보고 있습니다. 입력된 텍스트는 사업자 정보, 상호명, 전화번호 등 매장 정보 수정일 확률이 높습니다."
+    elif context == 'kitchen':
+        context_guide = "사용자는 현재 '주방' 화면을 보고 있습니다. 특정 주문의 조리 완료 처리나 상태 변경일 확률이 높습니다."
+
     prompt = f"""
 당신은 매장의 '상황 지능형 엔진'입니다. 
 사용자의 입력을 분석하여 '목표 처리 결과'를 얻는 데 필요한 **핵심 정보만 필터링**하여 JSON으로 변환하세요.
 
 현재 시간: {time_str}
+현재 화면 상황: {context if context else '알 수 없음'}
+{context_guide}
+
 입력된 상황: "{text}"
 
 [분석 목표(Goals) 목록]
 {goals_summary}
 
 [지침]
-1. 위 목표 중 가장 적합한 하나를 선택하세요.
-2. 선택한 목표의 '필수 정보'를 포함하지 못하는 노이즈 정보는 과감히 삭제하세요.
-3. 'items'는 [{{"name": "...", "value": "..."}}] 형식으로 구성하며, 필드명은 위 필수/선택 항목의 키워드를 최대한 활용하세요.
-4. 'title'은 분석된 목표와 핵심 내용을 담은 짧은 제목으로 작성하세요.
-5. 결과는 오직 JSON 객체만 반환하세요.
+1. 사용자가 현재 화면({context})의 내용을 지칭하는 경우(예: 메뉴 이름만 말하거나 가격만 말하는 경우), 이를 해당 화면의 문맥에 맞게 해석하세요.
+2. 위 목표 중 가장 적합한 하나를 선택하세요.
+3. 선택한 목표의 '필수 정보'를 포함하지 못하는 노이즈 정보는 과감히 삭제하세요.
+4. 'items'는 [{{"name": "...", "value": "..."}}] 형식으로 구성하며, 필드명은 위 필수/선택 항목의 키워드를 최대한 활용하세요.
+5. 'title'은 분석된 목표와 핵심 내용을 담은 짧은 제목으로 작성하세요.
+6. 결과는 오직 JSON 객체만 반환하세요.
 """
 
     print(f"\n[DEBUG] >>> AI 분석 시작: '{text[:20]}...'")

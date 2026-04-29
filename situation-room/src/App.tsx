@@ -149,12 +149,13 @@ function App() {
 
     recognition.onstart = () => {
       setIsListening(true);
-      navigateTo('guide'); // 비서 화면으로 이동
+      // navigateTo('guide'); // 화면 이동 제거: 현재 화면 유지
     };
 
     recognition.onresult = (event: any) => {
       const speechToText = event.results[0][0].transcript;
-      handleSendMessage(speechToText);
+      // 현재 어떤 화면인지(activeTab) 정보를 함께 전달하여 문맥 파악 도움
+      handleSendMessage(speechToText, undefined, activeTab);
     };
 
     recognition.onerror = () => {

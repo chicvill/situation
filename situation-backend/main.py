@@ -297,8 +297,9 @@ async def analyze_image(
 @app.post("/api/situation")
 async def process_situation(request: dict):
     text = request.get("text", "")
+    context = request.get("context", "") # 현재 화면 정보 (예: 'menu', 'order')
     try:
-        analysis_result = parse_situation_text(text)
+        analysis_result = parse_situation_text(text, context)
         new_bundle = BundleData(
             id=f"SIT_{uuid.uuid4().hex[:8].upper()}",
             type=analysis_result.get("type", "Log"),
