@@ -237,7 +237,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
               <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '15px', marginBottom: '10px', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <div>
                   <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{item.name}</div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{(item.price * item.qty).toLocaleString()}원</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{((item.price ?? 0) * item.qty).toLocaleString()}원</div>
                 </div>
                 <div className="qty-pill" style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', padding: '5px 12px', borderRadius: '50px' }}>
                   <button onClick={() => updateQty(item.id!, -1)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.2rem' }}>-</button>
