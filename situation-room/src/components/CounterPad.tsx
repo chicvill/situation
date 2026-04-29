@@ -27,18 +27,18 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
         }
     };
 
-    const menus = bundles.filter(b => (b.type as string) === 'Menus').flatMap(b => b.items);
+    const menus = (bundles || []).filter(b => (b.type as string) === 'Menus').flatMap(b => b.items || []);
 
     const tableOrders = useMemo(() => {
         const groups: Record<string, BundleData[]> = {};
-        bundles.forEach(b => {
+        (bundles || []).forEach(b => {
             if ((b.type as string) === 'Orders' && b.status !== 'archived' && b.status !== 'canceled') {
                 let t = b.table || '';
                 if (!t) {
                     const titleMatch = b.title.match(/테이블\s*(\d+)/) || b.title.match(/Table\s*(\d+)/i);
                     if (titleMatch) t = titleMatch[1];
                 }
-                if (!t) t = b.items.find(i => i.name === '테이블')?.value || '기타';
+                if (!t) t = (b.items || []).find(i => i.name === '테이블')?.value || '기타';
 
                 if (!groups[t]) groups[t] = [];
                 groups[t].push(b);
@@ -50,7 +50,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
     const calculateTableTotal = (tableName: string) => {
         const orders = tableOrders[tableName] || [];
         return orders.reduce((acc, order) => {
-            return acc + order.items.reduce((sum, item) => {
+            return acc + (order.items || []).reduce((sum, item) => {
                 const menuNameClean = item.name.replace(/x\d+$/, '').trim();
                 const menu = menus.find(m => m.name.includes(menuNameClean) || menuNameClean.includes(m.name));
                 const price = menu ? parseInt(menu.value.replace(/[^0-9]/g, '')) : 10000;
@@ -61,7 +61,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
         }, 0);
     };
 
-    const handleStatusUpdate = async (tableName: string, newStatus: 'serving' | 'archived' | 'canceled', payment?: string) => {
+    const handleStatusUpdate = async (tableName: string, newStatus: 'serving' | 'archived' | 'canceled' | 'paid', payment?: string) => {
         const orders = tableOrders[tableName] || [];
         const orderIds = orders.map(o => o.id);
         
@@ -110,9 +110,9 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
             )}
             {/* 정산 모달 (Table 번호 및 Order No 표시) */}
             {selectedTableForPay && (() => {
-                const activeOrder = bundles.find(b => 
-                    b.type === 'Orders' && 
-                    (b.table === selectedTableForPay || b.items.some(i => i.name === '테이블' && i.value === selectedTableForPay)) &&
+                const activeOrder = (bundles || []).find(b => 
+                    (b.type as string) === 'Orders' && 
+                    (b.table === selectedTableForPay || (b.items || []).some(i => i.name === '테이블' && i.value === selectedTableForPay)) &&
                     b.status !== 'archived' && b.status !== 'canceled'
                 );
                 

@@ -45,7 +45,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
 
   // 체크인 승인 상태 관리
   const isApproved = useMemo(() => {
-    return bundles.some(b => 
+    return (bundles || []).some(b => 
       b.type === 'Checkins' && 
       b.table === tableNo && 
       b.device_id === deviceId && 
@@ -67,9 +67,9 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
 
   // 현재 테이블의 기존 주문 내역 실시간 필터링
   const myOrders = useMemo(() => {
-    return bundles.filter(b => 
+    return (bundles || []).filter(b => 
       b.type === 'Orders' && 
-      b.items.some(i => i.name === '테이블' && i.value === tableNo)
+      (b.items || []).some(i => i.name === '테이블' && i.value === tableNo)
     ).reverse();
   }, [bundles, tableNo]);
 
@@ -77,10 +77,10 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
 
   const menuItems = useMemo(() => {
     const menuMap = new Map<string, MenuItem>();
-    const menuBundle = bundles.find(b => b.type === 'Menus');
+    const menuBundle = (bundles || []).find(b => b.type === 'Menus');
     
     if (menuBundle) {
-      menuBundle.items.forEach((item: any) => {
+      (menuBundle.items || []).forEach((item: any) => {
         const priceNum = parseInt(item.value.replace(/[^0-9]/g, '')) || 0;
         const emojiMatch = item.name.match(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/);
         const nameClean = item.name.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/, '').trim();
