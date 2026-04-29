@@ -161,7 +161,7 @@ function App() {
       case 'paper': return <PaperViewer />;
       case 'home': return <AdminDashboard bundles={bundles} />;
       case 'inventory': return <LogicInventory />;
-      case 'hr': return <HRManager bundles={bundles} user={user} />;
+      case 'hr': return <HRManager bundles={bundles} user={user} storeName={storeName} />;
       default: return <ConversationalUI bundles={bundles} storeName={storeName} />;
     }
   };
