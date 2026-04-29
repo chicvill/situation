@@ -5,15 +5,16 @@ import { useImageScan, ScanningOverlay, ScanChoiceModal } from '../hooks/useImag
 interface StoreManagerProps {
   bundles: BundleData[];
   onNavigate: (mode: any, tab?: any) => void;
+  storeName: string;
 }
 
-export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate }) => {
+export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate, storeName }) => {
   const [storeData, setStoreData] = useState<any>({
     brand: '', regNo: '', address: '', owner: '', bankName: '', accountNo: '', accountHolder: '', bundleId: null
   });
 
   useEffect(() => {
-    const storeBundle = bundles.find(b => b.type === 'StoreConfig');
+    const storeBundle = bundles.find(b => b.type === 'StoreConfig' && (b.store === storeName || !b.store));
     if (storeBundle) {
       const findValue = (keys: string[]) => storeBundle.items.find((i: any) => keys.some(k => i.name.includes(k)))?.value || '';
       setStoreData({
@@ -49,7 +50,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
       const response = await fetch(`${apiUrl}/api/bundle/${bundleId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, type: 'StoreConfig', title: '매장 정보' }),
+        body: JSON.stringify({ items, type: 'StoreConfig', title: '매장 정보', store: storeName }),
       });
       if (response.ok) {
         alert('✅ 매장 정보가 성공적으로 저장되었습니다.');

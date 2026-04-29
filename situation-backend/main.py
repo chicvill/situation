@@ -251,21 +251,24 @@ async def get_pool():
 
 @app.put("/api/bundle/{bundle_id}")
 async def update_bundle(bundle_id: str, request: dict):
-    """지식 풀 내의 특정 번들을 업데이트 또는 신규 생성."""
+    """지식 풀 내의 특정 번들을 업데이트 또는 신규 생성 (매장별 분류 지원)."""
     items = [BundleItem(**i) for i in request.get("items", [])]
     b_type = request.get("type", "Log")
     title = request.get("title", "업데이트된 정보")
+    store_name = request.get("store")
+    device_id = request.get("deviceId")
     
-    # 1. 타입 기반 업데이트 (StoreConfig, Menus 등 유일성 보장)
-    if b_type in ["StoreConfig", "Menus"]:
+    # 1. 매장별 고유 타입 업데이트 (StoreConfig, Menus 등은 매장당 하나만 존재)
+    if b_type in ["StoreConfig", "Menus"] and store_name:
         for b in knowledge_pool:
-            if b.type == b_type:
+            if b.type == b_type and b.store == store_name:
                 b.items = items
                 b.title = title
                 b.timestamp = datetime.now().strftime("%Y.%m.%d.%H:%M:%S")
+                b.device_id = device_id
                 save_pool()
-                await manager.broadcast({"type": "POOL_UPDATED"})
-                return {"status": "success", "mode": "updated_by_type"}
+                await manager.broadcast({"type": "POOL_UPDATED", "store": store_name})
+                return {"status": "success", "mode": "updated_by_store_type"}
 
     # 2. ID 기반 업데이트
     found = False
@@ -274,6 +277,7 @@ async def update_bundle(bundle_id: str, request: dict):
             b.items = items
             b.type = b_type
             b.title = title
+            b.store = store_name or b.store
             b.timestamp = datetime.now().strftime("%Y.%m.%d.%H:%M:%S")
             found = True
             break
@@ -286,13 +290,13 @@ async def update_bundle(bundle_id: str, request: dict):
             title=title,
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             items=items,
-            store=request.get("store"),
-            device_id=request.get("deviceId")
+            store=store_name,
+            device_id=device_id
         )
         knowledge_pool.insert(0, new_bundle)
     
     save_pool()
-    await manager.broadcast({"type": "POOL_UPDATED"})
+    await manager.broadcast({"type": "POOL_UPDATED", "store": store_name})
     return {"status": "success"}
 
 # --- 프론트엔드 규격에 맞춘 이미지 분석 엔드포인트 ---

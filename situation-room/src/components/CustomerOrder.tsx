@@ -50,7 +50,8 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
       b.type === 'Checkins' && 
       b.table === tableNo && 
       b.device_id === deviceId && 
-      b.status === 'approved'
+      b.status === 'approved' &&
+      (b.store === storeName || !b.store)
     );
   }, [bundles, tableNo, deviceId]);
 
@@ -80,7 +81,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
   const menuItems = useMemo(() => {
     const menuMap = new Map<string, MenuItem>();
     const safeBundles = Array.isArray(bundles) ? bundles : [];
-    const menuBundle = safeBundles.find(b => b.type === 'Menus');
+    const menuBundle = safeBundles.find(b => b.type === 'Menus' && (b.store === storeName || !b.store));
     
     if (menuBundle) {
       (Array.isArray(menuBundle.items) ? menuBundle.items : []).forEach((item: any) => {

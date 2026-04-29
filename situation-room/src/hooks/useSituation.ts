@@ -90,7 +90,7 @@ export const useSituation = () => {
     }, []);
 
     // API Situation Handler
-    const handleSendMessage = useCallback(async (text: string, targetId?: string, context?: string) => {
+    const handleSendMessage = useCallback(async (text: string, targetId?: string, context?: string, storeName?: string) => {
         if (!targetId) {
             setMessages(prev => [...prev, { id: Date.now().toString(), text, sender: 'user', timestamp: new Date().toLocaleTimeString() }]);
         }
@@ -103,7 +103,7 @@ export const useSituation = () => {
             const response = await fetch(`${API_BASE}/api/situation`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text, targetId, context }),
+                body: JSON.stringify({ text, targetId, context, store: storeName }),
             });
             const result = await response.json();
 
