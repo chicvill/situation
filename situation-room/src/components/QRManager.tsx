@@ -9,8 +9,10 @@ export const QRManager: React.FC<Props> = ({ bundles }) => {
     const [wifiPass, setWifiPass] = useState('12345678');
     
     // 매장 정보 추출
-    const storeBundle = (bundles || []).find(b => b.type === 'StoreConfig');
-    const storeName = (storeBundle?.items || []).find((i: any) => i.name === '상호명' || i.name === 'brand')?.value || 'UnknownStore';
+    const safeBundles = Array.isArray(bundles) ? bundles : [];
+    const storeBundle = safeBundles.find(b => (b.type as string) === 'StoreConfig');
+    const safeItems = Array.isArray(storeBundle?.items) ? storeBundle!.items : [];
+    const storeName = safeItems.find((i: any) => i.name === '상호명' || i.name === 'brand')?.value || 'UnknownStore';
 
     const baseUrl = `https://situation.chicvill.store`;
 

@@ -27,18 +27,19 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
         }
     };
 
-    const menus = (bundles || []).filter(b => (b.type as string) === 'Menus').flatMap(b => b.items || []);
+    const menus = safeBundles.filter(b => (b.type as string) === 'Menus').flatMap(b => Array.isArray(b.items) ? b.items : []);
 
     const tableOrders = useMemo(() => {
         const groups: Record<string, BundleData[]> = {};
-        (bundles || []).forEach(b => {
+        const safeBundlesMemo = Array.isArray(bundles) ? bundles : [];
+        safeBundlesMemo.forEach(b => {
             if ((b.type as string) === 'Orders' && b.status !== 'archived' && b.status !== 'canceled') {
                 let t = b.table || '';
                 if (!t) {
                     const titleMatch = b.title.match(/테이블\s*(\d+)/) || b.title.match(/Table\s*(\d+)/i);
                     if (titleMatch) t = titleMatch[1];
                 }
-                if (!t) t = (b.items || []).find(i => i.name === '테이블')?.value || '기타';
+                if (!t) t = (Array.isArray(b.items) ? b.items : []).find(i => i.name === '테이블')?.value || '기타';
 
                 if (!groups[t]) groups[t] = [];
                 groups[t].push(b);
@@ -50,7 +51,8 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
     const calculateTableTotal = (tableName: string) => {
         const orders = tableOrders[tableName] || [];
         return orders.reduce((acc, order) => {
-            return acc + (order.items || []).reduce((sum, item) => {
+            const safeItems = Array.isArray(order.items) ? order.items : [];
+            return acc + safeItems.reduce((sum, item) => {
                 const menuNameClean = item.name.replace(/x\d+$/, '').trim();
                 const menu = menus.find(m => m.name.includes(menuNameClean) || menuNameClean.includes(m.name));
                 const price = menu ? parseInt(menu.value.replace(/[^0-9]/g, '')) : 10000;
