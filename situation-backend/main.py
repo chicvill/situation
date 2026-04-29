@@ -168,11 +168,12 @@ def save_pool():
                         store = EXCLUDED.store,
                         "table" = EXCLUDED.table,
                         package = EXCLUDED.package,
-                        payment = EXCLUDED.payment
+                        payment = EXCLUDED.payment,
+                        device_id = EXCLUDED.device_id
                 """, (
                     data['id'], data['type'], data['title'], data['timestamp'], 
                     json.dumps(data['items']), data.get('status'), data.get('order_code'),
-                    data.get('store'), data.get('table'), data.get('Package'), data.get('payment')
+                    data.get('store'), data.get('table'), data.get('Package'), data.get('payment'), data.get('device_id')
                 ))
             conn.commit()
             cur.close()
@@ -181,38 +182,32 @@ def save_pool():
             print(f"Supabase Save Error: {e}")
 
 def load_pool():
-    """Supabase에서 지식 풀 로드 (실패 시 로컬 파일 사용)"""
+    """지식 풀 로드: Supabase 우선, 없으면 로컬 파일 폴백"""
     global knowledge_pool
-    
+    loaded_from_db = False
+
     # 1. Supabase 시도
     conn = get_db_conn()
     if conn:
         try:
             cur = conn.cursor(cursor_factory=RealDictCursor)
-            cur.execute("SELECT * FROM knowledge_bundles ORDER BY timestamp DESC")
+            cur.execute("SELECT id, type, title, timestamp, items, status, order_code, store, \"table\", package, payment, device_id FROM knowledge_bundles")
             rows = cur.fetchall()
             if rows:
-                new_pool = []
                 allowed_keys = BundleData.model_fields.keys()
+                knowledge_pool = []
                 for row in rows:
-                    if 'package' in row:
-                        row['Package'] = row.pop('package')
-                    # BundleData 필드에 해당하는 것만 추출
                     filtered_row = {k: v for k, v in row.items() if k in allowed_keys}
-                    new_pool.append(BundleData(**filtered_row))
-                
-                knowledge_pool = new_pool
+                    knowledge_pool.append(BundleData(**filtered_row))
                 print(f"✅ Supabase에서 {len(knowledge_pool)}개의 번들을 로드했습니다.")
-                cur.close()
-                conn.close()
-                return
+                loaded_from_db = True
             cur.close()
             conn.close()
         except Exception as e:
             print(f"Supabase Load Error: {e}")
 
-    # 2. 로컬 파일 시도
-    if os.path.exists(POOL_FILE):
+    # 2. 로컬 파일 시도 (DB 데이터가 없거나 로드 실패한 경우)
+    if not loaded_from_db and os.path.exists(POOL_FILE):
         try:
             with open(POOL_FILE, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -221,7 +216,9 @@ def load_pool():
         except Exception as e:
             print(f"Local Load Error: {e}")
             knowledge_pool = []
-    else:
+    
+    # 데이터가 아예 없는 경우에만 빈 리스트 보장
+    if not globals().get('knowledge_pool'):
         knowledge_pool = []
 
 load_pool()
