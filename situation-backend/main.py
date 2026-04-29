@@ -78,6 +78,16 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+@app.websocket("/ws/kitchen")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            # 클라이언트로부터 메시지를 기다리거나 상태를 유지
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
 class BundleItem(BaseModel):
     name: str
     value: str
