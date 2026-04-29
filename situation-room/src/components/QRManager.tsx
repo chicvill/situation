@@ -4,7 +4,6 @@ export const QRManager: React.FC = () => {
     const [wifiSSID, setWifiSSID] = useState('MQnet_Wifi');
     const [wifiPass, setWifiPass] = useState('12345678');
     const [serverIp, setServerIp] = useState('192.168.219.106');
-    const host = window.location.host;
     const protocol = window.location.protocol;
     const port = window.location.port || '5173';
     

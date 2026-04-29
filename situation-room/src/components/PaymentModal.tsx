@@ -15,7 +15,7 @@ interface PaymentModalProps {
 }
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({ 
-  totalPrice: initialTotalPrice, onClose, onSubmit, tableNo, orderNo, bundles,
+  totalPrice: initialTotalPrice, onClose, tableNo, orderNo, bundles,
   initialPhone = '', onPhoneChange
 }) => {
   const [step, setStep] = React.useState<'widget' | 'points'>('widget');
@@ -24,7 +24,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [existingPoints, setExistingPoints] = React.useState(0);
   const [usePoints, setUsePoints] = React.useState(0);
   const [requestCashReceipt, setRequestCashReceipt] = React.useState(false);
-  const [cashReceiptPhone] = React.useState('');
+
 
   const potentialPoints = Math.floor(initialTotalPrice * 0.001); // 0.1% 적립
   const finalTotalPrice = initialTotalPrice - usePoints;
