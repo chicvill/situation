@@ -101,10 +101,10 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
   }, 0);
 
   const cartList = Object.entries(cart)
-    .filter(([_, qty]) => qty > 0)
+    .filter(([id, qty]) => qty > 0 && menuItems.some(m => m.id === id))
     .map(([id, qty]) => {
       const item = menuItems.find(m => m.id === id);
-      return { ...item, qty };
+      return { ...item!, qty };
     });
 
   const handleSubmit = async (method: string | null = null, isCall: boolean = false) => {

@@ -18,11 +18,14 @@ import './components/SideMenu.css';
 
 type MainTab = 'guide' | 'order' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper';
 
+// ── 전역 상태 및 레이아웃 안정화 ──────────────────────
 function App() {
   const { bundles, handleSendMessage } = useSituation();
   const [activeTab, setActiveTab] = useState<MainTab>('guide');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [recognizedText, setRecognizedText] = useState("");
+  const [isListening, setIsListening] = useState(false);
   
   // 영수증 데이터 상태
   const [receiptData, setReceiptData] = useState<{
@@ -131,10 +134,6 @@ function App() {
     { label: '메뉴', icon: '📔', tab: 'menu' },
     { label: '매장', icon: '🏠', tab: 'settings' }
   ];
-
-  const [recognizedText, setRecognizedText] = useState("");
-  const [isListening, setIsListening] = useState(false);
-
   // 음성 인식 설정
   const startVoiceRecognition = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
