@@ -12,9 +12,15 @@ export const useSituation = () => {
         try {
             const response = await fetch(`${API_BASE}/api/pool`);
             const data = await response.json();
-            setBundles(data);
+            if (Array.isArray(data)) {
+                setBundles(data);
+            } else {
+                console.error("Pool data is not an array:", data);
+                setBundles([]);
+            }
         } catch (err) {
             console.error("Initial fetch failed:", err);
+            setBundles([]);
         }
     }, []);
 
@@ -33,28 +39,39 @@ export const useSituation = () => {
                 const data = JSON.parse(event.data);
                 
                 // Handle Bundle Updates
-                if (data.id && ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting'].includes(data.type)) {
+                const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins'];
+                if (data.id && bundleTypes.includes(data.type)) {
                     setBundles(prev => {
-                        const index = prev.findIndex(b => b.id === data.id);
+                        const currentPrev = Array.isArray(prev) ? prev : [];
+                        const index = currentPrev.findIndex(b => b.id === data.id);
                         if (index !== -1) {
-                            const newBundles = [...prev];
+                            const newBundles = [...currentPrev];
                             newBundles[index] = data;
                             return newBundles;
                         }
-                        return [data, ...prev];
+                        return [data, ...currentPrev];
                     });
                 }
 
                 // Internal App Events
                 if (data.type === 'STATUS_UPDATED') {
-                    setBundles(prev => prev.map(b => 
-                        data.ids.includes(b.id) ? { ...b, status: data.status } : b
-                    ));
+                    setBundles(prev => {
+                        const currentPrev = Array.isArray(prev) ? prev : [];
+                        return currentPrev.map(b => 
+                            data.ids.includes(b.id) ? { ...b, status: data.status } : b
+                        );
+                    });
                 } else if (data.type === 'KITCHEN_DONE') {
-                    setBundles(prev => prev.map(b => b.id === data.bundleId ? { ...b, status: 'ready' } : b));
+                    setBundles(prev => {
+                        const currentPrev = Array.isArray(prev) ? prev : [];
+                        return currentPrev.map(b => b.id === data.bundleId ? { ...b, status: 'ready' } : b);
+                    });
                 } else if (data.type === 'POOL_CLEARED') {
                     const subject = data.subject;
-                    setBundles(prev => prev.filter(b => !b.items.some(i => i.value === subject)));
+                    setBundles(prev => {
+                        const currentPrev = Array.isArray(prev) ? prev : [];
+                        return currentPrev.filter(b => !(b.items || []).some(i => i.value === subject));
+                    });
                 } else if (data.type === 'POOL_UPDATED') {
                     console.log("Pool updated from server. Refreshing...");
                     fetchInitialData();
