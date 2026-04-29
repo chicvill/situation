@@ -20,7 +20,6 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
   const [cart, setCart] = useState<{ [key: string]: number }>({});
   const [showPayModal, setShowPayModal] = useState(false);
   const [isCartView, setIsCartView] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [isOrdered, setIsOrdered] = useState(false);
   const [userPhone, setUserPhone] = useState('');
 
@@ -38,21 +37,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
     ).reverse();
   }, [bundles, tableNo]);
 
-  const payMethods = {
-    pays: [
-      { id: 'kakao', name: '📱 카카오페이', color: '#fee500' },
-      { id: 'toss', name: '🔵 토스페이', color: '#0064ff' },
-      { id: 'naver', name: '🟢 네이버페이', color: '#03c75a' },
-      { id: 'zero', name: '⚪ 제로페이', color: '#1a1a1a' }
-    ],
-    cards: [
-      { id: 'samsung', name: '삼성카드' },
-      { id: 'hyundai', name: '현대카드' },
-      { id: 'shinhan', name: '신한카드' },
-      { id: 'kb', name: '국민카드' },
-      { id: 'bc', name: 'BC카드' }
-    ]
-  };
+
 
   const menuItems = useMemo(() => {
     const menuMap = new Map<string, MenuItem>();
@@ -147,7 +132,6 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
       setIsOrdered(true);
       setShowPayModal(false);
       setIsCartView(false);
-      setSelectedMethod(null);
       setTimeout(() => {
         setIsOrdered(false);
         setCart({});

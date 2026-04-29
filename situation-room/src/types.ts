@@ -15,6 +15,7 @@ export interface BundleData {
   status?: 'pending' | 'cooking' | 'ready' | 'served' | 'archived' | 'canceled';
   order_code?: string;
   table?: string;
+  payment?: string;
 }
 
 export interface Message {
