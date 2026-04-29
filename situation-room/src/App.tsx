@@ -145,35 +145,52 @@ function App() {
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'ko-KR';
-    recognition.interimResults = true; // 실시간 결과 확인
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
+    let finalTranscript = "";
+
     recognition.onstart = () => {
+      console.log("Voice recognition started");
       setIsListening(true);
       setRecognizedText("듣고 있습니다...");
     };
 
     recognition.onresult = (event: any) => {
-      const speechToText = event.results[0][0].transcript;
-      setRecognizedText(speechToText); // 인식된 텍스트 업데이트
-
-      if (event.results[0].isFinal) {
-        // 인식이 완료되면 잠시 보여준 후 전송
-        setTimeout(() => {
-          handleSendMessage(speechToText, undefined, activeTab);
-          setIsListening(false);
-          setRecognizedText("");
-        }, 1500);
+      let interimTranscript = "";
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
       }
+      
+      const currentText = finalTranscript || interimTranscript;
+      setRecognizedText(currentText);
+      console.log("Recognition result:", currentText);
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (event: any) => {
+      console.error("Voice recognition error", event.error);
       setIsListening(false);
       setRecognizedText("");
     };
 
     recognition.onend = () => {
-      // isFinal에서 처리하므로 여기서는 딜레이 없이 닫히지 않게 조절 가능
+      console.log("Voice recognition ended. Final text:", finalTranscript);
+      if (finalTranscript) {
+        // 인식이 완료된 경우: 텍스트를 잠시 보여주고 전송
+        setTimeout(() => {
+          handleSendMessage(finalTranscript, undefined, activeTab);
+          setIsListening(false);
+          setRecognizedText("");
+        }, 1500);
+      } else {
+        // 인식이 안 된 경우: 즉시 닫기
+        setIsListening(false);
+        setRecognizedText("");
+      }
     };
 
     recognition.start();
