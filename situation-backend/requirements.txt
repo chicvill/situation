@@ -36,7 +36,7 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 uritemplate==4.2.0
 urllib3==2.6.3
-uvicorn==0.44.0
+uvicorn>=0.29.0
 python-multipart==0.0.9
 psycopg2-binary==2.9.10
 openai>=1.0.0

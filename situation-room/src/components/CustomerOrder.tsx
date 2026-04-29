@@ -50,7 +50,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
         const nameClean = item.name.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/, '').trim();
         if (nameClean && !menuMap.has(nameClean)) {
             menuMap.set(nameClean, {
-              id: `${menuBundle.id}-${idx}`,
+              id: nameClean, // 이름 기반 ID로 변경 (안정성 확보)
               name: nameClean,
               price: priceNum,
               emoji: item.icon || (emojiMatch ? emojiMatch[0] : '🍽️'),
