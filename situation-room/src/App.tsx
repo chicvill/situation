@@ -132,6 +132,7 @@ function App() {
     { label: '매장', icon: '🏠', tab: 'settings' }
   ];
 
+  const [recognizedText, setRecognizedText] = useState("");
   const [isListening, setIsListening] = useState(false);
 
   // 음성 인식 설정
@@ -144,26 +145,35 @@ function App() {
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'ko-KR';
-    recognition.interimResults = false;
+    recognition.interimResults = true; // 실시간 결과 확인
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
       setIsListening(true);
-      // navigateTo('guide'); // 화면 이동 제거: 현재 화면 유지
+      setRecognizedText("듣고 있습니다...");
     };
 
     recognition.onresult = (event: any) => {
       const speechToText = event.results[0][0].transcript;
-      // 현재 어떤 화면인지(activeTab) 정보를 함께 전달하여 문맥 파악 도움
-      handleSendMessage(speechToText, undefined, activeTab);
+      setRecognizedText(speechToText); // 인식된 텍스트 업데이트
+
+      if (event.results[0].isFinal) {
+        // 인식이 완료되면 잠시 보여준 후 전송
+        setTimeout(() => {
+          handleSendMessage(speechToText, undefined, activeTab);
+          setIsListening(false);
+          setRecognizedText("");
+        }, 1500);
+      }
     };
 
     recognition.onerror = () => {
       setIsListening(false);
+      setRecognizedText("");
     };
 
     recognition.onend = () => {
-      setIsListening(false);
+      // isFinal에서 처리하므로 여기서는 딜레이 없이 닫히지 않게 조절 가능
     };
 
     recognition.start();
@@ -202,14 +212,16 @@ function App() {
       {isListening && (
         <div className="voice-overlay animate-fade-in" style={{
           position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-          background: 'rgba(15, 23, 42, 0.9)', zIndex: 99999,
+          background: 'rgba(15, 23, 42, 0.95)', zIndex: 99999,
           display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
-          backdropFilter: 'blur(10px)'
+          padding: '40px', textAlign: 'center', backdropFilter: 'blur(15px)'
         }}>
-          <div className="voice-wave" style={{ fontSize: '5rem', marginBottom: '20px' }}>🎙️</div>
-          <h2 style={{ color: 'white' }}>듣고 있습니다...</h2>
-          <p style={{ color: 'var(--accent-orange)' }}>원하시는 작업을 말씀해 주세요</p>
-          <div className="pulse-ring"></div>
+          <div className="voice-wave-premium" style={{ fontSize: '6rem', marginBottom: '30px' }}>🎙️</div>
+          <h2 style={{ color: 'white', fontSize: '2rem', marginBottom: '15px' }}>{recognizedText}</h2>
+          <p style={{ color: 'var(--accent-orange)', fontSize: '1.2rem', opacity: 0.8 }}>
+            {recognizedText === "듣고 있습니다..." ? "원하시는 작업을 말씀해 주세요" : "인식 완료! 잠시 후 처리됩니다."}
+          </p>
+          <div className="pulse-ring-premium"></div>
         </div>
       )}
 
