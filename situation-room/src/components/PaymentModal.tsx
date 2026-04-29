@@ -29,18 +29,27 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const potentialPoints = Math.floor(initialTotalPrice * 0.001); // 0.1% 적립
   const finalTotalPrice = initialTotalPrice - usePoints;
 
-  // Initialize Payment Widget
+  // Initialize Payment Widget with retry
   React.useEffect(() => {
-    if (!(window as any).loadPaymentWidget) return;
+    let timer: any;
+    const initWidget = () => {
+        if (!(window as any).loadPaymentWidget) {
+            timer = setTimeout(initWidget, 100);
+            return;
+        }
 
-    const clientKey = "test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq";
-    const customerKey = phoneForPoints || "ANONYMOUS"; // Use phone as customerKey if available
+        const clientKey = "test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq";
+        const customerKey = phoneForPoints || "ANONYMOUS";
 
-    (window as any).loadPaymentWidget(clientKey, customerKey).then((widget: any) => {
-        widget.renderPaymentMethods("#payment-method", { value: finalTotalPrice });
-        widget.renderAgreement("#agreement");
-        setPaymentWidget(widget);
-    });
+        (window as any).loadPaymentWidget(clientKey, customerKey).then((widget: any) => {
+            widget.renderPaymentMethods("#payment-method", { value: finalTotalPrice });
+            widget.renderAgreement("#agreement");
+            setPaymentWidget(widget);
+        });
+    };
+
+    initWidget();
+    return () => clearTimeout(timer);
   }, []);
 
   // Update amount when points change
@@ -76,6 +85,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   };
 
   const handleNextStep = () => {
+    if (!paymentWidget) {
+        alert("결제 시스템이 아직 준비되지 않았습니다. 잠시만 기다려 주세요.");
+        return;
+    }
     if (phoneForPoints.length >= 10) {
         handleCheckPoints(phoneForPoints);
     }
@@ -85,12 +98,24 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
 
   const executePayment = async () => {
-    if (!paymentWidget) return;
-
-    const orderId = orderNo || `ORD_${Date.now()}`;
-    const orderName = `${tableNo ? 'Table ' + tableNo : '주문'} 결제`;
-
     try {
+        if (!paymentWidget) {
+            alert("결제 시스템 로딩 중입니다. 잠시 후 다시 시도해 주세요.");
+            setStep('widget');
+            return;
+        }
+        
+        // Debug check for method selection
+        const selectedMethod = paymentWidget.getSelectedPaymentMethod();
+        if (!selectedMethod) {
+            alert("결제 수단을 선택해 주세요.");
+            setStep('widget');
+            return;
+        }
+
+        const orderId = orderNo || `ORD_${Date.now()}`;
+        const orderName = `${tableNo ? 'Table ' + tableNo : '주문'} 결제`;
+
         await paymentWidget.requestPayment({
             orderId: orderId,
             orderName: orderName,
@@ -100,6 +125,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         });
     } catch (err) {
         console.error("Payment Request Error:", err);
+        alert("결제창을 여는 중 오류가 발생했습니다: " + (err as any).message);
     }
   };
 
@@ -164,10 +190,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
       <div style={{ background: 'rgba(255,255,255,0.03)', padding: '24px', borderRadius: '20px', marginBottom: '20px' }}>
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginBottom: '8px' }}>포인트 적립 정보</p>
-        <div style={{ fontSize: '1.2rem', color: 'white', fontWeight: 'bold', marginBottom: '10px' }}>{phoneForPoints}</div>
+        <div style={{ fontSize: '1.2rem', color: 'white', fontWeight: 'bold', marginBottom: '10px' }}>
+          {phoneForPoints || <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 'normal' }}>비회원 (포인트 미적립)</span>}
+        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.95rem', color: 'white' }}>
-          <span>적립 예정: <strong style={{ color: 'var(--accent-orange)' }}>+{potentialPoints.toLocaleString()}P</strong></span>
-          <span>현재 포인트: <strong>{existingPoints.toLocaleString()}P</strong></span>
+          <span>적립 예정: <strong style={{ color: 'var(--accent-orange)' }}>{phoneForPoints ? `+${potentialPoints.toLocaleString()}P` : '0P'}</strong></span>
+          <span>현재 포인트: <strong>{phoneForPoints ? `${existingPoints.toLocaleString()}P` : '0P'}</strong></span>
         </div>
         {existingPoints >= 10000 && (
           <button onClick={() => setUsePoints(usePoints === 0 ? existingPoints : 0)} style={{ width: '100%', marginTop: '15px', padding: '12px', background: usePoints > 0 ? 'var(--accent-orange)' : 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold' }}>
@@ -201,8 +229,24 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   return (
     <div className="payment-modal-overlay" style={{ zIndex: 4000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)' }}>
-      {step === 'widget' && renderWidget()}
-      {step === 'points' && renderPoints()}
+      {/* Widget container - always in DOM, hide with opacity/off-screen to avoid SDK issues */}
+      <div style={{ 
+          opacity: step === 'widget' ? 1 : 0, 
+          pointerEvents: step === 'widget' ? 'auto' : 'none',
+          position: step === 'widget' ? 'relative' : 'absolute',
+          left: step === 'widget' ? '0' : '-9999px',
+          zIndex: step === 'widget' ? 1 : -1
+      }}>
+        {renderWidget()}
+      </div>
+
+      {/* Points container */}
+      <div style={{ 
+          display: step === 'points' ? 'block' : 'none',
+          zIndex: step === 'points' ? 2 : -1
+      }}>
+        {renderPoints()}
+      </div>
     </div>
   );
 };
