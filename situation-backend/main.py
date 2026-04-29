@@ -1,5 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, File, UploadFile, Query, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
 import uuid
@@ -18,8 +20,20 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 app = FastAPI()
 
-@app.get("/")
+# ── 프론트엔드 정적 파일 서빙 설정 ──────────────────────
+FRONT_DIST = os.path.join(os.path.dirname(__file__), "..", "situation-room", "dist")
+
+@app.get("/", response_class=HTMLResponse)
 async def root():
+    """React 앱의 index.html 서빙"""
+    index_path = os.path.join(FRONT_DIST, "index.html")
+    if os.path.exists(index_path):
+        with open(index_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse(content="<h1>Frontend not built yet.</h1><p>Run: npm run build in situation-room</p>", status_code=503)
+
+@app.get("/health")
+async def health():
     return {
         "status": "online",
         "message": "Knowledge Pool API is running successfully!",
@@ -481,3 +495,9 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+# ── SPA 라우팅 지원: React Router 경로를 index.html로 폴백 ──
+# API 라우트가 모두 등록된 후 마지막에 마운트해야 합니다
+if os.path.exists(FRONT_DIST):
+    # /assets 등 정적 자원 서빙
+    app.mount("/", StaticFiles(directory=FRONT_DIST, html=True), name="static")
