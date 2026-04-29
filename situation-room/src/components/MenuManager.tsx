@@ -19,6 +19,7 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
             setBundleId(menuBundle.id);
             setMenuItems(menuBundle.items.map(item => ({
                 ...item,
+                value: item.value.replace(/원/g, '').trim(), // '원' 중복 노출 방지를 위해 제거
                 icon: (item as any).icon || '🍴',
                 category: (item as any).category || '기타',
                 description: (item as any).description || '신선한 재료로 준비했습니다.'
@@ -50,13 +51,16 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
         onSuccess: (result, overwrite) => {
             // AI 엔진이 반환하는 다양한 필드명(menus, items) 및 가격 필드명(price, value) 대응
             const rawItems = result.menus || result.items || [];
-            const newItems = rawItems.map((i: any) => ({
-                name: i.name || '',
-                value: String(i.price || i.value || '0'),
-                icon: '🍴',
-                category: '추천',
-                description: 'AI 스캔으로 등록된 메뉴입니다.'
-            }));
+            const newItems = rawItems.map((i: any) => {
+                const rawValue = String(i.price || i.value || '0');
+                return {
+                    name: i.name || '',
+                    value: rawValue.replace(/원/g, '').trim(), // 스캔 시 '원' 제거
+                    icon: '🍴',
+                    category: '추천',
+                    description: 'AI 스캔으로 등록된 메뉴입니다.'
+                };
+            });
 
             if (newItems.length === 0) {
                 alert("⚠️ 이미지에서 메뉴 정보를 추출하지 못했습니다. 선명한 사진으로 다시 시도해 주세요.");
@@ -182,11 +186,10 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
                             placeholder="메뉴명"
                         />
 
-                        {/* 3. 가격 */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <input 
                                 className="value-field"
-                                value={item.value}
+                                value={item.value.replace(/원/g, '').trim()}
                                 onChange={(e) => handleChange(idx, 'value', e.target.value)}
                                 placeholder="0"
                                 style={{ width: '80px' }}
