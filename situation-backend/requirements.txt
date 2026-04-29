@@ -39,3 +39,4 @@ urllib3==2.6.3
 uvicorn==0.44.0
 python-multipart==0.0.9
 psycopg2-binary==2.9.10
+openai>=1.0.0
