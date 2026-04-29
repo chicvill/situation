@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { BundleData } from '../types';
 import { OrderRow } from './OrderRow';
+import { WS_BASE } from '../config';
 
 export const KitchenDisplay: React.FC = () => {
     const [bundles, setBundles] = useState<BundleData[]>([]);
@@ -19,8 +20,7 @@ export const KitchenDisplay: React.FC = () => {
 
     useEffect(() => {
         fetchPool();
-        const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
-        const ws = new WebSocket(`${wsUrl}/ws/kitchen`);
+        const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
         ws.onmessage = () => fetchPool();
         return () => ws.close();
     }, []);
