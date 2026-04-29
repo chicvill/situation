@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { BundleData } from '../types';
 import { PaymentModal } from './PaymentModal';
 
@@ -28,6 +28,28 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
     const params = new URLSearchParams(window.location.search);
     return params.get('table') || '3';
   }, []);
+
+  // 체크인 승인 상태 관리
+  const isApproved = useMemo(() => {
+    return bundles.some(b => 
+      b.type === 'Checkins' && 
+      b.table === tableNo && 
+      b.device_id === deviceId && 
+      b.status === 'approved'
+    );
+  }, [bundles, tableNo, deviceId]);
+
+  // 접속 시 체크인 요청
+  useEffect(() => {
+    if (!isApproved) {
+      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      fetch(`${apiUrl}/api/checkin/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableNo, deviceId, store: storeName })
+      }).catch(err => console.error("Checkin Request Error:", err));
+    }
+  }, [tableNo, deviceId, storeName, isApproved]);
 
   // 현재 테이블의 기존 주문 내역 실시간 필터링
   const myOrders = useMemo(() => {
@@ -107,6 +129,20 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
       return { ...item!, qty };
     });
 
+  const deviceId = useMemo(() => {
+    let id = localStorage.getItem('mqnet_device_id');
+    if (!id) {
+      id = 'DEV_' + Math.random().toString(36).substring(2, 11).toUpperCase();
+      localStorage.setItem('mqnet_device_id', id);
+    }
+    return id;
+  }, []);
+
+  const storeName = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('store') || 'Unknown';
+  }, []);
+
   const handleSubmit = async (method: string | null = null, isCall: boolean = false) => {
     if (!isCall && !method && showPayModal) {
       alert("결제 수단을 선택해 주세요!");
@@ -126,7 +162,9 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
           tableNo,
           orderNo: isCall ? 'CALL' : Math.floor(Math.random() * 900 + 100).toString(),
           items: orderItems,
-          payment: isCall ? 'CALL' : method
+          payment: isCall ? 'CALL' : method,
+          deviceId,
+          store: storeName
         }),
       });
       setIsOrdered(true);
@@ -140,6 +178,25 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
       alert(isCall ? "호출 실패!" : "주문 전송 실패!");
     }
   };
+
+  if (!isApproved) {
+    return (
+      <div className="mobile-app-container flex-center animate-fade-in" style={{ background: '#020617', padding: '20px' }}>
+        <div style={{ textAlign: 'center', width: '100%' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '20px' }}>⏳</div>
+          <h1 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '10px' }}>체크인 대기 중</h1>
+          <p style={{ color: '#94a3b8', fontSize: '1.1rem', lineHeight: '1.6' }}>
+            {storeName} 매장에 방문하신 것을 환영합니다!<br/>
+            현재 <strong>{tableNo}번 테이블</strong> 승인을 기다리고 있습니다.<br/>
+            직원이 확인 후 주문 기능을 열어드립니다.
+          </p>
+          <div className="loading-dots" style={{ marginTop: '30px' }}>
+             <span className="dot">.</span><span className="dot">.</span><span className="dot">.</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (isOrdered) {
     return (

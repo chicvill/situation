@@ -107,6 +107,7 @@ class BundleData(BaseModel):
     table: Optional[str] = None
     Package: Optional[str] = "매장"
     payment: Optional[str] = None
+    device_id: Optional[str] = None
 
 knowledge_pool: List[BundleData] = []
 
@@ -262,16 +263,22 @@ async def update_bundle(bundle_id: str, request: dict):
             
     if not found:
         # 해당 ID가 없으면 새로 생성
+        device_id = request.get("deviceId")
+        store_name = request.get("store", "Unknown")
+
         new_bundle = BundleData(
-            id=bundle_id,
-            type=b_type,
-            title=title,
-            timestamp=datetime.now().strftime("%Y.%m.%d.%H:%M:%S"),
-            items=items
+            id=str(uuid.uuid4()),
+            type="Orders",
+            title=f"테이블 {table_no} 주문",
+            timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            items=[BundleItem(name=i["name"], value=i["value"]) for i in items] + [BundleItem(name="테이블", value=table_no)],
+            status="ordered",
+            order_code=order_no,
+            store=store_name,
+            table=table_no,
+            payment=payment_method,
+            device_id=device_id
         )
-        knowledge_pool.insert(0, new_bundle)
-    
-    save_pool()
     await manager.broadcast({"type": "POOL_UPDATED"})
     return {"status": "success"}
 
@@ -329,17 +336,23 @@ async def process_situation(request: dict):
 async def process_direct_order(request: dict):
     table_no = str(request.get("tableNo", "포장"))
     items = [BundleItem(**item) for item in request.get("items", [])]
+    payment_method = request.get("payment", "현장결제")
+    device_id = request.get("deviceId")
+    store_name_req = request.get("store")
+    
     order_code = str(uuid.uuid4().hex[:4]).upper()
     
-    # 지식 풀에서 현재 상호명 검색
-    store_name = "미지정 매장"
-    for b in knowledge_pool:
-        if b.type == "StoreConfig":
-            for item in b.items:
-                if "상호" in item.name or "brand" in item.name:
-                    store_name = item.value
-                    break
-            break
+    # 지식 풀에서 상호명 검색 (요청에 없을 경우 대비)
+    store_name = store_name_req
+    if not store_name:
+        store_name = "미지정 매장"
+        for b in knowledge_pool:
+            if b.type == "StoreConfig":
+                for item in b.items:
+                    if "상호" in item.name or "brand" in item.name:
+                        store_name = item.value
+                        break
+                break
 
     new_bundle = BundleData(
         id=f"ORD_{uuid.uuid4().hex[:8].upper()}",
@@ -351,7 +364,9 @@ async def process_direct_order(request: dict):
         title=f"Table {table_no} Order",
         timestamp=datetime.now().strftime("%Y.%m.%d.%H:%M:%S"),
         items=items,
-        status="cooking"
+        status="cooking",
+        payment=payment_method,
+        device_id=device_id
     )
     knowledge_pool.insert(0, new_bundle)
     save_pool()
@@ -388,22 +403,57 @@ async def confirm_payment(request: dict):
     target_bundle = None
     for b in knowledge_pool:
         if b.order_code == order_id or b.id == order_id:
-            b.status = "archived"
+            b.status = "paid"
             b.payment = "카드(토스)"
             target_bundle = b
             break
             
     if target_bundle:
         save_pool()
-        await manager.broadcast({"type": "STATUS_UPDATED", "status": "archived", "ids": [target_bundle.id]})
+        await manager.broadcast({"type": "STATUS_UPDATED", "status": "paid", "ids": [target_bundle.id]})
         return {"status": "success", "orderId": order_id}
         
     return {"status": "error", "message": "Order not found"}
 
 
-@app.get("/api/pool")
-async def get_pool():
-    return [b.model_dump() for b in knowledge_pool]
+@app.post("/api/checkin/request")
+async def request_checkin(request: dict):
+    table_no = str(request.get("tableNo"))
+    device_id = request.get("deviceId")
+    store_name = request.get("store", "Unknown")
+    
+    # 이미 승인된 기기인지 확인
+    for b in knowledge_pool:
+        if b.type == "Checkins" and b.table == table_no and b.device_id == device_id and b.status == "approved":
+            return {"status": "approved", "message": "Already approved"}
+
+    new_checkin = BundleData(
+        id=f"CHK_{uuid.uuid4().hex[:8].upper()}",
+        type="Checkins",
+        title=f"Table {table_no} 체크인 요청",
+        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        items=[BundleItem(name="상태", value="대기중")],
+        status="pending",
+        table=table_no,
+        device_id=device_id,
+        store=store_name
+    )
+    knowledge_pool.insert(0, new_checkin)
+    save_pool()
+    await manager.broadcast({"type": "CHECKIN_REQUESTED", "table": table_no})
+    return {"status": "pending"}
+
+@app.post("/api/checkin/approve")
+async def approve_checkin(request: dict):
+    target_id = request.get("checkinId")
+    for b in knowledge_pool:
+        if b.id == target_id:
+            b.status = "approved"
+            b.items = [BundleItem(name="상태", value="승인됨")]
+            save_pool()
+            await manager.broadcast({"type": "CHECKIN_APPROVED", "checkinId": target_id, "table": b.table, "deviceId": b.device_id})
+            return {"status": "success"}
+    return {"status": "error", "message": "Checkin not found"}
 
 @app.get("/api/paper")
 async def get_paper():

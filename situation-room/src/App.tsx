@@ -206,7 +206,7 @@ function App() {
       case 'display': return <DisplayBoard bundles={bundles} />;
       case 'menu': return <MenuManager bundles={bundles} />;
       case 'settings': return <StoreManager bundles={bundles} onNavigate={navigateTo as any} />;
-      case 'qr': return <QRManager />;
+      case 'qr': return <QRManager bundles={bundles} />;
       case 'paper': return <PaperViewer />;
       case 'home': return <AdminDashboard bundles={bundles} />;
       case 'inventory': return <LogicInventory />;

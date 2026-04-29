@@ -12,6 +12,21 @@ interface CounterPadProps {
 export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
     const [selectedTableForPay, setSelectedTableForPay] = useState<string | null>(null);
 
+    const checkinRequests = bundles.filter(b => b.type === 'Checkins' && b.status === 'pending');
+
+    const handleApproveCheckin = async (checkinId: string) => {
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            await fetch(`${apiUrl}/api/checkin/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ checkinId })
+            });
+        } catch (e) {
+            alert('승인 처리 오류!');
+        }
+    };
+
     const menus = bundles.filter(b => b.type === 'Menus').flatMap(b => b.items);
 
     const tableOrders = useMemo(() => {
@@ -74,6 +89,25 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
 
     return (
         <div className="counter-pad-premium" style={{ padding: '0 2px' }}>
+            {/* 체크인 승인 섹션 */}
+            {checkinRequests.length > 0 && (
+                <div style={{ marginBottom: '20px', padding: '15px', background: 'rgba(249, 115, 22, 0.1)', border: '1px solid rgba(249, 115, 22, 0.3)', borderRadius: '20px' }}>
+                    <h3 style={{ margin: '0 0 10px 0', fontSize: '1rem', color: '#f97316' }}>🔔 새로운 체크인 요청 ({checkinRequests.length})</h3>
+                    <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '5px' }}>
+                        {checkinRequests.map(req => (
+                            <div key={req.id} style={{ flexShrink: 0, padding: '12px 20px', background: 'white', borderRadius: '15px', display: 'flex', alignItems: 'center', gap: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                                <span style={{ fontWeight: '900', color: '#1e293b' }}>Table {req.table}</span>
+                                <button 
+                                    onClick={() => handleApproveCheckin(req.id)}
+                                    style={{ background: '#f97316', color: 'white', border: 'none', padding: '6px 15px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                                >
+                                    승인하기
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
             {/* 정산 모달 (Table 번호 및 Order No 표시) */}
             {selectedTableForPay && (() => {
                 const activeOrder = bundles.find(b => 
@@ -112,6 +146,10 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
                 ) : (
                     Object.entries(tableOrders).map(([tableKey, orders]) => {
                         const hasReady = orders.some(o => o.status === 'ready');
+                        const isPaid = orders.every(o => o.status === 'paid');
+                        const deviceIds = Array.from(new Set(orders.map(o => o.device_id).filter(id => !!id)));
+                        const isMultiDevice = deviceIds.length > 1;
+
                         const itemSummary = orders.flatMap(o => o.items).map(i => `${i.name} ${i.value}`).join(', ');
                         const total = calculateTableTotal(tableKey);
 
@@ -126,29 +164,36 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
                                 totalPrice={total}
                                 hasReady={hasReady}
                                 statusBadge={
-                                    hasReady ? (
-                                        <span style={{ fontSize: '0.8rem', background: '#f97316', color: 'white', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 2px 8px rgba(249,115,22,0.3)' }}>✅ 조리완료</span>
-                                    ) : (
-                                        <span style={{ fontSize: '0.8rem', background: '#3b82f6', color: 'white', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 2px 8px rgba(59,130,246,0.3)' }}>🍳 조리중</span>
-                                    )
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+                                        {isPaid ? (
+                                            <span style={{ fontSize: '0.8rem', background: '#10b981', color: 'white', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 2px 8px rgba(16,185,129,0.3)' }}>💰 결제완료</span>
+                                        ) : hasReady ? (
+                                            <span style={{ fontSize: '0.8rem', background: '#f97316', color: 'white', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 2px 8px rgba(249,115,22,0.3)' }}>✅ 조리완료</span>
+                                        ) : (
+                                            <span style={{ fontSize: '0.8rem', background: '#3b82f6', color: 'white', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold', boxShadow: '0 2px 8px rgba(59,130,246,0.3)' }}>🍳 조리중</span>
+                                        )}
+                                        {isMultiDevice && (
+                                            <span style={{ fontSize: '0.7rem', background: '#ef4444', color: 'white', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold', animation: 'pulse 1.5s infinite' }}>⚠️ 다른기기 추가됨</span>
+                                        )}
+                                    </div>
                                 }
                                 actionButtons={
                                     <>
                                         <button 
-                                            onClick={() => handleStatusUpdate(tableKey, 'serving')}
+                                            onClick={() => handleStatusUpdate(tableKey, 'archived')}
                                             style={{ 
-                                                background: hasReady ? 'white' : 'rgba(255,255,255,0.1)', 
-                                                color: hasReady ? '#1e293b' : 'rgba(255,255,255,0.6)', 
+                                                background: (hasReady || isPaid) ? 'white' : 'rgba(255,255,255,0.1)', 
+                                                color: (hasReady || isPaid) ? '#1e293b' : 'rgba(255,255,255,0.6)', 
                                                 border: '1px solid rgba(255,255,255,0.2)', 
                                                 padding: '10px 22px', 
                                                 borderRadius: '14px', 
                                                 fontWeight: '900', 
                                                 fontSize: '1.1rem', 
                                                 cursor: 'pointer', 
-                                                boxShadow: hasReady ? '0 4px 15px rgba(255,255,255,0.2)' : 'none' 
+                                                boxShadow: (hasReady || isPaid) ? '0 4px 15px rgba(255,255,255,0.2)' : 'none' 
                                             }}
                                         >
-                                            서빙하기
+                                            {isPaid ? '정리하기' : '서빙완료'}
                                         </button>
                                         <button 
                                             onClick={() => {
@@ -169,21 +214,23 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
                                         >
                                             주문취소
                                         </button>
-                                        <button 
-                                            onClick={() => setSelectedTableForPay(tableKey)}
-                                            style={{ 
-                                                background: hasReady ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.2)', 
-                                                color: '#10b981', 
-                                                border: '1px solid #10b981', 
-                                                padding: '10px 22px', 
-                                                borderRadius: '14px', 
-                                                fontWeight: '900', 
-                                                fontSize: '1.1rem',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            {hasReady ? '결제(정산)' : '정산하기'}
-                                        </button>
+                                        {!isPaid && (
+                                            <button 
+                                                onClick={() => setSelectedTableForPay(tableKey)}
+                                                style={{ 
+                                                    background: hasReady ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.2)', 
+                                                    color: '#10b981', 
+                                                    border: '1px solid #10b981', 
+                                                    padding: '10px 22px', 
+                                                    borderRadius: '14px', 
+                                                    fontWeight: '900', 
+                                                    fontSize: '1.1rem',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                {hasReady ? '결제(정산)' : '정산하기'}
+                                            </button>
+                                        )}
                                     </>
                                 }
                             />
