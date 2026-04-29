@@ -230,27 +230,23 @@ load_pool()
 
 @app.put("/api/bundle/{bundle_id}")
 async def update_bundle(bundle_id: str, request: dict):
-    """지식 풀 내의 특정 번들을 업데이트. StoreConfig/Menus 타입은 하나만 유지하도록 강제."""
+    """지식 풀 내의 특정 번들을 업데이트 또는 신규 생성."""
     items = [BundleItem(**i) for i in request.get("items", [])]
     b_type = request.get("type", "Log")
     title = request.get("title", "업데이트된 정보")
     
-    # StoreConfig나 Menus는 시스템에 하나만 존재해야 하는 데이터임
+    # 1. 타입 기반 업데이트 (StoreConfig, Menus 등 유일성 보장)
     if b_type in ["StoreConfig", "Menus"]:
-        found_by_type = False
         for b in knowledge_pool:
             if b.type == b_type:
                 b.items = items
                 b.title = title
                 b.timestamp = datetime.now().strftime("%Y.%m.%d.%H:%M:%S")
-                found_by_type = True
-                break
-        if found_by_type:
-            save_pool()
-            await manager.broadcast({"type": "POOL_UPDATED"})
-            return {"status": "success", "mode": "updated_by_type"}
+                save_pool()
+                await manager.broadcast({"type": "POOL_UPDATED"})
+                return {"status": "success", "mode": "updated_by_type"}
 
-    # ID로 찾아서 업데이트
+    # 2. ID 기반 업데이트
     found = False
     for b in knowledge_pool:
         if b.id == bundle_id:
@@ -261,24 +257,20 @@ async def update_bundle(bundle_id: str, request: dict):
             found = True
             break
             
+    # 3. 신규 생성
     if not found:
-        # 해당 ID가 없으면 새로 생성
-        device_id = request.get("deviceId")
-        store_name = request.get("store", "Unknown")
-
         new_bundle = BundleData(
-            id=str(uuid.uuid4()),
-            type="Orders",
-            title=f"테이블 {table_no} 주문",
+            id=bundle_id if bundle_id and bundle_id != "null" else str(uuid.uuid4()),
+            type=b_type,
+            title=title,
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            items=[BundleItem(name=i["name"], value=i["value"]) for i in items] + [BundleItem(name="테이블", value=table_no)],
-            status="ordered",
-            order_code=order_no,
-            store=store_name,
-            table=table_no,
-            payment=payment_method,
-            device_id=device_id
+            items=items,
+            store=request.get("store"),
+            device_id=request.get("deviceId")
         )
+        knowledge_pool.insert(0, new_bundle)
+    
+    save_pool()
     await manager.broadcast({"type": "POOL_UPDATED"})
     return {"status": "success"}
 

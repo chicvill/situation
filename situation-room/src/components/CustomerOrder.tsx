@@ -182,25 +182,6 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
     }
   };
 
-  if (!isApproved) {
-    return (
-      <div className="mobile-app-container flex-center animate-fade-in" style={{ background: '#020617', padding: '20px' }}>
-        <div style={{ textAlign: 'center', width: '100%' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '20px' }}>⏳</div>
-          <h1 style={{ fontSize: '1.8rem', color: 'white', marginBottom: '10px' }}>체크인 대기 중</h1>
-          <p style={{ color: '#94a3b8', fontSize: '1.1rem', lineHeight: '1.6' }}>
-            {storeName} 매장에 방문하신 것을 환영합니다!<br/>
-            현재 <strong>{tableNo}번 테이블</strong> 승인을 기다리고 있습니다.<br/>
-            직원이 확인 후 주문 기능을 열어드립니다.
-          </p>
-          <div className="loading-dots" style={{ marginTop: '30px' }}>
-             <span className="dot">.</span><span className="dot">.</span><span className="dot">.</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (isOrdered) {
     return (
       <div className="mobile-app-container flex-center animate-fade-in">
@@ -215,6 +196,24 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
 
   return (
     <div className="mobile-app-container animate-fade-in">
+      {/* 승인 대기 안내 상단 바 */}
+      {!isApproved && (
+        <div style={{ 
+          background: 'rgba(249, 115, 22, 0.95)', 
+          color: 'white', 
+          padding: '10px', 
+          textAlign: 'center', 
+          fontSize: '0.9rem', 
+          fontWeight: 'bold',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000,
+          backdropFilter: 'blur(5px)',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.2)'
+        }}>
+          🔔 매장에서 확인 중입니다. 확인 후 주문이 가능합니다.
+        </div>
+      )}
       <header className="mobile-header">
         <div className="header-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 style={{ margin: 0 }}>MQ <span>Premium</span></h1>
@@ -309,7 +308,23 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '12px' }}>
             <button onClick={() => setIsCartView(false)} style={{ padding: '15px', borderRadius: '15px', background: 'rgba(255,255,255,0.05)', color: 'white', border: '1px solid rgba(255,255,255,0.1)', fontWeight: 'bold', fontSize: '1.4rem' }}>+ 추가주문</button>
-            <button onClick={() => setShowPayModal(true)} style={{ padding: '15px', borderRadius: '15px', background: 'var(--accent-orange)', color: 'white', border: 'none', fontWeight: 'bold', fontSize: '1.1rem', boxShadow: '0 4px 15px rgba(249,115,22,0.3)' }}>✅ {totalPrice.toLocaleString()}원 주문하기</button>
+            <button 
+                onClick={() => setShowPayModal(true)} 
+                disabled={!isApproved}
+                style={{ 
+                    padding: '15px', 
+                    borderRadius: '15px', 
+                    background: !isApproved ? '#475569' : 'var(--accent-orange)', 
+                    color: 'white', 
+                    border: 'none', 
+                    fontWeight: 'bold', 
+                    fontSize: '1.1rem', 
+                    boxShadow: !isApproved ? 'none' : '0 4px 15px rgba(249,115,22,0.3)',
+                    cursor: !isApproved ? 'not-allowed' : 'pointer'
+                }}
+            >
+                {!isApproved ? '⏳ 확인 대기 중' : `✅ ${totalPrice.toLocaleString()}원 주문하기`}
+            </button>
           </div>
         </div>
       )}
@@ -332,8 +347,19 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
                 {totalPrice.toLocaleString()}원
              </div>
           </div>
-          <div style={{ fontSize: '1.4rem', color: 'var(--accent-orange)', fontWeight: 'bold', marginTop: '8px', textAlign: 'center', opacity: 0.9, border: '2px solid var(--accent-orange)', borderRadius: '12px', padding: '10px', background: 'rgba(249, 115, 22, 0.1)' }}>
-             🛒 주 문
+          <div style={{ 
+            fontSize: '1.4rem', 
+            color: !isApproved ? '#94a3b8' : 'var(--accent-orange)', 
+            fontWeight: 'bold', 
+            marginTop: '8px', 
+            textAlign: 'center', 
+            opacity: 0.9, 
+            border: `2px solid ${!isApproved ? '#475569' : 'var(--accent-orange)'}`, 
+            borderRadius: '12px', 
+            padding: '10px', 
+            background: !isApproved ? 'rgba(71, 85, 105, 0.1)' : 'rgba(249, 115, 22, 0.1)' 
+          }}>
+             {isApproved ? '🛒 주 문' : '⏳ 확인 대기 중'}
           </div>
         </div>
       )}
@@ -351,7 +377,28 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
 
       )}
 
-      <button className="service-call-btn" onClick={() => handleSubmit(null, true)} style={{ position: 'fixed', bottom: totalItems > 0 && !isCartView ? '200px' : '30px', right: '20px', zIndex: 90, width: '60px', height: '60px', borderRadius: '50%', background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', color: 'white', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>🔔</button>
+      <button 
+        className="service-call-btn" 
+        onClick={() => handleSubmit(null, true)} 
+        disabled={!isApproved}
+        style={{ 
+            position: 'fixed', 
+            bottom: totalItems > 0 && !isCartView ? '200px' : '30px', 
+            right: '20px', 
+            zIndex: 90, 
+            width: '60px', 
+            height: '60px', 
+            borderRadius: '50%', 
+            background: !isApproved ? '#334155' : '#1e293b', 
+            border: '1px solid rgba(255,255,255,0.1)', 
+            color: !isApproved ? '#64748b' : 'white', 
+            boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+            opacity: !isApproved ? 0.6 : 1,
+            cursor: !isApproved ? 'not-allowed' : 'pointer'
+        }}
+      >
+        🔔
+      </button>
     </div>
   );
 };

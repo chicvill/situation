@@ -29,7 +29,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
     }
   }, [bundles]);
 
-  const handleSave = async (dataToSave?: any) => {
+    const handleSave = async (dataToSave?: any) => {
     const activeData = dataToSave || storeData;
     const items = [
       { name: '상호명',     value: activeData.brand },
@@ -45,30 +45,30 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
     const bundleId = activeData.bundleId || 'store-1';
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
       const response = await fetch(`${apiUrl}/api/bundle/${bundleId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items, type: 'StoreConfig', title: '매장 정보' }),
       });
       if (response.ok) {
-        alert('매장 정보가 저장되었습니다.');
+        alert('✅ 매장 정보가 성공적으로 저장되었습니다.');
         onNavigate('admin', 'dashboard');
       } else throw new Error('Server error');
     } catch {
-      alert('처리 중 오류가 발생했습니다.');
+      alert('❌ 저장 중 오류가 발생했습니다.');
     }
   };
 
   const handleResetPool = async () => {
     if (window.confirm("⚠️ 지식창고를 초기화하시겠습니까?\n이 작업은 모든 메뉴, 주문, 로그 데이터를 영구적으로 삭제하며 되돌릴 수 없습니다.")) {
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
             await fetch(`${apiUrl}/api/pool`, { method: 'DELETE' });
-            alert('지식창고가 초기화되었습니다.');
+            alert('✅ 지식창고가 초기화되었습니다.');
             window.location.reload();
         } catch {
-            alert('초기화 중 오류가 발생했습니다.');
+            alert('❌ 초기화 중 오류가 발생했습니다.');
         }
     }
   };
