@@ -122,16 +122,8 @@ def get_db_conn():
         print(f"DB Connection Error: {e}")
         return None
 
-def save_pool():
-    """지식 풀을 로컬 JSON 및 Supabase에 저장"""
-    # 1. 로컬 저장 (백업용)
-    try:
-        with open(POOL_FILE, "w", encoding="utf-8") as f:
-            json.dump([b.model_dump() for b in knowledge_pool], f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print(f"Local Save Error: {e}")
-
-    # 2. Supabase 저장
+def init_db():
+    """데이터베이스 초기화 및 스키마 마이그레이션"""
     conn = get_db_conn()
     if conn:
         try:
@@ -165,6 +157,27 @@ def save_pool():
             cur.execute("ALTER TABLE knowledge_bundles ADD COLUMN IF NOT EXISTS order_code TEXT")
             cur.execute("ALTER TABLE knowledge_bundles ADD COLUMN IF NOT EXISTS status TEXT")
             
+            conn.commit()
+            cur.close()
+            conn.close()
+            print("✅ Database initialization complete.")
+        except Exception as e:
+            print(f"DB Init Error: {e}")
+
+def save_pool():
+    """지식 풀을 로컬 JSON 및 Supabase에 저장"""
+    # 1. 로컬 저장 (백업용)
+    try:
+        with open(POOL_FILE, "w", encoding="utf-8") as f:
+            json.dump([b.model_dump() for b in knowledge_pool], f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"Local Save Error: {e}")
+
+    # 2. Supabase 저장
+    conn = get_db_conn()
+    if conn:
+        try:
+            cur = conn.cursor()
             # 현재 지식 풀의 모든 번들 업서트 (Upsert)
             for b in knowledge_pool:
                 data = b.model_dump()
@@ -255,6 +268,7 @@ def load_pool():
     if not globals().get('knowledge_pool'):
         knowledge_pool = []
 
+init_db()
 load_pool()
 
 @app.get("/api/pool")
