@@ -437,7 +437,22 @@ async def process_direct_order(request: dict):
     
     order_code = str(uuid.uuid4().hex[:4]).upper()
     
-    # 지식 풀에서 상호명 검색 (요청에 없을 경우 대비)
+    # 1. 점유 및 권한 검증 (테이블 주문인 경우)
+    if table_no != "포장" and device_id:
+        is_allowed = False
+        for b in knowledge_pool:
+            if (b.type == "Checkins" and b.table == table_no and 
+                b.device_id == device_id and b.status == "approved" and 
+                b.store_id == store_id):
+                is_allowed = True
+                break
+        if not is_allowed:
+            return {
+                "error": "unauthorized", 
+                "message": f"Table {table_no}에 대한 승인된 세션이 없습니다. QR코드를 다시 스캔해 주세요."
+            }
+
+    # 2. 지식 풀에서 상호명 검색
     store_name = store_name_req
     if not store_name:
         store_name = "미지정 매장"
@@ -512,18 +527,23 @@ async def confirm_payment(request: dict):
     return {"status": "error", "message": "Order not found"}
 
 
-@app.post("/api/checkin/request")
-async def request_checkin(request: dict):
-    table_no = str(request.get("tableNo"))
-    device_id = request.get("deviceId")
-    store_id = request.get("store_id")
-    store_name = request.get("store", "Unknown")
-    
-    # 이미 승인된 기기인지 확인
+    # 1. 기기가 이미 다른 테이블에 체크인되어 있는지 확인 (중복 점유 방지)
     for b in knowledge_pool:
-        if b.type == "Checkins" and b.table == table_no and b.device_id == device_id and b.status == "approved" and b.store_id == store_id:
-            return {"status": "approved", "message": "Already approved"}
+        if b.type == "Checkins" and b.device_id == device_id and b.store_id == store_id:
+            if b.table == table_no:
+                if b.status == "approved":
+                    return {"status": "approved", "message": "Already approved for this table"}
+                else:
+                    return {"status": "pending", "message": "Waiting for approval"}
+            else:
+                # 다른 테이블에 이미 있음
+                return {
+                    "status": "conflict", 
+                    "message": f"Already checked in at Table {b.table}. Please checkout first.",
+                    "existingTable": b.table
+                }
 
+    # 2. 신규 체크인 요청 생성
     new_checkin = BundleData(
         id=f"CHK_{uuid.uuid4().hex[:8].upper()}",
         type="Checkins",
@@ -538,7 +558,7 @@ async def request_checkin(request: dict):
     )
     knowledge_pool.insert(0, new_checkin)
     save_pool()
-    await manager.broadcast({"type": "CHECKIN_REQUESTED", "table": table_no})
+    await manager.broadcast({"type": "CHECKIN_REQUESTED", "table": table_no, "store_id": store_id})
     return {"status": "pending"}
 
 @app.post("/api/checkin/approve")
