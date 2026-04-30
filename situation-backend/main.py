@@ -166,6 +166,12 @@ def init_db():
     else:
         print("⚠️ No DATABASE_URL found. Skipping DB initialization.")
 
+# 즉시 DB 초기화 실행 (스키마 마이그레이션 보장)
+init_db()
+
+# 즉시 DB 초기화 실행 (스키마 마이그레이션 보장)
+init_db()
+
 def save_pool():
     """지식 풀을 로컬 JSON 및 Supabase에 저장"""
     # 1. 로컬 저장 (백업용)
@@ -273,7 +279,7 @@ def load_pool():
 @app.on_event("startup")
 async def startup_event():
     print("🚀 Application starting up...")
-    init_db()
+    # 스키마는 이미 최상단에서 init_db()로 확보됨
     load_pool()
 
 @app.get("/api/pool")
