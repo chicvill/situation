@@ -155,6 +155,16 @@ def save_pool():
                 )
             """)
             
+            # 기존 테이블에 누락된 컬럼 추가 (마이그레이션)
+            cur.execute("ALTER TABLE knowledge_bundles ADD COLUMN IF NOT EXISTS store_id TEXT")
+            cur.execute("ALTER TABLE knowledge_bundles ADD COLUMN IF NOT EXISTS device_id TEXT")
+            cur.execute("ALTER TABLE knowledge_bundles ADD COLUMN IF NOT EXISTS payment TEXT")
+            cur.execute("ALTER TABLE knowledge_bundles ADD COLUMN IF NOT EXISTS package TEXT")
+            cur.execute("ALTER TABLE knowledge_bundles ADD COLUMN IF NOT EXISTS \"table\" TEXT")
+            cur.execute("ALTER TABLE knowledge_bundles ADD COLUMN IF NOT EXISTS store TEXT")
+            cur.execute("ALTER TABLE knowledge_bundles ADD COLUMN IF NOT EXISTS order_code TEXT")
+            cur.execute("ALTER TABLE knowledge_bundles ADD COLUMN IF NOT EXISTS status TEXT")
+            
             # 현재 지식 풀의 모든 번들 업서트 (Upsert)
             for b in knowledge_pool:
                 data = b.model_dump()
