@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 
-export const StoreSetup: React.FC = () => {
+export const StoreSetup: React.FC<{ storeName: string }> = ({ storeName }) => {
     const [uploadingReg, setUploadingReg] = useState(false);
     const [uploadingMenu, setUploadingMenu] = useState(false);
     const [storeData, setStoreData] = useState<any>(null);
@@ -92,7 +92,7 @@ export const StoreSetup: React.FC = () => {
             const response = await fetch(`${apiUrl}/api/situation`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text }),
+                body: JSON.stringify({ text, store: storeName }),
             });
             if (response.ok) {
                 alert("교정된 지식이 성공적으로 저장되었습니다! 🎉");

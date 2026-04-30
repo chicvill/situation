@@ -4,6 +4,8 @@ import { PaymentModal } from './PaymentModal';
 
 interface Props {
   bundles: BundleData[];
+  storeId: string;
+  storeName: string;
 }
 
 interface MenuItem {
@@ -15,7 +17,7 @@ interface MenuItem {
   desc: string;
 }
 
-export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
+export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) => {
   const [activeCategory, setActiveCategory] = useState('전체');
   const [cart, setCart] = useState<{ [key: string]: number }>({});
   const [showPayModal, setShowPayModal] = useState(false);
@@ -38,11 +40,6 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
     return id;
   }, []);
 
-  const storeName = useMemo(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('store') || 'Unknown';
-  }, []);
-
   // 체크인 승인 상태 관리
   const isApproved = useMemo(() => {
     const safeBundles = Array.isArray(bundles) ? bundles : [];
@@ -51,9 +48,9 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
       b.table === tableNo && 
       b.device_id === deviceId && 
       b.status === 'approved' &&
-      (b.store === storeName || !b.store)
+      (b.store_id === storeId || !b.store_id)
     );
-  }, [bundles, tableNo, deviceId]);
+  }, [bundles, tableNo, deviceId, storeId]);
 
   // 접속 시 체크인 요청
   useEffect(() => {
@@ -62,10 +59,10 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
       fetch(`${apiUrl}/api/checkin/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableNo, deviceId, store: storeName })
+        body: JSON.stringify({ tableNo, deviceId, store: storeName, storeId: storeId })
       }).catch(err => console.error("Checkin Request Error:", err));
     }
-  }, [tableNo, deviceId, storeName, isApproved]);
+  }, [tableNo, deviceId, storeName, storeId, isApproved]);
 
   // 현재 테이블의 기존 주문 내역 실시간 필터링
   const myOrders = useMemo(() => {
@@ -81,7 +78,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
   const menuItems = useMemo(() => {
     const menuMap = new Map<string, MenuItem>();
     const safeBundles = Array.isArray(bundles) ? bundles : [];
-    const menuBundle = safeBundles.find(b => b.type === 'Menus' && (b.store === storeName || !b.store));
+    const menuBundle = safeBundles.find(b => b.type === 'Menus' && (b.store_id === storeId || !b.store_id));
     
     if (menuBundle) {
       (Array.isArray(menuBundle.items) ? menuBundle.items : []).forEach((item: any) => {
@@ -168,7 +165,8 @@ export const CustomerOrder: React.FC<Props> = ({ bundles }) => {
           items: orderItems,
           payment: isCall ? 'CALL' : method,
           deviceId,
-          store: storeName
+          store: storeName,
+          storeId: storeId
         }),
       });
       setIsOrdered(true);

@@ -4,10 +4,11 @@ import type { BundleData } from '../types';
 interface WaitingManagerProps {
     bundles: BundleData[];
     onSendMessage: (text: string) => void;
+    storeName: string;
 }
 
-export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendMessage }) => {
-    const waitingList = bundles.filter(b => b.type === 'Waiting');
+export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendMessage, storeName }) => {
+    const waitingList = bundles.filter(b => b.type === 'Waiting' && (b.store === storeName || !b.store));
 
     const handleCall = (waitingNo: string) => {
         onSendMessage(`대기 ${waitingNo}번 손님 호출`);

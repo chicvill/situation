@@ -1,18 +1,18 @@
 import React from 'react';
 
-export const AdminDashboard: React.FC<{ bundles: any[] }> = ({ bundles }) => {
+export const AdminDashboard: React.FC<{ bundles: any[], storeName: string }> = ({ bundles, storeName }) => {
     const now = new Date();
     const todayStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
 
-    const orderCount = bundles.filter(b => b.type === 'Orders' && b.status !== 'archived' && b.status !== 'canceled').length;
-    const employeeCount = bundles.filter(b => b.type === 'Employee').length;
+    const orderCount = bundles.filter(b => b.type === 'Orders' && b.status !== 'archived' && b.status !== 'canceled' && (b.store === storeName || !b.store)).length;
+    const employeeCount = bundles.filter(b => b.type === 'Employee' && (b.store === storeName || !b.store)).length;
     const todaySales = bundles
-        .filter(b => b.type === 'Orders' && b.timestamp.startsWith(todayStr) && b.status !== 'canceled')
+        .filter(b => b.type === 'Orders' && b.timestamp.startsWith(todayStr) && b.status !== 'canceled' && (b.store === storeName || !b.store))
         .reduce((acc, b) => {
             const orderTotal = b.items.reduce((sum: number, item: any) => {
                 // Find matching menu in knowledge pool to get its price
                 const menuInfo = bundles
-                    .filter(kb => kb.type === 'Menus')
+                    .filter(kb => kb.type === 'Menus' && (kb.store === storeName || !kb.store))
                     .flatMap(kb => kb.items)
                     .find(ki => ki.name.includes(item.name));
                 

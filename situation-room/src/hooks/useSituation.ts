@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Message, BundleData } from '../types';
 import { API_BASE, WS_BASE } from '../config';
 
-export const useSituation = () => {
+export const useSituation = (storeId: string = "", storeName: string = "") => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [bundles, setBundles] = useState<BundleData[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -10,7 +10,11 @@ export const useSituation = () => {
 
     const fetchInitialData = useCallback(async () => {
         try {
-            const response = await fetch(`${API_BASE}/api/pool`);
+            const queryParams = new URLSearchParams();
+            if (storeId && storeId !== "Total") queryParams.append('store_id', storeId);
+            
+            const url = queryParams.toString() ? `${API_BASE}/api/pool?${queryParams.toString()}` : `${API_BASE}/api/pool`;
+            const response = await fetch(url);
             const data = await response.json();
             if (Array.isArray(data)) {
                 setBundles(data);
@@ -22,7 +26,7 @@ export const useSituation = () => {
             console.error("Initial fetch failed:", err);
             setBundles([]);
         }
-    }, []);
+    }, [storeId]);
 
     // Initial Data Fetch
     useEffect(() => {
@@ -41,6 +45,11 @@ export const useSituation = () => {
                 // Handle Bundle Updates
                 const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins'];
                 if (data.id && bundleTypes.includes(data.type)) {
+                    // 데이터 격리: 현재 매장의 데이터이거나 매장 정보가 없는(전역) 경우에만 처리
+                    if (storeId !== "Total" && storeId !== "" && data.store_id && data.store_id !== storeId) {
+                        return; 
+                    }
+
                     setBundles(prev => {
                         const currentPrev = Array.isArray(prev) ? prev : [];
                         const index = currentPrev.findIndex(b => b.id === data.id);
@@ -73,8 +82,15 @@ export const useSituation = () => {
                         return currentPrev.filter(b => !(b.items || []).some(i => i.value === subject));
                     });
                 } else if (data.type === 'POOL_UPDATED') {
-                    console.log("Pool updated from server. Refreshing...");
-                    fetchInitialData();
+                    if (!data.store_id || data.store_id === storeId || storeId === "Total" || storeId === "") {
+                        console.log("Pool updated from server. Refreshing...");
+                        fetchInitialData();
+                    }
+                } else if (data.type === 'CHECKIN_APPROVED') {
+                    // 체크인 승인 시 해당 매장/기기인 경우에만 상태 업데이트 반영을 위해 새로고침
+                    if (data.store_id === storeId || storeId === "Total" || storeId === "") {
+                         fetchInitialData();
+                    }
                 }
             };
 
@@ -90,7 +106,7 @@ export const useSituation = () => {
     }, []);
 
     // API Situation Handler
-    const handleSendMessage = useCallback(async (text: string, targetId?: string, context?: string, storeName?: string) => {
+    const handleSendMessage = useCallback(async (text: string, targetId?: string, context?: string, overrideStoreId?: string, overrideStoreName?: string) => {
         if (!targetId) {
             setMessages(prev => [...prev, { id: Date.now().toString(), text, sender: 'user', timestamp: new Date().toLocaleTimeString() }]);
         }
@@ -103,7 +119,13 @@ export const useSituation = () => {
             const response = await fetch(`${API_BASE}/api/situation`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text, targetId, context, store: storeName }),
+                body: JSON.stringify({ 
+                    text, 
+                    targetId, 
+                    context, 
+                    storeId: overrideStoreId || storeId,
+                    store: overrideStoreName || storeName 
+                }),
             });
             const result = await response.json();
 

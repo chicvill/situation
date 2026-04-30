@@ -13,22 +13,27 @@ import { LogicInventory } from './components/LogicInventory';
 import { ConversationalUI } from './components/ConversationalUI';
 import { ReceiptModal } from './components/ReceiptModal';
 import { HRManager } from './components/HRManager';
+import { WaitingManager } from './components/WaitingManager';
+import { ReservationManager } from './components/ReservationManager';
 import { Login } from './components/Login';
 import { useSituation } from './hooks/useSituation';
+import { useStoreFilter } from './hooks/useStoreFilter';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
 
-type MainTab = 'guide' | 'order' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper' | 'hr';
+type MainTab = 'guide' | 'order' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper' | 'hr' | 'waiting' | 'reserve';
 
 function App() {
-  const { bundles, handleSendMessage } = useSituation();
+  const { storeId, storeName: initialStoreName, updateStore } = useStoreFilter();
+  const { bundles, handleSendMessage } = useSituation(storeId, initialStoreName);
+
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<MainTab>('guide');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [recognizedText, setRecognizedText] = useState("");
   const [isListening, setIsListening] = useState(false);
-  
+
   const [receiptData, setReceiptData] = useState<{
     orderId: string;
     totalPrice: number;
@@ -37,14 +42,20 @@ function App() {
     receiptUrl?: string;
   } | null>(null);
 
-  const requestedStoreName = useMemo(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('store') || '';
-  }, []);
-
   const safeBundles = Array.isArray(bundles) ? bundles : [];
-  const storeBundle = safeBundles.find(b => b.type === 'StoreConfig' && (b.store === requestedStoreName || !b.store));
-  const storeName = storeBundle?.items.find(i => i.name === '상호명')?.value || requestedStoreName || '우리식당';
+  
+  // 지식 번들에서 상호명을 찾아 storeName 업데이트 (필요한 경우)
+  const storeBundle = safeBundles.find(b => b.type === 'StoreConfig' && (b.store_id === storeId || !b.store_id));
+  const resolvedStoreName = storeBundle?.items.find(i => i.name === '상호명' || i.name === 'brand')?.value || initialStoreName || '우리식당';
+
+  // storeName이 변경되었으면 동기화
+  useEffect(() => {
+    if (resolvedStoreName && resolvedStoreName !== initialStoreName && storeId) {
+      updateStore(storeId, resolvedStoreName);
+    }
+  }, [resolvedStoreName, initialStoreName, storeId, updateStore]);
+
+  const storeName = resolvedStoreName;
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -121,12 +132,13 @@ function App() {
     { label: '비서', icon: '🎤', tab: 'guide', roles: ['admin', 'owner', 'manager', 'staff'], special: true },
     { label: '주문', icon: '📝', tab: 'order', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '주방', icon: '👨‍🍳', tab: 'kitchen', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: '대기', icon: '🛎️', tab: 'waiting', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: '예약', icon: '📅', tab: 'reserve', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '카운터', icon: '💰', tab: 'counter', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '근태', icon: '👥', tab: 'hr', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '통계', icon: '📊', tab: 'home', roles: ['admin', 'owner', 'manager'] },
     { label: '메뉴', icon: '📔', tab: 'menu', roles: ['admin', 'owner', 'manager'] },
     { label: '매장', icon: '🏠', tab: 'settings', roles: ['admin', 'owner'] },
-    { label: 'QR', icon: '📱', tab: 'qr', roles: ['admin', 'owner'] },
   ].filter(item => item.roles.includes(user?.role));
 
   const startVoiceRecognition = () => {
@@ -139,7 +151,7 @@ function App() {
     recognition.onresult = (event: any) => setRecognizedText(event.results[0][0].transcript);
     recognition.onend = () => {
         setIsListening(false);
-        if (recognizedText) handleSendMessage(recognizedText, undefined, activeTab, requestedStoreName);
+        if (recognizedText) handleSendMessage(recognizedText, undefined, activeTab, storeId, storeName);
     };
     recognition.start();
   };
@@ -151,7 +163,7 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'guide': return <ConversationalUI bundles={bundles} storeName={storeName} />;
-      case 'order': return <CustomerOrder bundles={bundles} storeName={storeName} />;
+      case 'order': return <CustomerOrder bundles={bundles} storeId={storeId} storeName={storeName} />;
       case 'kitchen': return <KitchenDisplay />;
       case 'counter': return <CounterPad bundles={bundles} messages={[]} onSendMessage={handleSendMessage} />;
       case 'display': return <DisplayBoard bundles={bundles} />;
@@ -159,9 +171,11 @@ function App() {
       case 'settings': return <StoreManager bundles={bundles} onNavigate={navigateTo as any} storeName={storeName} />;
       case 'qr': return <QRManager bundles={bundles} />;
       case 'paper': return <PaperViewer />;
-      case 'home': return <AdminDashboard bundles={bundles} />;
+      case 'home': return <AdminDashboard bundles={bundles} storeName={storeName} />;
       case 'inventory': return <LogicInventory />;
       case 'hr': return <HRManager bundles={bundles} user={user} storeName={storeName} />;
+      case 'waiting': return <WaitingManager bundles={bundles} onSendMessage={(txt) => handleSendMessage(txt, undefined, 'waiting', storeId, storeName)} storeName={storeName} />;
+      case 'reserve': return <ReservationManager bundles={bundles} storeName={storeName} />;
       default: return <ConversationalUI bundles={bundles} storeName={storeName} />;
     }
   };

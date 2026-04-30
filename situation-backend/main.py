@@ -103,7 +103,8 @@ class BundleData(BaseModel):
     items: List[BundleItem]
     status: Optional[str] = None
     order_code: Optional[str] = None
-    store: Optional[str] = None
+    store_id: Optional[str] = None # 고유 식별자 추가
+    store: Optional[str] = None    # 표시용 매장명
     table: Optional[str] = None
     Package: Optional[str] = "매장"
     payment: Optional[str] = None
@@ -145,10 +146,12 @@ def save_pool():
                     items JSONB,
                     status TEXT,
                     order_code TEXT,
+                    store_id TEXT,
                     store TEXT,
                     "table" TEXT,
                     package TEXT,
-                    payment TEXT
+                    payment TEXT,
+                    device_id TEXT
                 )
             """)
             
@@ -156,8 +159,8 @@ def save_pool():
             for b in knowledge_pool:
                 data = b.model_dump()
                 cur.execute("""
-                    INSERT INTO knowledge_bundles (id, type, title, timestamp, items, status, order_code, store, "table", package, payment)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO knowledge_bundles (id, type, title, timestamp, items, status, order_code, store_id, store, "table", package, payment, device_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (id) DO UPDATE SET
                         type = EXCLUDED.type,
                         title = EXCLUDED.title,
@@ -165,6 +168,7 @@ def save_pool():
                         items = EXCLUDED.items,
                         status = EXCLUDED.status,
                         order_code = EXCLUDED.order_code,
+                        store_id = EXCLUDED.store_id,
                         store = EXCLUDED.store,
                         "table" = EXCLUDED.table,
                         package = EXCLUDED.package,
@@ -173,7 +177,7 @@ def save_pool():
                 """, (
                     data['id'], data['type'], data['title'], data['timestamp'], 
                     json.dumps(data['items']), data.get('status'), data.get('order_code'),
-                    data.get('store'), data.get('table'), data.get('Package'), data.get('payment'), data.get('device_id')
+                    data.get('store_id'), data.get('store'), data.get('table'), data.get('Package'), data.get('payment'), data.get('device_id')
                 ))
             conn.commit()
             cur.close()
@@ -191,7 +195,7 @@ def load_pool():
     if conn:
         try:
             cur = conn.cursor(cursor_factory=RealDictCursor)
-            cur.execute("SELECT id, type, title, timestamp, items, status, order_code, store, \"table\", package, payment, device_id FROM knowledge_bundles")
+            cur.execute("SELECT id, type, title, timestamp, items, status, order_code, store_id, store, \"table\", package, payment, device_id FROM knowledge_bundles")
             rows = cur.fetchall()
             if rows:
                 knowledge_pool = []
@@ -212,6 +216,7 @@ def load_pool():
                         items=[BundleItem(**i) for i in items_data],
                         status=row.get('status'),
                         order_code=row.get('order_code'),
+                        store_id=row.get('store_id'),
                         store=row.get('store'),
                         table=row.get('table'),
                         Package=pkg,
@@ -243,8 +248,10 @@ def load_pool():
 load_pool()
 
 @app.get("/api/pool")
-async def get_pool():
-    """지식 풀 전체 반환"""
+async def get_pool(store_id: Optional[str] = Query(None)):
+    """지식 풀 반환 (매장 ID별 필터링 지원)"""
+    if store_id and store_id != "Total":
+        return [b for b in knowledge_pool if b.store_id == store_id]
     return knowledge_pool
 
 # --- 번들 업데이트 (StoreManager 및 메뉴 설정용) ---
@@ -255,19 +262,20 @@ async def update_bundle(bundle_id: str, request: dict):
     items = [BundleItem(**i) for i in request.get("items", [])]
     b_type = request.get("type", "Log")
     title = request.get("title", "업데이트된 정보")
+    store_id = request.get("storeId")
     store_name = request.get("store")
     device_id = request.get("deviceId")
     
     # 1. 매장별 고유 타입 업데이트 (StoreConfig, Menus 등은 매장당 하나만 존재)
-    if b_type in ["StoreConfig", "Menus"] and store_name:
+    if b_type in ["StoreConfig", "Menus"] and store_id:
         for b in knowledge_pool:
-            if b.type == b_type and b.store == store_name:
+            if b.type == b_type and b.store_id == store_id:
                 b.items = items
                 b.title = title
                 b.timestamp = datetime.now().strftime("%Y.%m.%d.%H:%M:%S")
                 b.device_id = device_id
                 save_pool()
-                await manager.broadcast({"type": "POOL_UPDATED", "store": store_name})
+                await manager.broadcast({"type": "POOL_UPDATED", "store_id": store_id})
                 return {"status": "success", "mode": "updated_by_store_type"}
 
     # 2. ID 기반 업데이트
@@ -277,6 +285,7 @@ async def update_bundle(bundle_id: str, request: dict):
             b.items = items
             b.type = b_type
             b.title = title
+            b.store_id = store_id or b.store_id
             b.store = store_name or b.store
             b.timestamp = datetime.now().strftime("%Y.%m.%d.%H:%M:%S")
             found = True
@@ -290,13 +299,14 @@ async def update_bundle(bundle_id: str, request: dict):
             title=title,
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             items=items,
+            store_id=store_id,
             store=store_name,
             device_id=device_id
         )
         knowledge_pool.insert(0, new_bundle)
     
     save_pool()
-    await manager.broadcast({"type": "POOL_UPDATED", "store": store_name})
+    await manager.broadcast({"type": "POOL_UPDATED", "store_id": store_id})
     return {"status": "success"}
 
 # --- 프론트엔드 규격에 맞춘 이미지 분석 엔드포인트 ---
@@ -331,16 +341,20 @@ async def analyze_image(
 @app.post("/api/situation")
 async def process_situation(request: dict):
     text = request.get("text", "")
-    context = request.get("context", "") # 현재 화면 정보 (예: 'menu', 'order')
+    context = request.get("context", "") # 현재 화면 정보
+    store_id = request.get("storeId")
+    store_name = request.get("store", "Total")
     try:
-        analysis_result = parse_situation_text(text, context)
+        analysis_result = parse_situation_text(text, store_name, context)
         new_bundle = BundleData(
             id=f"SIT_{uuid.uuid4().hex[:8].upper()}",
             type=analysis_result.get("type", "Log"),
             title=analysis_result.get("title", "AI 분석 리포트"),
             timestamp=datetime.now().strftime("%Y.%m.%d.%H:%M:%S"),
             items=[BundleItem(**i) for i in analysis_result.get("items", [])],
-            status=analysis_result.get("status")
+            status=analysis_result.get("status"),
+            store_id=store_id,
+            store=store_name
         )
         knowledge_pool.insert(0, new_bundle)
         save_pool()
@@ -349,12 +363,41 @@ async def process_situation(request: dict):
     except Exception as e:
         return {"error": str(e)}
 
+# --- AI 답변 및 정밀 분석 엔드포인트 ---
+
+@app.post("/api/chat")
+async def chat_analysis(request: Request):
+    data = await request.json()
+    query = data.get("query")
+    history = data.get("history", []) # 프론트엔드에서 현재 지식 번들 전달
+    store_id = data.get("storeId")
+    store_name = data.get("store", "Total")
+    
+    # history 객체 리스트를 BundleData 모델로 변환 및 매장 필터링
+    bundles = [BundleData(**b) for b in history if b.get("store_id") == store_id or store_id == "Total"]
+    
+    # AI 엔진을 통해 히스토리 분석
+    response = analyze_history(query, bundles, store_name)
+    return {"answer": response}
+
+@app.post("/api/analyze")
+async def analyze_situation_api(request: Request):
+    data = await request.json()
+    text = data.get("text")
+    context = data.get("context", "")
+    store_name = data.get("store", "Total")
+    
+    # AI 엔진을 통해 텍스트 분석
+    result = parse_situation_text(text, store_name, context)
+    return result
+
 @app.post("/api/order/direct")
 async def process_direct_order(request: dict):
     table_no = str(request.get("tableNo", "포장"))
     items = [BundleItem(**item) for item in request.get("items", [])]
     payment_method = request.get("payment", "현장결제")
     device_id = request.get("deviceId")
+    store_id = request.get("storeId")
     store_name_req = request.get("store")
     
     order_code = str(uuid.uuid4().hex[:4]).upper()
@@ -364,7 +407,7 @@ async def process_direct_order(request: dict):
     if not store_name:
         store_name = "미지정 매장"
         for b in knowledge_pool:
-            if b.type == "StoreConfig":
+            if b.type == "StoreConfig" and (b.store_id == store_id or not store_id):
                 for item in b.items:
                     if "상호" in item.name or "brand" in item.name:
                         store_name = item.value
@@ -374,6 +417,7 @@ async def process_direct_order(request: dict):
     new_bundle = BundleData(
         id=f"ORD_{uuid.uuid4().hex[:8].upper()}",
         order_code=order_code,
+        store_id=store_id,
         store=store_name,
         table=table_no,
         Package="포장" if table_no == "포장" else "매장",
@@ -437,11 +481,12 @@ async def confirm_payment(request: dict):
 async def request_checkin(request: dict):
     table_no = str(request.get("tableNo"))
     device_id = request.get("deviceId")
+    store_id = request.get("storeId")
     store_name = request.get("store", "Unknown")
     
     # 이미 승인된 기기인지 확인
     for b in knowledge_pool:
-        if b.type == "Checkins" and b.table == table_no and b.device_id == device_id and b.status == "approved":
+        if b.type == "Checkins" and b.table == table_no and b.device_id == device_id and b.status == "approved" and b.store_id == store_id:
             return {"status": "approved", "message": "Already approved"}
 
     new_checkin = BundleData(
@@ -453,6 +498,7 @@ async def request_checkin(request: dict):
         status="pending",
         table=table_no,
         device_id=device_id,
+        store_id=store_id,
         store=store_name
     )
     knowledge_pool.insert(0, new_checkin)
@@ -500,34 +546,47 @@ async def get_server_ip():
         return {"ip": "localhost"}
 
 @app.delete("/api/pool")
-async def clear_pool():
-    """지식 풀 전체 초기화 (메모리, 파일, DB 모두 삭제)"""
+async def clear_pool(store_id: str = Query(...)):
+    """특정 매장의 지식 풀 초기화"""
     global knowledge_pool
-    knowledge_pool = []
     
     # Supabase 삭제
     conn = get_db_conn()
     if conn:
         try:
             cur = conn.cursor()
-            cur.execute("DELETE FROM knowledge_bundles")
+            cur.execute("DELETE FROM knowledge_bundles WHERE store_id = %s", (store_id,))
             conn.commit()
             cur.close()
             conn.close()
         except Exception as e:
             print(f"Supabase Clear Error: {e}")
             
+    knowledge_pool = [b for b in knowledge_pool if b.store_id != store_id]
     save_pool()
-    await manager.broadcast({"type": "POOL_UPDATED"})
-    return {"status": "success", "message": "Knowledge pool has been reset."}
+    await manager.broadcast({"type": "POOL_UPDATED", "store_id": store_id})
+    return {"status": "success", "message": f"Knowledge pool for store ID '{store_id}' has been reset."}
 
 @app.delete("/api/orders")
-async def clear_orders():
-    """주문 내역만 초기화"""
+async def clear_orders(store_id: str = Query(...)):
+    """특정 매장의 주문 내역만 초기화"""
     global knowledge_pool
-    knowledge_pool = [b for b in knowledge_pool if b.type != "Orders"]
+    
+    # Supabase 삭제
+    conn = get_db_conn()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM knowledge_bundles WHERE type = 'Orders' AND store_id = %s", (store_id,))
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"Supabase Clear Orders Error: {e}")
+
+    knowledge_pool = [b for b in knowledge_pool if not (b.type == "Orders" and b.store_id == store_id)]
     save_pool()
-    await manager.broadcast({"type": "POOL_UPDATED"})
+    await manager.broadcast({"type": "POOL_UPDATED", "store_id": store_id})
     return {"status": "success"}
 
 # 포인트 관리 (데모용 메모리 DB)

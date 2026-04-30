@@ -121,6 +121,16 @@ GOALS = {
         "required": ["상호명", "사업자번호"],
         "optional": ["주소", "대표자"]
     },
+    "Waiting": {
+        "description": "실시간 매장 대기 등록",
+        "required": ["인원"],
+        "optional": ["전화번호", "이름"]
+    },
+    "Reservations": {
+        "description": "식당 예약 등록 및 관리",
+        "required": ["예약자", "예약시간", "인원"],
+        "optional": ["연락처", "메모"]
+    },
     "Log": {
         "description": "기타 일반 기록",
         "required": ["내용"],
@@ -128,7 +138,7 @@ GOALS = {
     }
 }
 
-def parse_situation_text(text: str, context: str = "") -> dict:
+def parse_situation_text(text: str, store: str = "Total", context: str = "") -> dict:
     time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     if not client:
@@ -157,6 +167,7 @@ def parse_situation_text(text: str, context: str = "") -> dict:
 사용자의 입력을 분석하여 '목표 처리 결과'를 얻는 데 필요한 **핵심 정보만 필터링**하여 JSON으로 변환하세요.
 
 현재 시간: {time_str}
+현재 매장: {store}
 현재 화면 상황: {context if context else '알 수 없음'}
 {context_guide}
 
@@ -171,7 +182,8 @@ def parse_situation_text(text: str, context: str = "") -> dict:
 3. 선택한 목표의 '필수 정보'를 포함하지 못하는 노이즈 정보는 과감히 삭제하세요.
 4. 'items'는 [{{"name": "...", "value": "..."}}] 형식으로 구성하며, 필드명은 위 필수/선택 항목의 키워드를 최대한 활용하세요.
 5. 'title'은 분석된 목표와 핵심 내용을 담은 짧은 제목으로 작성하세요.
-6. 결과는 오직 JSON 객체만 반환하세요.
+6. 'store' 필드에 해당 매장 이름("{store}")을 반드시 포함하세요.
+7. 결과는 오직 JSON 객체만 반환하세요.
 """
 
     print(f"\n[DEBUG] >>> AI 분석 시작: '{text[:20]}...'")
@@ -219,7 +231,7 @@ def parse_situation_text(text: str, context: str = "") -> dict:
             "timestamp": time_str
         }
 
-def analyze_history(query: str, history: list) -> str:
+def analyze_history(query: str, history: list, store: str = "Total") -> str:
     """지식 창고(history)를 분석하여 질문에 대답합니다."""
     time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
@@ -238,9 +250,10 @@ def analyze_history(query: str, history: list) -> str:
 
     prompt = f"""
 당신은 매장의 '경영 분석가'입니다. 아래의 '지식 창고' 데이터를 바탕으로 사용자의 질문에 친절하고 정확하게 답변하세요.
+현재 당신은 매장 "{store}"의 데이터를 분석하고 있습니다.
 데이터에 없는 내용은 추측하지 말고 모른다고 하거나, 데이터가 더 필요하다고 답하세요.
 
-[지식 창고 데이터 요약]
+[지식 창고 데이터 요약 (매장: {store})]
 {context}
 
 [사용자 질문]

@@ -3,6 +3,8 @@ import type { BundleData } from '../types';
 import { PaymentModal } from './PaymentModal';
 import { OrderRow } from './OrderRow';
 
+import { useStoreFilter } from '../hooks/useStoreFilter';
+
 interface CounterPadProps {
     bundles: BundleData[];
     messages: any[];
@@ -10,10 +12,15 @@ interface CounterPadProps {
 }
 
 export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
+    const { storeId, storeName } = useStoreFilter();
     const [selectedTableForPay, setSelectedTableForPay] = useState<string | null>(null);
 
     const safeBundles = Array.isArray(bundles) ? bundles : [];
-    const checkinRequests = safeBundles.filter(b => (b.type as string) === 'Checkins' && b.status === 'pending');
+    const checkinRequests = safeBundles.filter(b => 
+        (b.type as string) === 'Checkins' && 
+        b.status === 'pending' &&
+        (storeId === 'Total' || b.store_id === storeId || !b.store_id)
+    );
 
     const handleApproveCheckin = async (checkinId: string) => {
         try {
@@ -28,13 +35,13 @@ export const CounterPad: React.FC<CounterPadProps> = ({ bundles }) => {
         }
     };
 
-    const menus = safeBundles.filter(b => (b.type as string) === 'Menus').flatMap(b => Array.isArray(b.items) ? b.items : []);
+    const menus = safeBundles.filter(b => (b.type as string) === 'Menus' && (storeId === 'Total' || b.store_id === storeId || !b.store_id)).flatMap(b => Array.isArray(b.items) ? b.items : []);
 
     const tableOrders = useMemo(() => {
         const groups: Record<string, BundleData[]> = {};
         const safeBundlesMemo = Array.isArray(bundles) ? bundles : [];
         safeBundlesMemo.forEach(b => {
-            if ((b.type as string) === 'Orders' && b.status !== 'archived' && b.status !== 'canceled') {
+            if ((b.type as string) === 'Orders' && b.status !== 'archived' && b.status !== 'canceled' && (storeId === 'Total' || b.store_id === storeId || !b.store_id)) {
                 let t = b.table || '';
                 if (!t) {
                     const titleMatch = b.title.match(/테이블\s*(\d+)/) || b.title.match(/Table\s*(\d+)/i);

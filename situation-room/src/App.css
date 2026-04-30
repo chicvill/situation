@@ -50,7 +50,32 @@ body {
   width: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding-top: 60px; /* Top Bar height */
+  padding-top: 60px; /* 📅 예약 관리 카드 스타일 */
+  /* 📅 예약 관리 카드 스타일 */
+.reservation-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: default;
+}
+
+.reservation-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.status-badge {
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.confirmed { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+.status-badge.pending { background: rgba(249, 115, 22, 0.15); color: #fb923c; }
+.status-badge.canceled { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+.reservation-grid {
+    animation: fadeIn 0.6s ease-out;
+}
   padding-bottom: 85px; /* Bottom Bar height */
   box-sizing: border-box;
 }

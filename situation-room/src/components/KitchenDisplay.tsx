@@ -3,16 +3,28 @@ import type { BundleData } from '../types';
 import { OrderRow } from './OrderRow';
 import { WS_BASE } from '../config';
 
+import { useStoreFilter } from '../hooks/useStoreFilter';
+
 export const KitchenDisplay: React.FC = () => {
+    const { storeId, storeName } = useStoreFilter();
     const [bundles, setBundles] = useState<BundleData[]>([]);
 
     const fetchPool = async () => {
         try {
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-            const res = await fetch(`${apiUrl}/api/pool`);
+            const queryParams = new URLSearchParams();
+            if (storeId && storeId !== "Total") queryParams.append('store_id', storeId);
+            
+            const url = queryParams.toString() ? `${apiUrl}/api/pool?${queryParams.toString()}` : `${apiUrl}/api/pool`;
+            const res = await fetch(url);
             const data = await res.json();
-            // 주방에서는 'Orders' 중 조리가 필요한 것만 필터링
-            setBundles(data.filter((b: BundleData) => b.type === 'Orders' && b.status !== 'ready' && b.status !== 'archived' && b.status !== 'canceled'));
+            
+            // 주방에서는 'Orders' 중 현재 매장의 조리가 필요한 것만 필터링
+            setBundles(data.filter((b: BundleData) => 
+                b.type === 'Orders' && 
+                (storeId === 'Total' || b.store_id === storeId || !b.store_id) &&
+                b.status !== 'ready' && b.status !== 'archived' && b.status !== 'canceled'
+            ));
         } catch (e) {
             console.error('Kitchen Fetch Error:', e);
         }
@@ -21,9 +33,15 @@ export const KitchenDisplay: React.FC = () => {
     useEffect(() => {
         fetchPool();
         const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
-        ws.onmessage = () => fetchPool();
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            // 전체 업데이트이거나 현재 매장 관련 업데이트인 경우에만 리프레시
+            if (!data.store_id || data.store_id === storeId || storeId === "Total") {
+                fetchPool();
+            }
+        };
         return () => ws.close();
-    }, []);
+    }, [storeId]);
 
     const markAsDone = async (bundleId: string) => {
         try {
