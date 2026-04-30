@@ -637,40 +637,11 @@ async def update_points(request: dict):
     
     return {"status": "success", "newPoints": points_db[phone]}
 
-    
-    # Supabase 삭제
-    conn = get_db_conn()
-    if conn:
-        try:
-            cur = conn.cursor()
-            cur.execute("DELETE FROM knowledge_bundles WHERE type = 'Orders'")
-            conn.commit()
-            cur.close()
-            conn.close()
-        except Exception as e:
-            print(f"Supabase Clear Orders Error: {e}")
-            
-    save_pool()
-    await manager.broadcast({"type": "POOL_UPDATED"})
-    return {"status": "success", "message": "Order history has been cleared."}
-
-@app.websocket("/ws/kitchen")
-async def websocket_kitchen(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            data = await websocket.receive_json()
-            await manager.broadcast(data)
-    except Exception:
-        manager.disconnect(websocket)
-
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 # ── SPA 라우팅 지원: React Router 경로를 index.html로 폴백 ──
-# API 라우트가 모두 등록된 후 마지막에 마운트해야 합니다
 if os.path.exists(FRONT_DIST):
-    # /assets 등 정적 자원 서빙
     app.mount("/", StaticFiles(directory=FRONT_DIST, html=True), name="static")
