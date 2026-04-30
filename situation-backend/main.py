@@ -262,7 +262,7 @@ async def update_bundle(bundle_id: str, request: dict):
     items = [BundleItem(**i) for i in request.get("items", [])]
     b_type = request.get("type", "Log")
     title = request.get("title", "업데이트된 정보")
-    store_id = request.get("storeId")
+    store_id = request.get("store_id")
     store_name = request.get("store")
     device_id = request.get("deviceId")
     
@@ -342,7 +342,7 @@ async def analyze_image(
 async def process_situation(request: dict):
     text = request.get("text", "")
     context = request.get("context", "") # 현재 화면 정보
-    store_id = request.get("storeId")
+    store_id = request.get("store_id")
     store_name = request.get("store", "Total")
     try:
         analysis_result = parse_situation_text(text, store_name, context)
@@ -370,7 +370,7 @@ async def chat_analysis(request: Request):
     data = await request.json()
     query = data.get("query")
     history = data.get("history", []) # 프론트엔드에서 현재 지식 번들 전달
-    store_id = data.get("storeId")
+    store_id = data.get("store_id")
     store_name = data.get("store", "Total")
     
     # history 객체 리스트를 BundleData 모델로 변환 및 매장 필터링
@@ -397,7 +397,7 @@ async def process_direct_order(request: dict):
     items = [BundleItem(**item) for item in request.get("items", [])]
     payment_method = request.get("payment", "현장결제")
     device_id = request.get("deviceId")
-    store_id = request.get("storeId")
+    store_id = request.get("store_id")
     store_name_req = request.get("store")
     
     order_code = str(uuid.uuid4().hex[:4]).upper()
@@ -481,7 +481,7 @@ async def confirm_payment(request: dict):
 async def request_checkin(request: dict):
     table_no = str(request.get("tableNo"))
     device_id = request.get("deviceId")
-    store_id = request.get("storeId")
+    store_id = request.get("store_id")
     store_name = request.get("store", "Unknown")
     
     # 이미 승인된 기기인지 확인

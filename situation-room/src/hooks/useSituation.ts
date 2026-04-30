@@ -123,7 +123,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                     text, 
                     targetId, 
                     context, 
-                    storeId: overrideStoreId || storeId,
+                    store_id: overrideStoreId || storeId,
                     store: overrideStoreName || storeName 
                 }),
             });

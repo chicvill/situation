@@ -59,7 +59,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
       fetch(`${apiUrl}/api/checkin/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableNo, deviceId, store: storeName, storeId: storeId })
+        body: JSON.stringify({ tableNo, deviceId, store: storeName, store_id: storeId })
       }).catch(err => console.error("Checkin Request Error:", err));
     }
   }, [tableNo, deviceId, storeName, storeId, isApproved]);
@@ -166,7 +166,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
           payment: isCall ? 'CALL' : method,
           deviceId,
           store: storeName,
-          storeId: storeId
+          store_id: storeId
         }),
       });
       setIsOrdered(true);
