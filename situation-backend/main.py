@@ -160,9 +160,11 @@ def init_db():
             conn.commit()
             cur.close()
             conn.close()
-            print("✅ Database initialization complete.")
+            print("✅ Database schema check & migration complete.")
         except Exception as e:
-            print(f"DB Init Error: {e}")
+            print(f"❌ DB Init Error: {e}")
+    else:
+        print("⚠️ No DATABASE_URL found. Skipping DB initialization.")
 
 def save_pool():
     """지식 풀을 로컬 JSON 및 Supabase에 저장"""
@@ -268,8 +270,11 @@ def load_pool():
     if not globals().get('knowledge_pool'):
         knowledge_pool = []
 
-init_db()
-load_pool()
+@app.on_event("startup")
+async def startup_event():
+    print("🚀 Application starting up...")
+    init_db()
+    load_pool()
 
 @app.get("/api/pool")
 async def get_pool(store_id: Optional[str] = Query(None)):
