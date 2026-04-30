@@ -1,28 +1,30 @@
 import React from 'react';
 import type { BundleData } from '../types';
 
+import { useStoreFilter } from '../hooks/useStoreFilter';
+
 interface WaitingManagerProps {
     bundles: BundleData[];
-    onSendMessage: (text: string) => void;
-    storeName: string;
+    onSendMessage: (text: string, store_id: string, storeName: string) => void;
 }
 
-export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendMessage, storeName }) => {
-    const waitingList = bundles.filter(b => b.type === 'Waiting' && (b.store === storeName || !b.store));
+export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendMessage }) => {
+    const { storeId, storeName } = useStoreFilter();
+    const waitingList = bundles.filter(b => b.type === 'Waiting' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
 
     const handleCall = (waitingNo: string) => {
-        onSendMessage(`대기 ${waitingNo}번 손님 호출`);
+        onSendMessage(`대기 ${waitingNo}번 손님 호출`, storeId, storeName);
     };
 
     const handleEnter = (waitingNo: string) => {
         if (window.confirm(`${waitingNo}번 손님을 입장 처리하시겠습니까?`)) {
-            onSendMessage(`대기 ${waitingNo}번 입장 완료`);
+            onSendMessage(`대기 ${waitingNo}번 입장 완료`, storeId, storeName);
         }
     };
 
     const handleCancel = (waitingNo: string) => {
         if (window.confirm(`${waitingNo}번 대기를 취소하시겠습니까?`)) {
-            onSendMessage(`대기 ${waitingNo}번 취소`);
+            onSendMessage(`대기 ${waitingNo}번 취소`, storeId, storeName);
         }
     };
 

@@ -2,19 +2,21 @@ import React, { useState, useEffect } from 'react';
 import type { BundleData } from '../types';
 import { useImageScan, ScanningOverlay, ScanChoiceModal } from '../hooks/useImageScan';
 
+import { useStoreFilter } from '../hooks/useStoreFilter';
+
 interface StoreManagerProps {
   bundles: BundleData[];
   onNavigate: (mode: any, tab?: any) => void;
-  storeName: string;
 }
 
-export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate, storeName }) => {
+export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate }) => {
+  const { storeId, storeName } = useStoreFilter();
   const [storeData, setStoreData] = useState<any>({
     brand: '', regNo: '', address: '', owner: '', bankName: '', accountNo: '', accountHolder: '', bundleId: null
   });
 
   useEffect(() => {
-    const storeBundle = bundles.find(b => b.type === 'StoreConfig' && (b.store === storeName || !b.store));
+    const storeBundle = bundles.find(b => b.type === 'StoreConfig' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
     if (storeBundle) {
       const findValue = (keys: string[]) => storeBundle.items.find((i: any) => keys.some(k => i.name.includes(k)))?.value || '';
       setStoreData({
@@ -50,7 +52,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate,
       const response = await fetch(`${apiUrl}/api/bundle/${bundleId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, type: 'StoreConfig', title: '매장 정보', store: storeName }),
+        body: JSON.stringify({ items, type: 'StoreConfig', title: '매장 정보', store: storeName, store_id: storeId }),
       });
       if (response.ok) {
         alert('✅ 매장 정보가 성공적으로 저장되었습니다.');
@@ -65,7 +67,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate,
     if (window.confirm("⚠️ 지식창고를 초기화하시겠습니까?\n이 작업은 모든 메뉴, 주문, 로그 데이터를 영구적으로 삭제하며 되돌릴 수 없습니다.")) {
         try {
             const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-            await fetch(`${apiUrl}/api/pool?store=${encodeURIComponent(storeName)}`, { method: 'DELETE' });
+            await fetch(`${apiUrl}/api/pool?store_id=${encodeURIComponent(storeId)}`, { method: 'DELETE' });
             alert('✅ 지식창고가 초기화되었습니다.');
             window.location.reload();
         } catch {

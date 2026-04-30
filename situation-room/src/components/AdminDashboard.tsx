@@ -1,18 +1,19 @@
-import React from 'react';
+import { useStoreFilter } from '../hooks/useStoreFilter';
 
-export const AdminDashboard: React.FC<{ bundles: any[], storeName: string }> = ({ bundles, storeName }) => {
+export const AdminDashboard: React.FC<{ bundles: any[] }> = ({ bundles }) => {
+    const { storeId, storeName } = useStoreFilter();
     const now = new Date();
     const todayStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
 
-    const orderCount = bundles.filter(b => b.type === 'Orders' && b.status !== 'archived' && b.status !== 'canceled' && (b.store === storeName || !b.store)).length;
-    const employeeCount = bundles.filter(b => b.type === 'Employee' && (b.store === storeName || !b.store)).length;
+    const orderCount = bundles.filter(b => b.type === 'Orders' && b.status !== 'archived' && b.status !== 'canceled' && (storeId === 'Total' || b.store_id === storeId || !b.store_id)).length;
+    const employeeCount = bundles.filter(b => b.type === 'Employee' && (storeId === 'Total' || b.store_id === storeId || !b.store_id)).length;
     const todaySales = bundles
-        .filter(b => b.type === 'Orders' && b.timestamp.startsWith(todayStr) && b.status !== 'canceled' && (b.store === storeName || !b.store))
+        .filter(b => b.type === 'Orders' && b.timestamp.startsWith(todayStr) && b.status !== 'canceled' && (storeId === 'Total' || b.store_id === storeId || !b.store_id))
         .reduce((acc, b) => {
             const orderTotal = b.items.reduce((sum: number, item: any) => {
                 // Find matching menu in knowledge pool to get its price
                 const menuInfo = bundles
-                    .filter(kb => kb.type === 'Menus' && (kb.store === storeName || !kb.store))
+                    .filter(kb => kb.type === 'Menus' && (storeId === 'Total' || kb.store_id === storeId || !kb.store_id))
                     .flatMap(kb => kb.items)
                     .find(ki => ki.name.includes(item.name));
                 

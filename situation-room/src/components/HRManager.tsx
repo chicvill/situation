@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
+import { useStoreFilter } from '../hooks/useStoreFilter';
 
-export const HRManager: React.FC<{ bundles: any[], user: any, storeName: string }> = ({ bundles, user, storeName }) => {
+export const HRManager: React.FC<{ bundles: any[], user: any }> = ({ bundles, user }) => {
+    const { storeId, storeName } = useStoreFilter();
     const [isProcessing, setIsProcessing] = useState(false);
     const [editingWage, setEditingWage] = useState<{ id: string, wage: string } | null>(null);
 
     // 현재 매장의 직원 및 근태 정보만 필터링
-    const employees = bundles.filter(b => b.type === 'Employee' && (b.store === storeName || !b.store));
-    const attendance = bundles.filter(b => b.type === 'Attendance' && (b.store === storeName || !b.store));
+    const employees = bundles.filter(b => b.type === 'Employee' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
+    const attendance = bundles.filter(b => b.type === 'Attendance' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
     
     // 승인 대기 계정 필터링 (계층적 승인 + 매장 격리)
     const pendingAccounts = bundles.filter(b => {
         if (b.type !== 'PersonalInfos' || b.status === 'approved') return false;
         // 점주는 자신의 매장 직원만 승인 가능
-        if (user.role === 'owner' && b.store !== storeName) return false;
+        if (user.role === 'owner' && (storeId !== 'Total' && b.store_id !== storeId)) return false;
         
         const role = b.items.find((i: any) => i.name === '권한')?.value;
         if (user.role === 'admin') return role === 'owner';
@@ -31,7 +32,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeName: string 
             await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...bundle, items: updatedItems, store: storeName }),
+                body: JSON.stringify({ ...bundle, items: updatedItems, store: storeName, store_id: storeId }),
             });
             setEditingWage(null);
             alert('✅ 시급 정보가 업데이트되었습니다.');
@@ -46,7 +47,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeName: string 
             await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...bundle, status: 'resigned', store: storeName }),
+                body: JSON.stringify({ ...bundle, status: 'resigned', store: storeName, store_id: storeId }),
             });
             alert('🚫 퇴사 처리가 완료되었습니다.');
         } catch (err) { console.error(err); } finally { setIsProcessing(false); }
@@ -60,7 +61,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeName: string 
             await fetch(`${apiUrl}/api/situation`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text, context: 'hr', store: storeName }),
+                body: JSON.stringify({ text, context: 'hr', store: storeName, store_id: storeId }),
             });
             alert(`${type} 처리가 완료되었습니다.`);
         } catch (err) { console.error(err); } finally { setIsProcessing(false); }
@@ -74,7 +75,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeName: string 
             await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...bundle, status: 'approved', store: storeName }),
+                body: JSON.stringify({ ...bundle, status: 'approved', store: storeName, store_id: storeId }),
             });
             alert('✅ 계정이 승인되었습니다.');
         } catch (err) { console.error(err); } finally { setIsProcessing(false); }

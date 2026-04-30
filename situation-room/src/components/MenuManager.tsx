@@ -2,20 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useImageScan, ScanningOverlay, ScanChoiceModal } from '../hooks/useImageScan';
 import type { BundleData } from '../types';
 
+import { useStoreFilter } from '../hooks/useStoreFilter';
+
 interface MenuManagerProps {
     bundles: BundleData[];
     onUpdate?: (updatedItems: any[]) => void;
-    storeName: string;
 }
 
-export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate, storeName }) => {
+export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) => {
+    const { storeId, storeName } = useStoreFilter();
     const [menuItems, setMenuItems] = useState<any[]>([]);
     const [bundleId, setBundleId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!bundles) return; // 데이터가 없으면 대기
         
-        const menuBundle = bundles.find(b => b.type === 'Menus' && (b.store === storeName || !b.store));
+        const menuBundle = bundles.find(b => b.type === 'Menus' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
         if (menuBundle) {
             setBundleId(menuBundle.id);
             setMenuItems(menuBundle.items.map(item => ({
@@ -102,7 +104,8 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate, sto
                     })),
                     type: 'Menus',
                     title: '메뉴 정보',
-                    store: storeName
+                    store: storeName,
+                    store_id: storeId
                 }),
             });
 

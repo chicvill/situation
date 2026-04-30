@@ -167,15 +167,15 @@ function App() {
       case 'kitchen': return <KitchenDisplay />;
       case 'counter': return <CounterPad bundles={bundles} messages={[]} onSendMessage={handleSendMessage} />;
       case 'display': return <DisplayBoard bundles={bundles} />;
-      case 'menu': return <MenuManager bundles={bundles} storeName={storeName} />;
-      case 'settings': return <StoreManager bundles={bundles} onNavigate={navigateTo as any} storeName={storeName} />;
+      case 'menu': return <MenuManager bundles={bundles} />;
+      case 'settings': return <StoreManager bundles={bundles} onNavigate={navigateTo as any} />;
       case 'qr': return <QRManager bundles={bundles} />;
       case 'paper': return <PaperViewer />;
-      case 'home': return <AdminDashboard bundles={bundles} storeName={storeName} />;
+      case 'home': return <AdminDashboard bundles={bundles} />;
       case 'inventory': return <LogicInventory />;
-      case 'hr': return <HRManager bundles={bundles} user={user} storeName={storeName} />;
-      case 'waiting': return <WaitingManager bundles={bundles} onSendMessage={(txt) => handleSendMessage(txt, undefined, 'waiting', storeId, storeName)} storeName={storeName} />;
-      case 'reserve': return <ReservationManager bundles={bundles} storeName={storeName} />;
+      case 'hr': return <HRManager bundles={bundles} user={user} />;
+      case 'waiting': return <WaitingManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'waiting', sId, sName)} />;
+      case 'reserve': return <ReservationManager bundles={bundles} />;
       default: return <ConversationalUI bundles={bundles} storeName={storeName} />;
     }
   };

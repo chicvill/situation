@@ -1,17 +1,18 @@
-import React, { useMemo } from 'react';
-import type { BundleData } from '../types';
+import { useStoreFilter } from '../hooks/useStoreFilter';
 
 interface DisplayBoardProps {
     bundles: BundleData[];
 }
 
 export const DisplayBoard: React.FC<DisplayBoardProps> = ({ bundles }) => {
-    // 사장님 요청: 오직 'ready' (조리 완료) 상태인 주문만 전광판에 노출
+    const { storeId } = useStoreFilter();
+    
+    // 사장님 요청: 오직 'ready' (조리 완료) 상태인 주문만 전광판에 노출 (매장 격리 적용)
     const readyOrders = useMemo(() => {
         return bundles
-            .filter(b => b.type === 'Orders' && b.status === 'ready')
+            .filter(b => b.type === 'Orders' && b.status === 'ready' && (storeId === 'Total' || b.store_id === storeId || !b.store_id))
             .sort((a, b) => b.timestamp.localeCompare(a.timestamp)); // 최신순 정렬
-    }, [bundles]);
+    }, [bundles, storeId]);
 
     // 테이블 번호 추출 함수 (과거 데이터 호환성 유지)
     const getTableLabel = (order: BundleData) => {
