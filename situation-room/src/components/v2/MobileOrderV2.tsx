@@ -194,6 +194,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
         setCart([]);
         fetchMySession();
         generateAiStory(currentCart); // 스토리 생성
+        setShowHistory(true); // 주문 즉시 내 주문 현황으로 이동
         setTimeout(() => setShowAiStory(true), 800); // 약간의 시차 후 팝업
       }
     } catch (err) {
@@ -218,41 +219,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
             <div className="table-badge">Table {tableNo}</div>
             
             <div className="status-box">
-              <div className="spinner-small"></div>
-              <p>스마트 오더 연결 중...</p>
-            </div>
-
-            <p className="sub-text">
-              좌석 확인이 완료되면<br/>
-              자동으로 메뉴판이 활성화됩니다.
-            </p>
-
-            <button className="inquiry-btn-large" onClick={() => alert('직원을 호출했습니다. 잠시만 기다려주세요.')}>
-              🔔 직원에게 문의
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mobile-v2-container unified-mode">
-      <header className="glass-card sticky-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ fontSize: '22px', margin: 0, fontWeight: 800 }}>{storeName}</h1>
-            <p style={{ opacity: 0.6, fontSize: '13px' }}>Table {tableNo} | Enjoy your meal</p>
-          </div>
-          <button onClick={() => setShowHistory(!showHistory)} className="history-btn">
-            {showHistory ? '메뉴보기' : '주문내역'}
-          </button>
-        </div>
-      </header>
-
-      {showHistory ? (
-        <div className="history-view animate-fade-in">
-          <h2 className="section-title">내 주문 현황</h2>
+             <div className="history-view animate-fade-in" style={{ fontSize: '0.65rem' }}>
+          <h2 className="section-title" style={{ fontSize: '1.2rem', marginBottom: '15px' }}>내 주문 현황</h2>
           {myOrders.length === 0 ? (
             <div className="glass-card empty-state">
               <p>주문 내역이 없습니다.</p>
@@ -265,15 +233,17 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
                 
                 return (
                   <div key={idx} className="glass-card order-card" style={{ 
-                    borderLeft: `5px solid ${borderColor}`,
+                    borderLeft: `3px solid ${borderColor}`,
+                    padding: '10px !important',
+                    marginBottom: '10px',
                     background: isPaid ? 'rgba(239, 68, 68, 0.03)' : 'rgba(255, 255, 255, 0.03)'
                   }}>
-                    <div className="order-header">
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <span className="order-seq" style={{ color: borderColor, opacity: 0.8 }}>{order.order_seq}차 주문</span>
-                        {isPaid && <span style={{ fontSize: '10px', background: '#EF4444', color: 'white', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>PAID</span>}
+                    <div className="order-header" style={{ marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                        <span className="order-seq" style={{ color: borderColor, opacity: 0.8, fontSize: '0.7rem' }}>{order.order_seq}차 주문</span>
+                        {isPaid && <span style={{ fontSize: '8px', background: '#EF4444', color: 'white', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>PAID</span>}
                       </div>
-                      <span className="status-badge" style={{ color: borderColor, fontWeight: '900', fontSize: '14px' }}>
+                      <span className="status-badge" style={{ color: borderColor, fontWeight: '900', fontSize: '0.7rem' }}>
                         {isPaid ? '✅ 결제완료' : (order.status === 'cooking' ? '🔥 조리중' : order.status === 'ready' ? '🔔 조리완료' : '✅ 서빙완료')}
                       </span>
                     </div>
@@ -283,39 +253,39 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
                         const isPending = order.status === 'pending';
                         
                         return (
-                          <div key={i} className="item-row" style={{ alignItems: 'center' }}>
+                          <div key={i} className="item-row" style={{ alignItems: 'center', marginBottom: '4px' }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>{item.name}</div>
-                              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
+                              <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)' }}>
                                 {item.price.toLocaleString()}원
                               </div>
                             </div>
                             
                             {isPending ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '8px' }}>
                                 <button 
                                   onClick={() => {
                                     const newItems = [...order.items];
                                     newItems[i] = { ...item, quantity: Math.max(0, qty - 1) };
                                     handleUpdateOrderItem(order.order_id, newItems);
                                   }}
-                                  style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '18px', padding: '0 5px' }}
+                                  style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '14px', padding: '0 3px' }}
                                 >-</button>
-                                <span style={{ fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{qty}</span>
+                                <span style={{ fontWeight: 800, minWidth: '15px', textAlign: 'center' }}>{qty}</span>
                                 <button 
                                   onClick={() => {
                                     const newItems = [...order.items];
                                     newItems[i] = { ...item, quantity: qty + 1 };
                                     handleUpdateOrderItem(order.order_id, newItems);
                                   }}
-                                  style={{ background: 'none', border: 'none', color: '#f97316', fontSize: '18px', padding: '0 5px' }}
+                                  style={{ background: 'none', border: 'none', color: '#f97316', fontSize: '14px', padding: '0 3px' }}
                                 >+</button>
                                 <button 
                                   onClick={() => {
                                     const newItems = order.items.filter((_: any, idx: number) => idx !== i);
                                     handleUpdateOrderItem(order.order_id, newItems);
                                   }}
-                                  style={{ marginLeft: '10px', background: 'none', border: 'none', color: '#ef4444', fontSize: '14px' }}
+                                  style={{ marginLeft: '5px', background: 'none', border: 'none', color: '#ef4444', fontSize: '10px' }}
                                 >✕</button>
                               </div>
                             ) : (
@@ -325,7 +295,46 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
                         );
                       })}
                     </div>
-                    <div className="order-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="order-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px', marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ opacity: 0.6, fontSize: '10px' }}>주문합계:</span>
+                        <div style={{ color: borderColor, fontWeight: '900', fontSize: '1rem' }}>{order.total_price.toLocaleString()}원</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="total-summary-card" style={{ 
+                textAlign: 'center', 
+                padding: '25px 20px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center',
+                gap: '15px' 
+              }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'white' }}>
+                  합계 {sessionTotal.toLocaleString()}원
+                </div>
+                <button 
+                  onClick={() => setShowHistory(false)}
+                  style={{ 
+                    background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 30px',
+                    borderRadius: '50px',
+                    fontSize: '1.1rem',
+                    fontWeight: 800,
+                    width: '100%',
+                    boxShadow: '0 4px 15px rgba(249, 115, 22, 0.4)'
+                  }}
+                >
+                  ➕ 메뉴 추가
+                </button>
+              </div>
+            </div>
+          )}
+        </div>: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <span style={{ opacity: 0.6, fontSize: '13px' }}>주문합계:</span>
                         <div style={{ color: borderColor, fontWeight: '900', fontSize: '18px' }}>{order.total_price.toLocaleString()}원</div>
