@@ -417,6 +417,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
           bundles={bundles}
           initialPhone={userPhone}
           onPhoneChange={setUserPhone}
+          items={cart}
         />
       )}
 
