@@ -219,14 +219,49 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
             <div className="table-badge">Table {tableNo}</div>
             
             <div className="status-box">
-             <div className="history-view animate-fade-in" style={{ fontSize: '0.65rem' }}>
-          <h2 className="section-title" style={{ fontSize: '1.2rem', marginBottom: '15px' }}>내 주문 현황</h2>
+              <div className="spinner-small"></div>
+              <p>스마트 오더 연결 중...</p>
+            </div>
+
+            <p className="sub-text">
+              좌석 확인이 완료되면<br/>
+              자동으로 메뉴판이 활성화됩니다.
+            </p>
+
+            <button className="inquiry-btn-large" onClick={() => alert('직원을 호출했습니다. 잠시만 기다려주세요.')}>
+              🔔 직원에게 문의
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mobile-v2-container unified-mode">
+      <header className="glass-card sticky-header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 style={{ fontSize: '22px', margin: 0, fontWeight: 800 }}>{storeName}</h1>
+            <p style={{ opacity: 0.6, fontSize: '13px' }}>Table {tableNo} | Enjoy your meal</p>
+          </div>
+          {!showHistory && (
+            <button onClick={() => setShowHistory(true)} className="history-btn">
+              주문내역
+            </button>
+          )}
+        </div>
+      </header>
+
+      {showHistory ? (
+        <div className="history-view animate-fade-in" style={{ fontSize: '0.65rem', padding: '15px' }}>
+          <h2 className="section-title" style={{ fontSize: '1.2rem', marginBottom: '15px', textAlign: 'center' }}>내 주문 현황</h2>
           {myOrders.length === 0 ? (
-            <div className="glass-card empty-state">
+            <div className="glass-card empty-state" style={{ textAlign: 'center', padding: '40px' }}>
               <p>주문 내역이 없습니다.</p>
             </div>
           ) : (
-            <div className="orders-stack">
+            <div className="orders-stack" style={{ gap: '10px' }}>
               {myOrders.map((order: any, idx) => {
                 const isPaid = order.payment_status === 'paid' || order.payment_status === 'prepaid';
                 const borderColor = isPaid ? '#EF4444' : (order.status === 'served' ? '#10B981' : '#F59E0B');
@@ -234,11 +269,11 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
                 return (
                   <div key={idx} className="glass-card order-card" style={{ 
                     borderLeft: `3px solid ${borderColor}`,
-                    padding: '10px !important',
+                    padding: '10px',
                     marginBottom: '10px',
                     background: isPaid ? 'rgba(239, 68, 68, 0.03)' : 'rgba(255, 255, 255, 0.03)'
                   }}>
-                    <div className="order-header" style={{ marginBottom: '8px' }}>
+                    <div className="order-header" style={{ marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
                         <span className="order-seq" style={{ color: borderColor, opacity: 0.8, fontSize: '0.7rem' }}>{order.order_seq}차 주문</span>
                         {isPaid && <span style={{ fontSize: '8px', background: '#EF4444', color: 'white', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>PAID</span>}
@@ -253,7 +288,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
                         const isPending = order.status === 'pending';
                         
                         return (
-                          <div key={i} className="item-row" style={{ alignItems: 'center', marginBottom: '4px' }}>
+                          <div key={i} className="item-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                             <div style={{ flex: 1 }}>
                               <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>{item.name}</div>
                               <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)' }}>
@@ -263,30 +298,21 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
                             
                             {isPending ? (
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '8px' }}>
-                                <button 
-                                  onClick={() => {
-                                    const newItems = [...order.items];
-                                    newItems[i] = { ...item, quantity: Math.max(0, qty - 1) };
-                                    handleUpdateOrderItem(order.order_id, newItems);
-                                  }}
-                                  style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '14px', padding: '0 3px' }}
-                                >-</button>
+                                <button onClick={() => {
+                                  const newItems = [...order.items];
+                                  newItems[i] = { ...item, quantity: Math.max(0, qty - 1) };
+                                  handleUpdateOrderItem(order.order_id, newItems);
+                                }} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '14px' }}>-</button>
                                 <span style={{ fontWeight: 800, minWidth: '15px', textAlign: 'center' }}>{qty}</span>
-                                <button 
-                                  onClick={() => {
-                                    const newItems = [...order.items];
-                                    newItems[i] = { ...item, quantity: qty + 1 };
-                                    handleUpdateOrderItem(order.order_id, newItems);
-                                  }}
-                                  style={{ background: 'none', border: 'none', color: '#f97316', fontSize: '14px', padding: '0 3px' }}
-                                >+</button>
-                                <button 
-                                  onClick={() => {
-                                    const newItems = order.items.filter((_: any, idx: number) => idx !== i);
-                                    handleUpdateOrderItem(order.order_id, newItems);
-                                  }}
-                                  style={{ marginLeft: '5px', background: 'none', border: 'none', color: '#ef4444', fontSize: '10px' }}
-                                >✕</button>
+                                <button onClick={() => {
+                                  const newItems = [...order.items];
+                                  newItems[i] = { ...item, quantity: qty + 1 };
+                                  handleUpdateOrderItem(order.order_id, newItems);
+                                }} style={{ background: 'none', border: 'none', color: '#f97316', fontSize: '14px' }}>+</button>
+                                <button onClick={() => {
+                                  const newItems = order.items.filter((_: any, idx: number) => idx !== i);
+                                  handleUpdateOrderItem(order.order_id, newItems);
+                                }} style={{ marginLeft: '5px', background: 'none', border: 'none', color: '#ef4444', fontSize: '10px' }}>✕</button>
                               </div>
                             ) : (
                               <span style={{ fontWeight: '600' }}>{qty}개 | {(item.price * qty).toLocaleString()}원</span>
@@ -295,25 +321,26 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
                         );
                       })}
                     </div>
-                    <div className="order-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px', marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <span style={{ opacity: 0.6, fontSize: '10px' }}>주문합계:</span>
-                        <div style={{ color: borderColor, fontWeight: '900', fontSize: '1rem' }}>{order.total_price.toLocaleString()}원</div>
+                    <div className="order-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px', marginTop: '8px' }}>
+                      <div style={{ textAlign: 'right', color: borderColor, fontWeight: '900', fontSize: '1rem' }}>
+                        합계: {order.total_price.toLocaleString()}원
                       </div>
                     </div>
                   </div>
                 );
               })}
+              
               <div className="total-summary-card" style={{ 
                 textAlign: 'center', 
-                padding: '25px 20px', 
+                padding: '30px 20px', 
+                marginTop: '20px',
                 display: 'flex', 
                 flexDirection: 'column', 
                 alignItems: 'center',
-                gap: '15px' 
+                gap: '20px' 
               }}>
-                <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'white' }}>
-                  합계 {sessionTotal.toLocaleString()}원
+                <div style={{ fontSize: '1.6rem', fontWeight: 950, color: 'white', letterSpacing: '-1px' }}>
+                  전체 합계 {sessionTotal.toLocaleString()}원
                 </div>
                 <button 
                   onClick={() => setShowHistory(false)}
@@ -321,42 +348,17 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
                     background: 'linear-gradient(135deg, #f97316, #ea580c)',
                     color: 'white',
                     border: 'none',
-                    padding: '12px 30px',
+                    padding: '15px 40px',
                     borderRadius: '50px',
-                    fontSize: '1.1rem',
-                    fontWeight: 800,
+                    fontSize: '1.2rem',
+                    fontWeight: 900,
                     width: '100%',
-                    boxShadow: '0 4px 15px rgba(249, 115, 22, 0.4)'
+                    boxShadow: '0 8px 25px rgba(249, 115, 22, 0.4)',
+                    animation: 'pulse-light 2s infinite'
                   }}
                 >
-                  ➕ 메뉴 추가
+                  ➕ 메뉴 추가하기
                 </button>
-              </div>
-            </div>
-          )}
-        </div>: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <span style={{ opacity: 0.6, fontSize: '13px' }}>주문합계:</span>
-                        <div style={{ color: borderColor, fontWeight: '900', fontSize: '18px' }}>{order.total_price.toLocaleString()}원</div>
-                      </div>
-                      {order.status !== 'pending' && (
-                        <button 
-                          onClick={() => setShowHistory(false)}
-                          style={{ 
-                            background: 'rgba(249, 115, 22, 0.1)', border: '1px solid #f97316', color: '#f97316',
-                            padding: '8px 16px', borderRadius: '12px', fontSize: '13px', fontWeight: 800
-                          }}
-                        >
-                          ➕ 추가 주문하기
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-              <div className="total-summary-card">
-                <span className="label">전체 결제 예정 금액: </span>
-                <span className="amount">{sessionTotal.toLocaleString()}원</span>
               </div>
             </div>
           )}
@@ -398,7 +400,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       )}
 
       {isOrdering && (
-        <div className="loading-overlay">
+        <div className="loading-overlay" style={{ zIndex: 12000 }}>
           <div className="glass-card loading-card">
             <div className="spinner"></div>
             <h3>주문을 전송 중입니다...</h3>
@@ -419,7 +421,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       )}
 
       {showAiStory && (
-        <div className="payment-modal-overlay" style={{ zIndex: 11000 }}>
+        <div className="payment-modal-overlay" style={{ zIndex: 13000 }}>
           <div className="glass-panel animate-pop-in" style={{ 
             width: '90%', maxWidth: '400px', padding: '30px', textAlign: 'center', 
             background: 'linear-gradient(135deg, #1e293b, #0f172a)', border: '1px solid #f97316'
