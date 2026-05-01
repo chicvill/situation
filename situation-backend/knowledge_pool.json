@@ -1,0 +1,434 @@
+[
+  {
+    "id": "MENUS_1777114714778",
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "timestamp": "2026.04.25.19:58:35",
+    "items": [
+      {
+        "name": "에스프레소",
+        "value": "3,500"
+      },
+      {
+        "name": "아메리카노",
+        "value": "3,500"
+      },
+      {
+        "name": "다방커피",
+        "value": "3,500"
+      },
+      {
+        "name": "카페라떼",
+        "value": "4,500"
+      },
+      {
+        "name": "카라멜라떼",
+        "value": "5,000"
+      },
+      {
+        "name": "맛있는녹차라떼",
+        "value": "5,500"
+      },
+      {
+        "name": "자몽라떼",
+        "value": "6,000"
+      },
+      {
+        "name": "블루베리라떼",
+        "value": "6,000"
+      },
+      {
+        "name": "바닐라라떼",
+        "value": "6,000"
+      },
+      {
+        "name": "바나나라떼",
+        "value": "6,000"
+      },
+      {
+        "name": "고구마라떼",
+        "value": "6,000"
+      },
+      {
+        "name": "모카",
+        "value": "5,500"
+      },
+      {
+        "name": "깔라만시",
+        "value": "5,500"
+      },
+      {
+        "name": "초코프레프",
+        "value": "5,000"
+      },
+      {
+        "name": "아이스티",
+        "value": "5,000"
+      },
+      {
+        "name": "고구마프레프",
+        "value": "5,000"
+      },
+      {
+        "name": "생강차",
+        "value": "6,000"
+      },
+      {
+        "name": "생강프레프",
+        "value": "5,500"
+      },
+      {
+        "name": "레모네이드",
+        "value": "5,000"
+      },
+      {
+        "name": "자몽에이드",
+        "value": "5,000"
+      },
+      {
+        "name": "계란찜",
+        "value": "5,000"
+      },
+      {
+        "name": "밀크티",
+        "value": "5,500"
+      },
+      {
+        "name": "밀크프리",
+        "value": "5,500"
+      },
+      {
+        "name": "밀크티2",
+        "value": "5,500"
+      },
+      {
+        "name": "자몽/파인애플/자몽/복숭아",
+        "value": "5,000"
+      },
+      {
+        "name": "디카페인",
+        "value": "6,000"
+      }
+    ],
+    "status": null,
+    "order_code": null,
+    "store": null,
+    "table": null,
+    "Package": "매장",
+    "payment": null
+  },
+  {
+    "id": "store-1",
+    "type": "StoreConfig",
+    "title": "매장 정보",
+    "timestamp": "2026.04.25.19:47:55",
+    "items": [
+      {
+        "name": "상호명",
+        "value": "시크앤프레시"
+      },
+      {
+        "name": "사업자번호",
+        "value": "587-13-01146"
+      },
+      {
+        "name": "주소",
+        "value": "인천광역시 서구 물류단지26로 14(검단동)"
+      },
+      {
+        "name": "대표자",
+        "value": "김종현"
+      },
+      {
+        "name": "납부상태",
+        "value": "정상"
+      }
+    ],
+    "status": null,
+    "order_code": null,
+    "store": null,
+    "table": null,
+    "Package": "매장",
+    "payment": null
+  },
+  {
+    "id": "7d5f64b5-2340-48b8-a113-7e7f0e5f34f5",
+    "type": "Orders",
+    "title": "테이블 3 - 디지털 주문",
+    "timestamp": "18:40:19",
+    "items": [
+      {
+        "name": "️ 생어묵탕 2마리",
+        "value": "x1"
+      },
+      {
+        "name": "결제수단",
+        "value": "onsite"
+      }
+    ],
+    "status": "archived",
+    "order_code": null,
+    "store": null,
+    "table": null,
+    "Package": null,
+    "payment": "현금"
+  },
+  {
+    "id": "aaa9d239-66a3-4a96-b9ac-915bd4f97031",
+    "type": "Orders",
+    "title": "테이블 3 - 디지털 주문",
+    "timestamp": "18:07:40",
+    "items": [
+      {
+        "name": "️ 광어",
+        "value": "x1"
+      },
+      {
+        "name": "결제수단",
+        "value": "onsite"
+      }
+    ],
+    "status": "archived",
+    "order_code": null,
+    "store": null,
+    "table": null,
+    "Package": null,
+    "payment": "현금"
+  },
+  {
+    "id": "f12bf8e9-d539-412e-8bdc-9c3b29a936dc",
+    "type": "Orders",
+    "title": "테이블 3 - 디지털 주문",
+    "timestamp": "16:45:09",
+    "items": [
+      {
+        "name": "menu",
+        "value": "디지털 주문 메뉴"
+      },
+      {
+        "name": "table",
+        "value": "기타/포장번 테이블 3"
+      }
+    ],
+    "status": "archived",
+    "order_code": null,
+    "store": null,
+    "table": null,
+    "Package": null,
+    "payment": "현금"
+  },
+  {
+    "id": "92e4ffb9-659e-4b24-aeb4-13ac9db57ed9",
+    "type": "Orders",
+    "title": "테이블 2 - 디지털 주문",
+    "timestamp": "16:44:47",
+    "items": [
+      {
+        "name": "메뉴",
+        "value": "디지털 주문 메뉴"
+      },
+      {
+        "name": "테이블",
+        "value": "2번"
+      }
+    ],
+    "status": "archived",
+    "order_code": null,
+    "store": null,
+    "table": null,
+    "Package": null,
+    "payment": "현금"
+  },
+  {
+    "id": "5b45153a-9f24-428d-a1e3-d7efbb95e3e9",
+    "type": "Orders",
+    "title": "테이블 3 - 디지털 주문",
+    "timestamp": "16:43:37",
+    "items": [
+      {
+        "name": "메뉴",
+        "value": "디지털 주문 메뉴"
+      },
+      {
+        "name": "테이블",
+        "value": "3번"
+      }
+    ],
+    "status": "archived",
+    "order_code": null,
+    "store": null,
+    "table": null,
+    "Package": null,
+    "payment": "현금"
+  },
+  {
+    "id": "5fda5931-9fa5-4d64-837e-1dcab6220c9d",
+    "type": "Log",
+    "title": "테이블 3 결제 완료",
+    "timestamp": "16:27:59",
+    "items": [
+      {
+        "name": "table",
+        "value": "3"
+      }
+    ],
+    "status": null,
+    "order_code": null,
+    "store": null,
+    "table": null,
+    "Package": null,
+    "payment": null
+  },
+  {
+    "id": "611bc2f8-477a-4412-bf2f-d33e0a059bb5",
+    "type": "Log",
+    "title": "3번 테이블 결제 완료",
+    "timestamp": "16:27:49",
+    "items": [
+      {
+        "name": "table",
+        "value": "3"
+      }
+    ],
+    "status": null,
+    "order_code": null,
+    "store": null,
+    "table": null,
+    "Package": null,
+    "payment": null
+  },
+  {
+    "id": "menu-master",
+    "type": "Menus",
+    "title": "메뉴 카탈로그",
+    "timestamp": "15:10:15",
+    "items": [
+      {
+        "name": "🍽️ 광어",
+        "value": "30,000"
+      },
+      {
+        "name": "🍽️ 우럭",
+        "value": "35,000"
+      },
+      {
+        "name": "🍽️ 송어",
+        "value": "30,000"
+      },
+      {
+        "name": "🍽️ 연어",
+        "value": "30,000"
+      },
+      {
+        "name": "🍽️ 도다리",
+        "value": "30,000"
+      },
+      {
+        "name": "🍽️ 도다리 세꼬시",
+        "value": "30,000"
+      },
+      {
+        "name": "🍽️ 아나고 세꼬시",
+        "value": "30,000"
+      },
+      {
+        "name": "🍽️ 우럭 세꼬시",
+        "value": "30,000"
+      },
+      {
+        "name": "🍽️ 졸돔 세꼬시",
+        "value": "45,000"
+      },
+      {
+        "name": "🍽️ 명개",
+        "value": "10,000"
+      },
+      {
+        "name": "🍽️ 낙지",
+        "value": "18,000"
+      },
+      {
+        "name": "🍽️ 전복",
+        "value": "15,000"
+      },
+      {
+        "name": "🍽️ 해삼",
+        "value": "25,000"
+      },
+      {
+        "name": "🍽️ 개불",
+        "value": "25,000"
+      },
+      {
+        "name": "🍽️ 가리비",
+        "value": "25,000"
+      },
+      {
+        "name": "🍽️ 해산물 모듬",
+        "value": "35,000"
+      },
+      {
+        "name": "🍽️ 매운탕",
+        "value": "6,000"
+      },
+      {
+        "name": "🍽️ 생어묵탕 1마리",
+        "value": "23,000"
+      },
+      {
+        "name": "🍽️ 생어묵탕 2마리",
+        "value": "35,000"
+      },
+      {
+        "name": "🍽️ 회덮밥",
+        "value": "9,000"
+      },
+      {
+        "name": "🍽️ 명개밥",
+        "value": "9,000"
+      },
+      {
+        "name": "🍽️ 알탕덮밥",
+        "value": "8,000"
+      },
+      {
+        "name": "🍽️ 광어초밥",
+        "value": "15,000"
+      },
+      {
+        "name": "🍽️ 연어초밥",
+        "value": "15,000"
+      },
+      {
+        "name": "🍽️ 광어+연어초밥",
+        "value": "15,000"
+      },
+      {
+        "name": "🍽️ 새우초밥",
+        "value": "12,000"
+      },
+      {
+        "name": "🍽️ 공기밥",
+        "value": "1,000"
+      },
+      {
+        "name": "🍽️ 라면사리",
+        "value": "2,000"
+      },
+      {
+        "name": "🍽️ 수비사리",
+        "value": "2,000"
+      },
+      {
+        "name": "🍽️ 셀프밥",
+        "value": "2,000"
+      }
+    ],
+    "status": null,
+    "order_code": null,
+    "store": null,
+    "table": null,
+    "Package": null,
+    "payment": null
+  }
+]

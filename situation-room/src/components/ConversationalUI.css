@@ -1,0 +1,64 @@
+/* ── Conversational UI Specific Styles ────────────────────── */
+.chat-content {
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+/* 6. 제안 칩 스타일 (Suggestion Chips) */
+.chat-suggestions-container {
+    padding: 15px;
+    margin-top: 10px;
+}
+
+.suggestions-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    scrollbar-width: none; /* Firefox */
+}
+
+.suggestions-scroll::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+}
+
+.suggestion-chip {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 25px;
+    color: #e2e8f0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    backdrop-filter: blur(10px);
+}
+
+.suggestion-chip:hover {
+    background: rgba(51, 65, 85, 0.8);
+    border-color: rgba(249, 115, 22, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.suggestion-chip.special {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.2));
+    border-color: rgba(249, 115, 22, 0.3);
+    color: #fdba74;
+}
+
+.suggestion-chip.special:hover {
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.3), rgba(234, 88, 12, 0.3));
+    border-color: #f97316;
+}
+
+.chip-icon {
+    font-size: 1.1rem;
+}

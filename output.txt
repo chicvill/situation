@@ -1,0 +1,18 @@
+=== Execution Start: 2026-04-19 08:20:49.405127 ===
+
+[SYSTEM] Initializing database...
+[SYSTEM] Database and initial data ready.
+
+--- [1.매장 시나리오 작동: 접수 및 결제] ---
+  [EVENT]: ORDER_ACCEPTED (ORD-001) [Tag: EFFICIENCY]
+  [EVENT]: PAYMENT_SUCCESS (ORD-001) [Tag: REVENUE]
+
+[SUCCESS] Scenario completed: Summary created and memory cleared.
+
+--- [2. AI 분석 미리보기 (합리적 필터링 결과)] ---
+💡 AI 전용 요약 데이터: {"total_sales": 12000, "orders": 1, "status": "Finished"}
+💰 매출 정밀 로그: 1건 추출
+   -> {"time": "08:20:49", "actor": "MGR_01", "action": "PAYMENT_SUCCESS", "target": "ORD-001"}
+
+==================================================
+Results are also saved in 'output.txt'.

@@ -1,0 +1,56 @@
+{
+  "store": {
+    "name": "그레이스 하이테크 커피",
+    "type": "카페"
+  },
+  "warehouse": {
+    "inventory": [
+      {
+        "name": "원두(Arabica)",
+        "stock": 5000
+      },
+      {
+        "name": "신선 우유",
+        "stock": 5000
+      },
+      {
+        "name": "테이크아웃 컵",
+        "stock": 200
+      }
+    ]
+  },
+  "catalog": {
+    "menus": [
+      {
+        "name": "아메리카노",
+        "price": 4500,
+        "recipe": "원두(Arabica):18, 테이크아웃 컵:1"
+      },
+      {
+        "name": "카페라떼",
+        "price": 5000,
+        "recipe": "원두(Arabica):18, 신선 우유:200, 테이크아웃 컵:1"
+      }
+    ]
+  },
+  "infrastructure": {
+    "devices": [
+      {
+        "name": "주방 모니트",
+        "role": "KITCHEN_MONITOR"
+      },
+      {
+        "name": "카운터 POS",
+        "role": "POS_SYSTEM"
+      },
+      {
+        "name": "벽면 전광판",
+        "role": "DISPLAY"
+      },
+      {
+        "name": "4인석 테이블 1",
+        "role": "TABLE"
+      }
+    ]
+  }
+}

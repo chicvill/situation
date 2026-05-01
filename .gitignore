@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+Backup_env.txt
+
+# Node.js
+node_modules/
+# dist/ (Render 속도 향상을 위해 해제)
+dist-ssr/
+*.local
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
