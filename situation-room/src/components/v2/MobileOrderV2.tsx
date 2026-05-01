@@ -148,6 +148,29 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     }
   };
 
+  const handleUpdateOrderItem = async (orderId: string, items: any[]) => {
+    try {
+      const filteredItems = items.filter(i => (i.quantity || i.qty) > 0);
+      if (filteredItems.length === 0) {
+        // 모든 항목 삭제 시 주문 취소 처리
+        await fetch(`${API_BASE}/api/order/status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: orderId, status: 'cancelled' })
+        });
+      } else {
+        await fetch(`${API_BASE}/api/order/update-items`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id: orderId, items: filteredItems })
+        });
+      }
+      fetchMySession();
+    } catch (err) {
+      console.error('Update Item Error:', err);
+    }
+  };
+
   const executeOrderWithPayment = async (method: string, extraData?: any) => {
     setIsOrdering(true);
     setShowPayModal(false);
@@ -255,16 +278,69 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
                       </span>
                     </div>
                     <div className="items-list">
-                      {order.items.map((item: any, i: number) => (
-                        <div key={i} className="item-row">
-                          <span style={{ color: 'rgba(255,255,255,0.9)' }}>{item.name} x {item.quantity || item.qty}</span>
-                          <span style={{ fontWeight: '600' }}>{(item.price * (item.quantity || item.qty)).toLocaleString()}원</span>
-                        </div>
-                      ))}
+                      {order.items.map((item: any, i: number) => {
+                        const qty = item.quantity || item.qty;
+                        const isPending = order.status === 'pending';
+                        
+                        return (
+                          <div key={i} className="item-row" style={{ alignItems: 'center' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>{item.name}</div>
+                              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
+                                {item.price.toLocaleString()}원
+                              </div>
+                            </div>
+                            
+                            {isPending ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '12px' }}>
+                                <button 
+                                  onClick={() => {
+                                    const newItems = [...order.items];
+                                    newItems[i] = { ...item, quantity: Math.max(0, qty - 1) };
+                                    handleUpdateOrderItem(order.order_id, newItems);
+                                  }}
+                                  style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '18px', padding: '0 5px' }}
+                                >-</button>
+                                <span style={{ fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{qty}</span>
+                                <button 
+                                  onClick={() => {
+                                    const newItems = [...order.items];
+                                    newItems[i] = { ...item, quantity: qty + 1 };
+                                    handleUpdateOrderItem(order.order_id, newItems);
+                                  }}
+                                  style={{ background: 'none', border: 'none', color: '#f97316', fontSize: '18px', padding: '0 5px' }}
+                                >+</button>
+                                <button 
+                                  onClick={() => {
+                                    const newItems = order.items.filter((_: any, idx: number) => idx !== i);
+                                    handleUpdateOrderItem(order.order_id, newItems);
+                                  }}
+                                  style={{ marginLeft: '10px', background: 'none', border: 'none', color: '#ef4444', fontSize: '14px' }}
+                                >✕</button>
+                              </div>
+                            ) : (
+                              <span style={{ fontWeight: '600' }}>{qty}개 | {(item.price * qty).toLocaleString()}원</span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="order-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px', marginTop: '10px' }}>
-                      <span style={{ opacity: 0.6 }}>주문합계:</span>
-                      <span style={{ color: borderColor, fontWeight: '900', fontSize: '16px' }}>{order.total_price.toLocaleString()}원</span>
+                    <div className="order-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px', marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ opacity: 0.6, fontSize: '13px' }}>주문합계:</span>
+                        <div style={{ color: borderColor, fontWeight: '900', fontSize: '18px' }}>{order.total_price.toLocaleString()}원</div>
+                      </div>
+                      {order.status !== 'pending' && (
+                        <button 
+                          onClick={() => setShowHistory(false)}
+                          style={{ 
+                            background: 'rgba(249, 115, 22, 0.1)', border: '1px solid #f97316', color: '#f97316',
+                            padding: '8px 16px', borderRadius: '12px', fontSize: '13px', fontWeight: 800
+                          }}
+                        >
+                          ➕ 추가 주문하기
+                        </button>
+                      )}
                     </div>
                   </div>
                 );

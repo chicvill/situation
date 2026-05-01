@@ -362,6 +362,23 @@ async def process_order(order_req: OrderRequest):
     
     return {"status": "success", "order_id": order_id, "order_seq": next_seq}
 
+@app.post("/api/order/update-items")
+async def update_items(data: Dict):
+    order_id = data.get("order_id")
+    items = data.get("items")
+    if not order_id or items is None:
+        raise HTTPException(status_code=400, detail="order_id and items required")
+    
+    total_price = sum(item.get("price", 0) * (item.get("quantity") or item.get("qty", 0)) for item in items)
+    
+    from .database import update_order_items
+    success = update_order_items(order_id, items, total_price)
+    if success:
+        # 주방/카운터에 업데이트 알림 전송 (필요시)
+        await manager.broadcast({"type": "ORDER_UPDATED", "order_id": order_id, "items": items, "total_price": total_price})
+        return {"status": "success"}
+    raise HTTPException(status_code=500, detail="Update failed")
+
 @app.post("/api/order/status")
 async def update_status(update: StatusUpdate):
     success = update_order_status(update.order_id, update.status)

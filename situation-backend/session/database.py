@@ -193,6 +193,21 @@ def get_orders_by_session(session_id: str):
         print(f"Get Orders By Session Error: {e}")
         return []
 
+def update_order_items(order_id: str, items: list, total_price: float):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE table_orders SET items = %(items)s, total_price = %(total_price)s WHERE order_id = %(order_id)s", 
+                   {'items': json.dumps(items), 'total_price': total_price, 'order_id': order_id})
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Update Order Items Error: {e}")
+        return False
+
 def update_order_status(order_id: str, status: str):
     conn = get_db_conn()
     if not conn: return False
