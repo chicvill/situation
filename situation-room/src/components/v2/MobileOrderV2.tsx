@@ -187,7 +187,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           table_id: tableId, device_id: deviceId, store_id: storeId,
-          items: cart.map(c => ({ name: c.name, quantity: c.qty, price: c.price })),
+          items: cart.map(c => ({ name: c.name, quantity: c.qty || 1, price: c.price, qty: c.qty || 1 })),
           total_price: totalPrice,
           payment_status: (method === '현금 결제' || method === 'cash') ? 'unpaid' : 'prepaid',
           payment_method: method,
@@ -318,7 +318,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
           <h2 className="section-title" style={{ fontSize: '1.2rem', marginBottom: '15px', textAlign: 'center' }}>내 주문 현황</h2>
           <div className="orders-stack">
             {myOrders.length === 0 ? <p style={{ textAlign:'center', opacity:0.5 }}>주문 내역이 없습니다.</p> : 
-              myOrders.map((order: any, idx) => {
+              myOrders.map((order: Order, idx) => {
                 const isPaid = order.payment_status === 'paid' || order.payment_status === 'prepaid';
                 const borderColor = isPaid ? '#EF4444' : (order.status === 'served' ? '#10B981' : '#F59E0B');
                 return (
@@ -350,7 +350,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
                                 handleUpdateOrderItem(order.order_id, newItems);
                               }} style={{ background: 'none', border: 'none', color: '#f97316', fontSize: '14px' }}>+</button>
                               <button onClick={() => {
-                                const newItems = order.items.filter((_: any, idx: number) => idx !== i);
+                                const newItems = order.items.filter((_: OrderItem, idx: number) => idx !== i);
                                 handleUpdateOrderItem(order.order_id, newItems);
                               }} style={{ marginLeft: '5px', background: 'none', border: 'none', color: '#ef4444', fontSize: '10px' }}>✕</button>
                             </div>

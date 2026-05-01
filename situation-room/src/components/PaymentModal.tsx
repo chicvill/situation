@@ -4,7 +4,7 @@ import type { BundleData } from '../types';
 interface PaymentModalProps {
   totalPrice: number;
   onClose: () => void;
-  onSubmit: (method: string, extraData?: any) => void;
+  onSubmit: (method: string, extraData?: any) => void | Promise<void>;
   isCounter?: boolean;
   prepaidMethod?: string | null;
   tableNo?: string;
@@ -161,8 +161,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       }}>
         {items.length > 0 ? items.map((item, i) => (
           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '0.85rem' }}>
-            <span style={{ color: 'rgba(255,255,255,0.8)' }}>{item.name} <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>x {item.qty}</span></span>
-            <span style={{ color: 'white', fontWeight: 600 }}>{(item.price * item.qty).toLocaleString()}원</span>
+            <span style={{ color: 'rgba(255,255,255,0.8)' }}>{item.name} <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem' }}>x {item.qty || 1}</span></span>
+            <span style={{ color: 'white', fontWeight: 600 }}>{(item.price * (item.qty || 1)).toLocaleString()}원</span>
           </div>
         )) : <div style={{ textAlign:'center', color:'#64748b' }}>장바구니가 비어 있습니다.</div>}
       </div>
