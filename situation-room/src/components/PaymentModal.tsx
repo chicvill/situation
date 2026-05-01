@@ -70,18 +70,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   // ════════════════════════════════════════
   const renderSelect = () => (
     <div style={{
-      width: '420px', background: 'linear-gradient(145deg,#1e293b,#0f172a)',
-      borderRadius: '28px', padding: '28px', boxShadow: '0 25px 60px rgba(0,0,0,0.6)',
+      width: '90vw', maxWidth: '420px', background: 'var(--surface)',
+      borderRadius: 'var(--radius-lg)', padding: '28px', boxShadow: '0 25px 60px rgba(0,0,0,0.1)',
     }}>
       {/* 헤더 */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'30px' }}>
-        <h2 style={{ color:'white', margin:0, fontSize:'1.4rem', fontWeight:800 }}>💳 결제 방법 선택</h2>
-        <button onClick={onClose} style={{ background:'none', border:'none', color:'#64748b', fontSize:'1.8rem', cursor:'pointer', lineHeight:1 }}>×</button>
+        <h2 style={{ color:'var(--text-main)', margin:0, fontSize:'1.2rem', fontWeight:700 }}>결제 방법 선택</h2>
+        <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:'1.5rem', cursor:'pointer', lineHeight:1 }}>×</button>
       </div>
 
-      <div style={{ color:'#94a3b8', fontSize:'0.9rem', fontWeight:600, marginBottom:'15px', display:'flex', alignItems:'center', gap:'8px' }}>
-        <span style={{ background:'#3b82f6', width:'4px', height:'14px', borderRadius:'2px' }}></span>
-        결제 수단 선택
+      <div style={{ color:'var(--text-muted)', fontSize:'0.85rem', fontWeight:500, marginBottom:'15px', display:'flex', alignItems:'center', gap:'8px' }}>
+        결제 수단을 선택해 주세요.
       </div>
 
       {/* 결제 수단 버튼 */}
@@ -91,57 +90,55 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
             key={m.id}
             onClick={() => setSelectedMethod(m)}
             style={{
-              display:'flex', alignItems:'center', gap:'16px', padding:'18px 20px',
-              borderRadius:'18px', border:`2px solid ${selectedMethod?.id === m.id ? m.color : 'rgba(255,255,255,0.06)'}`,
-              background: selectedMethod?.id === m.id ? `${m.color}18` : 'rgba(255,255,255,0.03)',
+              display:'flex', alignItems:'center', gap:'16px', padding:'16px 20px',
+              borderRadius:'var(--radius-md)', border:`1px solid ${selectedMethod?.id === m.id ? 'var(--accent)' : 'var(--border)'}`,
+              background: selectedMethod?.id === m.id ? 'var(--primary-soft)' : 'transparent',
               textAlign:'left', cursor:'pointer', transition:'all 0.15s',
             }}
           >
-            <span style={{ fontSize:'2rem' }}>{m.icon}</span>
+            <span style={{ fontSize:'1.5rem' }}>{m.icon}</span>
             <div style={{ flex:1 }}>
-              <div style={{ color:'white', fontWeight:700, fontSize:'1rem' }}>{m.name}</div>
-              <div style={{ color:'rgba(255,255,255,0.35)', fontSize:'0.78rem', marginTop:'2px' }}>{m.desc}</div>
+              <div style={{ color:'var(--text-main)', fontWeight:600, fontSize:'0.95rem' }}>{m.name}</div>
+              <div style={{ color:'var(--text-muted)', fontSize:'0.75rem', marginTop:'2px' }}>{m.desc}</div>
             </div>
-            {selectedMethod?.id === m.id && <span style={{ color:m.color, fontSize:'1.2rem' }}>✔</span>}
+            {selectedMethod?.id === m.id && <span style={{ color:'var(--accent)', fontSize:'1rem' }}>✔</span>}
           </button>
         ))}
       </div>
 
       {/* 최종 합계 및 분기 버튼 영역 */}
-      <div style={{ borderTop:'1px solid rgba(255,255,255,0.1)', paddingTop:'20px' }}>
+      <div style={{ borderTop:'1px solid var(--border)', paddingTop:'20px' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' }}>
-          <span style={{ color:'#94a3b8', fontWeight:600 }}>총 결제 금액</span>
-          <span style={{ color:'#f97316', fontSize:'1.6rem', fontWeight:900 }}>{totalPrice.toLocaleString()}원</span>
+          <span style={{ color:'var(--text-muted)', fontWeight:500 }}>총 결제 금액</span>
+          <span style={{ color:'var(--accent)', fontSize:'1.4rem', fontWeight:700 }}>{totalPrice.toLocaleString()}원</span>
         </div>
         
         <div style={{ display:'flex', gap:'12px' }}>
           <button
             onClick={onAddOrder || onClose}
             style={{
-              flex: 1, padding:'18px', background:'rgba(255,255,255,0.05)', color:'white',
-              border:'1px solid rgba(255,255,255,0.1)', borderRadius:'16px', fontWeight:700, cursor:'pointer'
+              flex: 1, padding:'14px', background:'transparent', color:'var(--text-main)',
+              border:'1px solid var(--border)', borderRadius:'var(--radius-md)', fontWeight:600, cursor:'pointer'
             }}
           >
-            ➕ 추가주문
+            추가주문
           </button>
           <button
             onClick={async () => {
               if(!selectedMethod) { alert('결제 수단을 선택해주세요.'); return; }
-              // 결제하기 버튼 클릭 시 즉시 주문 전송 (현금/계좌이체 등)
               try {
                 await onSubmit(selectedMethod.name);
-                setStep('points'); // 성공 시 포인트 입력 단계로 이동
+                setStep('points');
               } catch (err) {
                 alert('주문 처리 중 오류가 발생했습니다.');
               }
             }}
             style={{
-              flex: 2, padding:'18px', background:'linear-gradient(135deg,#f97316,#ea580c)', color:'white',
-              border:'none', borderRadius:'16px', fontSize:'1.1rem', fontWeight:800, cursor:'pointer',
-              boxShadow:'0 6px 20px rgba(249,115,22,0.3)'
+              flex: 2, padding:'14px', background:'var(--primary)', color:'white',
+              border:'none', borderRadius:'var(--radius-md)', fontSize:'1rem', fontWeight:700, cursor:'pointer',
             }}
           >
-            {totalPrice.toLocaleString()}원 결제하기
+            결제하기
           </button>
         </div>
       </div>
@@ -153,13 +150,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   // ════════════════════════════════════════
   const renderPoints = () => (
     <div style={{
-      width:'420px', background:'#1e293b',
-      borderRadius:'28px', padding:'28px', border:'1px solid rgba(255,255,255,0.08)',
-      boxShadow:'0 25px 60px rgba(0,0,0,0.6)',
+      width:'90vw', maxWidth:'420px', background:'var(--surface)',
+      borderRadius:'var(--radius-lg)', padding:'28px', border:'1px solid var(--border)',
+      boxShadow:'0 25px 60px rgba(0,0,0,0.1)',
     }}>
       <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'24px' }}>
-        <button onClick={() => setStep('select')} style={{ background:'none', border:'none', color:'#64748b', fontSize:'1.3rem', cursor:'pointer' }}>❮</button>
-        <h2 style={{ color:'white', margin:0, fontSize:'1.2rem', fontWeight:800 }}>포인트 & 최종 확인</h2>
+        <button onClick={() => setStep('select')} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:'1.2rem', cursor:'pointer' }}>❮</button>
+        <h2 style={{ color:'var(--text-main)', margin:0, fontSize:'1.1rem', fontWeight:700 }}>포인트 적립</h2>
       </div>
 
       {/* 선택된 결제수단 배지 */}

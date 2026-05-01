@@ -103,93 +103,107 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
   };
 
   return (
-    <div className="admin-page animate-fade-in">
+    <div className="admin-page animate-fade-in" style={{ padding: '40px', background: 'var(--bg-main)', minHeight: '100vh' }}>
       <ScanningOverlay isScanning={isScanning} docType="reg" />
       <ScanChoiceModal 
         show={showChoiceModal} 
         onClose={() => setShowChoiceModal(false)} 
         onChoice={proceedToPickFile}
-        title="사업자등록증 분석 및 업데이트"
+        title="정보 업데이트"
         docType="reg"
       />
-      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+      <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
         <div>
-            <h2>🏬 매장 정보 관리</h2>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: '700', color: 'var(--text-main)', margin: 0 }}>매장 설정</h2>
+            <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>매장의 공식 정보와 시스템 설정을 관리합니다.</p>
         </div>
-        <div className="header-actions" style={{ marginBottom: '5px', display: 'flex', gap: '10px' }}>
-            <button className="confirm-btn" style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #ef4444', color: '#ef4444' }} onClick={handleResetPool}>
-                🧹 지식창고 초기화
+        <div style={{ display: 'flex', gap: '12px' }}>
+            <button 
+                style={{ 
+                    padding: '10px 20px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+                    background: 'var(--surface)', color: 'var(--danger)', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer'
+                }} 
+                onClick={handleResetPool}
+            >
+                시스템 초기화
             </button>
             <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileChange} />
-            <button className="confirm-btn premium-orange" onClick={startScanFlow} disabled={isScanning}>
-                {isScanning ? '🧠 AI 분석 중...' : '📄 사업자 등록증 스캔 등록'}
+            <button 
+                style={{ 
+                    padding: '10px 20px', borderRadius: 'var(--radius-sm)', border: 'none',
+                    background: 'var(--primary)', color: 'white', fontSize: '0.85rem', fontWeight: '700', cursor: 'pointer'
+                }} 
+                onClick={startScanFlow} 
+                disabled={isScanning}
+            >
+                {isScanning ? '분석 중...' : '사업자 등록증 스캔'}
             </button>
         </div>
       </header>
 
-      <div className="admin-form-card" style={{ maxWidth: '600px', margin: '0 auto' }}>
-        <div className="ocr-result edit-mode animate-fade-in">
-          <div className="admin-form-group">
-            <label className="admin-form-label">상호명</label>
+      <div style={{ maxWidth: '700px', margin: '0 auto', background: 'var(--surface)', padding: '40px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+        <div className="ocr-result edit-mode animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)' }}>상호명</label>
             <input 
-              className="admin-form-input"
+              style={{ padding: '12px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', outline: 'none' }}
               value={storeData.brand} 
               onChange={(e) => handleChange('brand', e.target.value)} 
               placeholder="상호명 입력" 
             />
           </div>
-          <div className="admin-form-group">
-            <label className="admin-form-label">사업자등록번호</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)' }}>사업자등록번호</label>
             <input 
-              className="admin-form-input"
+              style={{ padding: '12px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', outline: 'none' }}
               value={storeData.regNo} 
               onChange={(e) => handleChange('regNo', e.target.value)} 
               placeholder="000-00-00000" 
             />
           </div>
-          <div className="admin-form-group">
-            <label className="admin-form-label">사업장 주소</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)' }}>사업장 주소</label>
             <input 
-              className="admin-form-input"
+              style={{ padding: '12px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', outline: 'none' }}
               value={storeData.address} 
               onChange={(e) => handleChange('address', e.target.value)} 
               placeholder="전체 주소 입력" 
             />
           </div>
-          <div className="admin-form-group">
-            <label className="admin-form-label">대표자명</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)' }}>대표자명</label>
             <input 
-              className="admin-form-input"
+              style={{ padding: '12px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', outline: 'none' }}
               value={storeData.owner} 
               onChange={(e) => handleChange('owner', e.target.value)} 
               placeholder="성함 입력" 
             />
           </div>
 
-          <div style={{ marginTop: '30px', padding: '20px', background: 'rgba(255,255,255,0.03)', borderRadius: '15px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-            <h3 style={{ color: 'var(--accent-orange)', marginBottom: '15px', fontSize: '1.1rem' }}>🏦 입금 계좌 설정 (계좌이체용)</h3>
-            <div className="admin-form-group">
-                <label className="admin-form-label">은행명</label>
+          <div style={{ marginTop: '20px', padding: '30px', background: 'var(--primary-soft)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <h3 style={{ color: 'var(--primary)', margin: 0, fontSize: '1rem', fontWeight: '700' }}>입금 계좌 설정</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>은행명</label>
                 <input 
-                    className="admin-form-input"
+                    style={{ padding: '10px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' }}
                     value={storeData.bankName} 
                     onChange={(e) => handleChange('bankName', e.target.value)} 
                     placeholder="예: 국민은행" 
                 />
             </div>
-            <div className="admin-form-group">
-                <label className="admin-form-label">계좌번호</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>계좌번호</label>
                 <input 
-                    className="admin-form-input"
+                    style={{ padding: '10px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' }}
                     value={storeData.accountNo} 
                     onChange={(e) => handleChange('accountNo', e.target.value)} 
                     placeholder="하이픈(-) 포함 입력" 
                 />
             </div>
-            <div className="admin-form-group">
-                <label className="admin-form-label">예금주</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)' }}>예금주</label>
                 <input 
-                    className="admin-form-input"
+                    style={{ padding: '10px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' }}
                     value={storeData.accountHolder} 
                     onChange={(e) => handleChange('accountHolder', e.target.value)} 
                     placeholder="예금주명 입력" 
@@ -197,8 +211,14 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
             </div>
           </div>
 
-          <button className="premium-btn success-green" onClick={() => handleSave()} style={{ width: '100%', marginTop: '20px' }}>
-            💾 저장 및 적용
+          <button 
+            style={{ 
+                width: '100%', marginTop: '10px', padding: '16px', borderRadius: 'var(--radius-sm)', 
+                border: 'none', background: 'var(--accent)', color: 'white', fontWeight: '700', fontSize: '1.1rem', cursor: 'pointer' 
+            }} 
+            onClick={() => handleSave()}
+          >
+            저장 및 적용하기
           </button>
         </div>
       </div>

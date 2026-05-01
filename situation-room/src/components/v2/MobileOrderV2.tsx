@@ -72,12 +72,21 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     
     return menuBundle.items.map((item: any) => {
         const priceNum = parseInt(item.value.replace(/[^0-9]/g, '')) || 0;
-        const emojiMatch = item.name.match(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/);
         const nameClean = item.name.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/, '').trim();
+        
+        // --- Image Selection Logic ---
+        let photoUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=200&h=200"; // Default
+        if (nameClean.includes('에스프레소')) photoUrl = "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&q=80&w=200&h=200";
+        else if (nameClean.includes('아메리카노')) photoUrl = "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=200&h=200";
+        else if (nameClean.includes('스테이크')) photoUrl = "https://images.unsplash.com/photo-1546241072-48010ad2862c?auto=format&fit=crop&q=80&w=200&h=200";
+        else if (nameClean.includes('파스타')) photoUrl = "https://images.unsplash.com/photo-1473093226795-af9932fe5856?auto=format&fit=crop&q=80&w=200&h=200";
+        else if (nameClean.includes('와인')) photoUrl = "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=200&h=200";
+        else if (nameClean.includes('커피')) photoUrl = "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=200&h=200";
+
         return {
             name: nameClean,
             price: priceNum,
-            icon: item.icon || (emojiMatch ? emojiMatch[0] : '🍽️'),
+            icon: photoUrl, // Reusing icon field for image URL for simplicity
             category: item.category || '추천',
             description: item.description || '최고의 재료로 만든 시그니처 메뉴'
         };
@@ -367,8 +376,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
         </div>
         <div className="menu-grid">
           {menus.filter(m => activeCategory === '전체' || m.category === activeCategory).map((item, idx) => (
-            <div key={idx} className="glass-card menu-item-card" onClick={() => addToCart(item)}>
-              <div className="menu-icon">{item.icon}</div>
+            <div key={idx} className="menu-item-card" onClick={() => addToCart(item)}>
+              <img src={item.icon} alt={item.name} className="menu-image" />
               <div className="menu-details">
                 <div className="name">{item.name}</div>
                 <div className="desc">{item.description}</div>
@@ -413,8 +422,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       <header className="glass-card sticky-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h1 style={{ fontSize: '20px', margin: 0, fontWeight: 800 }}>{storeName}</h1>
-            <p style={{ opacity: 0.6, fontSize: '12px' }}>Table {tableNo} | Premium Order</p>
+            <h1 style={{ fontSize: '18px', margin: 0, fontWeight: 700, color: 'var(--text-main)' }}>{storeName}</h1>
+            <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '2px' }}>Table {tableNo}</p>
           </div>
           <button onClick={() => setShowHistory(!showHistory)} className="history-btn">
             {showHistory ? '메뉴판 보기' : '주문내역'}

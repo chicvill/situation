@@ -135,32 +135,32 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
     const tables = Array.from({ length: 12 }, (_, i) => i + 1);
 
     return (
-        <div className="counter-pad-premium" style={{ padding: '20px' }}>
-            {/* 상단 테이블 개시 섹션 (풀다운 방식) */}
+        <div className="counter-pad-premium" style={{ padding: '40px', background: 'var(--bg-main)', minHeight: '100vh' }}>
+            {/* 상단 테이블 개시 섹션 */}
             <div style={{ 
-                marginBottom: '30px', 
-                padding: '25px', 
-                background: 'rgba(30, 41, 59, 0.7)', 
-                borderRadius: '24px', 
-                border: '1px solid rgba(255,255,255,0.1)',
+                marginBottom: '40px', 
+                padding: '30px', 
+                background: 'var(--surface)', 
+                borderRadius: 'var(--radius-md)', 
+                border: '1px solid var(--border)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '20px',
-                backdropFilter: 'blur(10px)'
+                gap: '30px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
             }}>
                 <div style={{ flex: 1 }}>
-                    <h3 style={{ margin: '0 0 10px 0', fontSize: '1.3rem', fontWeight: '900' }}>🏢 신규 세션 개시</h3>
-                    <p style={{ margin: 0, opacity: 0.6, fontSize: '0.9rem' }}>고객 입장 및 좌석 배정 후 테이블을 선택해 주세요.</p>
+                    <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-main)' }}>신규 세션 개시</h3>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.95rem' }}>입장하신 고객님의 테이블을 선택하여 활성화해 주세요.</p>
                 </div>
                 
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                     <select 
                         value={selectedTable}
                         onChange={(e) => setSelectedTable(Number(e.target.value))}
                         style={{ 
-                            background: '#1e293b', color: 'white', border: '1px solid #3b82f6', 
-                            padding: '12px 20px', borderRadius: '12px', fontSize: '1.1rem', fontWeight: 'bold',
-                            outline: 'none', minWidth: '150px'
+                            background: 'var(--surface)', color: 'var(--text-main)', border: '1px solid var(--border)', 
+                            padding: '12px 24px', borderRadius: 'var(--radius-sm)', fontSize: '1rem', fontWeight: '500',
+                            outline: 'none', minWidth: '160px'
                         }}
                     >
                         {tables.map(num => {
@@ -177,9 +177,9 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                     <button 
                         onClick={() => handleOpenSession(`T${String(selectedTable).padStart(2, '0')}`)}
                         style={{ 
-                            background: '#3b82f6', color: 'white', border: 'none', 
-                            padding: '12px 30px', borderRadius: '12px', fontSize: '1.1rem', 
-                            fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 15px rgba(59,130,246,0.4)'
+                            background: 'var(--primary)', color: 'white', border: 'none', 
+                            padding: '12px 32px', borderRadius: 'var(--radius-sm)', fontSize: '1rem', 
+                            fontWeight: '600', cursor: 'pointer'
                         }}
                     >
                         세션 개시
@@ -187,9 +187,9 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                 </div>
             </div>
 
-            <div style={{ marginBottom: '20px' }}>
-                <h3 style={{ margin: '0 0 20px 0', fontSize: '1.5rem', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    📋 실시간 이용 현황 <span style={{ fontSize: '0.9rem', color: '#3b82f6' }}>{sessions.length}개 테이블</span>
+            <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    실시간 이용 현황 <span style={{ fontSize: '1rem', color: 'var(--accent)', fontWeight: '500' }}>{sessions.length} ACTIVE TABLES</span>
                 </h3>
             </div>
 
@@ -202,90 +202,76 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                 />
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                 {(!Array.isArray(sessions) || sessions.length === 0) ? (
-                    <div style={{ textAlign: 'center', padding: '100px 20px', background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '20px', color: '#94a3b8' }}>
-                        <div style={{ fontSize: '2.5rem', marginBottom: '15px' }}>✨</div>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>현재 활성화된 테이블 세션이 없습니다.</div>
+                    <div style={{ textAlign: 'center', padding: '120px 20px', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: '500' }}>현재 활성화된 테이블 세션이 없습니다.</div>
                     </div>
                 ) : (
                     Array.isArray(sessions) && sessions.map((session) => {
                         const sessionTotal = session.orders.reduce((sum: number, o: any) => sum + o.total_price, 0);
+                        const isPending = session.status === 'pending';
                         
                         return (
                             <div key={session.session_id} style={{ 
-                                background: session.status === 'pending' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(30, 41, 59, 0.5)', 
-                                borderRadius: '24px', 
-                                border: session.status === 'pending' ? '2px solid #f59e0b' : '1px solid rgba(255,255,255,0.1)',
-                                padding: '20px',
+                                background: 'var(--surface)', 
+                                borderRadius: 'var(--radius-lg)', 
+                                border: `1px solid ${isPending ? 'var(--warning)' : 'var(--border)'}`,
+                                padding: '30px',
                                 display: 'flex',
                                 flexDirection: 'column',
-                                gap: '15px',
-                                boxShadow: session.status === 'pending' ? '0 0 20px rgba(245, 158, 11, 0.2)' : 'none'
+                                gap: '20px',
+                                boxShadow: isPending ? '0 8px 30px rgba(245, 158, 11, 0.08)' : '0 4px 12px rgba(0,0,0,0.03)'
                             }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                        <span style={{ fontSize: '1.8rem', fontWeight: '900', color: session.status === 'pending' ? '#f59e0b' : '#3b82f6' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                                        <span style={{ fontSize: '1.6rem', fontWeight: '800', color: isPending ? 'var(--warning)' : 'var(--primary)' }}>
                                             TABLE {session.table_id}
                                         </span>
-                                        {session.status === 'pending' && (
+                                        {isPending && (
                                             <span style={{ 
-                                                background: '#f59e0b', 
+                                                background: 'var(--warning)', 
                                                 color: 'white', 
                                                 padding: '4px 12px', 
-                                                borderRadius: '10px', 
-                                                fontSize: '0.85rem', 
-                                                fontWeight: 'bold',
-                                                animation: 'pulse 2s infinite'
+                                                borderRadius: 'var(--radius-sm)', 
+                                                fontSize: '0.8rem', 
+                                                fontWeight: '600',
                                             }}>
-                                                🔔 승인 대기
+                                                승인 대기 중
                                             </span>
                                         )}
-                                        <span style={{ opacity: 0.5, fontSize: '0.9rem' }}>ID: {session.session_id}</span>
+                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{session.session_id}</span>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontSize: '0.9rem', opacity: 0.5 }}>합계 금액</div>
-                                        <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#10b981' }}>{sessionTotal.toLocaleString()}원</div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>합계 금액</div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)' }}>{sessionTotal.toLocaleString()}원</div>
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '15px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
                                     {session.orders.map((order: any) => (
                                         <div key={order.order_id} style={{ 
-                                            background: 'rgba(255,255,255,0.05)', 
-                                            borderRadius: '16px', 
-                                            padding: '15px',
-                                            border: '1px solid rgba(255,255,255,0.05)'
+                                            background: 'var(--primary-soft)', 
+                                            borderRadius: 'var(--radius-md)', 
+                                            padding: '20px',
                                         }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#94a3b8' }}>#{order.order_seq}차 주문</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                <span style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)' }}>#{order.order_seq}차 주문</span>
                                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                                     <span style={{ 
                                                         fontSize: '0.75rem', 
-                                                        background: order.payment_status === 'prepaid' ? '#EF4444' : 'rgba(255,255,255,0.1)',
-                                                        padding: '2px 8px',
-                                                        borderRadius: '6px',
-                                                        fontWeight: 'bold',
-                                                        color: 'white'
+                                                        color: order.payment_status === 'prepaid' ? 'var(--danger)' : 'var(--text-muted)',
+                                                        fontWeight: '600'
                                                     }}>
-                                                        {order.payment_status === 'prepaid' ? '💳 선불완료' : '💰 후불'}
-                                                    </span>
-                                                    <span style={{ 
-                                                        fontSize: '0.75rem', 
-                                                        background: order.payment_status === 'prepaid' ? '#EF4444' : (order.status === 'served' ? '#10b981' : '#f59e0b'),
-                                                        padding: '2px 8px',
-                                                        borderRadius: '6px',
-                                                        fontWeight: 'bold'
-                                                    }}>
-                                                        {order.payment_status === 'prepaid' ? '결제완료' : (order.status === 'served' ? '서빙완료' : (order.status === 'ready' ? '🔔 조리완료' : '🔥 조리중'))}
+                                                        {order.payment_status === 'prepaid' ? 'PREPAID' : 'POSTPAID'}
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div style={{ fontSize: '1.1rem', marginBottom: '10px', color: '#e2e8f0' }}>
+                                            <div style={{ fontSize: '1.05rem', fontWeight: '500', marginBottom: '15px', color: 'var(--text-main)', lineHeight: 1.5 }}>
                                                 {order.items.map((i: any) => `${i.name} x${i.quantity || i.qty}`).join(', ')}
                                             </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-                                                <span style={{ fontWeight: '900', fontSize: '1.2rem', color: '#10b981' }}>{order.total_price.toLocaleString()}원</span>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px', paddingTop: '15px', borderTop: '1px solid var(--border)' }}>
+                                                <span style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--accent)' }}>{order.total_price.toLocaleString()}원</span>
                                                 <div style={{ display: 'flex', gap: '10px' }}>
                                                     <button 
                                                         onClick={() => {
@@ -293,23 +279,22 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                                 handleStatusUpdate(order.order_id, 'cancelled');
                                                             }
                                                         }}
-                                                        style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', padding: '8px 15px', borderRadius: '10px', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 'bold' }}
+                                                        style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--danger)', padding: '6px 12px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '500' }}
                                                     >
-                                                        주문취소
+                                                        취소
                                                     </button>
                                                     <button 
                                                         disabled={order.status !== 'ready'}
                                                         onClick={() => handleStatusUpdate(order.order_id, 'served')}
                                                         style={{ 
-                                                            background: order.status === 'ready' ? '#3b82f6' : 'rgba(255,255,255,0.05)', 
-                                                            border: 'none', 
-                                                            color: order.status === 'ready' ? 'white' : 'rgba(255,255,255,0.3)', 
-                                                            padding: '8px 25px', 
-                                                            borderRadius: '10px', 
-                                                            fontSize: '0.85rem', 
-                                                            cursor: order.status === 'ready' ? 'pointer' : 'not-allowed',
-                                                            fontWeight: 'bold',
-                                                            boxShadow: order.status === 'ready' ? '0 4px 10px rgba(59,130,246,0.3)' : 'none'
+                                                            background: order.status === 'ready' ? 'var(--primary)' : 'transparent', 
+                                                            border: order.status === 'ready' ? 'none' : '1px solid var(--border)', 
+                                                            color: order.status === 'ready' ? 'white' : 'var(--text-muted)', 
+                                                            padding: '6px 16px', 
+                                                            borderRadius: 'var(--radius-sm)', 
+                                                            fontSize: '0.8rem', 
+                                                            cursor: order.status === 'ready' ? 'pointer' : 'default',
+                                                            fontWeight: '600',
                                                         }}
                                                     >
                                                         {order.status === 'served' ? '서빙완료' : '서빙하기'}
@@ -320,27 +305,27 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                     ))}
                                 </div>
 
-                                <div style={{ display: 'flex', gap: '15px', marginTop: '15px', justifyContent: 'flex-end', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '15px' }}>
-                                    {session.status === 'pending' ? (
+                                <div style={{ display: 'flex', gap: '15px', marginTop: '10px', justifyContent: 'flex-end', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+                                    {isPending ? (
                                         <button 
                                             onClick={() => handleOpenSession(session.table_id)}
-                                            style={{ background: '#f59e0b', border: 'none', color: 'white', padding: '15px 50px', borderRadius: '15px', fontWeight: '900', fontSize: '1.4rem', cursor: 'pointer', boxShadow: '0 4px 20px rgba(245,158,11,0.4)', animation: 'pulse 1.5s infinite' }}
+                                            style={{ background: 'var(--warning)', border: 'none', color: 'white', padding: '12px 40px', borderRadius: 'var(--radius-sm)', fontWeight: '700', fontSize: '1.1rem', cursor: 'pointer' }}
                                         >
-                                            ⚡ 지금 승인하기
+                                            세션 개시 승인
                                         </button>
                                     ) : (
                                         <>
                                             <button 
                                                 onClick={() => handleResetSession(session.session_id)}
-                                                style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#ef4444', padding: '12px 25px', borderRadius: '15px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer' }}
+                                                style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--danger)', padding: '10px 24px', borderRadius: 'var(--radius-sm)', fontWeight: '500', fontSize: '0.9rem', cursor: 'pointer' }}
                                             >
-                                                세션 취소 (변심/장난)
+                                                초기화
                                             </button>
                                             <button 
                                                 onClick={() => setSelectedSessionForPay(session)}
-                                                style={{ background: '#10b981', border: 'none', color: 'white', padding: '12px 40px', borderRadius: '15px', fontWeight: '900', fontSize: '1.2rem', cursor: 'pointer', boxShadow: '0 4px 15px rgba(16,185,129,0.3)' }}
+                                                style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '10px 32px', borderRadius: 'var(--radius-sm)', fontWeight: '600', fontSize: '1rem', cursor: 'pointer' }}
                                             >
-                                                테이블 정산 및 결제
+                                                정산 및 결제
                                             </button>
                                         </>
                                     )}

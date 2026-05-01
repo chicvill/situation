@@ -124,23 +124,25 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
     };
 
     return (
-        <div className="menu-manager-compact animate-fade-in" style={{ padding: '5px' }}>
+        <div className="menu-manager-compact animate-fade-in" style={{ padding: '30px', background: 'var(--surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
             <ScanningOverlay isScanning={isScanning} docType="menu" />
             <ScanChoiceModal 
                 show={showChoiceModal} 
                 onClose={() => setShowChoiceModal(false)} 
                 onChoice={proceedToPickFile}
-                title="메뉴판 사진 스캔 분석"
+                title="메뉴판 분석"
                 docType="menu"
             />
             <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileChange} />
             
-            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h2 style={{ margin: 0, fontSize: '1.1rem' }}>📔 메뉴 관리</h2>
-                <div style={{ display: 'flex', gap: '6px' }}>
+            <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+                <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-main)' }}>메뉴 정보 관리</h2>
+                <div style={{ display: 'flex', gap: '10px' }}>
                     <button 
-                        className="premium-btn-sm" 
-                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: 'var(--accent-orange)' }}
+                        style={{ 
+                            padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)',
+                            background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer'
+                        }}
                         onClick={startScanFlow}
                         disabled={isSaving}
                     >
@@ -148,76 +150,78 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
                     </button>
                     <button 
                         onClick={handleSave} 
-                        className="premium-btn-sm" 
-                        style={{ background: isSaving ? '#64748b' : '#10b981', padding: '6px 12px', fontSize: '0.8rem', cursor: isSaving ? 'not-allowed' : 'pointer' }}
+                        style={{ 
+                            padding: '8px 24px', borderRadius: 'var(--radius-sm)', border: 'none',
+                            background: isSaving ? 'var(--text-muted)' : 'var(--primary)', color: 'white', 
+                            fontSize: '0.85rem', fontWeight: '700', cursor: isSaving ? 'not-allowed' : 'pointer' 
+                        }}
                         disabled={isSaving}
                     >
-                        {isSaving ? '⏳ 저장 중...' : '💾 저장'}
+                        {isSaving ? '저장 중...' : '변경사항 저장'}
                     </button>
                 </div>
             </header>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {menuItems.map((item, idx) => (
-                    <div key={idx} className="editor-row">
-                        {/* 1. 아이콘 */}
+                    <div key={idx} style={{ 
+                        display: 'flex', gap: '12px', alignItems: 'center', padding: '12px',
+                        background: 'var(--bg-main)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)'
+                    }}>
                         <input 
                             value={item.icon} 
                             onChange={(e) => handleChange(idx, 'icon', e.target.value)}
-                            style={{ width: '35px', textAlign: 'center', fontSize: '1.2rem', padding: '0 !important' }}
+                            style={{ width: '40px', textAlign: 'center', fontSize: '1.2rem', border: 'none', background: 'transparent' }}
                         />
 
-                        {/* 카테고리 입력 */}
                         <input
                             value={item.category ?? '식사'}
                             onChange={(e) => handleChange(idx, 'category', e.target.value)}
-                            placeholder="카테고리"
+                            placeholder="분류"
                             style={{ 
-                                padding: '4px 8px', 
-                                borderRadius: '8px', 
-                                background: 'rgba(255,255,255,0.05)', 
-                                color: 'white', 
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                fontSize: '0.9rem',
-                                width: '60px'
+                                padding: '6px 12px', borderRadius: '4px', border: '1px solid var(--border)',
+                                background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.85rem', width: '90px'
                             }}
                         />
 
-                        {/* 2. 메뉴명 */}
                         <input 
-                            className="name-field"
                             value={item.name}
                             onChange={(e) => handleChange(idx, 'name', e.target.value)}
                             placeholder="메뉴명"
+                            style={{ 
+                                flex: 1, padding: '6px 12px', borderRadius: '4px', border: '1px solid var(--border)',
+                                background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: '600'
+                            }}
                         />
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <input 
-                                className="value-field"
-                                value={item.value.replace(/원/g, '').trim()}
+                                value={item.value.replace(/[^0-9]/g, '')}
                                 onChange={(e) => handleChange(idx, 'value', e.target.value)}
                                 placeholder="0"
-                                style={{ width: '80px' }}
+                                style={{ 
+                                    width: '100px', padding: '6px 12px', borderRadius: '4px', border: '1px solid var(--border)',
+                                    background: 'var(--surface)', color: 'var(--accent)', fontSize: '0.9rem', fontWeight: '700', textAlign: 'right'
+                                }}
                             />
-                            <span style={{ fontSize: '0.8rem', color: 'var(--accent-orange)', fontWeight: 'bold' }}>원</span>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500' }}>원</span>
                         </div>
 
-                        {/* 4. 삭제 버튼 */}
                         <button 
                             onClick={() => handleDelete(idx)}
                             style={{ 
-                                background: 'rgba(239, 68, 68, 0.1)', 
-                                color: '#ef4444', 
-                                border: 'none', 
-                                borderRadius: '8px', 
-                                width: '28px', height: '28px', 
-                                fontSize: '1.2rem', 
-                                cursor: 'pointer',
-                                display: 'flex', justifyContent: 'center', alignItems: 'center'
+                                background: 'transparent', color: 'var(--danger)', border: 'none', 
+                                fontSize: '1.5rem', cursor: 'pointer', padding: '0 10px'
                             }}
                         >×</button>
                     </div>
                 ))}
+
+                {menuItems.length === 0 && (
+                    <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                        등록된 메뉴가 없습니다. 메뉴판 사진을 스캔해 보세요.
+                    </div>
+                )}
             </div>
         </div>
     );

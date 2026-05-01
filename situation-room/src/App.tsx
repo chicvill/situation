@@ -166,9 +166,10 @@ function App() {
     const stores = safeBundles.filter(b => b.type === 'StoreConfig');
     
     return (
-      <div className="admin-store-selector animate-fade-in">
-        <div className="glass-panel" style={{ maxWidth: '800px', margin: '100px auto', padding: '40px' }}>
-          <h1 style={{ textAlign: 'center', marginBottom: '30px' }}>🏢 매장 관리 센터</h1>
+      <div className="admin-store-selector animate-fade-in" style={{ background: 'var(--bg-main)', minHeight: '100vh', padding: '100px 20px' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <h1 style={{ textAlign: 'center', marginBottom: '12px', fontSize: '2.2rem', fontWeight: '800', color: 'var(--text-main)' }}>SITUATION ROOM</h1>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '60px', fontSize: '1.1rem' }}>관리하실 매장을 선택해 주세요.</p>
           
           {safeBundles.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px' }}>
@@ -191,7 +192,7 @@ function App() {
           ) : (
             <>
               <p style={{ textAlign: 'center', opacity: 0.7, marginBottom: '40px' }}>점검 및 관리를 진행할 매장을 선택해 주세요.</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '30px' }}>
                 {stores.map(store => {
                   const name = store.items.find((i: any) => i.name === '상호명')?.value || '알 수 없는 매장';
                   const payStatus = store.items.find((i: any) => i.name === '납부상태')?.value || '정상';
@@ -202,19 +203,20 @@ function App() {
                            updateStore(store.id, name);
                          }}
                          style={{ 
-                           padding: '30px', background: 'rgba(255,255,255,0.05)', borderRadius: '20px', 
-                           border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', transition: 'all 0.3s',
-                           textAlign: 'center'
+                           padding: '40px 30px', background: 'var(--surface)', borderRadius: 'var(--radius-md)', 
+                           border: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.3s',
+                           textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
                          }}
                          className="store-card-hover"
                     >
-                      <div style={{ fontSize: '40px', marginBottom: '15px' }}>🏪</div>
-                      <h3 style={{ marginBottom: '10px' }}>{name}</h3>
+                      <h3 style={{ marginBottom: '12px', fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-main)' }}>{name}</h3>
                       <div style={{ 
-                        fontSize: '12px', padding: '4px 10px', borderRadius: '10px', 
-                        background: payStatus === '미납' ? '#ef4444' : '#10b981', display: 'inline-block' 
+                        fontSize: '0.8rem', padding: '4px 12px', borderRadius: '4px', 
+                        background: payStatus === '미납' ? 'var(--danger)' : 'var(--primary-soft)', 
+                        color: payStatus === '미납' ? 'white' : 'var(--text-muted)',
+                        fontWeight: '600'
                       }}>
-                        {payStatus === '미납' ? '❌ 미납' : '✅ 정상'}
+                        {payStatus === '미납' ? '납부 대기' : '정상 운영'}
                       </div>
                     </div>
                   );
@@ -282,11 +284,11 @@ function App() {
       )}
 
       <header className="premium-top-bar">
-        {!isCustomerMode && <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)}>≡</button>}
-        <div className="top-bar-center">{storeName}</div>
-        <div className="top-bar-right">
-            {!isCustomerMode && <span className="user-badge">{user.name}</span>}
-            <span className="current-datetime">{formatDateTime(currentTime)}</span>
+        {!isCustomerMode && <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-main)' }}>☰</button>}
+        <div className="top-bar-center" style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{storeName}</div>
+        <div className="top-bar-right" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            {!isCustomerMode && <span className="user-badge" style={{ background: 'var(--primary-soft)', color: 'var(--text-main)', padding: '4px 12px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: '600' }}>{user.name}</span>}
+            <span className="current-datetime" style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '500' }}>{formatDateTime(currentTime)}</span>
         </div>
       </header>
 
