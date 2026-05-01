@@ -85,8 +85,34 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
   }, [bundles, storeId]);
 
   const categories = useMemo(() => ['전체', ...new Set(menus.map(m => m.category))], [menus]);
-  const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  const totalPrice = useMemo(() => cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0), [cart]);
   const sessionTotal = useMemo(() => myOrders.reduce((sum, order: Order) => sum + order.total_price, 0), [myOrders]);
+
+  // --- Functions ---
+  const fetchMySession = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/session/${tableId}?store_id=${storeId}`);
+      const data = await res.json();
+      if (data && data.session && data.session.status === 'active') {
+        setHasActiveSession(true);
+        setMyOrders(data.orders || []);
+      } else {
+        setHasActiveSession(false);
+      }
+    } catch (err) {
+      console.error("Session sync failed", err);
+    }
+  }, [tableId, storeId]);
+
+  const addToCart = useCallback((menu: MenuItem) => {
+    setCart(prev => {
+      const existing = prev.find(c => c.name === menu.name);
+      if (existing) {
+        return prev.map(c => c.name === menu.name ? { ...c, qty: (c.qty || 0) + 1 } : c);
+      }
+      return [...prev, { ...menu, qty: 1 }];
+    });
+  }, []);
 
   // --- Effects ---
   useEffect(() => {
@@ -103,7 +129,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     };
     const timer = setInterval(fetchMySession, 5000);
     return () => { ws.close(); clearInterval(timer); };
-  }, [tableId, storeId]);
+  }, [tableId, storeId, fetchMySession]);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/checkin/request`, {
@@ -113,32 +139,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     }).catch(err => console.error("Checkin Error:", err));
   }, [tableNo, deviceId, storeName, storeId]);
 
-  // --- Functions ---
-  const fetchMySession = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/session/${tableId}?store_id=${storeId}`);
-      const data = await res.json();
-      if (data && data.session && data.session.status === 'active') {
-        setHasActiveSession(true);
-        setMyOrders(data.orders || []);
-      } else {
-        setHasActiveSession(false);
-      }
-    } catch (err) {
-      console.error("Session sync failed", err);
-    }
-  };
-
-  const addToCart = (menu: MenuItem) => {
-    const existing = cart.find(c => c.name === menu.name);
-    if (existing) {
-      setCart(cart.map(c => c.name === menu.name ? { ...c, qty: (c.qty || 0) + 1 } : c));
-    } else {
-      setCart([...cart, { ...menu, qty: 1 }]);
-    }
-  };
-
-  const generateAiStory = (items: MenuItem[]) => {
+  const generateAiStory = useCallback((items: MenuItem[]) => {
     if (items.length === 0) return;
     const firstItem = items[0];
     const stories: any = {
@@ -157,9 +158,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
         icon: '🍳'
       });
     }
-  };
+  }, []);
 
-  const handleUpdateOrderItem = async (orderId: string, items: OrderItem[]) => {
+  const handleUpdateOrderItem = useCallback(async (orderId: string, items: OrderItem[]) => {
     try {
       const filteredItems = items.filter(i => (i.quantity || i.qty || 0) > 0);
       if (filteredItems.length === 0) {
@@ -175,9 +176,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       }
       fetchMySession();
     } catch (err) { console.error('Update Item Error:', err); }
-  };
+  }, [fetchMySession]);
 
-  const executeOrderWithPayment = async (method: string, extraData?: any) => {
+  const executeOrderWithPayment = useCallback(async (method: string, extraData?: any) => {
     setIsOrdering(true);
     setShowPayModal(false);
     try {
@@ -200,9 +201,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
         generateAiStory(currentCart);
         setShowProgress(true); // 대기 화면(라이프사이클) 노출
       }
-    } catch (err) { alert('주문 실패. 서버 상태를 확인해주세요.'); }
+    } catch (err) { console.error("Order process failed", err); }
     finally { setIsOrdering(false); }
-  };
+  }, [tableId, deviceId, storeId, cart, totalPrice, fetchMySession, generateAiStory]);
 
   // --- Render Functions ---
 
