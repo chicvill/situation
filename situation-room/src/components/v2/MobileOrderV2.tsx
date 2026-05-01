@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import '../../MobileV2.css';
 import type { BundleData } from '../../types';
 import { WS_BASE, API_BASE } from '../../config';
