@@ -10,10 +10,35 @@ interface Props {
   storeName: string;
 }
 
+interface MenuItem {
+  name: string;
+  price: number;
+  icon: string;
+  category: string;
+  description: string;
+  qty?: number;
+}
+
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+  qty?: number;
+}
+
+interface Order {
+  order_id: string;
+  order_seq: number;
+  total_price: number;
+  status: string;
+  payment_status: string;
+  items: OrderItem[];
+}
+
 const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
   // --- States ---
-  const [cart, setCart] = useState<any[]>([]);
-  const [myOrders, setMyOrders] = useState<any[]>([]);
+  const [cart, setCart] = useState<MenuItem[]>([]);
+  const [myOrders, setMyOrders] = useState<Order[]>([]);
   const [activeCategory, setActiveCategory] = useState('전체');
   const [isOrdering, setIsOrdering] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -61,7 +86,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
 
   const categories = useMemo(() => ['전체', ...new Set(menus.map(m => m.category))], [menus]);
   const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-  const sessionTotal = useMemo(() => myOrders.reduce((sum, order: any) => sum + order.total_price, 0), [myOrders]);
+  const sessionTotal = useMemo(() => myOrders.reduce((sum, order: Order) => sum + order.total_price, 0), [myOrders]);
 
   // --- Effects ---
   useEffect(() => {
@@ -104,16 +129,16 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     }
   };
 
-  const addToCart = (menu: any) => {
+  const addToCart = (menu: MenuItem) => {
     const existing = cart.find(c => c.name === menu.name);
     if (existing) {
-      setCart(cart.map(c => c.name === menu.name ? { ...c, qty: c.qty + 1 } : c));
+      setCart(cart.map(c => c.name === menu.name ? { ...c, qty: (c.qty || 0) + 1 } : c));
     } else {
       setCart([...cart, { ...menu, qty: 1 }]);
     }
   };
 
-  const generateAiStory = (items: any[]) => {
+  const generateAiStory = (items: MenuItem[]) => {
     if (items.length === 0) return;
     const firstItem = items[0];
     const stories: any = {
@@ -134,9 +159,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     }
   };
 
-  const handleUpdateOrderItem = async (orderId: string, items: any[]) => {
+  const handleUpdateOrderItem = async (orderId: string, items: OrderItem[]) => {
     try {
-      const filteredItems = items.filter(i => (i.quantity || i.qty) > 0);
+      const filteredItems = items.filter(i => (i.quantity || i.qty || 0) > 0);
       if (filteredItems.length === 0) {
         await fetch(`${API_BASE}/api/order/status`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
