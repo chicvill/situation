@@ -206,38 +206,48 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
 
   // --- Render Functions ---
 
-  const renderProgressScreen = () => (
-    <div className="payment-modal-overlay" style={{ zIndex: 11000, overflowY: 'auto', padding: '20px 10px' }}>
-      <div className="glass-panel animate-pop-in" style={{ 
-        width: '100%', maxWidth: '450px', padding: '25px', 
-        background: 'linear-gradient(135deg, #0f172a, #1e293b)', border: '1px solid rgba(249,115,22,0.3)',
-        borderRadius: '30px'
-      }}>
-        <h2 style={{ color: '#f97316', fontSize: '1.4rem', fontWeight: 900, marginBottom: '25px', textAlign: 'center' }}>주문 진행 현황</h2>
-        
-        {/* 🏁 라이프사이클 트래커 */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '0 10px', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: '15px', left: '10%', right: '10%', height: '2px', background: 'rgba(255,255,255,0.1)', zIndex: 0 }}></div>
-          {[
-            { label: '좌석', icon: '🪑', active: true },
-            { label: '주문', icon: '📝', active: true },
-            { label: '조리', icon: '🔥', active: true, pulse: true },
-            { label: '서빙', icon: '🚚', active: false },
-            { label: '결제', icon: '✅', active: false }
-          ].map((step, i) => (
-            <div key={i} style={{ textAlign: 'center', zIndex: 1, flex: 1 }}>
-              <div style={{ 
-                width: '32px', height: '32px', borderRadius: '50%', background: step.active ? '#f97316' : '#334155',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', margin: '0 auto 8px',
-                boxShadow: step.pulse ? '0 0 15px #f97316' : 'none',
-                animation: step.pulse ? 'pulse-light 2s infinite' : 'none'
-              }}>
-                {step.icon}
+  const renderProgressScreen = () => {
+    // 가장 최근 주문의 상태를 기반으로 진행 단계 계산
+    const latestOrder = myOrders.length > 0 ? myOrders[myOrders.length - 1] : null;
+    const status = latestOrder?.status || 'pending';
+    const isPaid = latestOrder?.payment_status === 'paid' || latestOrder?.payment_status === 'prepaid';
+
+    const steps = [
+      { label: '좌석', icon: '🪑', active: true },
+      { label: '주문', icon: '📝', active: true },
+      { label: '조리', icon: '🔥', active: status === 'cooking' || status === 'ready' || status === 'served' || isPaid, pulse: status === 'cooking' },
+      { label: '서빙', icon: '🚚', active: status === 'served' || isPaid, pulse: status === 'served' && !isPaid },
+      { label: '결제', icon: '✅', active: isPaid, pulse: isPaid }
+    ];
+
+    return (
+      <div className="payment-modal-overlay" style={{ zIndex: 11000, overflowY: 'auto', padding: '20px 10px' }}>
+        <div className="glass-panel animate-pop-in" style={{ 
+          width: '100%', maxWidth: '450px', padding: '25px', 
+          background: 'linear-gradient(135deg, #0f172a, #1e293b)', border: '1px solid rgba(249,115,22,0.3)',
+          borderRadius: '30px'
+        }}>
+          <h2 style={{ color: '#f97316', fontSize: '1.4rem', fontWeight: 900, marginBottom: '25px', textAlign: 'center' }}>주문 진행 현황</h2>
+          
+          {/* 🏁 실시간 라이프사이클 트래커 */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '0 10px', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: '15px', left: '10%', right: '10%', height: '2px', background: 'rgba(255,255,255,0.1)', zIndex: 0 }}></div>
+            {steps.map((step, i) => (
+              <div key={i} style={{ textAlign: 'center', zIndex: 1, flex: 1 }}>
+                <div style={{ 
+                  width: '32px', height: '32px', borderRadius: '50%', 
+                  background: step.active ? '#f97316' : '#334155',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', margin: '0 auto 8px',
+                  boxShadow: step.pulse ? '0 0 15px #f97316' : 'none',
+                  animation: step.pulse ? 'pulse-light 2s infinite' : 'none',
+                  transition: 'all 0.5s'
+                }}>
+                  {step.icon}
+                </div>
+                <div style={{ fontSize: '10px', color: step.active ? 'white' : '#64748b', fontWeight: step.active ? 800 : 400 }}>{step.label}</div>
               </div>
-              <div style={{ fontSize: '10px', color: step.active ? 'white' : '#64748b', fontWeight: step.active ? 800 : 400 }}>{step.label}</div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
         {/* 📖 AI 도슨트 */}
         <div className="glass-card" style={{ padding: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px' }}>
@@ -266,9 +276,11 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
             닫기
           </button>
         </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
+
 
   if (!hasActiveSession) {
     return (
