@@ -38,6 +38,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [usePoints, setUsePoints] = React.useState(0);
   const [requestCashReceipt, setRequestCashReceipt] = React.useState(false);
   const [isLoadingPoints, setIsLoadingPoints] = React.useState(false);
+  const [accumulatePoints, setAccumulatePoints] = React.useState(!!initialPhone);
+
 
   const finalTotal = totalPrice - usePoints;
   const potentialPoints = Math.floor(totalPrice * 0.001);
@@ -257,23 +259,54 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         </div>
       )}
 
-      {/* 포인트 영역 */}
-      <div style={{ padding:'18px', borderRadius:'16px', background:'rgba(255,255,255,0.03)', marginBottom:'16px' }}>
-        <div style={{ color:'rgba(255,255,255,0.4)', fontSize:'0.8rem', marginBottom:'10px' }}>포인트 적립 정보</div>
-        <div style={{ color:'white', fontWeight:700, marginBottom:'10px' }}>
-          {phoneForPoints || <span style={{ color:'rgba(255,255,255,0.25)', fontWeight:400 }}>비회원 (포인트 미적립)</span>}
-        </div>
-        <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.9rem', color:'white' }}>
-          <span>적립 예정: <strong style={{ color:'#f97316' }}>{phoneForPoints ? `+${potentialPoints.toLocaleString()}P` : '0P'}</strong></span>
-          <span>보유: <strong>{phoneForPoints ? `${existingPoints.toLocaleString()}P` : '0P'}</strong></span>
-        </div>
-        {existingPoints >= 10000 && phoneForPoints && (
-          <button
-            onClick={() => setUsePoints(usePoints === 0 ? existingPoints : 0)}
-            style={{ width:'100%', marginTop:'12px', padding:'10px', background: usePoints > 0 ? '#f97316' : 'rgba(255,255,255,0.08)', color:'white', border:'none', borderRadius:'10px', fontWeight:700, cursor:'pointer' }}
-          >
-            {usePoints > 0 ? `사용 취소 (-${usePoints.toLocaleString()}원)` : `${existingPoints.toLocaleString()}P 전액 사용`}
-          </button>
+      {/* 포인트 적립 여부 체크 */}
+      <div style={{ marginBottom: '16px', padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: accumulatePoints ? '15px' : '0' }}>
+          <input 
+            type="checkbox" 
+            checked={accumulatePoints} 
+            onChange={(e) => {
+              setAccumulatePoints(e.target.checked);
+              if (e.target.checked && initialPhone) {
+                setPhoneForPoints(initialPhone);
+                lookupPoints(initialPhone);
+              }
+            }} 
+            style={{ width: '20px', height: '20px', accentColor: '#f97316' }}
+          />
+          <span style={{ color: 'white', fontWeight: 700, fontSize: '1.05rem' }}>포인트 적립을 하시겠습니까?</span>
+        </label>
+
+        {accumulatePoints && (
+          <div className="animate-fade-in">
+            <input
+              type="tel"
+              placeholder="010-0000-0000"
+              value={phoneForPoints}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^0-9]/g, '');
+                setPhoneForPoints(val);
+                if (val.length >= 10) lookupPoints(val);
+              }}
+              style={{
+                width: '100%', padding: '14px', borderRadius: '12px',
+                border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
+                color: 'white', fontSize: '1.1rem', outline: 'none', textAlign: 'center'
+              }}
+            />
+            <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.9rem', color:'white', marginTop: '12px' }}>
+              <span>적립 예정: <strong style={{ color:'#f97316' }}>+{potentialPoints.toLocaleString()}P</strong></span>
+              <span>보유: <strong>{existingPoints.toLocaleString()}P</strong></span>
+            </div>
+            {existingPoints >= 1000 && (
+              <button
+                onClick={() => setUsePoints(usePoints === 0 ? existingPoints : 0)}
+                style={{ width:'100%', marginTop:'12px', padding:'10px', background: usePoints > 0 ? '#f97316' : 'rgba(255,255,255,0.08)', color:'white', border:'none', borderRadius:'10px', fontWeight:700, cursor:'pointer' }}
+              >
+                {usePoints > 0 ? `사용 취소 (-${usePoints.toLocaleString()}원)` : `${existingPoints.toLocaleString()}P 포인트 사용`}
+              </button>
+            )}
+          </div>
         )}
       </div>
 

@@ -68,8 +68,7 @@ function App() {
     const mode = params.get('mode');
     
     if (mode === 'customer') {
-      const version = params.get('v');
-      setActiveTab(version === '2' ? 'orderV2' : 'order');
+      setActiveTab('orderV2'); // 모든 고객 모드를 모바일 전용 UI로 통합
       setUser({ id: 'guest', name: '손님', role: 'customer' });
     } else if (mode === 'kitchen') {
       setActiveTab('kitchen');
