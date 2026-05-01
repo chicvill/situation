@@ -282,6 +282,114 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     );
   };
 
+  const renderHistoryView = () => (
+    <div className="history-view animate-fade-in" style={{ fontSize: '0.65rem', padding: '15px' }}>
+      <h2 className="section-title" style={{ fontSize: '1.2rem', marginBottom: '15px', textAlign: 'center' }}>내 주문 현황</h2>
+      <div className="orders-stack">
+        {myOrders.length === 0 ? <p style={{ textAlign:'center', opacity:0.5 }}>주문 내역이 없습니다.</p> : 
+          myOrders.map((order: Order, idx) => {
+            const isPaid = order.payment_status === 'paid' || order.payment_status === 'prepaid';
+            const borderColor = isPaid ? '#EF4444' : (order.status === 'served' ? '#10B981' : '#F59E0B');
+            return (
+              <div key={idx} className="glass-card order-card" style={{ borderLeft: `3px solid ${borderColor}`, padding: '10px', marginBottom: '10px' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}>
+                  <span style={{ color: borderColor, fontWeight: 800 }}>{order.order_seq}차 주문 {isPaid && ' (결제완료)'}</span>
+                  <span style={{ color: borderColor, fontWeight: 900 }}>{order.status === 'cooking' ? '🔥 조리중' : '✅ 서빙완료'}</span>
+                </div>
+                {order.items.map((item: OrderItem, i: number) => {
+                  const qty = item.quantity || item.qty || 0;
+                  const isPending = order.status === 'pending';
+                  return (
+                    <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>{item.name}</div>
+                      </div>
+                      
+                      {isPending ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '8px' }}>
+                          <button onClick={() => {
+                            const newItems = [...order.items];
+                            newItems[i] = { ...item, quantity: Math.max(0, qty - 1) };
+                            handleUpdateOrderItem(order.order_id, newItems);
+                          }} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '14px' }}>-</button>
+                          <span style={{ fontWeight: 800, minWidth: '15px', textAlign: 'center' }}>{qty}</span>
+                          <button onClick={() => {
+                            const newItems = [...order.items];
+                            newItems[i] = { ...item, quantity: qty + 1 };
+                            handleUpdateOrderItem(order.order_id, newItems);
+                          }} style={{ background: 'none', border: 'none', color: '#f97316', fontSize: '14px' }}>+</button>
+                          <button onClick={() => {
+                            const newItems = order.items.filter((_: OrderItem, idx: number) => idx !== i);
+                            handleUpdateOrderItem(order.order_id, newItems);
+                          }} style={{ marginLeft: '5px', background: 'none', border: 'none', color: '#ef4444', fontSize: '10px' }}>✕</button>
+                        </div>
+                      ) : (
+                        <span style={{ fontWeight: '600' }}>{qty}개 | {(item.price * qty).toLocaleString()}원</span>
+                      )}
+                    </div>
+                  );
+                })}
+                <div style={{ textAlign:'right', marginTop:'8px', borderTop:'1px solid rgba(255,255,255,0.05)', paddingTop:'5px', fontWeight:900 }}>
+                  합계: {order.total_price.toLocaleString()}원
+                </div>
+              </div>
+            );
+          })
+        }
+        <div className="total-summary-card" style={{ textAlign:'center', padding:'20px' }}>
+          <div style={{ fontSize: '1.2rem', color: '#94a3b8', marginBottom: '10px' }}>총 합계</div>
+          <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#f97316' }}>{sessionTotal.toLocaleString()}원</div>
+          
+          <button 
+            onClick={() => setShowHistory(false)}
+            className="premium-button"
+            style={{ marginTop: '25px', width: '100%', padding: '20px', fontSize: '1.2rem', borderRadius: '40px' }}
+          >
+            ➕ 메뉴 추가하기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderContent = () => {
+    if (showHistory) return renderHistoryView();
+    if (showProgress) return renderProgressScreen();
+    
+    return (
+      <>
+        <div className="category-scroll no-scrollbar">
+          {categories.map(cat => (
+            <button key={cat} className={`category-pill ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
+              {cat}
+            </button>
+          ))}
+        </div>
+        <div className="menu-grid">
+          {menus.filter(m => activeCategory === '전체' || m.category === activeCategory).map((item, idx) => (
+            <div key={idx} className="glass-card menu-item-card" onClick={() => addToCart(item)}>
+              <div className="menu-icon">{item.icon}</div>
+              <div className="menu-details">
+                <div className="name">{item.name}</div>
+                <div className="desc">{item.description}</div>
+                <div className="price">{item.price.toLocaleString()}원</div>
+              </div>
+              <div className="add-badge">+</div>
+            </div>
+          ))}
+        </div>
+        {cart.length > 0 && (
+          <div className="floating-cart animate-slide-up" onClick={() => setShowPayModal(true)}>
+            <div className="cart-info">
+              <div className="count">{cart.length}</div>
+              <span className="label">주문하기</span>
+            </div>
+            <div className="total-price">{totalPrice.toLocaleString()}원</div>
+          </div>
+        )}
+      </>
+    );
+  };
 
   if (!hasActiveSession) {
     return (
@@ -314,108 +422,26 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
         </div>
       </header>
 
-      {showHistory ? (
-        <div className="history-view animate-fade-in" style={{ fontSize: '0.65rem', padding: '15px' }}>
-          <h2 className="section-title" style={{ fontSize: '1.2rem', marginBottom: '15px', textAlign: 'center' }}>내 주문 현황</h2>
-          <div className="orders-stack">
-            {myOrders.length === 0 ? <p style={{ textAlign:'center', opacity:0.5 }}>주문 내역이 없습니다.</p> : 
-              myOrders.map((order: Order, idx) => {
-                const isPaid = order.payment_status === 'paid' || order.payment_status === 'prepaid';
-                const borderColor = isPaid ? '#EF4444' : (order.status === 'served' ? '#10B981' : '#F59E0B');
-                return (
-                  <div key={idx} className="glass-card order-card" style={{ borderLeft: `3px solid ${borderColor}`, padding: '10px', marginBottom: '10px' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}>
-                      <span style={{ color: borderColor, fontWeight: 800 }}>{order.order_seq}차 주문 {isPaid && ' (결제완료)'}</span>
-                      <span style={{ color: borderColor, fontWeight: 900 }}>{order.status === 'cooking' ? '🔥 조리중' : '✅ 서빙완료'}</span>
-                    </div>
-                    {order.items.map((item: OrderItem, i: number) => {
-                      const qty = item.quantity || item.qty || 0;
-                      const isPending = order.status === 'pending';
-                      return (
-                        <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>{item.name}</div>
-                          </div>
-                          
-                          {isPending ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '8px' }}>
-                              <button onClick={() => {
-                                const newItems = [...order.items];
-                                newItems[i] = { ...item, quantity: Math.max(0, qty - 1) };
-                                handleUpdateOrderItem(order.order_id, newItems);
-                              }} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '14px' }}>-</button>
-                              <span style={{ fontWeight: 800, minWidth: '15px', textAlign: 'center' }}>{qty}</span>
-                              <button onClick={() => {
-                                const newItems = [...order.items];
-                                newItems[i] = { ...item, quantity: qty + 1 };
-                                handleUpdateOrderItem(order.order_id, newItems);
-                              }} style={{ background: 'none', border: 'none', color: '#f97316', fontSize: '14px' }}>+</button>
-                              <button onClick={() => {
-                                const newItems = order.items.filter((_: OrderItem, idx: number) => idx !== i);
-                                handleUpdateOrderItem(order.order_id, newItems);
-                              }} style={{ marginLeft: '5px', background: 'none', border: 'none', color: '#ef4444', fontSize: '10px' }}>✕</button>
-                            </div>
-                          ) : (
-                            <span style={{ fontWeight: '600' }}>{qty}개 | {(item.price * qty).toLocaleString()}원</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                    <div style={{ textAlign:'right', marginTop:'8px', borderTop:'1px solid rgba(255,255,255,0.05)', paddingTop:'5px', fontWeight:900 }}>
-                      합계: {order.total_price.toLocaleString()}원
-                    </div>
-                  </div>
-                );
-              })
-            }
-            <div className="total-summary-card" style={{ textAlign:'center', padding:'20px' }}>
-              <div style={{ fontSize:'1.4rem', fontWeight:900, marginBottom:'15px' }}>총 합계 {sessionTotal.toLocaleString()}원</div>
-              <button onClick={() => setShowHistory(false)} className="add-menu-btn-wide">➕ 메뉴 추가하기</button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="category-scroll no-scrollbar">
-            {categories.map(cat => (
-              <button key={cat} className={`category-pill ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
-                {cat}
-              </button>
-            ))}
-          </div>
-          <div className="menu-grid">
-            {menus.filter(m => activeCategory === '전체' || m.category === activeCategory).map((item, idx) => (
-              <div key={idx} className="glass-card menu-item-card" onClick={() => addToCart(item)}>
-                <div className="menu-icon">{item.icon}</div>
-                <div className="menu-details">
-                  <div className="name">{item.name}</div>
-                  <div className="desc">{item.description}</div>
-                  <div className="price">{item.price.toLocaleString()}원</div>
-                </div>
-                <div className="add-badge">+</div>
-              </div>
-            ))}
-          </div>
-          {cart.length > 0 && (
-            <div className="floating-cart animate-slide-up" onClick={() => setShowPayModal(true)}>
-              <div className="cart-info">
-                <div className="count">{cart.length}</div>
-                <span className="label">주문하기</span>
-              </div>
-              <div className="total-price">{totalPrice.toLocaleString()}원</div>
-            </div>
-          )}
-        </>
-      )}
+      <main className="mobile-main">
+        {renderContent()}
+      </main>
 
       {isOrdering && <div className="loading-overlay"><div className="spinner"></div><h3>주문 전송 중...</h3></div>}
       
       {showPayModal && (
-        <PaymentModal totalPrice={totalPrice} onClose={() => setShowPayModal(false)} onSubmit={executeOrderWithPayment}
-          tableNo={tableNo} bundles={bundles} initialPhone={userPhone} onPhoneChange={setUserPhone} items={cart} />
+        <PaymentModal
+          items={cart}
+          totalPrice={totalPrice}
+          onClose={() => setShowPayModal(false)}
+          onAddOrder={() => {
+            setShowPayModal(false);
+            setShowHistory(true);
+          }}
+          onSubmit={executeOrderWithPayment}
+          initialPhone={userPhone}
+          bundles={bundles}
+        />
       )}
-
-      {showProgress && renderProgressScreen()}
     </div>
   );
 };
