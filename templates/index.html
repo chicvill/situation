@@ -123,10 +123,15 @@
             </div>
         </div>
     </div>
+    
+    <!-- 서버 데이터를 안전하게 전달하기 위한 전용 데이터 영역 (IDE 오류 방지) -->
+    <script id="ai-knowledge-data" type="application/json">
+        {{ ai_knowledge | tojson | safe }}
+    </script>
 
     <script>
-        // AI 데이터 브레인 (백엔드와 통일감을 위한 프론트엔드 캐시)
-        const AI_KNOWLEDGE_RAW = {{ ai_knowledge | tojson }};
+        // AI 데이터 브레인 (서버 데이터 영역에서 안전하게 파싱)
+        const AI_KNOWLEDGE_RAW = JSON.parse(document.getElementById('ai-knowledge-data').textContent || '{}');
         let mySchemas = [];
         let instances = [];
         let currentTargetId = null;
@@ -146,7 +151,7 @@
             mySchemas = await resp.json();
             const sel = document.getElementById('factoryClassSelect');
             if(!domain) { sel.innerHTML = '<option value="">-- 분야를 먼저 고르세요 --</option>'; return; }
-            const filtered = mySchemas.filter(s => s.domain === domain || (!s.domain && AI_KNOWLEDGE_RAW[domain].some(ai => ai.type === s.type)));
+            const filtered = mySchemas.filter(s => s.domain === domain || (!s.domain && AI_KNOWLEDGE_RAW[domain] && AI_KNOWLEDGE_RAW[domain].some(ai => ai.type === s.type)));
             sel.innerHTML = '<option value="">-- 클래스 선택 --</option>' + filtered.map(s => `<option value="${s.type}">${s.type}</option>`).join('');
         }
 
