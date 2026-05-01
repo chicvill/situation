@@ -45,7 +45,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
   const [showProgress, setShowProgress] = useState(false);
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
-  const [userPhone, setUserPhone] = useState('');
+  const [userPhone] = useState('');
   const [aiStoryContent, setAiStoryContent] = useState({ title: '', body: '', icon: '🍽️' });
 
   // --- Memos & Config ---
@@ -430,7 +430,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       
       {showPayModal && (
         <PaymentModal
-          items={cart}
           totalPrice={totalPrice}
           onClose={() => setShowPayModal(false)}
           onAddOrder={() => {

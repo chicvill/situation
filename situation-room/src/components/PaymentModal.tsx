@@ -8,12 +8,9 @@ interface PaymentModalProps {
   onAddOrder?: () => void;
   isCounter?: boolean;
   prepaidMethod?: string | null;
-  tableNo?: string;
-  orderNo?: string;
   bundles?: BundleData[];
   initialPhone?: string;
   onPhoneChange?: (val: string) => void;
-  items?: any[];
 }
 
 type Step = 'select' | 'points';
@@ -27,10 +24,8 @@ const METHODS: Method[] = [
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
   totalPrice, onClose, onSubmit, onAddOrder,
-  tableNo, orderNo,
   bundles,
   initialPhone = '', onPhoneChange,
-  items = [],
 }) => {
   const [step, setStep] = React.useState<Step>('select');
   const [selectedMethod, setSelectedMethod] = React.useState<Method | null>(null);
@@ -38,7 +33,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [existingPoints, setExistingPoints] = React.useState(0);
   const [usePoints, setUsePoints] = React.useState(0);
   const [requestCashReceipt, setRequestCashReceipt] = React.useState(false);
-  const [isLoadingPoints, setIsLoadingPoints] = React.useState(false);
   const [accumulatePoints, setAccumulatePoints] = React.useState(!!initialPhone);
 
 
@@ -60,7 +54,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   const lookupPoints = async (phone: string) => {
     if (phone.length < 10) return;
-    setIsLoadingPoints(true);
     try {
       const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
       const res = await fetch(`${apiUrl}/api/points/${phone}`);
@@ -68,53 +61,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       setExistingPoints(data.points || 0);
     } catch {
       setExistingPoints(0);
-    } finally {
-      setIsLoadingPoints(false);
     }
   };
 
-  // ────────────── 결제 실행 ──────────────
-  const executePayment = async () => {
-    const method = selectedMethod!;
-    const extraData = {
-      phoneForPoints,
-      earnedPoints: phoneForPoints ? potentialPoints : 0,
-      usedPoints: usePoints,
-      requestCashReceipt,
-    };
-
-    // 카드 / 계좌이체 → 토스 결제창 호출
-    if (method.id === 'card' || method.id === 'transfer') {
-      const toss = (window as any).TossPayments;
-      if (!toss) {
-        alert('결제 모듈 로딩 중입니다. 잠시 후 다시 시도해 주세요.');
-        return;
-      }
-      const client = toss('test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq');
-      const orderId   = orderNo || `ORD_${Date.now()}`;
-      const orderName = `${tableNo ? 'Table ' + tableNo : '주문'} 결제`;
-      // Use current origin - works for both localhost and production domain
-      const baseUrl = window.location.origin;
-      try {
-        await client.requestPayment(method.id === 'card' ? '카드' : '계좌이체', {
-          amount:    finalTotal,
-          orderId,
-          orderName,
-          successUrl: `${baseUrl}/?payment_success=true&order_id=${orderId}&amount=${finalTotal}&method=${encodeURIComponent(method.name)}`,
-          failUrl:    `${baseUrl}/?payment_fail=true`,
-          ...(phoneForPoints && { customerMobilePhone: phoneForPoints.replace(/[^0-9]/g, '') }),
-        });
-      } catch (err: any) {
-        if (err?.code !== 'USER_CANCEL') {
-          alert('결제 오류: ' + (err?.message || '알 수 없는 오류'));
-        }
-      }
-      return;
-    }
-
-    // 현금 → 내부 처리
-    onSubmit(method.name, extraData);
-  };
 
   // ════════════════════════════════════════
   //  STEP 1 : 결제 수단 선택
