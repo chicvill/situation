@@ -315,12 +315,39 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
                       <span style={{ color: borderColor, fontWeight: 800 }}>{order.order_seq}차 주문 {isPaid && ' (결제완료)'}</span>
                       <span style={{ color: borderColor, fontWeight: 900 }}>{order.status === 'cooking' ? '🔥 조리중' : '✅ 서빙완료'}</span>
                     </div>
-                    {order.items.map((item: any, i: number) => (
-                      <div key={i} style={{ display:'flex', justifyContent:'space-between', marginBottom:'4px' }}>
-                        <span>{item.name} x {item.quantity || item.qty}</span>
-                        <span>{(item.price * (item.quantity || item.qty)).toLocaleString()}원</span>
-                      </div>
-                    ))}
+                    {order.items.map((item: OrderItem, i: number) => {
+                      const qty = item.quantity || item.qty || 0;
+                      const isPending = order.status === 'pending';
+                      return (
+                        <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>{item.name}</div>
+                          </div>
+                          
+                          {isPending ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '8px' }}>
+                              <button onClick={() => {
+                                const newItems = [...order.items];
+                                newItems[i] = { ...item, quantity: Math.max(0, qty - 1) };
+                                handleUpdateOrderItem(order.order_id, newItems);
+                              }} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '14px' }}>-</button>
+                              <span style={{ fontWeight: 800, minWidth: '15px', textAlign: 'center' }}>{qty}</span>
+                              <button onClick={() => {
+                                const newItems = [...order.items];
+                                newItems[i] = { ...item, quantity: qty + 1 };
+                                handleUpdateOrderItem(order.order_id, newItems);
+                              }} style={{ background: 'none', border: 'none', color: '#f97316', fontSize: '14px' }}>+</button>
+                              <button onClick={() => {
+                                const newItems = order.items.filter((_: any, idx: number) => idx !== i);
+                                handleUpdateOrderItem(order.order_id, newItems);
+                              }} style={{ marginLeft: '5px', background: 'none', border: 'none', color: '#ef4444', fontSize: '10px' }}>✕</button>
+                            </div>
+                          ) : (
+                            <span style={{ fontWeight: '600' }}>{qty}개 | {(item.price * qty).toLocaleString()}원</span>
+                          )}
+                        </div>
+                      );
+                    })}
                     <div style={{ textAlign:'right', marginTop:'8px', borderTop:'1px solid rgba(255,255,255,0.05)', paddingTop:'5px', fontWeight:900 }}>
                       합계: {order.total_price.toLocaleString()}원
                     </div>
