@@ -21,6 +21,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
   const [userPhone, setUserPhone] = useState('');
+  const [showAiStory, setShowAiStory] = useState(false);
+  const [aiStoryContent, setAiStoryContent] = useState({ title: '', body: '', icon: '🍽️' });
 
   // URL에서 테이블 번호 추출
   const tableNo = useMemo(() => {
@@ -123,10 +125,34 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     setShowPayModal(true);
   };
 
+  const generateAiStory = (items: any[]) => {
+    if (items.length === 0) return;
+    const firstItem = items[0];
+    const stories: any = {
+      '스테이크': { title: '🥩 왕의 요리, 스테이크', body: '스테이크의 어원은 "구운 고기"를 뜻하는 스칸디나비아어 "steik"에서 유래했습니다. 고단백 영양소뿐만 아니라 철분이 풍부해 활력을 불어넣어 주죠.', icon: '🥩' },
+      '파스타': { title: '🍝 이탈리아의 자부심, 파스타', body: '파스타는 13세기 마르코 폴로가 중국에서 가져왔다는 설이 유명하지만, 사실 고대 로마 시대부터 즐겨 먹던 요리입니다. 듀럼밀 세몰리나로 만들어 천천히 소화되는 건강한 탄수화물이죠.', icon: '🍝' },
+      '커피': { title: '☕ 에티오피아의 눈물, 커피', body: '9세기 에티오피아의 목동 칼디가 발견한 커피는 전 세계에서 가장 사랑받는 음료가 되었습니다. 적당한 카페인은 집중력을 높여주고 항산화 성분이 풍부합니다.', icon: '☕' },
+      '와인': { title: '🍷 신의 물방울, 와인', body: '인류 역사와 함께해온 와인은 항산화제인 레스베라트롤이 풍부해 심혈관 건강에 도움을 줄 수 있습니다. 주문하신 메뉴와 환상적인 조화를 이룰 거예요.', icon: '🍷' }
+    };
+
+    // 메뉴명에 키워드가 포함되어 있는지 확인
+    const foundKey = Object.keys(stories).find(key => firstItem.name.includes(key));
+    if (foundKey) {
+      setAiStoryContent(stories[foundKey]);
+    } else {
+      setAiStoryContent({
+        title: `✨ ${firstItem.name}의 미식 이야기`,
+        body: `주문하신 ${firstItem.name}은(는) 셰프님이 가장 정성을 들여 준비하는 메뉴 중 하나입니다. 신선한 재료와 완벽한 조리법으로 최고의 맛을 선사해 드릴게요.`,
+        icon: '🍳'
+      });
+    }
+  };
+
   const executeOrderWithPayment = async (method: string, extraData?: any) => {
     setIsOrdering(true);
     setShowPayModal(false);
     try {
+      const currentCart = [...cart]; // 백업
       const res = await fetch(`${API_BASE}/api/order/direct`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -144,7 +170,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       if (res.ok) {
         setCart([]);
         fetchMySession();
-        alert('주문과 결제가 완료되었습니다!');
+        generateAiStory(currentCart); // 스토리 생성
+        setTimeout(() => setShowAiStory(true), 800); // 약간의 시차 후 팝업
       }
     } catch (err) {
       alert('주문 실패. 서버 상태를 확인해주세요.');
@@ -304,6 +331,42 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
           initialPhone={userPhone}
           onPhoneChange={setUserPhone}
         />
+      )}
+
+      {showAiStory && (
+        <div className="payment-modal-overlay" style={{ zIndex: 11000 }}>
+          <div className="glass-panel animate-pop-in" style={{ 
+            width: '90%', maxWidth: '400px', padding: '30px', textAlign: 'center', 
+            background: 'linear-gradient(135deg, #1e293b, #0f172a)', border: '1px solid #f97316'
+          }}>
+            <div style={{ fontSize: '4rem', marginBottom: '20px' }}>{aiStoryContent.icon}</div>
+            <h2 style={{ color: '#f97316', marginBottom: '15px', fontWeight: 900 }}>{aiStoryContent.title}</h2>
+            <p style={{ lineHeight: 1.6, color: '#94a3b8', fontSize: '15px', marginBottom: '30px' }}>
+              {aiStoryContent.body}
+            </p>
+            
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '20px', marginBottom: '25px' }}>
+              <p style={{ fontSize: '13px', margin: '0 0 10px 0', opacity: 0.7 }}>추가 주문이 필요하신가요?</p>
+              <button 
+                onClick={() => { setShowAiStory(false); (window as any).startVoiceOrdering && (window as any).startVoiceOrdering(); }}
+                style={{ 
+                  background: 'linear-gradient(135deg, #f97316, #ea580c)', border: 'none', color: 'white', 
+                  padding: '12px 25px', borderRadius: '50px', fontWeight: 800, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: '8px', margin: '0 auto'
+                }}
+              >
+                🎙️ 말로 주문하기
+              </button>
+            </div>
+
+            <button 
+              onClick={() => setShowAiStory(false)}
+              style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'white', padding: '10px 20px', borderRadius: '12px', fontSize: '14px' }}
+            >
+              닫기
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
