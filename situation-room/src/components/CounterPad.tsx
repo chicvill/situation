@@ -199,8 +199,6 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                     onClose={() => setSelectedSessionForPay(null)}
                     onSubmit={() => handleCloseSession(selectedSessionForPay.session_id)}
                     isCounter={true}
-                    tableNo={selectedSessionForPay.table_id}
-                    orderNo={selectedSessionForPay.session_id.split('-')[1]}
                 />
             )}
 
