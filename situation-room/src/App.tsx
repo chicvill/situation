@@ -35,6 +35,7 @@ function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isListening, setIsListening] = useState(false);
   const recognizedTextRef = useRef("");
+  const [displayRecognizedText, setDisplayRecognizedText] = useState("");
 
   const [receiptData, setReceiptData] = useState<{
     orderId: string;
@@ -185,6 +186,7 @@ function App() {
     recognition.onresult = (event: any) => {
         const text = event.results[0][0].transcript;
         recognizedTextRef.current = text;
+        setDisplayRecognizedText(text); // UI 업데이트를 위해 상태도 업데이트
         
         const defaultMap: { [key: string]: MainTab } = {
             "주문": "order", "주방": "kitchen", "카운터": "counter", "결제": "counter",
@@ -214,6 +216,7 @@ function App() {
     };
     recognition.onend = () => {
         setIsListening(false);
+        setDisplayRecognizedText(""); // 인식이 끝나면 텍스트 초기화
         const finalContent = recognizedTextRef.current;
         if (finalContent && !finalContent.includes("주문") && !finalContent.includes("카운터")) {
             handleSendMessage(finalContent, undefined, activeTab, storeId, storeName);
@@ -358,7 +361,7 @@ function App() {
       {isListening && (
         <div className="voice-overlay animate-fade-in">
           <div className="voice-wave-premium">🎙️</div>
-          <h2>{recognizedText || "듣고 있습니다..."}</h2>
+          <h2>{displayRecognizedText || "듣고 있습니다..."}</h2>
           <div className="pulse-ring-premium"></div>
         </div>
       )}
