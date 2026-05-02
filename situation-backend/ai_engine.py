@@ -199,6 +199,9 @@ def parse_situation_text(text: str, store: str = "Total", context: str = "") -> 
                     response_format={"type": "json_object"}
                 )
                 result = json.loads(response.choices[0].message.content)
+                if isinstance(result, list):
+                    result = {"items": result, "type": "Log", "title": "분석된 상황"}
+                
                 result["timestamp"] = time_str
                 print("✅ [DEBUG] OpenAI 분석 성공!")
                 return result
@@ -211,6 +214,9 @@ def parse_situation_text(text: str, store: str = "Total", context: str = "") -> 
             print("[DEBUG] 2. Gemini 엔진 시도 중...")
             response = gemini_model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
             result = json.loads(response.text)
+            if isinstance(result, list):
+                result = {"items": result, "type": "Log", "title": "분석된 상황"}
+                
             result["timestamp"] = time_str
             print("✅ [DEBUG] Gemini 분석 성공!")
             return result
