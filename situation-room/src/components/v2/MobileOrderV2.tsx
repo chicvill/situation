@@ -555,17 +555,19 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
   const [isAiListening, setIsAiListening] = useState(false);
 
   const speak = useCallback((text: string) => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utterance = new window.SpeechSynthesisUtterance(text);
+    const win = window as any;
+    if (typeof win === 'undefined' || !win.speechSynthesis) return;
+    win.speechSynthesis.cancel();
+    const utterance = new (win.SpeechSynthesisUtterance || (window as any).webkitSpeechSynthesisUtterance)(text);
     utterance.lang = 'ko-KR';
-    window.speechSynthesis.speak(utterance);
+    win.speechSynthesis.speak(utterance);
     setAiMessage(text);
     setTimeout(() => setAiMessage(""), 5000); 
   }, []);
 
   const startListening = useCallback(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const win = window as any;
+    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("이 브라우저는 음성 인식을 지원하지 않습니다.");
       return;
