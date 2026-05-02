@@ -44,6 +44,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
   const [showHistory, setShowHistory] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
   const [hasActiveSession, setHasActiveSession] = useState(false);
+  const [showCart, setShowCart] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
   const [userPhone] = useState('');
   const [aiStoryContent, setAiStoryContent] = useState({ title: '', body: '', icon: '🍽️' });
@@ -121,6 +122,20 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       }
       return [...prev, { ...menu, qty: 1 }];
     });
+  }, []);
+
+  const removeFromCart = useCallback((name: string) => {
+    setCart(prev => {
+      const existing = prev.find(c => c.name === name);
+      if (existing && (existing.qty || 0) > 1) {
+        return prev.map(c => c.name === name ? { ...c, qty: (c.qty || 0) - 1 } : c);
+      }
+      return prev.filter(c => c.name !== name);
+    });
+  }, []);
+
+  const deleteFromCart = useCallback((name: string) => {
+    setCart(prev => prev.filter(c => c.name !== name));
   }, []);
 
   // --- Effects ---
@@ -379,7 +394,57 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     </div>
   );
 
+  const renderCartView = () => (
+    <div className="cart-view animate-fade-in" style={{ padding: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '25px' }}>
+        <button onClick={() => setShowCart(false)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', fontSize: '1.2rem', cursor: 'pointer' }}>❮</button>
+        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>장바구니 확인</h2>
+      </div>
+
+      <div style={{ background: 'var(--surface)', borderRadius: '24px', padding: '20px', border: '1px solid var(--border)', marginBottom: '30px' }}>
+        {cart.map((item, idx) => (
+          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: idx === cart.length - 1 ? 0 : '20px', paddingBottom: idx === cart.length - 1 ? 0 : '20px', borderBottom: idx === cart.length - 1 ? 'none' : '1px solid var(--border)' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '4px' }}>{item.name}</div>
+              <div style={{ color: 'var(--accent)', fontWeight: 600 }}>{(item.price * (item.qty || 1)).toLocaleString()}원</div>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', background: 'var(--primary-soft)', padding: '6px 12px', borderRadius: '12px' }}>
+              <button onClick={() => removeFromCart(item.name)} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 700, color: 'var(--text-muted)', cursor: 'pointer' }}>-</button>
+              <span style={{ fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{item.qty}</span>
+              <button onClick={() => addToCart(item)} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 700, color: 'var(--accent)', cursor: 'pointer' }}>+</button>
+              <button onClick={() => deleteFromCart(item.name)} style={{ marginLeft: '10px', background: 'none', border: 'none', color: '#ef4444', fontSize: '14px', cursor: 'pointer' }}>✕</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--surface)', padding: '20px', borderTop: '1px solid var(--border)', maxWidth: '500px', margin: '0 auto', zIndex: 100 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>총 주문금액</span>
+          <span style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--accent)' }}>{totalPrice.toLocaleString()}원</span>
+        </div>
+        
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button onClick={() => setShowCart(false)} style={{ flex: 1, padding: '18px', borderRadius: '16px', border: '1px solid var(--border)', background: 'white', fontWeight: 700, fontSize: '1.05rem', cursor: 'pointer' }}>
+            메뉴 더 담기
+          </button>
+          <button 
+            onClick={() => {
+              setShowCart(false);
+              setShowPayModal(true);
+            }} 
+            style={{ flex: 2, padding: '18px', borderRadius: '16px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 8px 20px rgba(30, 41, 59, 0.2)' }}
+          >
+            결제하러 가기
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderContent = () => {
+    if (showCart) return renderCartView();
     if (showHistory) return renderHistoryView();
     if (showProgress) return renderProgressScreen();
     
@@ -406,7 +471,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
           ))}
         </div>
         {cart.length > 0 && (
-          <div className="floating-cart animate-slide-up" onClick={() => setShowPayModal(true)}>
+          <div className="floating-cart animate-slide-up" onClick={() => setShowCart(true)}>
             <div className="cart-info">
               <div className="count">{cart.length}</div>
               <span className="label">주문하기</span>
