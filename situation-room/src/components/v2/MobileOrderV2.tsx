@@ -544,11 +544,10 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
               margin: 0
             }}
           >
-            <div className="cart-info">
-              <div className="count">{cart.length}</div>
-              <span className="label">주문하기</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', color: 'white' }}>
+              <span style={{ fontSize: '1.1rem', fontWeight: 800, whiteSpace: 'nowrap' }}>주문하기</span>
+              <span style={{ fontSize: '1.1rem', fontWeight: 900, whiteSpace: 'nowrap' }}>{totalPrice.toLocaleString()}원</span>
             </div>
-            <div className="total-price" style={{ fontSize: '15px' }}>{totalPrice.toLocaleString()}원</div>
           </div>
         )}
       </>

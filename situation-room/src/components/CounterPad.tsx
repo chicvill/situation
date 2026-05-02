@@ -162,7 +162,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                 <button
                                     key={num}
                                     disabled={isOccupied}
-                                    onClick={() => setSelectedTable(num)}
+                                    onClick={() => handleOpenSession(`T${String(num).padStart(2, '0')}`)}
                                     style={{
                                         padding: '10px 18px',
                                         borderRadius: '8px',
@@ -182,16 +182,6 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                     </div>
                 </div>
                 
-                <button 
-                    onClick={() => handleOpenSession(`T${String(selectedTable).padStart(2, '0')}`)}
-                    style={{ 
-                        background: 'var(--primary)', color: 'white', border: 'none', 
-                        padding: '16px 40px', borderRadius: 'var(--radius-sm)', fontSize: '1.1rem', 
-                        fontWeight: '700', cursor: 'pointer', boxShadow: 'var(--shadow-md)'
-                    }}
-                >
-                    세션 활성화
-                </button>
             </div>
 
             <div style={{ marginBottom: '24px' }}>
