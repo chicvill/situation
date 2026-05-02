@@ -1,29 +1,10 @@
-# Core Framework
-fastapi==0.136.0
+fastapi
 uvicorn[standard]
-starlette==1.0.0
-
-# Database & Auth
-psycopg2-binary==2.9.10
-python-multipart==0.0.9
-python-dotenv==1.2.2
-cryptography==46.0.7
-
-# AI Engine (OpenAI only)
 openai>=1.0.0
-
-# WebSocket & HTTP
 websockets
-requests==2.33.1
-anyio==4.13.0
-h11==0.16.0
-
-# Utilities
-pydantic==2.13.2
-pydantic_core==2.46.2
-typing_extensions==4.15.0
-certifi==2026.2.25
-charset-normalizer==3.4.7
-idna==3.11
-urllib3==2.6.3
-tqdm==4.67.3
+python-dotenv
+psycopg2-binary
+python-multipart
+pydantic
+requests
+cryptography
