@@ -100,44 +100,49 @@ export const KitchenDisplay: React.FC = () => {
 
                         {/* 개별 주문 리스트 (순번순 정렬) */}
                         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            {group.orders.sort((a, b) => (a.order_seq || 0) - (b.order_seq || 0)).map(order => (
-                                <div key={order.order_id} style={{ 
-                                    paddingBottom: '20px',
-                                    borderBottom: '1px solid var(--border)'
-                                }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                        <span style={{ 
-                                            color: 'var(--text-muted)',
-                                            fontSize: '0.8rem',
-                                            fontWeight: '600'
-                                        }}>
-                                            ORDER #{order.order_seq || 1}
-                                        </span>
-                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{order.timestamp.split('T')[1]?.split('.')[0] || order.timestamp}</span>
-                                    </div>
-                                    
-                                    <div style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '20px', color: 'var(--text-main)', lineHeight: 1.5 }}>
-                                        {order.items.map((item: any) => `${item.name} x${item.quantity || item.qty}`).join(', ')}
-                                    </div>
+                            {group.orders.sort((a, b) => (a.order_seq || 0) - (b.order_seq || 0)).map(order => {
+                                const orderTime = new Date(order.timestamp);
+                                const now = new Date();
+                                const diffMins = Math.floor((now.getTime() - orderTime.getTime()) / 60000);
+                                const isLate = diffMins > 10;
 
-                                    <button 
-                                        onClick={() => markAsDone(order.order_id)}
-                                        style={{ 
-                                            width: '100%',
-                                            padding: '12px', 
-                                            borderRadius: 'var(--radius-sm)', 
-                                            background: 'transparent', 
-                                            border: `1px solid ${order.payment_status === 'prepaid' ? 'var(--danger)' : 'var(--success)'}`, 
-                                            color: order.payment_status === 'prepaid' ? 'var(--danger)' : 'var(--success)', 
-                                            fontWeight: '600',
-                                            fontSize: '0.9rem',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        {order.payment_status === 'prepaid' ? '선불 결제 완료 - 조리완료 처리' : '조리 완료'}
-                                    </button>
-                                </div>
-                            ))}
+                                return (
+                                    <div key={order.order_id} style={{ 
+                                        paddingBottom: '20px',
+                                        borderBottom: '1px solid var(--border)'
+                                    }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: '700' }}>ORDER #{order.order_seq || 1}</span>
+                                                {isLate && <span style={{ background: 'var(--danger)', color: 'white', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>DELAYED</span>}
+                                            </div>
+                                            <span style={{ color: isLate ? 'var(--danger)' : 'var(--text-muted)', fontSize: '0.8rem', fontWeight: '600' }}>{diffMins}분 경과</span>
+                                        </div>
+                                        
+                                        <div style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '20px', color: 'var(--text-main)', lineHeight: 1.3 }}>
+                                            {order.items.map((item: any) => `${item.name} x${item.quantity || item.qty}`).join(', ')}
+                                        </div>
+
+                                        <button 
+                                            onClick={() => markAsDone(order.order_id)}
+                                            style={{ 
+                                                width: '100%',
+                                                padding: '14px', 
+                                                borderRadius: 'var(--radius-sm)', 
+                                                background: isLate ? 'var(--danger)' : 'var(--success)', 
+                                                border: 'none',
+                                                color: 'white', 
+                                                fontWeight: '700',
+                                                fontSize: '0.95rem',
+                                                cursor: 'pointer',
+                                                boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+                                            }}
+                                        >
+                                            조리 완료
+                                        </button>
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 ))}

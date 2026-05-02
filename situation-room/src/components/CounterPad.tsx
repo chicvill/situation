@@ -150,41 +150,48 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
             }}>
                 <div style={{ flex: 1 }}>
                     <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-main)' }}>신규 세션 개시</h3>
-                    <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.95rem' }}>입장하신 고객님의 테이블을 선택하여 활성화해 주세요.</p>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                    <select 
-                        value={selectedTable}
-                        onChange={(e) => setSelectedTable(Number(e.target.value))}
-                        style={{ 
-                            background: 'var(--surface)', color: 'var(--text-main)', border: '1px solid var(--border)', 
-                            padding: '12px 24px', borderRadius: 'var(--radius-sm)', fontSize: '1rem', fontWeight: '500',
-                            outline: 'none', minWidth: '160px'
-                        }}
-                    >
+                    <p style={{ margin: '0 0 20px 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>입장하신 고객님의 테이블을 선택하여 활성화해 주세요.</p>
+                    
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                         {tables.map(num => {
                             const tableId = `T${String(num).padStart(2, '0')}`;
                             const isOccupied = sessions.some(s => s.table_id === tableId);
+                            const isSelected = selectedTable === num;
+                            
                             return (
-                                <option key={num} value={num} disabled={isOccupied}>
-                                    Table {num} {isOccupied ? '(이용 중)' : ''}
-                                </option>
+                                <button
+                                    key={num}
+                                    disabled={isOccupied}
+                                    onClick={() => setSelectedTable(num)}
+                                    style={{
+                                        padding: '10px 18px',
+                                        borderRadius: '8px',
+                                        border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
+                                        background: isSelected ? 'var(--primary-soft)' : isOccupied ? 'var(--border)' : 'var(--surface)',
+                                        color: isSelected ? 'var(--accent)' : isOccupied ? 'var(--text-muted)' : 'var(--text-main)',
+                                        fontWeight: '700',
+                                        cursor: isOccupied ? 'not-allowed' : 'pointer',
+                                        transition: 'all 0.2s',
+                                        opacity: isOccupied ? 0.5 : 1
+                                    }}
+                                >
+                                    {num}번 {isOccupied ? '🔴' : '⚪'}
+                                </button>
                             );
                         })}
-                    </select>
-                    
-                    <button 
-                        onClick={() => handleOpenSession(`T${String(selectedTable).padStart(2, '0')}`)}
-                        style={{ 
-                            background: 'var(--primary)', color: 'white', border: 'none', 
-                            padding: '12px 32px', borderRadius: 'var(--radius-sm)', fontSize: '1rem', 
-                            fontWeight: '600', cursor: 'pointer'
-                        }}
-                    >
-                        세션 개시
-                    </button>
+                    </div>
                 </div>
+                
+                <button 
+                    onClick={() => handleOpenSession(`T${String(selectedTable).padStart(2, '0')}`)}
+                    style={{ 
+                        background: 'var(--primary)', color: 'white', border: 'none', 
+                        padding: '16px 40px', borderRadius: 'var(--radius-sm)', fontSize: '1.1rem', 
+                        fontWeight: '700', cursor: 'pointer', boxShadow: 'var(--shadow-md)'
+                    }}
+                >
+                    세션 활성화
+                </button>
             </div>
 
             <div style={{ marginBottom: '24px' }}>

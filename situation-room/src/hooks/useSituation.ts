@@ -8,6 +8,9 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
     const [isLoading, setIsLoading] = useState(false);
     const socketRef = useRef<WebSocket | null>(null);
 
+    const storeIdRef = useRef(storeId);
+    useEffect(() => { storeIdRef.current = storeId; }, [storeId]);
+
     const fetchInitialData = useCallback(async () => {
         try {
             const queryParams = new URLSearchParams();
@@ -35,18 +38,20 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
 
     // WebSocket Connection
     useEffect(() => {
+        let socket: WebSocket | null = null;
+        
         const connectWS = () => {
-            const socket = new WebSocket(`${WS_BASE}/ws/kitchen`);
+            socket = new WebSocket(`${WS_BASE}/ws/kitchen`);
             socketRef.current = socket;
             
             socket.onmessage = (event) => {
                 const data = JSON.parse(event.data);
+                const currentStoreId = storeIdRef.current;
                 
                 // Handle Bundle Updates
                 const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins'];
                 if (data.id && bundleTypes.includes(data.type)) {
-                    // 데이터 격리: 현재 매장의 데이터이거나 매장 정보가 없는(전역) 경우에만 처리
-                    if (storeId !== "Total" && storeId !== "" && data.store_id && data.store_id !== storeId) {
+                    if (currentStoreId !== "Total" && currentStoreId !== "" && data.store_id && data.store_id !== currentStoreId) {
                         return; 
                     }
 
@@ -75,21 +80,9 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                         const currentPrev = Array.isArray(prev) ? prev : [];
                         return currentPrev.map(b => b.id === data.bundleId ? { ...b, status: 'ready' } : b);
                     });
-                } else if (data.type === 'POOL_CLEARED') {
-                    const subject = data.subject;
-                    setBundles(prev => {
-                        const currentPrev = Array.isArray(prev) ? prev : [];
-                        return currentPrev.filter(b => !(b.items || []).some(i => i.value === subject));
-                    });
-                } else if (data.type === 'POOL_UPDATED') {
-                    if (!data.store_id || data.store_id === storeId || storeId === "Total" || storeId === "") {
-                        console.log("Pool updated from server. Refreshing...");
+                } else if (data.type === 'POOL_UPDATED' || data.type === 'CHECKIN_APPROVED') {
+                    if (!data.store_id || data.store_id === currentStoreId || currentStoreId === "Total" || currentStoreId === "") {
                         fetchInitialData();
-                    }
-                } else if (data.type === 'CHECKIN_APPROVED') {
-                    // 체크인 승인 시 해당 매장/기기인 경우에만 상태 업데이트 반영을 위해 새로고침
-                    if (data.store_id === storeId || storeId === "Total" || storeId === "") {
-                         fetchInitialData();
                     }
                 }
             };
@@ -98,12 +91,11 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                 console.log("WS Closed. Reconnecting...");
                 setTimeout(connectWS, 3000);
             };
-            return socket;
         };
 
-        const ws = connectWS();
-        return () => ws.close();
-    }, []);
+        connectWS();
+        return () => { if (socket) socket.close(); };
+    }, [fetchInitialData]);
 
     // API Situation Handler
     const handleSendMessage = useCallback(async (text: string, targetId?: string, context?: string, overrideStoreId?: string, overrideStoreName?: string) => {

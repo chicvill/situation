@@ -159,7 +159,17 @@ function App() {
     recognition.start();
   };
 
-  if (!user) return <Login onLogin={setUser} bundles={bundles} />;
+  if (!user) return (
+    <Login 
+      onLogin={(userData) => {
+        setUser(userData);
+        if (userData.storeId && userData.storeName) {
+          updateStore(userData.storeId, userData.storeName);
+        }
+      }} 
+      bundles={bundles} 
+    />
+  );
 
   // 시스템 관리자(Admin)인 경우 매장 선택 화면 노출
   if (user.role === 'admin' && !selectedAdminStore) {
@@ -168,7 +178,7 @@ function App() {
     return (
       <div className="admin-store-selector animate-fade-in" style={{ background: 'var(--bg-main)', minHeight: '100vh', padding: '100px 20px' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <h1 style={{ textAlign: 'center', marginBottom: '12px', fontSize: '2.2rem', fontWeight: '800', color: 'var(--text-main)' }}>SITUATION ROOM</h1>
+          <h1 style={{ textAlign: 'center', marginBottom: '12px', fontSize: '2.2rem', fontWeight: '800', color: 'var(--text-main)' }}>MQNET SERVICE</h1>
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '60px', fontSize: '1.1rem' }}>관리하실 매장을 선택해 주세요.</p>
           
           {safeBundles.length === 0 ? (
@@ -192,10 +202,12 @@ function App() {
           ) : (
             <>
               <p style={{ textAlign: 'center', opacity: 0.7, marginBottom: '40px' }}>점검 및 관리를 진행할 매장을 선택해 주세요.</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '30px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '30px' }}>
                 {stores.map(store => {
                   const name = store.items.find((i: any) => i.name === '상호명')?.value || '알 수 없는 매장';
                   const payStatus = store.items.find((i: any) => i.name === '납부상태')?.value || '정상';
+                  const isHealthy = payStatus !== '미납';
+
                   return (
                     <div key={store.id} 
                          onClick={() => {
@@ -203,20 +215,21 @@ function App() {
                            updateStore(store.id, name);
                          }}
                          style={{ 
-                           padding: '40px 30px', background: 'var(--surface)', borderRadius: 'var(--radius-md)', 
-                           border: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.3s',
-                           textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+                           padding: '50px 30px', background: 'var(--surface)', borderRadius: 'var(--radius-md)', 
+                           border: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                           textAlign: 'center', boxShadow: 'var(--shadow-md)', position: 'relative', overflow: 'hidden'
                          }}
                          className="store-card-hover"
                     >
-                      <h3 style={{ marginBottom: '12px', fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-main)' }}>{name}</h3>
+                      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '4px', background: isHealthy ? 'var(--accent)' : 'var(--danger)' }}></div>
+                      <h3 style={{ marginBottom: '16px', fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{name}</h3>
                       <div style={{ 
-                        fontSize: '0.8rem', padding: '4px 12px', borderRadius: '4px', 
-                        background: payStatus === '미납' ? 'var(--danger)' : 'var(--primary-soft)', 
-                        color: payStatus === '미납' ? 'white' : 'var(--text-muted)',
-                        fontWeight: '600'
+                        fontSize: '0.75rem', padding: '6px 16px', borderRadius: '50px', 
+                        background: isHealthy ? 'var(--primary-soft)' : 'rgba(239, 68, 68, 0.08)', 
+                        color: isHealthy ? 'var(--text-muted)' : 'var(--danger)',
+                        fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px'
                       }}>
-                        {payStatus === '미납' ? '납부 대기' : '정상 운영'}
+                        {isHealthy ? 'Connected' : 'Action Required'}
                       </div>
                     </div>
                   );

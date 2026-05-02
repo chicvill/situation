@@ -27,11 +27,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
             const name = userBundle.items.find((i: any) => i.name === '이름')?.value || id;
 
             if (status !== 'approved' && role !== 'admin') {
-                setError('승인 대기 중인 계정입니다. 상위 관리자의 승인을 기다려주세요.');
+                if (role === 'owner') {
+                    setError('점주 계정은 시스템 관리자(Admin)의 승인이 필요합니다.');
+                } else {
+                    setError('점장/점원 계정은 매장 점주(Owner)의 승인이 필요합니다.');
+                }
                 return;
             }
 
-            onLogin({ id, name, role });
+            onLogin({ id, name, role, storeId: userBundle.store_id, storeName: userBundle.store });
         } else if (id === 'admin' && pw === '1212') {
             // 마스터 계정 (초기용)
             onLogin({ id: 'admin', name: '마스터관리자', role: 'admin' });
@@ -45,7 +49,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
             <div className="login-glass-panel">
                 <div className="login-header">
                     <div className="logo-icon">🔒</div>
-                    <h1>SITUATION <span>PRO</span></h1>
+                    <h1>MQnet <span>service</span></h1>
                     <p>지능형 매장 운영 시스템 로그인</p>
                 </div>
 
@@ -74,6 +78,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                     {error && <div className="login-error">{error}</div>}
                     
                     <button type="submit" className="login-btn">로그인</button>
+                    <div style={{ marginTop: '15px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        mqnet@naver.com
+                    </div>
                 </form>
 
                 <div className="login-footer">

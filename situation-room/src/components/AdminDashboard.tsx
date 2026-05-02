@@ -68,50 +68,55 @@ export const AdminDashboard: React.FC<{ bundles: any[] }> = ({ bundles }) => {
                 </div>
             </div>
 
-            <section className="dashboard-content" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-                <div className="list-section" style={{ background: 'var(--surface)', padding: '30px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: '0 0 20px 0' }}>매장별 서비스 이용 현황</h3>
+            <section className="dashboard-content" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '30px' }}>
+                <div className="list-section" style={{ background: 'var(--surface)', padding: '30px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span>📊</span> 매장별 운영 현황
+                    </h3>
                     <div className="store-status-list">
                         {bundles.filter(b => b.type === 'StoreConfig').map(store => {
                             const name = store.items.find((i: any) => i.name === '상호명')?.value || '알 수 없는 매장';
                             const payStatus = store.items.find((i: any) => i.name === '납부상태')?.value || '정상';
+                            const isHealthy = payStatus !== '미납';
+                            
                             return (
-                                <div key={store.id} style={{ 
-                                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-                                    padding: '15px 0', borderBottom: '1px solid var(--border)' 
-                                }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                        <span style={{ fontSize: '1.2rem' }}>🏪</span>
-                                        <strong style={{ fontWeight: '600' }}>{name}</strong>
+                                <div key={store.id} style={{ padding: '20px 0', borderBottom: '1px solid var(--border)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <strong style={{ fontWeight: '700', fontSize: '1.05rem' }}>{name}</strong>
+                                        </div>
+                                        <span style={{ 
+                                            color: isHealthy ? 'var(--success)' : 'var(--danger)',
+                                            fontWeight: '700', fontSize: '0.75rem',
+                                            padding: '4px 10px', borderRadius: '4px',
+                                            background: isHealthy ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                                            textTransform: 'uppercase'
+                                        }}>
+                                            {isHealthy ? 'Healthy' : 'Payment Due'}
+                                        </span>
                                     </div>
-                                    <span style={{ 
-                                        color: payStatus === '미납' ? 'var(--danger)' : 'var(--success)',
-                                        fontWeight: '600',
-                                        fontSize: '0.8rem',
-                                        background: payStatus === '미납' ? 'rgba(239, 68, 68, 0.05)' : 'rgba(16, 185, 129, 0.05)',
-                                        padding: '4px 12px',
-                                        borderRadius: 'var(--radius-sm)',
-                                        border: `1px solid ${payStatus === '미납' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'}`
-                                    }}>
-                                        {payStatus === '미납' ? '납부 대기' : '정상 운영'}
-                                    </span>
+                                    <div style={{ width: '100%', height: '6px', background: 'var(--primary-soft)', borderRadius: '3px', overflow: 'hidden' }}>
+                                        <div style={{ width: isHealthy ? '100%' : '30%', height: '100%', background: isHealthy ? 'var(--success)' : 'var(--danger)', transition: 'width 1s ease-out' }}></div>
+                                    </div>
                                 </div>
                             );
                         })}
                     </div>
                 </div>
 
-                <div className="list-section" style={{ background: 'var(--surface)', padding: '30px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: '0 0 20px 0' }}>최근 시스템 로그</h3>
+                <div className="list-section" style={{ background: 'var(--surface)', padding: '30px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span>🔔</span> 시스템 타임라인
+                    </h3>
                     <div className="bundle-list-mini">
-                        {bundles.slice(0, 5).map(b => (
-                            <div key={b.id} style={{ padding: '12px 0', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', width: '80px' }}>{b.timestamp.split('T')[1]?.split('.')[0] || b.timestamp}</span>
+                        {bundles.slice(0, 7).map(b => (
+                            <div key={b.id} style={{ padding: '15px 0', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', width: '70px', fontWeight: '500' }}>{b.timestamp.split('T')[1]?.split('.')[0] || 'Recently'}</span>
                                 <span style={{ 
-                                    fontSize: '0.7rem', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', 
-                                    background: 'var(--primary-soft)', color: 'var(--text-muted)'
-                                }}>{b.type}</span>
-                                <span style={{ color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: '500' }}>{b.title}</span>
+                                    fontSize: '0.65rem', fontWeight: '800', padding: '2px 8px', borderRadius: '4px', 
+                                    background: 'var(--primary)', color: 'white', letterSpacing: '0.5px'
+                                }}>{b.type.toUpperCase()}</span>
+                                <span style={{ color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: '600', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.title}</span>
                             </div>
                         ))}
                     </div>
