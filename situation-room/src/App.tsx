@@ -155,19 +155,17 @@ function App() {
   };
 
   const navItems = [
-    { label: '홈', icon: '🏠', tab: 'home', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '주문', icon: '📝', tab: 'order', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: '주방', icon: '👨‍🍳', tab: 'kitchen', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '카운터', icon: '💰', tab: 'counter', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '대기', icon: '🛎️', tab: 'waiting', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '예약', icon: '📅', tab: 'reserve', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '호출', icon: '🔔', tab: 'call', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '비서', icon: '🎤', tab: 'guide', roles: ['admin', 'owner', 'manager', 'staff'], special: true }, // 중앙 마이크
-    { label: 'QR', icon: '🖨️', tab: 'qr', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: '대기', icon: '🛎️', tab: 'waiting', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: '비서', icon: '🎤', tab: 'guide', roles: ['admin', 'owner', 'manager', 'staff'], special: true }, // 6번째 (정중앙)
+    { label: '홈', icon: '🏠', tab: 'home', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: '예약', icon: '📅', tab: 'reserve', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: 'QR인쇄', icon: '🖨️', tab: 'qr', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '전광판', icon: '📢', tab: 'display', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '매장', icon: '🏠', tab: 'settings', roles: ['admin', 'owner'] },
-    { label: '메뉴', icon: '📔', tab: 'menu', roles: ['admin', 'owner'] },
     { label: '통계', icon: '📊', tab: 'stats', roles: ['admin', 'owner'] },
-    { label: '근태', icon: '👥', tab: 'hr', roles: ['admin', 'owner', 'manager', 'staff'] },
   ].filter(item => item.roles.includes(user?.role));
 
   const startVoiceRecognition = () => {
@@ -325,14 +323,17 @@ function App() {
             <button onClick={() => setIsMenuOpen(false)}>×</button>
           </div>
           <nav className="drawer-nav">
+            <button onClick={() => navigateTo('settings')}>⚙️ 매장 설정</button>
+            <button onClick={() => navigateTo('menu')}>📔 메뉴 설정</button>
+            <button onClick={() => navigateTo('hr')}>👥 직원관리 (직원 등록, 근태관리 등)</button>
             {user.role === 'admin' && (
               <>
-                <button onClick={() => navigateTo('inventory')}>🧠 AI 지식 인벤토리</button>
-                <button onClick={() => navigateTo('paper')}>📄 AI 논문 보기</button>
+                <button onClick={() => navigateTo('stats')}>🏢 매장관리 (관리자 전용)</button>
+                <button onClick={() => navigateTo('inventory')}>🧠 AI지식 인벤토리</button>
+                <button onClick={() => navigateTo('paper')}>📄 AI논문 보기</button>
               </>
             )}
-            <button onClick={() => navigateTo('settings')}>⚙️ 매장 설정</button>
-            <button onClick={() => setUser(null)} style={{ color: '#ef4444' }}>🔓 로그아웃</button>
+            <button onClick={() => setUser(null)} style={{ color: '#ef4444', marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>🔓 로그 아웃</button>
           </nav>
         </div>
       )}
