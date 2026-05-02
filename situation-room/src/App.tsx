@@ -283,7 +283,7 @@ function App() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'guide': return <ConversationalUI bundles={bundles} storeName={storeName} />;
+      case 'guide': return <ConversationalUI bundles={bundles} storeName={storeName} onNavigate={navigateTo as any} />;
       case 'order': 
       case 'orderV2': return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} />;
       case 'kitchen': return <KitchenDisplay />;
@@ -298,7 +298,7 @@ function App() {
       case 'hr': return <HRManager bundles={bundles} user={user} />;
       case 'waiting': return <WaitingManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'waiting', sId, sName)} />;
       case 'reserve': return <ReservationManager bundles={bundles} />;
-      default: return <ConversationalUI bundles={bundles} storeName={storeName} />;
+      default: return <ConversationalUI bundles={bundles} storeName={storeName} onNavigate={navigateTo as any} />;
     }
   };
 

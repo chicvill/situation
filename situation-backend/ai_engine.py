@@ -249,17 +249,26 @@ def analyze_history(query: str, history: list, store: str = "Total") -> str:
         context += f"[{b.timestamp}] {b.type}({b.title}): {items_str}\n"
 
     prompt = f"""
-당신은 매장의 '경영 분석가'입니다. 아래의 '지식 창고' 데이터를 바탕으로 사용자의 질문에 친절하고 정확하게 답변하세요.
-현재 당신은 매장 "{store}"의 데이터를 분석하고 있습니다.
-데이터에 없는 내용은 추측하지 말고 모른다고 하거나, 데이터가 더 필요하다고 답하세요.
-
 [지식 창고 데이터 요약 (매장: {store})]
 {context}
 
 [사용자 질문]
 "{query}"
 
-답변은 한국어로, 핵심 위주로 명확하게 하세요. 마크다운 형식을 사용하여 가독성 있게 답변하세요.
+[답변 지침]
+1. 답변은 한국어로, 핵심 위주로 명확하게 하세요. 마크다운 형식을 사용하세요.
+2. 만약 사용자의 질문이 특정 화면으로 이동하거나 기능을 확인하려는 의도라면, 답변 끝에 반드시 `[GOTO:탭이름]` 형식을 포함하세요.
+   - 통계/홈: [GOTO:home]
+   - 주문 관리: [GOTO:order]
+   - 주방/조리: [GOTO:kitchen]
+   - 카운터/결제: [GOTO:counter]
+   - 메뉴 관리/가격수정: [GOTO:menu]
+   - 매장 설정/정보수정: [GOTO:settings]
+   - 지식 인벤토리: [GOTO:inventory]
+   - 대기 관리: [GOTO:waiting]
+   - 예약 관리: [GOTO:reserve]
+   - QR 출력: [GOTO:qr]
+3. 데이터에 없는 내용은 추측하지 말고 데이터가 더 필요하다고 답하세요.
 """
     
     try:

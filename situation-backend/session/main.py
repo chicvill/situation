@@ -421,6 +421,16 @@ async def update_status(update: StatusUpdate):
         return {"status": "success"}
     return {"status": "failed"}
 
+@app.post("/api/chat")
+async def chat(data: Dict):
+    query = data.get("query")
+    history = data.get("history", [])
+    store = data.get("store", "Total")
+    
+    from ai_engine import analyze_history
+    answer = analyze_history(query, history, store)
+    return {"answer": answer}
+
 @app.websocket("/ws/kitchen")
 async def ws_kitchen(websocket: WebSocket):
     await manager.connect(websocket, "kitchen")

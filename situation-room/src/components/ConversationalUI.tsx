@@ -9,9 +9,10 @@ import { API_BASE } from '../config';
 export interface ConversationalUIProps {
     bundles: BundleData[];
     storeName: string;
+    onNavigate?: (tab: string) => void;
 }
 
-export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, storeName }) => {
+export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, storeName, onNavigate }) => {
     const [messages, setMessages] = useState<any[]>([]);
 
     useEffect(() => {
@@ -25,9 +26,20 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const addAiMessage = (text: string, richComponent?: string) => {
+        let cleanText = text;
+        
+        // [GOTO:tab_name] 패턴 감지 및 추출
+        const gotoMatch = text.match(/\[GOTO:(\w+)\]/);
+        if (gotoMatch && onNavigate) {
+            const targetTab = gotoMatch[1];
+            onNavigate(targetTab);
+            // 텍스트에서는 태그 제거
+            cleanText = text.replace(/\[GOTO:(\w+)\]/g, '').trim();
+        }
+
         setMessages(prev => [...prev, {
             id: Date.now(),
-            text,
+            text: cleanText,
             sender: "ai",
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             richComponent
