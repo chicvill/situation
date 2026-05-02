@@ -15,16 +15,11 @@ export interface ConversationalUIProps {
 export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, storeName, onNavigate }) => {
     const [messages, setMessages] = useState<any[]>([]);
 
-    useEffect(() => {
-        if (messages.length === 0 && storeName) {
-            setMessages([
-                { id: 1, text: "Ai비서는 음성 지원합니다.\n주문이라고 말해 보세요.", sender: "ai", timestamp: "현재" }
-            ]);
-        }
-    }, [storeName, messages.length]);
-
     const speak = (text: string) => {
         if (!window.speechSynthesis) return;
+        // 기존 음성 대기열을 모두 삭제하여 엉킴 방지
+        window.speechSynthesis.cancel();
+        
         // GOTO 태그 등 특수 문구 제거 후 읽기
         const speechText = text.replace(/\[GOTO:(\w+)\]/g, '').trim();
         const utterance = new SpeechSynthesisUtterance(speechText);
@@ -32,6 +27,17 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         utterance.rate = 1.0;
         window.speechSynthesis.speak(utterance);
     };
+
+    useEffect(() => {
+        if (messages.length === 0 && storeName) {
+            const greeting = "Ai비서는 음성 지원합니다.\n주문이라고 말해 보세요.";
+            setMessages([
+                { id: 1, text: greeting, sender: "ai", timestamp: "현재" }
+            ]);
+            // 첫 진입 시에도 사용자의 상호작용이 있었다면 음성 출력
+            speak(greeting);
+        }
+    }, [storeName, messages.length]);
 
     const scrollRef = useRef<HTMLDivElement>(null);
 
