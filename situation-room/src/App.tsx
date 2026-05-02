@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+// Build trigger: 2026-05-03 Optimization Update
 import './App.css';
 import { KitchenDisplay } from './components/KitchenDisplay';
 import { AdminDashboard } from './components/AdminDashboard';
