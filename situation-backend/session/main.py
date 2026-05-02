@@ -431,6 +431,45 @@ async def chat(data: Dict):
     answer = analyze_history(query, history, store)
     return {"answer": answer}
 
+@app.post("/api/situation")
+async def process_situation(data: Dict):
+    """상황 지능형 엔진: 입력된 텍스트를 분석하여 지식 풀에 저장"""
+    text = data.get("text")
+    store = data.get("store", "Total")
+    context = data.get("context", "")
+    
+    from ai_engine import parse_situation_text
+    # 1. AI 분석 수행
+    analysis_result = parse_situation_text(text, store, context)
+    
+    # 2. 지식 풀(knowledge_pool.json)에 저장
+    pool_path = os.path.join(os.path.dirname(__file__), "..", "knowledge_pool.json")
+    try:
+        pool_data = {"items": []}
+        if os.path.exists(pool_path):
+            with open(pool_path, "r", encoding="utf-8") as f:
+                pool_data = json.load(f)
+        
+        # 새 분석 결과 추가
+        new_entry = {
+            "id": f"SIT-{uuid.uuid4().hex[:6].upper()}",
+            "store_id": store,
+            "type": analysis_result.get("type", "Log"),
+            "title": analysis_result.get("title", "분석된 상황"),
+            "timestamp": datetime.now().isoformat(),
+            "items": analysis_result.get("items", [])
+        }
+        pool_data["items"].insert(0, new_entry) # 최신 정보 상단
+        
+        with open(pool_path, "w", encoding="utf-8") as f:
+            json.dump(pool_data, f, ensure_ascii=False, indent=2)
+            
+        print(f"✨ [Situation Saved] Type: {new_entry['type']} | Title: {new_entry['title']}")
+        return {"status": "success", "result": new_entry}
+    except Exception as e:
+        print(f"🚨 [Situation Save Error] {e}")
+        return {"status": "error", "message": str(e)}
+
 @app.websocket("/ws/kitchen")
 async def ws_kitchen(websocket: WebSocket):
     await manager.connect(websocket, "kitchen")
