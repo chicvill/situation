@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 
 export const AdminDashboard: React.FC<{ bundles: any[] }> = ({ bundles }) => {
     const { storeId } = useStoreFilter();
+    const [aiMessage, setAiMessage] = useState("매장 현황을 분석 중입니다...");
     const now = new Date();
     const todayStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
 
@@ -25,8 +27,45 @@ export const AdminDashboard: React.FC<{ bundles: any[] }> = ({ bundles }) => {
             return acc + orderTotal;
         }, 0);
 
+    useEffect(() => {
+        const brief = `사장님, 현재 활성 주문은 ${orderCount}건이며, 오늘 예상 매출은 ${todaySales.toLocaleString()}원입니다. ${orderCount > 0 ? '주문창으로 이동해서 조리 현황을 체크하시겠어요?' : '현재 대기 중인 주문은 없습니다.'}`;
+        setAiMessage(brief);
+        
+        // 음성 브리핑 (TTS)
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(brief);
+            utterance.lang = 'ko-KR';
+            window.speechSynthesis.speak(utterance);
+        }
+    }, [orderCount, todaySales]);
+
     return (
         <div className="admin-page animate-fade-in" style={{ padding: '40px', background: 'var(--bg-main)', minHeight: '100vh' }}>
+            {/* AI Agent Briefing Bar */}
+            <div className="ai-agent-bar" style={{ 
+                background: '#f0f9ff', border: '1px solid #bae6fd', padding: '20px 25px', 
+                borderRadius: '16px', marginBottom: '40px', display: 'flex', alignItems: 'center', gap: '20px',
+                boxShadow: '0 4px 15px rgba(186, 230, 253, 0.2)'
+            }}>
+                <div style={{ fontSize: '2.5rem' }}>🤖</div>
+                <div style={{ flex: 1 }}>
+                    <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0369a1', fontWeight: '800', marginBottom: '4px' }}>AI 오퍼레이터 브리핑</h4>
+                    <p style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-main)', fontWeight: '600', lineHeight: 1.5 }}>
+                        {aiMessage}
+                    </p>
+                </div>
+                <button 
+                    onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'order' }))}
+                    style={{ 
+                        background: '#0ea5e9', color: 'white', border: 'none', padding: '10px 20px', 
+                        borderRadius: '8px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap'
+                    }}
+                >
+                    주문창 이동
+                </button>
+            </div>
+
             <header className="page-header" style={{ marginBottom: '40px' }}>
                 <h2 style={{ fontSize: '1.8rem', fontWeight: '700', color: 'var(--text-main)', margin: 0 }}>스토어 통합 현황</h2>
                 <p style={{ color: 'var(--text-muted)', marginTop: '8px' }}>매장의 운영 데이터를 실시간으로 모니터링합니다.</p>
