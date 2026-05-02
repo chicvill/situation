@@ -426,17 +426,17 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
         </div>
         
         <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={() => setShowCart(false)} style={{ flex: 1, padding: '18px', borderRadius: '16px', border: '1px solid var(--border)', background: 'white', fontWeight: 700, fontSize: '1.05rem', cursor: 'pointer' }}>
-            메뉴 더 담기
+          <button onClick={() => setShowCart(false)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid var(--border)', background: 'white', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}>
+            메뉴 추가
           </button>
           <button 
             onClick={() => {
               setShowCart(false);
               setShowPayModal(true);
             }} 
-            style={{ flex: 2, padding: '18px', borderRadius: '16px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 8px 20px rgba(30, 41, 59, 0.2)' }}
+            style={{ flex: 1.6, padding: '16px', borderRadius: '16px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 8px 20px rgba(30, 41, 59, 0.2)' }}
           >
-            결제하러 가기
+            결제
           </button>
         </div>
       </div>
@@ -458,17 +458,40 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
           ))}
         </div>
         <div className="menu-grid">
-          {menus.filter(m => activeCategory === '전체' || m.category === activeCategory).map((item, idx) => (
-            <div key={idx} className="menu-item-card" onClick={() => addToCart(item)}>
-              <img src={item.icon} alt={item.name} className="menu-image" />
-              <div className="menu-details">
-                <div className="name">{item.name}</div>
-                <div className="desc">{item.description}</div>
-                <div className="price">{item.price.toLocaleString()}원</div>
+          {menus.filter(m => activeCategory === '전체' || m.category === activeCategory).map((item, idx) => {
+            const cartItem = cart.find(c => c.name === item.name);
+            return (
+              <div key={idx} className="menu-item-card" onClick={() => addToCart(item)}>
+                <img src={item.icon} alt={item.name} className="menu-image" />
+                <div className="menu-details">
+                  <div className="name">{item.name}</div>
+                  <div className="desc">{item.description}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div className="price">
+                      {cartItem 
+                        ? `${item.price.toLocaleString()}원 x ${cartItem.qty}` 
+                        : `${item.price.toLocaleString()}원`
+                      }
+                    </div>
+                    {cartItem && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteFromCart(item.name);
+                        }}
+                        style={{ 
+                          background: 'none', border: 'none', color: '#ef4444', 
+                          fontSize: '18px', fontWeight: 'bold', padding: '0 5px', cursor: 'pointer' 
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="add-badge">+</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         {cart.length > 0 && (
           <div className="floating-cart animate-slide-up" onClick={() => setShowCart(true)}>
@@ -502,15 +525,10 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
 
   return (
     <div className="mobile-v2-container unified-mode">
-      <header className="glass-card sticky-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ fontSize: '18px', margin: 0, fontWeight: 700, color: 'var(--text-main)' }}>{storeName}</h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '2px' }}>Table {tableNo}</p>
-          </div>
-          <button onClick={() => setShowHistory(!showHistory)} className="history-btn">
-            {showHistory ? '메뉴판 보기' : '주문내역'}
-          </button>
+      <header className="glass-card sticky-header" style={{ padding: '20px 24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <h1 style={{ fontSize: '22px', margin: 0, fontWeight: 700, color: 'var(--text-main)' }}>{storeName}</h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '18px', fontWeight: 600, margin: 0 }}>Table {tableNo}</p>
         </div>
       </header>
 
