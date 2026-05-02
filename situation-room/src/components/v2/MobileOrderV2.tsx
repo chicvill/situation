@@ -246,7 +246,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
               <div key={i} style={{ textAlign: 'center', zIndex: 1, flex: 1 }}>
                 <div style={{ 
                   width: '32px', height: '32px', borderRadius: '50%', 
-                  background: step.active ? '#f97316' : '#280846ff',
+                  background: step.active ? '#f97316' : '#270c40ff',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', margin: '0 auto 8px',
                   boxShadow: step.pulse ? '0 0 15px #f97316' : 'none',
                   animation: step.pulse ? 'pulse-light 2s infinite' : 'none',
