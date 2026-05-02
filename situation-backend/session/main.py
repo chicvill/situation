@@ -8,9 +8,11 @@ import uuid
 import json
 import os
 from datetime import datetime
+import asyncio
 from .database import (
     save_session, save_order, get_active_session, 
-    get_orders_by_session, update_order_status, get_max_order_seq, init_db_v2
+    get_orders_by_session, update_order_status, get_max_order_seq, init_db_v2,
+    get_db_conn
 )
 
 app = FastAPI()
@@ -24,6 +26,31 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- Render Keep-Alive ---
+async def keep_alive_task():
+    """Render 서버가 잠들지 않도록 10분마다 Supabase에 더미 데이터를 쓰고 지웁니다."""
+    while True:
+        try:
+            conn = get_db_conn()
+            if conn:
+                cur = conn.cursor()
+                # 테이블 확인 및 더미 데이터 작업
+                cur.execute("CREATE TABLE IF NOT EXISTS render_keep_alive (id INTEGER PRIMARY KEY, val TEXT)")
+                cur.execute("INSERT INTO render_keep_alive (id, val) VALUES (1, 'keep_alive') ON CONFLICT (id) DO UPDATE SET val = 'keep_alive'")
+                cur.execute("DELETE FROM render_keep_alive WHERE id = 1")
+                conn.commit()
+                cur.close()
+                conn.close()
+                print(f"💓 [{datetime.now().strftime('%H:%M:%S')}] Render Keep-alive pulse sent.")
+        except Exception as e:
+            print(f"⚠️ Keep-alive pulse failed: {e}")
+        
+        await asyncio.sleep(600) # 10분 간격
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(keep_alive_task())
 
 # --- Frontend Serving ---
 # Render 환경과 로컬 환경 모두 지원하는 경로 설정

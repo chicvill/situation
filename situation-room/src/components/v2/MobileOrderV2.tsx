@@ -157,7 +157,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
 
   // --- Android/Browser Back Button Handling ---
   useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
+    const handlePopState = () => {
       // 만약 서브 뷰가 열려있다면 닫고 브라우저 이동은 막음
       if (showHistory || showProgress) {
         setShowHistory(false);

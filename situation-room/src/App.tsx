@@ -44,6 +44,7 @@ function App() {
   } | null>(null);
 
   const safeBundles = Array.isArray(bundles) ? bundles : [];
+  const isCustomerMode = user?.role === 'customer';
   
   // 지식 번들에서 상호명을 찾아 storeName 업데이트 (필요한 경우)
   const storeBundle = safeBundles.find(b => b.type === 'StoreConfig' && (b.store_id === storeId || !b.store_id));
@@ -79,7 +80,7 @@ function App() {
 
   // --- Global Back Button Handling ---
   useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
+    const handlePopState = () => {
       // 오버레이가 열려있다면 닫음
       if (isMenuOpen) {
         setIsMenuOpen(false);
@@ -273,8 +274,6 @@ function App() {
       </div>
     );
   }
-
-  const isCustomerMode = user.role === 'customer';
 
   const renderContent = () => {
     switch (activeTab) {
