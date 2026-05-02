@@ -5,7 +5,6 @@ interface PaymentModalProps {
   totalPrice: number;
   onClose: () => void;
   onSubmit: (method: string, extraData?: any) => void | Promise<void>;
-  onAddOrder?: () => void;
   isCounter?: boolean;
   prepaidMethod?: string | null;
   bundles?: BundleData[];
@@ -23,7 +22,7 @@ const METHODS: Method[] = [
 ];
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
-  totalPrice, onClose, onSubmit, onAddOrder,
+  totalPrice, onClose, onSubmit,
   bundles,
   initialPhone = '', onPhoneChange,
 }) => {
@@ -88,11 +87,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         {METHODS.map(m => (
           <button
             key={m.id}
-            onClick={() => setSelectedMethod(m)}
+            onClick={async () => {
+              setSelectedMethod(m);
+              try {
+                await onSubmit(m.name);
+                setStep('points');
+              } catch (err) {
+                alert('주문 처리 중 오류가 발생했습니다.');
+              }
+            }}
             style={{
               display:'flex', alignItems:'center', gap:'16px', padding:'16px 20px',
-              borderRadius:'var(--radius-md)', border:`1px solid ${selectedMethod?.id === m.id ? 'var(--accent)' : 'var(--border)'}`,
-              background: selectedMethod?.id === m.id ? 'var(--primary-soft)' : 'transparent',
+              borderRadius:'var(--radius-md)', border:'1px solid var(--border)',
+              background: 'transparent',
               textAlign:'left', cursor:'pointer', transition:'all 0.15s',
             }}
           >
@@ -101,45 +108,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               <div style={{ color:'var(--text-main)', fontWeight:600, fontSize:'0.95rem' }}>{m.name}</div>
               <div style={{ color:'var(--text-muted)', fontSize:'0.75rem', marginTop:'2px' }}>{m.desc}</div>
             </div>
-            {selectedMethod?.id === m.id && <span style={{ color:'var(--accent)', fontSize:'1rem' }}>✔</span>}
           </button>
         ))}
       </div>
 
-      {/* 최종 합계 및 분기 버튼 영역 */}
+      {/* 최종 합계 안내 */}
       <div style={{ borderTop:'1px solid var(--border)', paddingTop:'20px' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <span style={{ color:'var(--text-muted)', fontWeight:500 }}>총 결제 금액</span>
           <span style={{ color:'var(--accent)', fontSize:'1.4rem', fontWeight:700 }}>{totalPrice.toLocaleString()}원</span>
-        </div>
-        
-        <div style={{ display:'flex', gap:'12px' }}>
-          <button
-            onClick={onAddOrder || onClose}
-            style={{
-              flex: 1, padding:'14px', background:'transparent', color:'var(--text-main)',
-              border:'1px solid var(--border)', borderRadius:'var(--radius-md)', fontWeight:600, cursor:'pointer'
-            }}
-          >
-            추가주문
-          </button>
-          <button
-            onClick={async () => {
-              if(!selectedMethod) { alert('결제 수단을 선택해주세요.'); return; }
-              try {
-                await onSubmit(selectedMethod.name);
-                setStep('points');
-              } catch (err) {
-                alert('주문 처리 중 오류가 발생했습니다.');
-              }
-            }}
-            style={{
-              flex: 2, padding:'14px', background:'var(--primary)', color:'white',
-              border:'none', borderRadius:'var(--radius-md)', fontSize:'1rem', fontWeight:700, cursor:'pointer',
-            }}
-          >
-            결제하기
-          </button>
         </div>
       </div>
     </div>

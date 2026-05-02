@@ -404,16 +404,18 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       <div style={{ background: 'var(--surface)', borderRadius: '24px', padding: '20px', border: '1px solid var(--border)', marginBottom: '30px' }}>
         {cart.map((item, idx) => (
           <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: idx === cart.length - 1 ? 0 : '20px', paddingBottom: idx === cart.length - 1 ? 0 : '20px', borderBottom: idx === cart.length - 1 ? 'none' : '1px solid var(--border)' }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '4px' }}>{item.name}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
               <div style={{ color: 'var(--accent)', fontWeight: 600 }}>{(item.price * (item.qty || 1)).toLocaleString()}원</div>
             </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', background: 'var(--primary-soft)', padding: '6px 12px', borderRadius: '12px' }}>
-              <button onClick={() => removeFromCart(item.name)} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 700, color: 'var(--text-muted)', cursor: 'pointer' }}>-</button>
-              <span style={{ fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{item.qty}</span>
-              <button onClick={() => addToCart(item)} style={{ background: 'none', border: 'none', fontSize: '18px', fontWeight: 700, color: 'var(--accent)', cursor: 'pointer' }}>+</button>
-              <button onClick={() => deleteFromCart(item.name)} style={{ marginLeft: '10px', background: 'none', border: 'none', color: '#ef4444', fontSize: '14px', cursor: 'pointer' }}>✕</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '15px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--primary-soft)', padding: '4px 8px', borderRadius: '8px' }}>
+                <button onClick={() => removeFromCart(item.name)} style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', border: '1px solid var(--border)', borderRadius: '4px', fontSize: '16px', fontWeight: 700, color: 'var(--text-muted)', cursor: 'pointer' }}>-</button>
+                <span style={{ fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{item.qty}</span>
+                <button onClick={() => addToCart(item)} style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', border: '1px solid var(--border)', borderRadius: '4px', fontSize: '16px', fontWeight: 700, color: 'var(--accent)', cursor: 'pointer' }}>+</button>
+              </div>
+              <button onClick={() => deleteFromCart(item.name)} style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', border: '1px solid #ef4444', borderRadius: '4px', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}>✕</button>
             </div>
           </div>
         ))}
@@ -466,7 +468,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
                 <div className="menu-details">
                   <div className="name">{item.name}</div>
                   <div className="desc">{item.description}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
                     <div className="price">
                       {cartItem 
                         ? `${item.price.toLocaleString()}원 x ${cartItem.qty}` 
@@ -480,8 +482,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
                           deleteFromCart(item.name);
                         }}
                         style={{ 
-                          background: 'none', border: 'none', color: '#ef4444', 
-                          fontSize: '18px', fontWeight: 'bold', padding: '0 5px', cursor: 'pointer' 
+                          width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: 'white', border: '1px solid #ef4444', borderRadius: '4px', color: '#ef4444', 
+                          fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' 
                         }}
                       >
                         ✕
@@ -543,10 +546,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
         <PaymentModal
           totalPrice={totalPrice}
           onClose={() => setShowPayModal(false)}
-          onAddOrder={() => {
-            setShowPayModal(false);
-            setShowHistory(true);
-          }}
           onSubmit={executeOrderWithPayment}
           initialPhone={userPhone}
           bundles={bundles}
