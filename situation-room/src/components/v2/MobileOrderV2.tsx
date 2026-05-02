@@ -416,7 +416,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
             className="premium-button"
             style={{ marginTop: '25px', width: '100%', padding: '20px', fontSize: '1.2rem', borderRadius: '40px' }}
           >
-            ➕ 메뉴 추가하기
+            ➕ 추가 주문
           </button>
         </div>
       </div>
@@ -458,7 +458,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
         
         <div style={{ display: 'flex', gap: '12px' }}>
           <button onClick={() => setShowCart(false)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid var(--border)', background: 'white', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}>
-            메뉴 추가
+            추가 주문
           </button>
           <button 
             onClick={() => {
@@ -590,7 +590,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
         </div>
 
         <div className="category-scroll no-scrollbar" style={{ padding: '10px 20px 15px', background: 'transparent', borderTop: '1px solid var(--border)' }}>
-          {['전체', '추천', '커피', '쥬스', ...categories.filter(c => !['전체', '추천', '커피', '쥬스'].includes(c))].map(cat => (
+          {['전체', '추천', '커피', '쥬스', '주류', '음료', '기타', ...categories.filter(c => !['전체', '추천', '커피', '쥬스', '주류', '음료', '기타'].includes(c))].map(cat => (
             <button key={cat} className={`category-pill ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
               {cat}
             </button>
