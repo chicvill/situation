@@ -39,62 +39,63 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
     // WebSocket Connection
     useEffect(() => {
         let socket: WebSocket | null = null;
+        let timeoutId: any = null;
         
         const connectWS = () => {
+            if (socket) socket.close();
+            
             socket = new WebSocket(`${WS_BASE}/ws/kitchen`);
             socketRef.current = socket;
             
             socket.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                const currentStoreId = storeIdRef.current;
-                
-                // Handle Bundle Updates
-                const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins'];
-                if (data.id && bundleTypes.includes(data.type)) {
-                    if (currentStoreId !== "Total" && currentStoreId !== "" && data.store_id && data.store_id !== currentStoreId) {
-                        return; 
-                    }
-
-                    setBundles(prev => {
-                        const currentPrev = Array.isArray(prev) ? prev : [];
-                        const index = currentPrev.findIndex(b => b.id === data.id);
-                        if (index !== -1) {
-                            const newBundles = [...currentPrev];
-                            newBundles[index] = data;
-                            return newBundles;
+                try {
+                    const data = JSON.parse(event.data);
+                    const currentStoreId = storeIdRef.current;
+                    
+                    const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins'];
+                    if (data.id && bundleTypes.includes(data.type)) {
+                        if (currentStoreId !== "Total" && currentStoreId !== "" && data.store_id && data.store_id !== currentStoreId) {
+                            return; 
                         }
-                        return [data, ...currentPrev];
-                    });
-                }
-
-                // Internal App Events
-                if (data.type === 'STATUS_UPDATED') {
-                    setBundles(prev => {
-                        const currentPrev = Array.isArray(prev) ? prev : [];
-                        return currentPrev.map(b => 
-                            data.ids.includes(b.id) ? { ...b, status: data.status } : b
-                        );
-                    });
-                } else if (data.type === 'KITCHEN_DONE') {
-                    setBundles(prev => {
-                        const currentPrev = Array.isArray(prev) ? prev : [];
-                        return currentPrev.map(b => b.id === data.bundleId ? { ...b, status: 'ready' } : b);
-                    });
-                } else if (data.type === 'POOL_UPDATED' || data.type === 'CHECKIN_APPROVED') {
-                    if (!data.store_id || data.store_id === currentStoreId || currentStoreId === "Total" || currentStoreId === "") {
-                        fetchInitialData();
+                        setBundles(prev => {
+                            const currentPrev = Array.isArray(prev) ? prev : [];
+                            const index = currentPrev.findIndex(b => b.id === data.id);
+                            if (index !== -1) {
+                                const newBundles = [...currentPrev];
+                                newBundles[index] = data;
+                                return newBundles;
+                            }
+                            return [data, ...currentPrev];
+                        });
                     }
-                }
+
+                    if (data.type === 'STATUS_UPDATED') {
+                        setBundles(prev => (Array.isArray(prev) ? prev : []).map(b => 
+                            data.ids.includes(b.id) ? { ...b, status: data.status } : b
+                        ));
+                    } else if (data.type === 'KITCHEN_DONE') {
+                        setBundles(prev => (Array.isArray(prev) ? prev : []).map(b => b.id === data.bundleId ? { ...b, status: 'ready' } : b));
+                    } else if (data.type === 'POOL_UPDATED' || data.type === 'CHECKIN_APPROVED') {
+                        if (!data.store_id || data.store_id === currentStoreId || currentStoreId === "Total" || currentStoreId === "") {
+                            fetchInitialData();
+                        }
+                    }
+                } catch (e) { console.error("WS Parse Error:", e); }
             };
 
             socket.onclose = () => {
-                console.log("WS Closed. Reconnecting...");
-                setTimeout(connectWS, 3000);
+                timeoutId = setTimeout(connectWS, 5000); // 재연결 간격 연장
             };
         };
 
         connectWS();
-        return () => { if (socket) socket.close(); };
+        return () => {
+            if (socket) {
+                socket.onclose = null; // 재연결 방지
+                socket.close();
+            }
+            if (timeoutId) clearTimeout(timeoutId);
+        };
     }, [fetchInitialData]);
 
     // API Situation Handler

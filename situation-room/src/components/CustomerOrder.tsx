@@ -64,8 +64,9 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
   };
 
   useEffect(() => {
-    checkSession();
-    const timer = setInterval(checkSession, 3000); // 3초마다 체크
+    // Polling disabled to stop log flooding. This component is deprecated.
+    // checkSession();
+    // const timer = setInterval(checkSession, 3000); 
     
     // 실시간 웹소켓 연결 (경고 메시지 등 수신)
     const wsUrl = `${WS_BASE}/ws/table/${tableId}`;
