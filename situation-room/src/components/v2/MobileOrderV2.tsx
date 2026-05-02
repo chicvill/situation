@@ -554,62 +554,61 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
   const [aiMessage, setAiMessage] = useState("");
   const [isAiListening, setIsAiListening] = useState(false);
 
-  const speak = (text: string) => {
-    if (!window.speechSynthesis) return;
+  const speak = useCallback((text: string) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+    const utterance = new window.SpeechSynthesisUtterance(text);
     utterance.lang = 'ko-KR';
     window.speechSynthesis.speak(utterance);
     setAiMessage(text);
-    setTimeout(() => setAiMessage(""), 5000); // 5초 후 메시지 숨김
-  };
+    setTimeout(() => setAiMessage(""), 5000); 
+  }, []);
 
-  const startListening = () => {
+  const startListening = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      alert("이 브라우저는 음성 인식을 지원하지 않습니다.");
+      return;
+    }
     const recognition = new SpeechRecognition();
     recognition.lang = 'ko-KR';
     recognition.onstart = () => setIsAiListening(true);
     recognition.onresult = (event: any) => {
       const text = event.results[0][0].transcript;
-      processVoiceCommand(text);
+      
+      if (text.includes("추천")) {
+        const randomMenu = menus[Math.floor(Math.random() * menus.length)];
+        speak(`오늘의 추천 메뉴는 ${randomMenu.name}입니다. 정말 맛있어요!`);
+      } else if (text.includes("주문")) {
+        const found = menus.find(m => text.includes(m.name));
+        if (found) {
+          const method = hasActiveSession ? "후불 결제" : "현금 결제";
+          setCart([{ ...found, qty: 1 }]);
+          setTimeout(() => {
+            executeOrderWithPayment(method);
+            speak(`${found.name} 주문이 즉시 접수되었습니다. 조리를 시작할게요!`);
+          }, 500);
+        } else {
+          speak("어떤 메뉴를 주문할까요? 메뉴 이름을 말씀해 주세요.");
+        }
+      } else if (text.includes("담아")) {
+        const found = menus.find(m => text.includes(m.name));
+        if (found) {
+          addToCart(found);
+          speak(`${found.name}을 장바구니에 담았습니다. 더 필요하신 게 있으신가요?`);
+        } else {
+          speak("어떤 메뉴를 담아드릴까요?");
+        }
+      } else if (text.includes("결제")) {
+        setShowCart(true);
+        speak("장바구니를 확인해 드릴게요. 결제를 진행하시겠어요?");
+      } else {
+        speak("죄송해요, 다시 한번 말씀해 주시겠어요?");
+      }
     };
     recognition.onend = () => setIsAiListening(false);
     recognition.start();
-  };
-
-  const processVoiceCommand = (text: string) => {
-    if (text.includes("추천")) {
-      const randomMenu = menus[Math.floor(Math.random() * menus.length)];
-      speak(`오늘의 추천 메뉴는 ${randomMenu.name}입니다. 정말 맛있어요!`);
-    } else if (text.includes("주문")) {
-      const found = menus.find(m => text.includes(m.name));
-      if (found) {
-        // 즉시 주문 실행 로직
-        const method = hasActiveSession ? "후불 결제" : "현금 결제";
-        setCart([{ ...found, qty: 1 }]); // 임시 카트에 담고
-        setTimeout(() => {
-            executeOrderWithPayment(method);
-            speak(`${found.name} 주문이 즉시 접수되었습니다. 주방에서 조리를 시작할게요!`);
-        }, 500);
-      } else {
-        speak("어떤 메뉴를 주문할까요? 메뉴 이름을 말씀해 주세요.");
-      }
-    } else if (text.includes("담아")) {
-      const found = menus.find(m => text.includes(m.name));
-      if (found) {
-        addToCart(found);
-        speak(`${found.name}을 장바구니에 담았습니다. 더 필요하신 게 있으신가요?`);
-      } else {
-        speak("어떤 메뉴를 담아드릴까요?");
-      }
-    } else if (text.includes("결제")) {
-      setShowCart(true);
-      speak("장바구니를 확인해 드릴게요. 결제를 진행하시겠어요?");
-    } else {
-      speak("죄송해요, 다시 한번 말씀해 주시겠어요? 메뉴 추천이나 주문을 도와드릴 수 있습니다.");
-    }
-  };
+  }, [menus, hasActiveSession, addToCart, executeOrderWithPayment, speak]);
 
   // --- Welcome Greeting ---
   useEffect(() => {
@@ -617,7 +616,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       const welcome = `안녕하세요! ${storeName}에 오신 것을 환영합니다. 무엇을 도와드릴까요?`;
       speak(welcome);
     }
-  }, [hasActiveSession, menus.length]);
+  }, [hasActiveSession, menus.length, storeName, speak]);
 
   if (!hasActiveSession) {
     return (
