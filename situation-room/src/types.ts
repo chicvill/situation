@@ -1,6 +1,6 @@
 // Build trigger: 2026-05-01 V2 Update
 export type ViewMode = 'admin' | 'kitchen' | 'customer' | 'display' | 'store' | 'hr' | 'menu' | 'stats' | 'counter' | 'waiting' | 'qr';
-export type BundleType = 'Menus' | 'PersonalInfos' | 'Orders' | 'Log' | 'Analysis' | 'StoreConfig' | 'Employee' | 'Attendance' | 'Waiting' | 'Checkins' | 'Reservations';
+export type BundleType = 'Menus' | 'PersonalInfos' | 'Orders' | 'Log' | 'Analysis' | 'StoreConfig' | 'Employee' | 'Attendance' | 'Waiting' | 'Checkins' | 'Reservations' | 'Session' | 'VoiceConfig';
 
 export interface BundleItem {
   name: string;
@@ -13,7 +13,7 @@ export interface BundleData {
   title: string;
   items: BundleItem[];
   timestamp: string;
-  status?: 'pending' | 'cooking' | 'ready' | 'served' | 'archived' | 'canceled' | 'paid' | 'approved' | 'confirmed';
+  status?: 'pending' | 'cooking' | 'ready' | 'served' | 'archived' | 'canceled' | 'paid' | 'approved' | 'confirmed' | 'active';
   order_code?: string;
   table?: string;
   payment?: string;
