@@ -419,7 +419,7 @@ function App() {
         <div className="view-content">{renderContent()}</div>
       </main>
 
-      {!isCustomerMode && (
+      {!isCustomerMode && (activeTab !== 'order' && activeTab !== 'orderV2') && (
         <nav className="bottom-nav-bar-9" style={{ display: 'flex', overflowX: 'auto', gap: '5px', padding: '10px 15px', background: 'var(--surface)', borderTop: '1px solid var(--border)', justifyContent: 'space-between', alignItems: 'center' }}>
           {navItems.map((item, idx) => (
             <div key={idx} className={`nav-item-9 ${item.special ? 'mic-special-centered' : ''} ${activeTab === item.tab ? 'active' : ''}`} onClick={() => item.special ? startVoiceRecognition() : navigateTo(item.tab as MainTab)} style={{ minWidth: item.special ? '70px' : '50px', textAlign: 'center' }}>

@@ -642,7 +642,15 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       <header className="glass-card sticky-header" style={{ padding: '0', minHeight: '160px', display: 'flex', flexDirection: 'column', zIndex: 1001 }}>
         <div style={{ padding: '20px 24px 12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <h1 style={{ fontSize: '22px', margin: 0, fontWeight: 700, color: 'var(--text-main)' }}>{storeName}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button 
+                onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'home' }))}
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', cursor: 'pointer' }}
+              >
+                🏠
+              </button>
+              <h1 style={{ fontSize: '22px', margin: 0, fontWeight: 700, color: 'var(--text-main)' }}>{storeName}</h1>
+            </div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>{new Date().toLocaleDateString()} {new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}</div>
           </div>
           
