@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 
 export const AdminDashboard: React.FC<{ bundles: any[] }> = ({ bundles }) => {
