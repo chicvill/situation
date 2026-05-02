@@ -4,12 +4,12 @@ import { useStoreFilter } from '../hooks/useStoreFilter';
 import { WS_BASE } from '../config';
 
 interface CounterPadProps {
-    storeId?: string; // 추가
+    storeId?: string;
 }
 
 export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) => {
     const { storeId: filterStoreId } = useStoreFilter();
-    const storeId = propStoreId || filterStoreId; // Prop을 우선 사용
+    const storeId = propStoreId || filterStoreId;
     const [sessions, setSessions] = useState<any[]>([]);
     const [selectedSessionForPay, setSelectedSessionForPay] = useState<any | null>(null);
 
@@ -79,7 +79,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
     };
 
     const handleOpenSession = async (directTableId?: string) => {
-        const tableToOpen = directTableId || targetTable;
+        const tableToOpen = directTableId;
         if (!tableToOpen) return;
         
         try {
@@ -98,7 +98,6 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
             
             if (res.ok) {
                 fetchSessions();
-                setTargetTable(""); // 초기화
             } else {
                 const errorText = await res.text();
                 alert(`세션 개시 실패: ${errorText}`);
@@ -108,8 +107,6 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
             alert('서버와 통신 중 오류가 발생했습니다.');
         }
     };
-
-
 
     const handleResetSession = async (sessionId: string) => {
         if (!window.confirm('정말 이 테이블을 초기화하시겠습니까? (모든 주문이 취소됩니다)')) return;
@@ -130,13 +127,10 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
         }
     };
 
-    const [selectedTable, setSelectedTable] = useState<number>(1);
-    const [targetTable, setTargetTable] = useState<string>("");
     const tables = Array.from({ length: 12 }, (_, i) => i + 1);
 
     return (
         <div className="counter-pad-premium" style={{ padding: '40px', background: 'var(--bg-main)', minHeight: '100vh' }}>
-            {/* 상단 테이블 개시 섹션 */}
             <div style={{ 
                 marginBottom: '40px', 
                 padding: '30px', 
@@ -156,7 +150,6 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                         {tables.map(num => {
                             const tableId = `T${String(num).padStart(2, '0')}`;
                             const isOccupied = sessions.some(s => s.table_id === tableId);
-                            const isSelected = selectedTable === num;
                             
                             return (
                                 <button
@@ -166,9 +159,9 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                     style={{
                                         padding: '10px 18px',
                                         borderRadius: '8px',
-                                        border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
-                                        background: isSelected ? 'var(--primary-soft)' : isOccupied ? 'var(--border)' : 'var(--surface)',
-                                        color: isSelected ? 'var(--accent)' : isOccupied ? 'var(--text-muted)' : 'var(--text-main)',
+                                        border: '1px solid var(--border)',
+                                        background: isOccupied ? 'var(--border)' : 'var(--surface)',
+                                        color: isOccupied ? 'var(--text-muted)' : 'var(--text-main)',
                                         fontWeight: '700',
                                         cursor: isOccupied ? 'not-allowed' : 'pointer',
                                         transition: 'all 0.2s',
@@ -181,7 +174,6 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                         })}
                     </div>
                 </div>
-                
             </div>
 
             <div style={{ marginBottom: '24px' }}>
@@ -273,7 +265,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                     <button 
                                                         onClick={() => {
                                                             if(window.confirm('이 주문을 취소하시겠습니까?')) {
-                                                                handleStatusUpdate(order.order_id, 'cancelled');
+                                                                 handleStatusUpdate(order.order_id, 'cancelled');
                                                             }
                                                         }}
                                                         style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--danger)', padding: '6px 12px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '500' }}

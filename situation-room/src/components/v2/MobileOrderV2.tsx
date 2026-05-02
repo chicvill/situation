@@ -203,7 +203,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     }
 
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    return () => window.addEventListener('popstate', handlePopState);
   }, [showHistory, showProgress]);
 
   useEffect(() => {
@@ -274,7 +274,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
         setCart([]);
         fetchMySession();
         generateAiStory(currentCart);
-        setShowProgress(true); // 대기 화면(라이프사이클) 노출
+        setShowProgress(true);
       }
     } catch (err) { console.error("Order process failed", err); }
     finally { setIsOrdering(false); }
@@ -283,7 +283,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
   // --- Render Functions ---
 
   const renderProgressScreen = () => {
-    // 가장 최근 주문의 상태를 기반으로 진행 단계 계산
     const latestOrder = myOrders.length > 0 ? myOrders[myOrders.length - 1] : null;
     const status = latestOrder?.status || 'pending';
     const isPaid = latestOrder?.payment_status === 'paid' || latestOrder?.payment_status === 'prepaid';
@@ -305,7 +304,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
         }}>
           <h2 style={{ color: '#f97316', fontSize: '1.4rem', fontWeight: 900, marginBottom: '25px', textAlign: 'center' }}>주문 진행 현황</h2>
           
-          {/* 🏁 실시간 라이프사이클 트래커 */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '0 10px', position: 'relative' }}>
             <div style={{ position: 'absolute', top: '15px', left: '10%', right: '10%', height: '2px', background: 'rgba(255,255,255,0.1)', zIndex: 0 }}></div>
             {steps.map((step, i) => (
@@ -325,33 +323,31 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
             ))}
           </div>
 
-        {/* 📖 AI 도슨트 */}
-        <div className="glass-card" style={{ padding: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px' }}>
-          <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '10px' }}>{aiStoryContent.icon}</div>
-          <h3 style={{ color: '#f97316', textAlign: 'center', margin: '0 0 10px 0', fontSize: '1.2rem' }}>{aiStoryContent.title}</h3>
-          <p style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.6, textAlign: 'center', margin: 0 }}>
-            {aiStoryContent.body}
-          </p>
-        </div>
+          <div className="glass-card" style={{ padding: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px' }}>
+            <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '10px' }}>{aiStoryContent.icon}</div>
+            <h3 style={{ color: '#f97316', textAlign: 'center', margin: '0 0 10px 0', fontSize: '1.2rem' }}>{aiStoryContent.title}</h3>
+            <p style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.6, textAlign: 'center', margin: 0 }}>
+              {aiStoryContent.body}
+            </p>
+          </div>
 
-        {/* 🎙️ 보이스 가이드 */}
-        <div style={{ background: 'rgba(249,115,22,0.1)', padding: '15px', borderRadius: '20px', border: '1px dashed rgba(249,115,22,0.4)', marginBottom: '25px' }}>
-          <h4 style={{ color: 'white', fontSize: '14px', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>🎙️ 말로 더 주문해 보세요!</h4>
-          <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
-            마이크를 누르고 <strong>"콜라 하나 더"</strong> 또는 <strong>"물 좀 주세요"</strong>라고 말씀해 보세요.
-          </p>
-        </div>
+          <div style={{ background: 'rgba(249,115,22,0.1)', padding: '15px', borderRadius: '20px', border: '1px dashed rgba(249,115,22,0.4)', marginBottom: '25px' }}>
+            <h4 style={{ color: 'white', fontSize: '14px', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>🎙️ 말로 더 주문해 보세요!</h4>
+            <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
+              마이크를 누르고 <strong>"콜라 하나 더"</strong> 또는 <strong>"물 좀 주세요"</strong>라고 말씀해 보세요.
+            </p>
+          </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button onClick={() => { setShowProgress(false); setShowHistory(true); }}
-            style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '12px', borderRadius: '15px', fontWeight: 700 }}>
-            주문현황 보기
-          </button>
-          <button onClick={() => setShowProgress(false)}
-            style={{ flex: 1, background: '#f97316', border: 'none', color: 'white', padding: '12px', borderRadius: '15px', fontWeight: 800 }}>
-            닫기
-          </button>
-        </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button onClick={() => { setShowProgress(false); setShowHistory(true); }}
+              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '12px', borderRadius: '15px', fontWeight: 700 }}>
+              주문현황 보기
+            </button>
+            <button onClick={() => setShowProgress(false)}
+              style={{ flex: 1, background: '#f97316', border: 'none', color: 'white', padding: '12px', borderRadius: '15px', fontWeight: 800 }}>
+              닫기
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -593,7 +589,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
           </div>
         </div>
 
-        {/* Category Scroll inside Header for Stickiness */}
         <div className="category-scroll no-scrollbar" style={{ padding: '10px 20px 15px', background: 'transparent', borderTop: '1px solid var(--border)' }}>
           {['전체', '추천', '커피', '쥬스', ...categories.filter(c => !['전체', '추천', '커피', '쥬스'].includes(c))].map(cat => (
             <button key={cat} className={`category-pill ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
@@ -606,7 +601,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       <main className="mobile-main">
         {renderContent()}
       </main>
-
 
       {isOrdering && <div className="loading-overlay"><div className="spinner"></div><h3>주문 전송 중...</h3></div>}
       
