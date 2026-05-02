@@ -1,38 +1,29 @@
-annotated-doc==0.0.4
-annotated-types==0.7.0
-anyio==4.13.0
-certifi==2026.2.25
-cffi==2.0.0
-charset-normalizer==3.4.7
-click==8.3.2
-colorama==0.4.6
-cryptography==46.0.7
+# Core Framework
 fastapi==0.136.0
-google-genai>=1.0.0
-googleapis-common-protos==1.74.0
-grpcio==1.80.0
-grpcio-status==1.71.2
+uvicorn[standard]
+starlette==1.0.0
+
+# Database & Auth
+psycopg2-binary==2.9.10
+python-multipart==0.0.9
+python-dotenv==1.2.2
+cryptography==46.0.7
+
+# AI Engine (OpenAI only)
+openai>=1.0.0
+
+# WebSocket & HTTP
+websockets
+requests==2.33.1
+anyio==4.13.0
 h11==0.16.0
-httplib2==0.31.2
-idna==3.11
-proto-plus==1.27.2
-protobuf==5.29.6
-pyasn1==0.6.3
-pyasn1_modules==0.4.2
-pycparser==3.0
+
+# Utilities
 pydantic==2.13.2
 pydantic_core==2.46.2
-pyparsing==3.3.2
-python-dotenv==1.2.2
-requests==2.33.1
-starlette==1.0.0
-tqdm==4.67.3
-typing-inspection==0.4.2
 typing_extensions==4.15.0
-uritemplate==4.2.0
+certifi==2026.2.25
+charset-normalizer==3.4.7
+idna==3.11
 urllib3==2.6.3
-uvicorn[standard]
-python-multipart==0.0.9
-psycopg2-binary==2.9.10
-openai>=1.0.0
-websockets
+tqdm==4.67.3
