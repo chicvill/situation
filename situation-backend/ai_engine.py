@@ -241,12 +241,13 @@ def analyze_history(query: str, history: list, store: str = "Total") -> str:
     # 지식 창고 데이터를 텍스트로 요약 (최근 50개만)
     context = ""
     for b in history[:50]:
-        try:
-            items_str = ", ".join([f"{i.name}:{i.value}" for i in b.items])
-        except AttributeError:
-            items_str = ", ".join([f"{i['name']}:{i['value']}" for i in b.items])
+        if not isinstance(b, dict):
+            continue
             
-        context += f"[{b.timestamp}] {b.type}({b.title}): {items_str}\n"
+        items = b.get("items", [])
+        items_str = ", ".join([f"{i.get('name')}:{i.get('value')}" for i in items if isinstance(i, dict)])
+            
+        context += f"[{b.get('timestamp', 'N/A')}] {b.get('type', 'Log')}({b.get('title', 'Untitled')}): {items_str}\n"
 
     prompt = f"""
 [지식 창고 데이터 요약 (매장: {store})]

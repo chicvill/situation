@@ -135,9 +135,17 @@ manager = ConnectionManager()
 async def get_pool():
     pool_path = os.path.join(os.path.dirname(__file__), "..", "knowledge_pool.json")
     if os.path.exists(pool_path):
-        with open(pool_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {"items": []}
+        try:
+            with open(pool_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return data
+                elif isinstance(data, dict):
+                    return data.get("items", [])
+        except Exception as e:
+            print(f"Error reading pool: {e}")
+            return []
+    return []
 
 @app.post("/api/session/check-in")
 async def check_in(data: Dict):
