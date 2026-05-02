@@ -43,6 +43,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
   const [isOrdering, setIsOrdering] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
+  const [cartPos, setCartPos] = useState({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const dragStartPos = useRef({ x: 0, y: 0 });
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
@@ -154,6 +157,36 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     const timer = setInterval(fetchMySession, 5000);
     return () => { ws.close(); clearInterval(timer); };
   }, [tableId, storeId, fetchMySession]);
+
+  // --- Draggable Cart Logic ---
+  const handleDragStart = (e: any) => {
+    isDragging.current = false;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragStartPos.current = { x: clientX - cartPos.x, y: clientY - cartPos.y };
+    
+    const moveHandler = (me: any) => {
+      isDragging.current = true;
+      const mX = me.touches ? me.touches[0].clientX : me.clientX;
+      const mY = me.touches ? me.touches[0].clientY : me.clientY;
+      setCartPos({
+        x: mX - dragStartPos.current.x,
+        y: mY - dragStartPos.current.y
+      });
+    };
+    
+    const endHandler = () => {
+      window.removeEventListener('mousemove', moveHandler);
+      window.removeEventListener('mouseup', endHandler);
+      window.removeEventListener('touchmove', moveHandler);
+      window.removeEventListener('touchend', endHandler);
+    };
+
+    window.addEventListener('mousemove', moveHandler);
+    window.addEventListener('mouseup', endHandler);
+    window.addEventListener('touchmove', moveHandler, { passive: false });
+    window.addEventListener('touchend', endHandler);
+  };
 
   // --- Android/Browser Back Button Handling ---
   useEffect(() => {
@@ -452,13 +485,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     
     return (
       <>
-        <div className="category-scroll no-scrollbar">
-          {categories.map(cat => (
-            <button key={cat} className={`category-pill ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
-              {cat}
-            </button>
-          ))}
-        </div>
         <div className="menu-grid">
           {menus.filter(m => activeCategory === '전체' || m.category === activeCategory).map((item, idx) => {
             const cartItem = cart.find(c => c.name === item.name);
@@ -497,12 +523,32 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
           })}
         </div>
         {cart.length > 0 && (
-          <div className="floating-cart animate-slide-up" onClick={() => setShowCart(true)}>
+          <div 
+            className="floating-cart animate-slide-up" 
+            onMouseDown={handleDragStart}
+            onTouchStart={handleDragStart}
+            onClick={() => {
+              if (!isDragging.current) setShowCart(true);
+            }}
+            style={{
+              position: 'fixed',
+              bottom: '40px',
+              right: '20px',
+              left: 'auto',
+              width: '180px',
+              height: '60px',
+              transform: `translate(${cartPos.x}px, ${cartPos.y}px)`,
+              zIndex: 2000,
+              cursor: 'move',
+              boxShadow: '0 12px 30px rgba(0,0,0,0.25)',
+              margin: 0
+            }}
+          >
             <div className="cart-info">
               <div className="count">{cart.length}</div>
               <span className="label">주문하기</span>
             </div>
-            <div className="total-price">{totalPrice.toLocaleString()}원</div>
+            <div className="total-price" style={{ fontSize: '15px' }}>{totalPrice.toLocaleString()}원</div>
           </div>
         )}
       </>
@@ -528,10 +574,33 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
 
   return (
     <div className="mobile-v2-container unified-mode">
-      <header className="glass-card sticky-header" style={{ padding: '20px 24px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <h1 style={{ fontSize: '22px', margin: 0, fontWeight: 700, color: 'var(--text-main)' }}>{storeName}</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '18px', fontWeight: 600, margin: 0 }}>Table {tableNo}</p>
+      <header className="glass-card sticky-header" style={{ padding: '0', minHeight: '160px', display: 'flex', flexDirection: 'column', zIndex: 1001 }}>
+        <div style={{ padding: '20px 24px 12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <h1 style={{ fontSize: '22px', margin: 0, fontWeight: 700, color: 'var(--text-main)' }}>{storeName}</h1>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>{new Date().toLocaleDateString()} {new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}</div>
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>[Table {tableNo}]</div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '11px', color: '#ef4444', fontWeight: 600 }}>
+              <span>x2 두 번 터치</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ width: '18px', height: '18px', border: '1.5px solid #ef4444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 900 }}>✕</div>
+                <span>삭제</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Category Scroll inside Header for Stickiness */}
+        <div className="category-scroll no-scrollbar" style={{ padding: '10px 20px 15px', background: 'transparent', borderTop: '1px solid var(--border)' }}>
+          {['전체', '추천', '커피', '쥬스', ...categories.filter(c => !['전체', '추천', '커피', '쥬스'].includes(c))].map(cat => (
+            <button key={cat} className={`category-pill ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
+              {cat}
+            </button>
+          ))}
         </div>
       </header>
 
