@@ -15,13 +15,14 @@ import { HRManager } from './components/HRManager';
 import { WaitingManager } from './components/WaitingManager';
 import { ReservationManager } from './components/ReservationManager';
 import { Login } from './components/Login';
+import { VoiceManager } from './components/VoiceManager';
 import MobileOrderV2 from './components/v2/MobileOrderV2';
 import { useSituation } from './hooks/useSituation';
 import { useStoreFilter } from './hooks/useStoreFilter';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
 
-type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'call';
+type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'call' | 'voice';
 
 function App() {
   const { storeId, storeName: initialStoreName, updateStore } = useStoreFilter();
@@ -182,36 +183,31 @@ function App() {
         const text = event.results[0][0].transcript;
         setRecognizedText(text);
         
-        // --- 지능형 음성 내비게이션 매핑 ---
-        const navMap: { [key: string]: MainTab } = {
-            "주문": "order",
-            "주방": "kitchen",
-            "카운터": "counter",
-            "결제": "counter",
-            "호출": "call",
-            "대기": "waiting",
-            "비서": "guide",
-            "홈": "home",
-            "메인": "home",
-            "예약": "reserve",
-            "큐알": "qr",
-            "QR": "qr",
-            "인쇄": "qr",
-            "전광판": "display",
-            "디스플레이": "display",
-            "통계": "stats",
-            "현황": "stats",
-            "직원": "hr",
-            "근태": "hr",
-            "설정": "settings",
-            "매장": "settings",
-            "인벤토리": "inventory",
-            "논문": "paper"
+        // --- 데이터 기반 지능형 음성 내비게이션 ---
+        // 1. 기본 맵 정의
+        const defaultMap: { [key: string]: MainTab } = {
+            "주문": "order", "주방": "kitchen", "카운터": "counter", "결제": "counter",
+            "호출": "call", "대기": "waiting", "비서": "guide", "홈": "home",
+            "메인": "home", "예약": "reserve", "큐알": "qr", "QR": "qr",
+            "인쇄": "qr", "전광판": "display", "통계": "stats", "현황": "stats",
+            "직원": "hr", "근태": "hr", "설정": "settings", "매장": "settings",
+            "인벤토리": "inventory", "논문": "paper"
         };
 
-        for (const keyword in navMap) {
+        // 2. 지식 풀(VoiceConfig)에서 사용자 정의 맵 불러오기
+        const customMap: { [key: string]: MainTab } = {};
+        bundles.filter(b => b.type === 'VoiceConfig').forEach(b => {
+            b.items.forEach((item: any) => {
+                customMap[item.name] = item.value as MainTab;
+            });
+        });
+
+        // 3. 통합 맵 구성 (사용자 정의 우선)
+        const combinedMap = { ...defaultMap, ...customMap };
+
+        for (const keyword in combinedMap) {
             if (text.includes(keyword)) {
-                navigateTo(navMap[keyword]);
+                navigateTo(combinedMap[keyword]);
                 recognition.stop();
                 return;
             }
@@ -339,6 +335,8 @@ function App() {
       case 'orderV2': return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} />;
       case 'kitchen': return <KitchenDisplay />;
       case 'counter': return <CounterPad storeId={storeId} />;
+      case 'stats': return <AdminDashboard bundles={bundles} />;
+      case 'voice': return <VoiceManager bundles={bundles} storeId={storeId} />;
       case 'display': return <DisplayBoard bundles={bundles} />;
       case 'menu': return <MenuManager bundles={bundles} />;
       case 'settings': return <StoreManager bundles={bundles} onNavigate={navigateTo as any} />;
@@ -374,6 +372,7 @@ function App() {
           <nav className="drawer-nav">
             <button onClick={() => navigateTo('settings')}>⚙️ 매장 설정</button>
             <button onClick={() => navigateTo('menu')}>📔 메뉴 설정</button>
+            <button onClick={() => navigateTo('voice')}>🎙️ 음성 가이드 설정</button>
             <button onClick={() => navigateTo('hr')}>👥 직원관리 (직원 등록, 근태관리 등)</button>
             {user.role === 'admin' && (
               <>
