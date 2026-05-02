@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BundleData } from '../types';
+import type { BundleData } from '../types';
 import { API_BASE } from '../config';
 
 interface VoiceManagerProps {

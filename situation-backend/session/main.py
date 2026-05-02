@@ -445,24 +445,36 @@ async def process_situation(data: Dict):
     # 2. 지식 풀(knowledge_pool.json)에 저장
     pool_path = os.path.join(os.path.dirname(__file__), "..", "knowledge_pool.json")
     try:
-        pool_data = {"items": []}
+        pool_list = []
         if os.path.exists(pool_path):
             with open(pool_path, "r", encoding="utf-8") as f:
-                pool_data = json.load(f)
+                raw = json.load(f)
+                # 최상위가 리스트인 경우와 {"items":[...]} 딕셔너리인 경우 모두 처리
+                if isinstance(raw, list):
+                    pool_list = raw
+                elif isinstance(raw, dict):
+                    pool_list = raw.get("items", [])
         
-        # 새 분석 결과 추가
+        # 새 분석 결과 추가 (최신 항목을 맨 앞에)
         new_entry = {
             "id": f"SIT-{uuid.uuid4().hex[:6].upper()}",
             "store_id": store,
             "type": analysis_result.get("type", "Log"),
             "title": analysis_result.get("title", "분석된 상황"),
             "timestamp": datetime.now().isoformat(),
-            "items": analysis_result.get("items", [])
+            "items": analysis_result.get("items", []),
+            "status": None,
+            "order_code": None,
+            "store": store,
+            "table": None,
+            "Package": None,
+            "payment": None
         }
-        pool_data["items"].insert(0, new_entry) # 최신 정보 상단
+        pool_list.insert(0, new_entry)
         
+        # 항상 리스트 형식으로 저장 (표준화)
         with open(pool_path, "w", encoding="utf-8") as f:
-            json.dump(pool_data, f, ensure_ascii=False, indent=2)
+            json.dump(pool_list, f, ensure_ascii=False, indent=2)
             
         print(f"✨ [Situation Saved] Type: {new_entry['type']} | Title: {new_entry['title']}")
         return {"status": "success", "result": new_entry}

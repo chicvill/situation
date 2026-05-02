@@ -87,8 +87,8 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 {messages.map(msg => (
                     <div key={msg.id} className={`message-bubble ${msg.sender}`}>
                         <div className="msg-text">{msg.text}</div>
-                        {msg.richComponent === 'counter' && <CounterPad storeId="" />}
-                        {msg.richComponent === 'menu' && <MenuManager bundles={bundles} onUpdate={() => {}} />}
+                        {msg.richComponent === 'counter' && <CounterPad />}
+                        {msg.richComponent === 'menu' && <MenuManager bundles={bundles} />}
                         {msg.richComponent === 'kitchen' && <KitchenDisplay />}
                         <div className="msg-time">{msg.timestamp}</div>
                     </div>
