@@ -550,6 +550,75 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     );
   };
 
+  // --- AI Concierge States ---
+  const [aiMessage, setAiMessage] = useState("");
+  const [isAiListening, setIsAiListening] = useState(false);
+
+  const speak = (text: string) => {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ko-KR';
+    window.speechSynthesis.speak(utterance);
+    setAiMessage(text);
+    setTimeout(() => setAiMessage(""), 5000); // 5초 후 메시지 숨김
+  };
+
+  const startListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ko-KR';
+    recognition.onstart = () => setIsAiListening(true);
+    recognition.onresult = (event: any) => {
+      const text = event.results[0][0].transcript;
+      processVoiceCommand(text);
+    };
+    recognition.onend = () => setIsAiListening(false);
+    recognition.start();
+  };
+
+  const processVoiceCommand = (text: string) => {
+    if (text.includes("추천")) {
+      const randomMenu = menus[Math.floor(Math.random() * menus.length)];
+      speak(`오늘의 추천 메뉴는 ${randomMenu.name}입니다. 정말 맛있어요!`);
+    } else if (text.includes("주문")) {
+      const found = menus.find(m => text.includes(m.name));
+      if (found) {
+        // 즉시 주문 실행 로직
+        const method = hasActiveSession ? "후불 결제" : "현금 결제";
+        setCart([{ ...found, qty: 1 }]); // 임시 카트에 담고
+        setTimeout(() => {
+            executeOrderWithPayment(method);
+            speak(`${found.name} 주문이 즉시 접수되었습니다. 주방에서 조리를 시작할게요!`);
+        }, 500);
+      } else {
+        speak("어떤 메뉴를 주문할까요? 메뉴 이름을 말씀해 주세요.");
+      }
+    } else if (text.includes("담아")) {
+      const found = menus.find(m => text.includes(m.name));
+      if (found) {
+        addToCart(found);
+        speak(`${found.name}을 장바구니에 담았습니다. 더 필요하신 게 있으신가요?`);
+      } else {
+        speak("어떤 메뉴를 담아드릴까요?");
+      }
+    } else if (text.includes("결제")) {
+      setShowCart(true);
+      speak("장바구니를 확인해 드릴게요. 결제를 진행하시겠어요?");
+    } else {
+      speak("죄송해요, 다시 한번 말씀해 주시겠어요? 메뉴 추천이나 주문을 도와드릴 수 있습니다.");
+    }
+  };
+
+  // --- Welcome Greeting ---
+  useEffect(() => {
+    if (hasActiveSession && menus.length > 0) {
+      const welcome = `안녕하세요! ${storeName}에 오신 것을 환영합니다. 무엇을 도와드릴까요?`;
+      speak(welcome);
+    }
+  }, [hasActiveSession, menus.length]);
+
   if (!hasActiveSession) {
     return (
       <div className="mobile-v2-container flex-center">
@@ -601,6 +670,33 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       <main className="mobile-main">
         {renderContent()}
       </main>
+
+      {/* AI Concierge Message Bubble */}
+      {aiMessage && (
+        <div className="ai-message-bubble animate-pop-in" style={{
+          position: 'fixed', bottom: '120px', right: '20px', left: '20px',
+          background: 'rgba(15, 23, 42, 0.95)', color: 'white', padding: '15px 20px',
+          borderRadius: '20px', border: '1px solid var(--accent)', zIndex: 3000,
+          boxShadow: '0 10px 25px rgba(0,0,0,0.3)', textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: 800, marginBottom: '5px' }}>AI 비서 추천</div>
+          {aiMessage}
+        </div>
+      )}
+
+      {/* AI Concierge Button */}
+      <button 
+        onClick={startListening}
+        className={`ai-concierge-btn ${isAiListening ? 'listening' : ''}`}
+        style={{
+          position: 'fixed', bottom: '40px', left: '20px', width: '60px', height: '60px',
+          borderRadius: '50%', background: isAiListening ? '#ef4444' : 'var(--accent)',
+          border: 'none', color: 'white', fontSize: '24px', zIndex: 3000,
+          boxShadow: '0 10px 20px rgba(0,0,0,0.2)', cursor: 'pointer'
+        }}
+      >
+        {isAiListening ? '🔊' : '🎙️'}
+      </button>
 
       {isOrdering && <div className="loading-overlay"><div className="spinner"></div><h3>주문 전송 중...</h3></div>}
       
