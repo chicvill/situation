@@ -28,10 +28,11 @@
 
 .message-bubble.ai {
     align-self: flex-start;
-    background: var(--surface);
+    background: #e0f2fe; /* 밝은 하늘색 */
     color: var(--text-main);
-    border: 1px solid var(--border);
+    border: 1px solid #bae6fd;
     border-bottom-left-radius: 4px;
+    white-space: pre-wrap; /* 줄바꿈 적용 */
 }
 
 .message-bubble.user {

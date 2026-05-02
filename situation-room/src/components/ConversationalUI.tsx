@@ -17,7 +17,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     useEffect(() => {
         if (messages.length === 0 && storeName) {
             setMessages([
-                { id: 1, text: `사장님, ${storeName}의 지능형 비서입니다. 오늘도 힘차게 시작해볼까요?`, sender: "ai", timestamp: "현재" }
+                { id: 1, text: "MQ비서는 음성 지원합니다.\n주문이라고 말해 보세요.", sender: "ai", timestamp: "현재" }
             ]);
         }
     }, [storeName, messages.length]);

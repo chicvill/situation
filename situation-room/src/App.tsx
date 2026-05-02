@@ -184,10 +184,24 @@ function App() {
     recognition.lang = 'ko-KR';
     recognition.interimResults = true;
     recognition.onstart = () => setIsListening(true);
-    recognition.onresult = (event: any) => setRecognizedText(event.results[0][0].transcript);
+    recognition.onresult = (event: any) => {
+        const text = event.results[0][0].transcript;
+        setRecognizedText(text);
+        
+        // 특정 키워드 인식 시 즉시 이동
+        if (text.includes("주문")) {
+            navigateTo("order");
+            recognition.stop();
+        } else if (text.includes("카운터")) {
+            navigateTo("counter");
+            recognition.stop();
+        }
+    };
     recognition.onend = () => {
         setIsListening(false);
-        if (recognizedText) handleSendMessage(recognizedText, undefined, activeTab, storeId, storeName);
+        if (recognizedText && !recognizedText.includes("주문") && !recognizedText.includes("카운터")) {
+            handleSendMessage(recognizedText, undefined, activeTab, storeId, storeName);
+        }
     };
     recognition.start();
   };
@@ -327,12 +341,32 @@ function App() {
         </div>
       )}
 
-      <header className="premium-top-bar">
-        {!isCustomerMode && <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-main)' }}>☰</button>}
-        <div className="top-bar-center" style={{ fontSize: '1.1rem', fontWeight: '700', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{storeName}</div>
-        <div className="top-bar-right" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            {!isCustomerMode && <span className="user-badge" style={{ background: 'var(--primary-soft)', color: 'var(--text-main)', padding: '4px 12px', borderRadius: '4px', fontSize: '0.85rem', fontWeight: '600' }}>{user.name}</span>}
-            <span className="current-datetime" style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '500' }}>{formatDateTime(currentTime)}</span>
+      <header className="premium-top-bar" style={{ height: '70px', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+          {!isCustomerMode && <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: 'var(--text-main)', padding: 0 }}>☰</button>}
+          <div style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: 1.1, letterSpacing: '-0.5px' }}>
+            {storeName.split(' ').map((word, i) => <div key={i}>{word}</div>)}
+          </div>
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          {!isCustomerMode && (
+            <div style={{ 
+              background: '#e2e8f0', color: 'var(--text-main)', padding: '6px 14px', 
+              borderRadius: '6px', fontSize: '1rem', fontWeight: '700', whiteSpace: 'nowrap' 
+            }}>
+              {user.role === 'admin' ? '마스터관리자' : user.role === 'owner' ? '점주' : '점장'}
+            </div>
+          )}
+        </div>
+
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.3 }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: '600' }}>
+            {currentTime.getFullYear()}.{String(currentTime.getMonth()+1).padStart(2,'0')}.{String(currentTime.getDate()).padStart(2,'0')}
+          </div>
+          <div style={{ color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: '800' }}>
+            {String(currentTime.getHours()).padStart(2,'0')}:{String(currentTime.getMinutes()).padStart(2,'0')}
+          </div>
         </div>
       </header>
 
