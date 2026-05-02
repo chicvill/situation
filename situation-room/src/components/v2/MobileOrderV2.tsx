@@ -644,7 +644,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <button 
-                onClick={() => window.dispatchEvent(new CustomEvent('navigate', { detail: 'home' }))}
+                onClick={() => (window as any).dispatchEvent(new CustomEvent('navigate', { detail: 'home' }))}
                 style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', cursor: 'pointer' }}
               >
                 🏠

@@ -33,8 +33,8 @@ function App() {
   const [activeTab, setActiveTab] = useState<MainTab>('guide');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [recognizedText, setRecognizedText] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const recognizedTextRef = useRef("");
 
   const [receiptData, setReceiptData] = useState<{
     orderId: string;
@@ -172,19 +172,20 @@ function App() {
   const startVoiceRecognition = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-        alert("이 브라우저에서는 음성 인식을 지원하지 않거나, HTTPS 연결이 필요합니다.\n(아이폰은 Safari, 안드로이드는 Chrome을 권장합니다)");
+        alert("이 브라우저에서는 음성 인식을 지원하지 않거나, HTTPS 연결이 필요합니다.");
         return;
     }
     const recognition = new SpeechRecognition();
     recognition.lang = 'ko-KR';
     recognition.interimResults = true;
-    recognition.onstart = () => setIsListening(true);
+    recognition.onstart = () => {
+        setIsListening(true);
+        recognizedTextRef.current = "";
+    };
     recognition.onresult = (event: any) => {
         const text = event.results[0][0].transcript;
-        setRecognizedText(text);
+        recognizedTextRef.current = text;
         
-        // --- 데이터 기반 지능형 음성 내비게이션 ---
-        // 1. 기본 맵 정의
         const defaultMap: { [key: string]: MainTab } = {
             "주문": "order", "주방": "kitchen", "카운터": "counter", "결제": "counter",
             "호출": "call", "대기": "waiting", "비서": "guide", "홈": "home",
@@ -194,7 +195,6 @@ function App() {
             "인벤토리": "inventory", "논문": "paper"
         };
 
-        // 2. 지식 풀(VoiceConfig)에서 사용자 정의 맵 불러오기
         const customMap: { [key: string]: MainTab } = {};
         bundles.filter(b => b.type === 'VoiceConfig').forEach(b => {
             b.items.forEach((item: any) => {
@@ -202,7 +202,6 @@ function App() {
             });
         });
 
-        // 3. 통합 맵 구성 (사용자 정의 우선)
         const combinedMap = { ...defaultMap, ...customMap };
 
         for (const keyword in combinedMap) {
@@ -215,8 +214,9 @@ function App() {
     };
     recognition.onend = () => {
         setIsListening(false);
-        if (recognizedText && !recognizedText.includes("주문") && !recognizedText.includes("카운터")) {
-            handleSendMessage(recognizedText, undefined, activeTab, storeId, storeName);
+        const finalContent = recognizedTextRef.current;
+        if (finalContent && !finalContent.includes("주문") && !finalContent.includes("카운터")) {
+            handleSendMessage(finalContent, undefined, activeTab, storeId, storeName);
         }
     };
     recognition.start();
