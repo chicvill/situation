@@ -13,9 +13,11 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
     const [sessions, setSessions] = useState<any[]>([]);
     const [selectedSessionForPay, setSelectedSessionForPay] = useState<any | null>(null);
 
+    const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+
     const fetchSessions = async () => {
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const apiUrl = getApiUrl();
             const res = await fetch(`${apiUrl}/api/counter/sessions?store_id=${storeId || "Total"}`);
             const data = await res.json();
             if (Array.isArray(data)) {
@@ -43,7 +45,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
 
     const handleStatusUpdate = async (orderId: string, status: string) => {
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const apiUrl = getApiUrl();
             await fetch(`${apiUrl}/api/order/status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -57,7 +59,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
 
     const handleCloseSession = async (sessionId: string) => {
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const apiUrl = getApiUrl();
             const res = await fetch(`${apiUrl}/api/session/close`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -83,7 +85,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
         if (!tableToOpen) return;
         
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const apiUrl = getApiUrl();
             const targetStoreId = (!storeId || storeId === "Total") ? "default_store" : storeId;
             
             const res = await fetch(`${apiUrl}/api/session/open`, {
@@ -111,7 +113,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
     const handleResetSession = async (sessionId: string) => {
         if (!window.confirm('정말 이 테이블을 초기화하시겠습니까? (모든 주문이 취소됩니다)')) return;
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const apiUrl = getApiUrl();
             const res = await fetch(`${apiUrl}/api/session/reset`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
