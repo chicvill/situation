@@ -9,7 +9,7 @@
 
 .chat-content {
     flex: 1;
-    padding: 30px;
+    padding: 100px 30px 30px; /* 상단 여백을 100px로 늘림 */
     overflow-y: auto;
     display: flex;
     flex-direction: column;

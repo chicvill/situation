@@ -155,23 +155,27 @@ function App() {
   };
 
   const navItems = [
-    { label: '비서', icon: '🎤', tab: 'guide', roles: ['admin', 'owner', 'manager', 'staff'], special: true },
+    { label: '홈', icon: '🏠', tab: 'home', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '주문', icon: '📝', tab: 'order', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '주방', icon: '👨‍🍳', tab: 'kitchen', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: '카운터', icon: '💰', tab: 'counter', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '대기', icon: '🛎️', tab: 'waiting', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '예약', icon: '📅', tab: 'reserve', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '카운터', icon: '💰', tab: 'counter', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: '호출', icon: '🔔', tab: 'call', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: '비서', icon: '🎤', tab: 'guide', roles: ['admin', 'owner', 'manager', 'staff'], special: true }, // 중앙 마이크
+    { label: 'QR', icon: '🖨️', tab: 'qr', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '전광판', icon: '📢', tab: 'display', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: 'QR 출력', icon: '🖨️', tab: 'qr', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '근태', icon: '👥', tab: 'hr', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '통계', icon: '📊', tab: 'home', roles: ['admin', 'owner'] },
-    { label: '메뉴', icon: '📔', tab: 'menu', roles: ['admin', 'owner'] },
     { label: '매장', icon: '🏠', tab: 'settings', roles: ['admin', 'owner'] },
+    { label: '메뉴', icon: '📔', tab: 'menu', roles: ['admin', 'owner'] },
+    { label: '통계', icon: '📊', tab: 'stats', roles: ['admin', 'owner'] },
+    { label: '근태', icon: '👥', tab: 'hr', roles: ['admin', 'owner', 'manager', 'staff'] },
   ].filter(item => item.roles.includes(user?.role));
 
   const startVoiceRecognition = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+        alert("이 브라우저에서는 음성 인식을 지원하지 않거나, HTTPS 연결이 필요합니다.\n(아이폰은 Safari, 안드로이드는 Chrome을 권장합니다)");
+        return;
+    }
     const recognition = new SpeechRecognition();
     recognition.lang = 'ko-KR';
     recognition.interimResults = true;
@@ -333,10 +337,10 @@ function App() {
         </div>
       )}
 
-      <header className="premium-top-bar" style={{ height: '70px', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+      <header className="premium-top-bar" style={{ height: '85px', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1.2 }}>
           {!isCustomerMode && <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: 'var(--text-main)', padding: 0 }}>☰</button>}
-          <div style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: 1.1, letterSpacing: '-0.5px' }}>
+          <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: 1.1, letterSpacing: '-0.5px' }}>
             {storeName.split(' ').map((word, i) => <div key={i}>{word}</div>)}
           </div>
         </div>
@@ -345,18 +349,18 @@ function App() {
           {!isCustomerMode && (
             <div style={{ 
               background: '#e2e8f0', color: 'var(--text-main)', padding: '6px 14px', 
-              borderRadius: '6px', fontSize: '1rem', fontWeight: '700', whiteSpace: 'nowrap' 
+              borderRadius: '6px', fontSize: '0.9rem', fontWeight: '700', whiteSpace: 'nowrap' 
             }}>
-              {user.role === 'admin' ? '마스터관리자' : user.role === 'owner' ? '점주' : '점장'}
+              관리자
             </div>
           )}
         </div>
 
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.3 }}>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: '600' }}>
+        <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.2 }}>
+          <div style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: '700' }}>
             {currentTime.getFullYear()}.{String(currentTime.getMonth()+1).padStart(2,'0')}.{String(currentTime.getDate()).padStart(2,'0')}
           </div>
-          <div style={{ color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: '800' }}>
+          <div style={{ color: 'var(--text-main)', fontSize: '1.2rem', fontWeight: '900' }}>
             {String(currentTime.getHours()).padStart(2,'0')}:{String(currentTime.getMinutes()).padStart(2,'0')}
           </div>
         </div>
@@ -367,11 +371,11 @@ function App() {
       </main>
 
       {!isCustomerMode && (
-        <nav className="bottom-nav-bar-9">
+        <nav className="bottom-nav-bar-9" style={{ display: 'flex', overflowX: 'auto', gap: '5px', padding: '10px 15px', background: 'var(--surface)', borderTop: '1px solid var(--border)', justifyContent: 'space-between', alignItems: 'center' }}>
           {navItems.map((item, idx) => (
-            <div key={idx} className={`nav-item-9 ${item.special ? 'mic-special' : ''} ${activeTab === item.tab ? 'active' : ''}`} onClick={() => item.special ? startVoiceRecognition() : navigateTo(item.tab as MainTab)}>
-              <div className="nav-icon">{item.icon}</div>
-              <div className="nav-label">{item.label}</div>
+            <div key={idx} className={`nav-item-9 ${item.special ? 'mic-special-centered' : ''} ${activeTab === item.tab ? 'active' : ''}`} onClick={() => item.special ? startVoiceRecognition() : navigateTo(item.tab as MainTab)} style={{ minWidth: item.special ? '70px' : '50px', textAlign: 'center' }}>
+              <div className="nav-icon" style={{ fontSize: item.special ? '1.8rem' : '1.2rem' }}>{item.icon}</div>
+              <div className="nav-label" style={{ fontSize: '0.65rem', marginTop: '4px', whiteSpace: 'nowrap' }}>{item.label}</div>
             </div>
           ))}
         </nav>

@@ -18,10 +18,20 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     useEffect(() => {
         if (messages.length === 0 && storeName) {
             setMessages([
-                { id: 1, text: "MQ비서는 음성 지원합니다.\n주문이라고 말해 보세요.", sender: "ai", timestamp: "현재" }
+                { id: 1, text: "Ai비서는 음성 지원합니다.\n주문이라고 말해 보세요.", sender: "ai", timestamp: "현재" }
             ]);
         }
     }, [storeName, messages.length]);
+
+    const speak = (text: string) => {
+        if (!window.speechSynthesis) return;
+        // GOTO 태그 등 특수 문구 제거 후 읽기
+        const speechText = text.replace(/\[GOTO:(\w+)\]/g, '').trim();
+        const utterance = new SpeechSynthesisUtterance(speechText);
+        utterance.lang = 'ko-KR';
+        utterance.rate = 1.0;
+        window.speechSynthesis.speak(utterance);
+    };
 
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -36,6 +46,9 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
             // 텍스트에서는 태그 제거
             cleanText = text.replace(/\[GOTO:(\w+)\]/g, '').trim();
         }
+
+        // 음성 출력 호출
+        speak(cleanText);
 
         setMessages(prev => [...prev, {
             id: Date.now(),
