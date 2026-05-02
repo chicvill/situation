@@ -102,6 +102,20 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
     setStoreData((prev: any) => ({ ...prev, [field]: value }));
   };
 
+  // --- Android Back Button Support ---
+  useEffect(() => {
+    const handlePopState = () => {
+      if (showChoiceModal) {
+        setShowChoiceModal(false);
+      }
+    };
+    if (showChoiceModal) {
+      window.history.pushState({ modal: 'scan' }, '');
+    }
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showChoiceModal, setShowChoiceModal]);
+
   return (
     <div className="admin-page animate-fade-in" style={{ padding: '40px', background: 'var(--bg-main)', minHeight: '100vh' }}>
       <ScanningOverlay isScanning={isScanning} docType="reg" />

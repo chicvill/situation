@@ -78,6 +78,20 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
         },
     });
 
+    // --- Android Back Button Support ---
+    useEffect(() => {
+        const handlePopState = () => {
+            if (showChoiceModal) {
+                setShowChoiceModal(false);
+            }
+        };
+        if (showChoiceModal) {
+            window.history.pushState({ modal: 'menu-scan' }, '');
+        }
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [showChoiceModal, setShowChoiceModal]);
+
     const [isSaving, setIsSaving] = useState(false);
 
     const handleSave = async () => {

@@ -77,6 +77,38 @@ function App() {
     }
   }, []);
 
+  // --- Global Back Button Handling ---
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      // 오버레이가 열려있다면 닫음
+      if (isMenuOpen) {
+        setIsMenuOpen(false);
+        return;
+      }
+      if (receiptData) {
+        setReceiptData(null);
+        return;
+      }
+      if (isListening) {
+        setIsListening(false);
+        return;
+      }
+
+      // 탭이 'guide'가 아니면 홈으로 이동 (모바일 전용이 아닐 때)
+      if (activeTab !== 'guide' && !isCustomerMode) {
+        setActiveTab('guide');
+      }
+    };
+
+    // 오버레이가 열릴 때 히스토리 추가
+    if (isMenuOpen || receiptData || isListening) {
+      window.history.pushState({ overlay: true }, '');
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [isMenuOpen, receiptData, isListening, activeTab, isCustomerMode]);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const isSuccess = params.get('payment_success') === 'true';

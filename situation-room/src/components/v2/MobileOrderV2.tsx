@@ -140,6 +140,24 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
     return () => { ws.close(); clearInterval(timer); };
   }, [tableId, storeId, fetchMySession]);
 
+  // --- Android/Browser Back Button Handling ---
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      // 만약 서브 뷰가 열려있다면 닫고 브라우저 이동은 막음
+      if (showHistory || showProgress) {
+        setShowHistory(false);
+        setShowProgress(false);
+      }
+    };
+
+    if (showHistory || showProgress) {
+      window.history.pushState({ subView: true }, '');
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [showHistory, showProgress]);
+
   useEffect(() => {
     fetch(`${API_BASE}/api/checkin/request`, {
       method: 'POST',
@@ -434,6 +452,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       <main className="mobile-main">
         {renderContent()}
       </main>
+
 
       {isOrdering && <div className="loading-overlay"><div className="spinner"></div><h3>주문 전송 중...</h3></div>}
       
