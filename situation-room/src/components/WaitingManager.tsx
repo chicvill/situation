@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import type { BundleData } from '../types';
-
 import { useStoreFilter } from '../hooks/useStoreFilter';
+import { useAIVoice } from '../hooks/useAIVoice';
 
 interface WaitingManagerProps {
     bundles: BundleData[];
@@ -10,20 +10,33 @@ interface WaitingManagerProps {
 
 export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendMessage }) => {
     const { storeId, storeName } = useStoreFilter();
+    const { speak, announce } = useAIVoice();
     const waitingList = bundles.filter(b => b.type === 'Waiting' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
 
+    // 진입 시 AI 브리핑
+    useEffect(() => {
+        if (waitingList.length > 0) {
+            announce(`대기 관리 화면입니다. 현재 ${waitingList.length}팀이 대기 중입니다.`);
+        } else {
+            announce('대기 관리 화면입니다. 현재 대기 중인 손님이 없습니다.');
+        }
+    }, []); // eslint-disable-line
+
     const handleCall = (waitingNo: string) => {
+        speak(`${waitingNo}번 고객님, 입장해 주세요.`);
         onSendMessage(`대기 ${waitingNo}번 손님 호출`, storeId, storeName);
     };
 
     const handleEnter = (waitingNo: string) => {
         if (window.confirm(`${waitingNo}번 손님을 입장 처리하시겠습니까?`)) {
+            speak(`${waitingNo}번 손님 입장 처리 완료.`);
             onSendMessage(`대기 ${waitingNo}번 입장 완료`, storeId, storeName);
         }
     };
 
     const handleCancel = (waitingNo: string) => {
         if (window.confirm(`${waitingNo}번 대기를 취소하시겠습니까?`)) {
+            speak(`${waitingNo}번 대기가 취소되었습니다.`);
             onSendMessage(`대기 ${waitingNo}번 취소`, storeId, storeName);
         }
     };

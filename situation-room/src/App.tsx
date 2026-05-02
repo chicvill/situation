@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { KitchenDisplay } from './components/KitchenDisplay';
 import { AdminDashboard } from './components/AdminDashboard';
