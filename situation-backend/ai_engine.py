@@ -4,7 +4,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 import base64
 import openai
-import google.generativeai as genai
+from google import genai as google_genai
 
 load_dotenv()
 
@@ -19,24 +19,19 @@ if openai_key and not openai_key.startswith("MY_"):
     openai_model = "gpt-4o-mini"
     print("✅ OpenAI Engine Ready.")
 
-# Gemini Client
-gemini_model = None
+# Gemini Client (new google.genai SDK)
+gemini_client = None
 if gemini_key and not gemini_key.startswith("MY_"):
-    genai.configure(api_key=gemini_key)
-    # 확인된 모델 리스트 기반 최적 모델 설정
     try:
-        # 사장님 환경에서 확인된 2.0 버전 사용
-        gemini_model = genai.GenerativeModel('gemini-2.0-flash')
-        print("✅ Gemini Engine Ready (gemini-2.0-flash).")
-    except Exception:
-        try:
-            # 대안으로 최신 플래시 모델 시도
-            gemini_model = genai.GenerativeModel('gemini-flash-latest')
-            print("✅ Gemini Engine Ready (gemini-flash-latest).")
-        except Exception as e:
-            print(f"❌ Gemini 초기화 최종 실패: {e}")
+        gemini_client = google_genai.Client(api_key=gemini_key)
+        print("✅ Gemini Engine Ready (google.genai SDK).")
+    except Exception as e:
+        print(f"❌ Gemini 초기화 실패: {e}")
 
-if not client and not gemini_model:
+# 하위 호환성을 위해 gemini_model 변수 유지
+gemini_model = gemini_client
+
+if not client and not gemini_client:
     print("⚠️ Warning: No valid AI API keys found. Using mock responses.")
 
 def analyze_document_image(image_bytes: bytes, doc_type: str) -> dict:
@@ -209,10 +204,13 @@ def parse_situation_text(text: str, store: str = "Total", context: str = "") -> 
                 print(f"⚠️ [DEBUG] OpenAI 실패: {oa_err}")
                 print("🔄 [DEBUG] Gemini로 전환을 시도합니다...")
 
-        # 2. Gemini 시도
-        if gemini_model:
+        # 2. Gemini 시도 (new google.genai SDK)
+        if gemini_client:
             print("[DEBUG] 2. Gemini 엔진 시도 중...")
-            response = gemini_model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+            response = gemini_client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=prompt
+            )
             result = json.loads(response.text)
             if isinstance(result, list):
                 result = {"items": result, "type": "Log", "title": "분석된 상황"}
@@ -279,9 +277,12 @@ def analyze_history(query: str, history: list, store: str = "Total") -> str:
 """
     
     try:
-        if gemini_model:
+        if gemini_client:
             try:
-                response = gemini_model.generate_content(prompt)
+                response = gemini_client.models.generate_content(
+                    model='gemini-2.0-flash',
+                    contents=prompt
+                )
                 return response.text
             except Exception as gem_err:
                 print(f"⚠️ Gemini 분석 실패 (폴백 시도): {gem_err}")
