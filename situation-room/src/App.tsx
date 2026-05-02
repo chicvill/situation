@@ -182,13 +182,39 @@ function App() {
         const text = event.results[0][0].transcript;
         setRecognizedText(text);
         
-        // 특정 키워드 인식 시 즉시 이동
-        if (text.includes("주문")) {
-            navigateTo("order");
-            recognition.stop();
-        } else if (text.includes("카운터")) {
-            navigateTo("counter");
-            recognition.stop();
+        // --- 지능형 음성 내비게이션 매핑 ---
+        const navMap: { [key: string]: MainTab } = {
+            "주문": "order",
+            "주방": "kitchen",
+            "카운터": "counter",
+            "결제": "counter",
+            "호출": "call",
+            "대기": "waiting",
+            "비서": "guide",
+            "홈": "home",
+            "메인": "home",
+            "예약": "reserve",
+            "큐알": "qr",
+            "QR": "qr",
+            "인쇄": "qr",
+            "전광판": "display",
+            "디스플레이": "display",
+            "통계": "stats",
+            "현황": "stats",
+            "직원": "hr",
+            "근태": "hr",
+            "설정": "settings",
+            "매장": "settings",
+            "인벤토리": "inventory",
+            "논문": "paper"
+        };
+
+        for (const keyword in navMap) {
+            if (text.includes(keyword)) {
+                navigateTo(navMap[keyword]);
+                recognition.stop();
+                return;
+            }
         }
     };
     recognition.onend = () => {
@@ -199,6 +225,29 @@ function App() {
     };
     recognition.start();
   };
+
+  // AI 내비게이션 이벤트 리스너
+  useEffect(() => {
+    const handleNav = (e: any) => {
+      if (e.detail) navigateTo(e.detail as MainTab);
+    };
+    window.addEventListener('navigate', handleNav);
+    return () => window.removeEventListener('navigate', handleNav);
+  }, []);
+
+  // 브라우저 음성 차단 해제 (첫 클릭 시)
+  useEffect(() => {
+    const unlockSpeech = () => {
+      if (window.speechSynthesis) {
+        // 더미 음성을 한 번 실행하여 차단을 풉니다.
+        const utterance = new SpeechSynthesisUtterance("");
+        window.speechSynthesis.speak(utterance);
+        window.removeEventListener('click', unlockSpeech);
+      }
+    };
+    window.addEventListener('click', unlockSpeech);
+    return () => window.removeEventListener('click', unlockSpeech);
+  }, []);
 
   if (!user) return (
     <Login 
