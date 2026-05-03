@@ -156,7 +156,7 @@ function App() {
   };
 
   const navItems = [
-    { label: '주문', icon: '📝', tab: 'order', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: '주문', icon: '📝', tab: 'orderV2', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '주방', icon: '👨‍🍳', tab: 'kitchen', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '카운터', icon: '💰', tab: 'counter', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '호출', icon: '🔔', tab: 'call', roles: ['admin', 'owner', 'manager', 'staff'] },
@@ -185,7 +185,7 @@ function App() {
         
         // 특정 키워드 인식 시 즉시 이동
         if (text.includes("주문")) {
-            navigateTo("order");
+            navigateTo("orderV2");
             recognition.stop();
         } else if (text.includes("카운터")) {
             navigateTo("counter");
@@ -287,7 +287,6 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'guide': return <ConversationalUI bundles={bundles} storeName={storeName} onNavigate={navigateTo as any} />;
-      case 'order': 
       case 'orderV2': return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} />;
       case 'kitchen': return <KitchenDisplay />;
       case 'counter': return <CounterPad storeId={storeId} />;
