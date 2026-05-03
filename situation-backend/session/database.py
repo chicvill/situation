@@ -61,6 +61,18 @@ def init_db_v2():
             )
         """)
         
+        # 3. AI 상황 기록 테이블 (지식 인벤토리용)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS situation_pool (
+                id SERIAL PRIMARY KEY,
+                store_id TEXT NOT NULL,
+                type TEXT NOT NULL,
+                title TEXT NOT NULL,
+                items JSONB NOT NULL,
+                timestamp TEXT NOT NULL
+            )
+        """)
+        
         try:
             # device_id 컬럼 누락 방지 (기존 테이블 마이그레이션)
             cur.execute("ALTER TABLE table_sessions ADD COLUMN IF NOT EXISTS device_id TEXT")
@@ -73,6 +85,7 @@ def init_db_v2():
             
         cur.execute("CREATE INDEX IF NOT EXISTS idx_orders_session ON table_orders(session_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_store_table ON table_sessions(store_id, table_id)")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_situation_store ON situation_pool(store_id)")
         cur.execute("ALTER TABLE table_sessions ALTER COLUMN device_id DROP NOT NULL")
         
         conn.commit()
@@ -81,6 +94,55 @@ def init_db_v2():
         print("✅ Session-centric DB Schema initialized and verified.")
     except Exception as e:
         print(f"❌ DB Init V2 Error: {e}")
+
+def save_situation(data: dict):
+    """상황 데이터를 지식 인벤토리에 저장"""
+    conn = get_db_conn()
+    if not conn: return
+    try:
+        cur = conn.cursor()
+        query = """
+            INSERT INTO situation_pool (store_id, type, title, items, timestamp)
+            VALUES (%(store_id)s, %(type)s, %(title)s, %(items)s, %(timestamp)s)
+        """
+        params = {
+            'store_id': data.get('store', 'Total'),
+            'type': data.get('type', 'Log'),
+            'title': data.get('title', 'General Log'),
+            'items': json.dumps(data.get('items', [])),
+            'timestamp': data.get('timestamp', datetime.now().isoformat())
+        }
+        cur.execute(query, params)
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"Save Situation Error: {e}")
+
+def get_situation_history(store_id: str, limit: int = 50):
+    """최근 상황 기록들을 가져옴"""
+    conn = get_db_conn()
+    if not conn: return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        if store_id and store_id != "Total":
+            cur.execute("""
+                SELECT * FROM situation_pool 
+                WHERE store_id = %(store_id)s 
+                ORDER BY id DESC LIMIT %(limit)s
+            """, {'store_id': store_id, 'limit': limit})
+        else:
+            cur.execute("""
+                SELECT * FROM situation_pool 
+                ORDER BY id DESC LIMIT %(limit)s
+            """, {'limit': limit})
+        results = cur.fetchall()
+        cur.close()
+        conn.close()
+        return results
+    except Exception as e:
+        print(f"Get Situation History Error: {e}")
+        return []
 
 def save_session(session_data: dict):
     conn = get_db_conn()
