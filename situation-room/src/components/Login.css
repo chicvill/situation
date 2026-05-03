@@ -113,3 +113,30 @@
     color: var(--text-muted);
     font-size: 0.9rem;
 }
+
+.signup-toggle {
+    margin-top: 20px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.signup-toggle span {
+    color: var(--accent);
+    cursor: pointer;
+    font-weight: 600;
+    margin-left: 8px;
+    text-decoration: underline;
+}
+
+.role-select {
+    width: 100%;
+    padding: 16px 20px;
+    background: var(--bg-main);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-main);
+    font-size: 1rem;
+    margin-bottom: 25px;
+    outline: none;
+}
+

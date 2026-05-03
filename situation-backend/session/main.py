@@ -132,13 +132,89 @@ manager = ConnectionManager()
 
 # --- Endpoints ---
 
+POOL_FILE = os.path.join(os.path.dirname(__file__), "..", "knowledge_pool.json")
+
+def load_pool():
+    if os.path.exists(POOL_FILE):
+        try:
+            with open(POOL_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return []
+    return []
+
+def save_pool(pool):
+    try:
+        with open(POOL_FILE, "w", encoding="utf-8") as f:
+            json.dump(pool, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        print(f"Save Pool Error: {e}")
+        return False
+
 @app.get("/api/pool")
-async def get_pool():
-    pool_path = os.path.join(os.path.dirname(__file__), "..", "knowledge_pool.json")
-    if os.path.exists(pool_path):
-        with open(pool_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {"items": []}
+async def get_pool(store_id: str = None):
+    pool = load_pool()
+    if store_id and store_id != "Total":
+        # store_id가 일치하거나 매장 정보가 없는(공용) 번들만 반환
+        return [b for b in pool if b.get("store_id") == store_id or not b.get("store_id")]
+    return pool
+
+@app.put("/api/bundle/{bundle_id}")
+async def update_bundle(bundle_id: str, bundle: Dict):
+    pool = load_pool()
+    found = False
+    for i, b in enumerate(pool):
+        if b.get("id") == bundle_id:
+            pool[i] = bundle
+            found = True
+            break
+    
+    if not found:
+        bundle["id"] = bundle_id
+        pool.append(bundle)
+        
+    if save_pool(pool):
+        # 변경 사항 브로드캐스트
+        await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "bundle_id": bundle_id})
+        return {"status": "success"}
+    raise HTTPException(status_code=500, detail="Failed to save bundle")
+
+@app.post("/api/situation")
+async def process_situation(data: Dict):
+    text = data.get("text")
+    store = data.get("store", "Total")
+    store_id = data.get("store_id")
+    context = data.get("context", "")
+    
+    # 1. AI 엔진을 통한 텍스트 분석 및 구조화
+    from ai_engine import parse_situation_text
+    result = parse_situation_text(text, store, context)
+    
+    # 2. 메타데이터 보강
+    result["id"] = f"BND-{uuid.uuid4().hex[:8].upper()}"
+    result["store"] = store
+    result["store_id"] = store_id
+    
+    # 3. 지식 풀에 저장
+    pool = load_pool()
+    pool.insert(0, result)
+    if save_pool(pool):
+        # 실시간 알림
+        await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": result["id"], "type": result["type"]})
+        return result
+    raise HTTPException(status_code=500, detail="Failed to save situation")
+
+@app.delete("/api/pool")
+async def reset_pool(store_id: str = None):
+    if not store_id or store_id == "Total":
+        save_pool([])
+    else:
+        pool = load_pool()
+        pool = [b for b in pool if b.get("store_id") != store_id]
+        save_pool(pool)
+    return {"status": "success"}
+
 
 @app.post("/api/session/check-in")
 async def check_in(data: Dict):

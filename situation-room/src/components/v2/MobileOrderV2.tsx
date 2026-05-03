@@ -259,6 +259,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     setShowPayModal(false);
     try {
       const currentCart = [...cart];
+      
+      // 1. 주문 생성 요청
       const res = await fetch(`${API_BASE}/api/order/direct`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -266,19 +268,45 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
           table_id: tableId, device_id: deviceId, store_id: storeId,
           items: cart.map(c => ({ name: c.name, quantity: c.qty || 1, price: c.price, qty: c.qty || 1 })),
           total_price: totalPrice,
-          payment_status: (method === '현금 결제' || method === 'cash') ? 'unpaid' : 'prepaid',
+          // 카운터 결제는 unpaid, 카드는 결제 대기(pending) 상태로 시작
+          payment_status: (method === '카운터에서 결제' || method === '현금 결제' || method === 'cash') ? 'unpaid' : 'pending',
           payment_method: method,
           metadata: extraData
         })
       });
+
       if (res.ok) {
-        setCart([]);
-        fetchMySession();
-        generateAiStory(currentCart);
-        setShowProgress(true);
+        const orderData = await res.json();
+        const orderId = orderData.order_id;
+
+        // 2. 결제 수단별 분기 처리
+        if (method === '카운터에서 결제' || method === '현금 결제' || method === 'cash') {
+          // 카운터에서 결제 (현금 등) -> 즉시 완료 단계로 이동
+          setCart([]);
+          fetchMySession();
+          generateAiStory(currentCart);
+          setShowProgress(true);
+        } else {
+          // 카드 / 계좌이체 -> 토스 결제창 호출
+          const tossPayments = (window as any).TossPayments('test_ck_D5b4Zne68wxL1Pn6k0m8rlzYWBn1');
+          const tossMethod = method.includes('카드') ? '카드' : '계좌이체';
+          
+          await tossPayments.requestPayment(tossMethod, {
+            amount: totalPrice,
+            orderId: orderId,
+            orderName: `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,
+            customerName: '손님',
+            successUrl: `${window.location.origin}${window.location.pathname}?payment_success=true&order_id=${orderId}&amount=${totalPrice}`,
+            failUrl: `${window.location.origin}${window.location.pathname}?payment_fail=true&order_id=${orderId}`,
+          });
+        }
       }
-    } catch (err) { console.error("Order process failed", err); }
-    finally { setIsOrdering(false); }
+    } catch (err) { 
+      console.error("Order process failed", err);
+      alert('주문 처리 중 오류가 발생했습니다.');
+    } finally { 
+      setIsOrdering(false); 
+    }
   }, [tableId, deviceId, storeId, cart, totalPrice, fetchMySession, generateAiStory]);
 
   // --- Render Functions ---
