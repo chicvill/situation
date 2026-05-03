@@ -1,0 +1,155 @@
+/* Orders Universal Design System */
+:root {
+  --primary: #1e293b;
+  --primary-soft: rgba(30, 41, 59, 0.05);
+  --accent: #f97316;
+  --bg-main: #f8fafc;
+  --surface: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 32px;
+  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+}
+
+.orders-container {
+  background: var(--bg-main);
+  color: var(--text-main);
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, sans-serif;
+  max-width: 500px; /* PC에서도 모바일과 동일한 레이아웃 유지 */
+  margin: 0 auto;
+  position: relative;
+  box-shadow: 0 0 50px rgba(0,0,0,0.05); /* PC에서 경계선 구분 */
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Category Pills */
+.category-scroll {
+  display: flex;
+  gap: 8px;
+  padding: 20px;
+  overflow-x: auto;
+  background: var(--surface);
+}
+
+.category-pill {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 8px 18px;
+  border-radius: 50px;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.category-pill.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Menu Grid & Cards */
+.menu-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0 20px 20px;
+}
+
+.menu-item-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 20px;
+  cursor: pointer;
+}
+
+.menu-image {
+  width: 100px;
+  height: 100px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}
+
+.menu-details {
+  flex: 1;
+}
+
+.menu-details .name {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.menu-details .desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.menu-details .price {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+/* Floating Cart */
+.floating-cart {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary);
+  color: white;
+  padding: 16px 30px;
+  border-radius: 50px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: calc(100% - 40px);
+  max-width: 460px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.3);
+  cursor: pointer;
+  z-index: 2000;
+}
+
+/* Animations */
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from { transform: translate(-50%, 100%); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+/* Utility */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
