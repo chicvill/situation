@@ -348,7 +348,7 @@ function App() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1.2 }}>
           {!isCustomerMode && <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: 'var(--text-main)', padding: 0 }}>☰</button>}
           <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: 1.1, letterSpacing: '-0.5px' }}>
-            {storeName.split(' ').map((word, i) => <div key={i}>{word}</div>)}
+            {(storeName || '우리식당').split(' ').map((word, i) => <div key={i}>{word}</div>)}
           </div>
         </div>
 

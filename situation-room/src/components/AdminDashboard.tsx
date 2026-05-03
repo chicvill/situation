@@ -111,7 +111,7 @@ export const AdminDashboard: React.FC<{ bundles: any[] }> = ({ bundles }) => {
                     <div className="bundle-list-mini">
                         {bundles.slice(0, 7).map(b => (
                             <div key={b.id} style={{ padding: '15px 0', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', width: '70px', fontWeight: '500' }}>{b.timestamp.split('T')[1]?.split('.')[0] || 'Recently'}</span>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', width: '70px', fontWeight: '500' }}>{b.timestamp?.split('T')[1]?.split('.')[0] || b.timestamp || 'Recently'}</span>
                                 <span style={{ 
                                     fontSize: '0.65rem', fontWeight: '800', padding: '2px 8px', borderRadius: '4px', 
                                     background: 'var(--primary)', color: 'white', letterSpacing: '0.5px'
