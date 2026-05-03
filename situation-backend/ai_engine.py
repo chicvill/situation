@@ -37,22 +37,8 @@ def analyze_document_image(image_bytes: bytes, doc_type: str) -> dict:
     }
     
     try:
-        if gemini_model:
-            print(f"[DEBUG] 🚀 Gemini Vision API 호출 중...")
-            img = {
-                'mime_type': 'image/jpeg',
-                'data': image_bytes
-            }
-            prompt = prompts.get(doc_type, "Extract text from image.") + "\nReturn ONLY a JSON object."
-            response = gemini_model.generate_content([prompt, img], generation_config={"response_mime_type": "application/json"})
-            parsed = json.loads(response.text)
-            print("[DEBUG] ✅ Gemini Vision 파싱 성공")
-            return parsed
-        
-        elif client:
+        if client:
             print(f"[DEBUG] 🚀 OpenAI Vision API 호출 중...")
-            # ... (Existing OpenAI Vision logic)
-            base64_image = base64.b64encode(image_bytes).decode('utf-8')
             response = client.chat.completions.create(
                 model=openai_model,
                 messages=[
@@ -68,6 +54,8 @@ def analyze_document_image(image_bytes: bytes, doc_type: str) -> dict:
             )
             parsed = json.loads(response.choices[0].message.content)
             return parsed
+        else:
+            return {"error": "AI client not initialized."}
         
     except Exception as e:
         print(f"[DEBUG] 🚨 Vision Analysis Error: {str(e)}")
