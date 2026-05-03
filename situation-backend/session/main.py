@@ -12,8 +12,9 @@ import asyncio
 from .database import (
     save_session, save_order, get_active_session, 
     get_orders_by_session, update_order_status, get_max_order_seq, init_db_v2,
-    get_db_conn
+    get_db_conn, get_situation_history
 )
+import ai_engine
 
 app = FastAPI()
 
