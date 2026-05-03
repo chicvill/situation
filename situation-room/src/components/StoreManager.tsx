@@ -82,7 +82,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
       if (!SERVICE_KEY || SERVICE_KEY === "YOUR_DATA_GO_KR_SERVICE_KEY") {
         // 키가 설정되지 않았을 때의 테스트 모드
         await new Promise(r => setTimeout(r, 1500));
-        setStoreData(prev => ({ ...prev, isVerified: true }));
+        setStoreData((prev: any) => ({ ...prev, isVerified: true }));
         alert("✅ [테스트 모드] 사업자 정보가 정상적으로 확인되었습니다.\n(실제 검증을 위해 .env 파일에 API 키를 등록해 주세요.)");
         return;
       }
@@ -102,7 +102,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
 
       const result = await response.json();
       if (result.data && result.data[0].valid === '01') {
-        setStoreData(prev => ({ ...prev, isVerified: true }));
+        setStoreData((prev: any) => ({ ...prev, isVerified: true }));
         alert("✅ 사업자 정보가 국세청 데이터를 통해 검증되었습니다.");
       } else {
         alert("❌ 일치하는 사업자 정보가 없습니다. 입력 정보를 다시 확인해 주세요.");
