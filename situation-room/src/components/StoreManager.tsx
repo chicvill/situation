@@ -76,18 +76,19 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
 
     setIsVerifying(true);
     try {
-      // 실제 구현 시 공공데이터포털 Service Key 필요
-      const SERVICE_KEY = "YOUR_DATA_GO_KR_SERVICE_KEY"; 
+      // .env 파일의 VITE_DATA_GO_KR_SERVICE_KEY 값을 가져옵니다.
+      const SERVICE_KEY = import.meta.env.VITE_DATA_GO_KR_SERVICE_KEY; 
       
-      // 테스트용: Service Key가 없으면 성공한 것처럼 시뮬레이션
-      if (SERVICE_KEY === "YOUR_DATA_GO_KR_SERVICE_KEY") {
+      if (!SERVICE_KEY || SERVICE_KEY === "YOUR_DATA_GO_KR_SERVICE_KEY") {
+        // 키가 설정되지 않았을 때의 테스트 모드
         await new Promise(r => setTimeout(r, 1500));
         setStoreData(prev => ({ ...prev, isVerified: true }));
-        alert("✅ [테스트 모드] 사업자 정보가 정상적으로 확인되었습니다.");
+        alert("✅ [테스트 모드] 사업자 정보가 정상적으로 확인되었습니다.\n(실제 검증을 위해 .env 파일에 API 키를 등록해 주세요.)");
         return;
       }
 
-      const response = await fetch(`https://api.odcloud.kr/api/nts-prompts/v1/validate?serviceKey=${SERVICE_KEY}`, {
+      const encodedKey = encodeURIComponent(SERVICE_KEY);
+      const response = await fetch(`https://api.odcloud.kr/api/nts-prompts/v1/validate?serviceKey=${encodedKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
