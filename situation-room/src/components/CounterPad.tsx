@@ -227,7 +227,8 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                         fontWeight: '700',
                                         cursor: isOccupied ? 'not-allowed' : 'pointer',
                                         transition: 'all 0.2s',
-                                        opacity: isOccupied ? 0.5 : 1
+                                        opacity: isOccupied ? 0.5 : 1,
+                                        whiteSpace: 'nowrap'
                                     }}
                                 >
                                     {num}번 {isOccupied ? '🔴' : '⚪'}
@@ -335,7 +336,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
 
                                     <div style={{ textAlign: 'right' }}>
                                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>합계 금액</div>
-                                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)' }}>{sessionTotal.toLocaleString()}원</div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)', whiteSpace: 'nowrap' }}>{sessionTotal.toLocaleString()}원</div>
                                     </div>
                                 </div>
 
@@ -362,7 +363,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                 {order.items.map((i: any) => `${i.name} x${i.quantity || i.qty}`).join(', ')}
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px', paddingTop: '15px', borderTop: '1px solid var(--border)' }}>
-                                                <span style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--accent)' }}>{order.total_price.toLocaleString()}원</span>
+                                                <span style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--accent)', whiteSpace: 'nowrap' }}>{order.total_price.toLocaleString()}원</span>
                                                 <div style={{ display: 'flex', gap: '10px' }}>
                                                     <button 
                                                         onClick={() => {
@@ -385,6 +386,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                             fontSize: '0.8rem', 
                                                             cursor: 'pointer',
                                                             fontWeight: '600',
+                                                            whiteSpace: 'nowrap'
                                                         }}
                                                     >
                                                         결제
@@ -407,13 +409,13 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                         <>
                                             <button 
                                                 onClick={() => handleResetSession(session.session_id)}
-                                                style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--danger)', padding: '10px 24px', borderRadius: 'var(--radius-sm)', fontWeight: '500', fontSize: '0.9rem', cursor: 'pointer' }}
+                                                style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--danger)', padding: '10px 24px', borderRadius: 'var(--radius-sm)', fontWeight: '500', fontSize: '0.9rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
                                             >
                                                 초기화
                                             </button>
                                             <button 
                                                 onClick={() => setSelectedSessionForPay(session)}
-                                                style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '10px 32px', borderRadius: 'var(--radius-sm)', fontWeight: '600', fontSize: '1rem', cursor: 'pointer' }}
+                                                style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '10px 32px', borderRadius: 'var(--radius-sm)', fontWeight: '600', fontSize: '1rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
                                             >
                                                 전체 결제
                                             </button>
