@@ -21,7 +21,7 @@ import { useStoreFilter } from './hooks/useStoreFilter';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
 
-type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper' | 'hr' | 'waiting' | 'reserve';
+type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'admin' | 'call';
 
 function App() {
   const { storeId, storeName: initialStoreName, updateStore } = useStoreFilter();
@@ -296,6 +296,8 @@ function App() {
       case 'qr': return <QRManager bundles={bundles} />;
       case 'paper': return <PaperViewer />;
       case 'stats':
+      case 'admin':
+      case 'call':
       case 'home': return <AdminDashboard bundles={bundles} />;
       case 'inventory': return <LogicInventory />;
       case 'hr': return <HRManager bundles={bundles} user={user} />;
