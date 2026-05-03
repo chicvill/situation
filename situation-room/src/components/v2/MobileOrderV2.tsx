@@ -8,6 +8,7 @@ interface Props {
   bundles: BundleData[];
   storeId: string;
   storeName: string;
+  onNavigate?: (tab: any) => void;
 }
 
 interface MenuItem {
@@ -35,7 +36,7 @@ interface Order {
   items: OrderItem[];
 }
 
-const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
+const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) => {
   // --- States ---
   const [cart, setCart] = useState<MenuItem[]>([]);
   const [myOrders, setMyOrders] = useState<Order[]>([]);
@@ -572,20 +573,31 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName }) => {
       <header className="glass-card sticky-header" style={{ padding: '0', minHeight: '160px', display: 'flex', flexDirection: 'column', zIndex: 1001 }}>
         <div style={{ padding: '20px 24px 12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <h1 style={{ fontSize: '22px', margin: 0, fontWeight: 700, color: 'var(--text-main)' }}>{storeName}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button 
+                onClick={() => onNavigate ? onNavigate('home') : window.dispatchEvent(new CustomEvent('changeTab', { detail: 'home' }))}
+                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-main)', padding: 0 }}
+              >
+                ✕
+              </button>
+              <h1 style={{ fontSize: '22px', margin: 0, fontWeight: 700, color: 'var(--text-main)' }}>{storeName}</h1>
+            </div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>{new Date().toLocaleDateString()} {new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}</div>
           </div>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>[Table {tableNo}]</div>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '11px', color: '#ef4444', fontWeight: 600 }}>
-              <span>x2 두 번 터치</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <div style={{ width: '18px', height: '18px', border: '1.5px solid #ef4444', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 900 }}>✕</div>
-                <span>삭제</span>
-              </div>
-            </div>
+            <button 
+              onClick={() => setShowHistory(true)}
+              style={{ 
+                background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', 
+                padding: '6px 12px', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '4px'
+              }}
+            >
+              💳 주문내역 / 결제 (출구)
+            </button>
           </div>
         </div>
 

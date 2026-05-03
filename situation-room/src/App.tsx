@@ -288,7 +288,7 @@ function App() {
     switch (activeTab) {
       case 'guide': return <ConversationalUI bundles={bundles} storeName={storeName} onNavigate={navigateTo as any} />;
       case 'order': 
-      case 'orderV2': return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} />;
+      case 'orderV2': return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} />;
       case 'kitchen': return <KitchenDisplay />;
       case 'counter': return <CounterPad storeId={storeId} />;
       case 'display': return <DisplayBoard bundles={bundles} />;
