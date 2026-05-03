@@ -4,22 +4,20 @@ from datetime import datetime
 from dotenv import load_dotenv
 import base64
 import openai
-import google.generativeai as genai
 
 load_dotenv()
 
 # --- AI Engine Configuration ---
 openai_key = os.getenv("OPENAI_API_KEY")
-gemini_key = os.getenv("GEMINI_API_KEY")
 
 # OpenAI Client
 client = None
+openai_model = "gpt-4o-mini"
 if openai_key and not openai_key.startswith("MY_"):
     client = openai.OpenAI(api_key=openai_key)
-    openai_model = "gpt-4o-mini"
     print("✅ OpenAI Engine Ready.")
 
-# Gemini Client (Disabled as per user request)
+# Gemini Client (Explicitly Disabled)
 gemini_model = None
 print("ℹ️ Gemini Engine Disabled. Using ChatGPT only.")
 
@@ -61,14 +59,35 @@ def analyze_document_image(image_bytes: bytes, doc_type: str) -> dict:
         return {"error": str(e)}
 
 # --- 목표(Goal) 정의 ---
-# ... (GOALS definition remains same)
+GOALS = {
+    "Orders": {"description": "주문 발생 및 조리 관련", "required": ["메뉴", "테이블"]},
+    "Settlement": {"description": "결제 및 정산, 고객 퇴장", "required": ["테이블"]},
+    "Attendance": {"description": "직원 출퇴근 및 근태", "required": ["직원명", "액션"]},
+    "Employee": {"description": "사원 등록 및 설정", "required": ["직원명", "시급"]},
+    "StoreConfig": {"description": "매장 정보 및 설정", "required": ["상호명", "사업자번호"]},
+    "Waiting": {"description": "대기 등록", "required": ["인원"]},
+    "Reservations": {"description": "예약 등록", "required": ["예약자", "예약시간", "인원"]},
+    "Log": {"description": "일반 기록", "required": ["내용"]}
+}
 
 def parse_situation_text(text: str, store: str = "Total", context: str = "") -> dict:
     time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if not client:
-        return {"type": "Log", "title": "API 키 필요", "items": [{"name": "입력", "value": text}]}
+        return {"type": "Log", "title": "API 키 필요", "items": [{"name": "입력", "value": text}], "timestamp": time_str}
 
-    prompt = f"..." # (Prompt construction remains same)
+    goals_summary = "\n".join([f"- {k}: {v['description']}" for k, v in GOALS.items()])
+    
+    prompt = f"""
+당신은 매장의 '상황 지능형 엔진'입니다. 입력된 상황을 분석하여 JSON으로 변환하세요.
+현재 시간: {time_str} | 매장: {store} | 현재 화면: {context if context else '알 수 없음'}
+
+입력 상황: "{text}"
+
+[분석 목표]
+{goals_summary}
+
+결과는 반드시 {{"type": "...", "title": "...", "items": [{{"name": "...", "value": "..."}}], "store": "{store}"}} 형식을 따르세요.
+"""
     
     try:
         response = client.chat.completions.create(
@@ -80,13 +99,12 @@ def parse_situation_text(text: str, store: str = "Total", context: str = "") -> 
         result["timestamp"] = time_str
         return result
     except Exception as e:
-        return {"type": "Log", "title": "AI 분석 오류", "items": [{"name": "에러", "value": str(e)}]}
+        return {"type": "Log", "title": "AI 분석 오류", "items": [{"name": "에러", "value": str(e)}], "timestamp": time_str}
 
 def analyze_history(query: str, history: list, store: str = "Total") -> str:
     if not client:
-        return "ChatGPT API 엔진이 설정되지 않았습니다. .env 파일을 확인해 주세요!"
+        return "ChatGPT API 엔진이 설정되지 않았습니다."
 
-    # context construction remains same...
     context = ""
     for b in history[:50]:
         try: items_str = ", ".join([f"{i.name}:{i.value}" for i in b.items])
@@ -103,16 +121,7 @@ def analyze_history(query: str, history: list, store: str = "Total") -> str:
 [답변 지침]
 1. 답변은 한국어로, 핵심 위주로 명확하게 하세요. 마크다운 형식을 사용하세요.
 2. 만약 사용자의 질문이 특정 화면으로 이동하거나 기능을 확인하려는 의도라면, 답변 끝에 반드시 `[GOTO:탭이름]` 형식을 포함하세요.
-   - 통계/홈: [GOTO:home]
-   - 주문 관리: [GOTO:order]
-   - 주방/조리: [GOTO:kitchen]
-   - 카운터/결제: [GOTO:counter]
-   - 메뉴 관리/가격수정: [GOTO:menu]
-   - 매장 설정/정보수정: [GOTO:settings]
-   - 지식 인벤토리: [GOTO:inventory]
-   - 대기 관리: [GOTO:waiting]
-   - 예약 관리: [GOTO:reserve]
-   - QR 출력: [GOTO:qr]
+   - 통계/홈: [GOTO:home] | 주문: [GOTO:order] | 주방: [GOTO:kitchen] | 카운터: [GOTO:counter] | 메뉴: [GOTO:menu] | 설정: [GOTO:settings] | 인벤토리: [GOTO:inventory] | 대기: [GOTO:waiting] | 예약: [GOTO:reserve] | QR: [GOTO:qr]
 3. 데이터에 없는 내용은 추측하지 말고 데이터가 더 필요하다고 답하세요.
 """
     try:
