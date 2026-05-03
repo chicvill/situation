@@ -9,10 +9,10 @@ load_dotenv()
 
 # --- AI Engine Configuration ---
 openai_key = os.getenv("OPENAI_API_KEY")
+openai_model = "gpt-4o-mini"
 
 # OpenAI Client
 client = None
-openai_model = "gpt-4o-mini"
 if openai_key and not openai_key.startswith("MY_"):
     client = openai.OpenAI(api_key=openai_key)
     print("✅ OpenAI Engine Ready.")
@@ -66,8 +66,8 @@ GOALS = {
     "Employee": {"description": "사원 등록 및 설정", "required": ["직원명", "시급"]},
     "StoreConfig": {"description": "매장 정보 및 설정", "required": ["상호명", "사업자번호"]},
     "Waiting": {"description": "대기 등록", "required": ["인원"]},
-    "Reservations": {"description": "예약 등록", "required": ["예약자", "예약시간", "인원"]},
-    "Log": {"description": "일반 기록", "required": ["내용"]}
+    "Reservations": {"description": "식당 예약 등록", "required": ["예약자", "예약시간", "인원"]},
+    "Log": {"description": "기타 일반 기록", "required": ["내용"]}
 }
 
 def parse_situation_text(text: str, store: str = "Total", context: str = "") -> dict:
@@ -132,3 +132,5 @@ def analyze_history(query: str, history: list, store: str = "Total") -> str:
         return response.choices[0].message.content
     except Exception as e:
         return f"ChatGPT 분석 중 오류가 발생했습니다: {str(e)}"
+
+# Build Trigger: 2026-05-03 12:31
