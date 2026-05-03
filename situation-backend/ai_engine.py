@@ -4,19 +4,40 @@ from datetime import datetime
 from dotenv import load_dotenv
 import base64
 import openai
+import google.generativeai as genai
 
 load_dotenv()
 
-# --- AI Engine (OpenAI Only) ---
+# --- AI Engine Configuration ---
 openai_key = os.getenv("OPENAI_API_KEY")
-client = None
-openai_model = "gpt-4o-mini"
+gemini_key = os.getenv("GEMINI_API_KEY")
 
+# OpenAI Client
+client = None
 if openai_key and not openai_key.startswith("MY_"):
     client = openai.OpenAI(api_key=openai_key)
+    openai_model = "gpt-4o-mini"
     print("✅ OpenAI Engine Ready.")
-else:
-    print("⚠️ Warning: OPENAI_API_KEY not set.")
+
+# Gemini Client
+gemini_model = None
+if gemini_key and not gemini_key.startswith("MY_"):
+    genai.configure(api_key=gemini_key)
+    # 확인된 모델 리스트 기반 최적 모델 설정
+    try:
+        # 사장님 환경에서 확인된 2.0 버전 사용
+        gemini_model = genai.GenerativeModel('gemini-2.0-flash')
+        print("✅ Gemini Engine Ready (gemini-2.0-flash).")
+    except Exception:
+        try:
+            # 대안으로 최신 플래시 모델 시도
+            gemini_model = genai.GenerativeModel('gemini-flash-latest')
+            print("✅ Gemini Engine Ready (gemini-flash-latest).")
+        except Exception as e:
+            print(f"❌ Gemini 초기화 최종 실패: {e}")
+
+if not client and not gemini_model:
+    print("⚠️ Warning: No valid AI API keys found. Using mock responses.")
 
 def analyze_document_image(image_bytes: bytes, doc_type: str) -> dict:
     print(f"[DEBUG] 📥 analyze_document_image 진입 (타입: {doc_type})")
@@ -37,8 +58,22 @@ def analyze_document_image(image_bytes: bytes, doc_type: str) -> dict:
     }
     
     try:
-        if client:
+        if gemini_model:
+            print(f"[DEBUG] 🚀 Gemini Vision API 호출 중...")
+            img = {
+                'mime_type': 'image/jpeg',
+                'data': image_bytes
+            }
+            prompt = prompts.get(doc_type, "Extract text from image.") + "\nReturn ONLY a JSON object."
+            response = gemini_model.generate_content([prompt, img], generation_config={"response_mime_type": "application/json"})
+            parsed = json.loads(response.text)
+            print("[DEBUG] ✅ Gemini Vision 파싱 성공")
+            return parsed
+        
+        elif client:
             print(f"[DEBUG] 🚀 OpenAI Vision API 호출 중...")
+            # ... (Existing OpenAI Vision logic)
+            base64_image = base64.b64encode(image_bytes).decode('utf-8')
             response = client.chat.completions.create(
                 model=openai_model,
                 messages=[
@@ -54,8 +89,6 @@ def analyze_document_image(image_bytes: bytes, doc_type: str) -> dict:
             )
             parsed = json.loads(response.choices[0].message.content)
             return parsed
-        else:
-            return {"error": "AI client not initialized."}
         
     except Exception as e:
         print(f"[DEBUG] 🚨 Vision Analysis Error: {str(e)}")
@@ -154,48 +187,66 @@ def parse_situation_text(text: str, store: str = "Total", context: str = "") -> 
 """
 
     print(f"\n[DEBUG] >>> AI 분석 시작: '{text[:20]}...'")
+    # --- 테스트: OpenAI를 먼저 시도하여 정상 작동 여부 확인 ---
     try:
+        # 1. OpenAI 시도 (우선순위 변경)
         if client:
-            print("[DEBUG] OpenAI 엔진 시도 중...")
-            response = client.chat.completions.create(
-                model=openai_model,
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"}
-            )
-            result = json.loads(response.choices[0].message.content)
-            if isinstance(result, list):
-                result = {"items": result, "type": "Log", "title": "분석된 상황"}
+            try:
+                print("[DEBUG] 1. OpenAI 엔진 시도 중...")
+                response = client.chat.completions.create(
+                    model=openai_model,
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"}
+                )
+                result = json.loads(response.choices[0].message.content)
+                result["timestamp"] = time_str
+                print("✅ [DEBUG] OpenAI 분석 성공!")
+                return result
+            except Exception as oa_err:
+                print(f"⚠️ [DEBUG] OpenAI 실패: {oa_err}")
+                print("🔄 [DEBUG] Gemini로 전환을 시도합니다...")
+
+        # 2. Gemini 시도
+        if gemini_model:
+            print("[DEBUG] 2. Gemini 엔진 시도 중...")
+            response = gemini_model.generate_content(prompt, generation_config={"response_mime_type": "application/json"})
+            result = json.loads(response.text)
             result["timestamp"] = time_str
-            print("✅ [DEBUG] OpenAI 분석 성공!")
+            print("✅ [DEBUG] Gemini 분석 성공!")
             return result
         
         return {
-            "type": "Log",
-            "title": "AI 엔진 없음",
-            "items": [{"name": "원인", "value": "OPENAI_API_KEY가 설정되지 않았습니다."}],
+            "type": "Log", 
+            "title": "AI 엔진 연결 실패", 
+            "items": [{"name": "원인", "value": "모든 AI 엔진이 응답하지 않습니다."}], 
             "timestamp": time_str
         }
+            
     except Exception as e:
-        print(f"🚨 [DEBUG] 분석 오류: {e}")
+        print(f"🚨 [DEBUG] 최종 분석 오류 발생: {e}")
         return {
             "type": "Log",
-            "title": "AI 오류",
+            "title": "AI 시스템 최종 오류",
             "items": [{"name": "에러", "value": str(e)}],
             "timestamp": time_str
         }
 
 def analyze_history(query: str, history: list, store: str = "Total") -> str:
     """지식 창고(history)를 분석하여 질문에 대답합니다."""
-    if not client:
-        return "AI 엔진이 설정되지 않아 분석을 수행할 수 없습니다."
+    time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    if not client and not gemini_model:
+        return "AI 엔진이 설정되지 않아 실제 분석을 수행할 수 없습니다. .env 파일을 확인해 주세요!"
 
+    # 지식 창고 데이터를 텍스트로 요약 (최근 50개만)
     context = ""
     for b in history[:50]:
-        if not isinstance(b, dict):
-            continue
-        items = b.get("items", [])
-        items_str = ", ".join([f"{i.get('name')}:{i.get('value')}" for i in items if isinstance(i, dict)])
-        context += f"[{b.get('timestamp', 'N/A')}] {b.get('type', 'Log')}({b.get('title', 'Untitled')}): {items_str}\n"
+        try:
+            items_str = ", ".join([f"{i.name}:{i.value}" for i in b.items])
+        except AttributeError:
+            items_str = ", ".join([f"{i['name']}:{i['value']}" for i in b.items])
+            
+        context += f"[{b.timestamp}] {b.type}({b.title}): {items_str}\n"
 
     prompt = f"""
 [지식 창고 데이터 요약 (매장: {store})]
@@ -207,17 +258,35 @@ def analyze_history(query: str, history: list, store: str = "Total") -> str:
 [답변 지침]
 1. 답변은 한국어로, 핵심 위주로 명확하게 하세요. 마크다운 형식을 사용하세요.
 2. 만약 사용자의 질문이 특정 화면으로 이동하거나 기능을 확인하려는 의도라면, 답변 끝에 반드시 `[GOTO:탭이름]` 형식을 포함하세요.
-   - 통계/홈: [GOTO:home] | 주문: [GOTO:order] | 주방: [GOTO:kitchen]
-   - 카운터: [GOTO:counter] | 메뉴: [GOTO:menu] | 설정: [GOTO:settings]
-   - 대기: [GOTO:waiting] | 예약: [GOTO:reserve] | QR: [GOTO:qr]
+   - 통계/홈: [GOTO:home]
+   - 주문 관리: [GOTO:order]
+   - 주방/조리: [GOTO:kitchen]
+   - 카운터/결제: [GOTO:counter]
+   - 메뉴 관리/가격수정: [GOTO:menu]
+   - 매장 설정/정보수정: [GOTO:settings]
+   - 지식 인벤토리: [GOTO:inventory]
+   - 대기 관리: [GOTO:waiting]
+   - 예약 관리: [GOTO:reserve]
+   - QR 출력: [GOTO:qr]
 3. 데이터에 없는 내용은 추측하지 말고 데이터가 더 필요하다고 답하세요.
 """
+    
     try:
-        response = client.chat.completions.create(
-            model=openai_model,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return response.choices[0].message.content
+        if gemini_model:
+            try:
+                response = gemini_model.generate_content(prompt)
+                return response.text
+            except Exception as gem_err:
+                print(f"⚠️ Gemini 분석 실패 (폴백 시도): {gem_err}")
+
+        if client:
+            response = client.chat.completions.create(
+                model=openai_model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.choices[0].message.content
+        else:
+            return "현재 사용 가능한 AI 엔진이 없습니다."
     except Exception as e:
         print(f"Analysis Error: {e}")
         return f"분석 중 오류가 발생했습니다: {str(e)}"

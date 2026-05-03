@@ -1,57 +1,48 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { BundleData } from '../types';
+
 import { WS_BASE } from '../config';
+
 import { useStoreFilter } from '../hooks/useStoreFilter';
-import { useAIVoice } from '../hooks/useAIVoice';
 
 export const KitchenDisplay: React.FC = () => {
     const { storeId } = useStoreFilter();
     const [bundles, setBundles] = useState<BundleData[]>([]);
-    const prevCountRef = useRef(0);
-    const { announce, speak } = useAIVoice();
 
-    const fetchKitchenOrders = useCallback(async () => {
+    const fetchKitchenOrders = async () => {
         try {
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
             const res = await fetch(`${apiUrl}/api/kitchen/orders?store_id=${storeId || "Total"}`);
             const data = await res.json();
-            // 새 주문 감지 시 음성 알림
-            if (data.length > prevCountRef.current && prevCountRef.current > 0) {
-                const diff = data.length - prevCountRef.current;
-                announce(`새로운 주문 ${diff}건이 들어왔습니다. 확인해 주세요.`);
-            }
-            prevCountRef.current = data.length;
-            setBundles(data);
+            setBundles(data); // data는 이미 필터링된 주문 리스트임
         } catch (e) {
             console.error('Kitchen Fetch Error:', e);
         }
-    }, [storeId, announce]);
+    };
 
     useEffect(() => {
         fetchKitchenOrders();
-        // 진입 시 브리핑
-        announce('주방 모니터입니다. 대기 중인 주문을 확인해 주세요.');
         const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
+            // 모든 신규 주문이나 상태 업데이트 시 리프레시
             if (data.type === 'NEW_ORDER' || data.type === 'STATUS_UPDATE') {
                 fetchKitchenOrders();
             }
         };
         return () => ws.close();
-    }, [storeId, fetchKitchenOrders, announce]);
+    }, [storeId]);
 
-    const markAsDone = async (orderId: string, tableId: string) => {
+    const markAsDone = async (orderId: string) => {
         try {
             const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
             const res = await fetch(`${apiUrl}/api/order/status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order_id: orderId, status: 'ready' })
+                body: JSON.stringify({ order_id: orderId, status: 'ready' }) // served 대신 ready 사용
             });
             if (!res.ok) throw new Error('Update failed');
-            speak(`${tableId} 조리 완료. 서빙 준비해 주세요.`);
-            fetchKitchenOrders();
+            fetchKitchenOrders(); 
         } catch (e) {
             console.error('Mark Done Error:', e);
         }
@@ -61,7 +52,10 @@ export const KitchenDisplay: React.FC = () => {
     const groupedOrders = bundles.reduce((acc, order: any) => {
         const key = order.session_id;
         if (!acc[key]) {
-            acc[key] = { table: order.table_id || '미지정', orders: [] };
+            acc[key] = {
+                table: order.table_id || '미지정',
+                orders: []
+            };
         }
         acc[key].orders.push(order);
         return acc;
@@ -70,25 +64,11 @@ export const KitchenDisplay: React.FC = () => {
     return (
         <div className="kitchen-display-v2" style={{ padding: '40px', background: 'var(--bg-main)', minHeight: '100vh', color: 'var(--text-main)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-                <h1 style={{ fontSize: '1.8rem', fontWeight: '700', margin: 0 }}>주방 모니터</h1>
-                <div style={{ background: 'var(--surface)', padding: '8px 20px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', display: 'flex', gap: '20px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '1rem', fontWeight: '500', color: 'var(--text-muted)' }}>
-                        대기 중인 주문 <strong style={{ color: 'var(--accent)' }}>{bundles.length}</strong>
-                    </span>
-                    {/* AI 음성 요약 버튼 */}
-                    <button
-                        onClick={() => {
-                            if (bundles.length === 0) {
-                                speak('현재 대기 중인 주문이 없습니다.');
-                            } else {
-                                const tables = Object.values(groupedOrders).map(g => g.table).join(', ');
-                                speak(`현재 ${bundles.length}건의 주문이 대기 중입니다. 테이블 ${tables}을 확인해 주세요.`);
-                            }
-                        }}
-                        style={{ background: 'var(--primary)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '0.85rem' }}
-                    >
-                        🎙️ AI 요약
-                    </button>
+                <h1 style={{ fontSize: '1.8rem', fontWeight: '700', margin: 0 }}>
+                    주방 모니터
+                </h1>
+                <div style={{ background: 'var(--surface)', padding: '8px 20px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: '1rem', fontWeight: '500', color: 'var(--text-muted)' }}>대기 중인 주문 <strong style={{ color: 'var(--accent)' }}>{bundles.length}</strong></span>
                 </div>
             </div>
             
@@ -118,7 +98,7 @@ export const KitchenDisplay: React.FC = () => {
                             <span style={{ opacity: 0.9, fontSize: '0.85rem' }}>{group.orders.length} ITEMS</span>
                         </div>
 
-                        {/* 개별 주문 리스트 */}
+                        {/* 개별 주문 리스트 (순번순 정렬) */}
                         <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                             {group.orders.sort((a, b) => (a.order_seq || 0) - (b.order_seq || 0)).map(order => {
                                 const orderTime = new Date(order.timestamp);
@@ -127,7 +107,10 @@ export const KitchenDisplay: React.FC = () => {
                                 const isLate = diffMins > 10;
 
                                 return (
-                                    <div key={order.order_id} style={{ paddingBottom: '20px', borderBottom: '1px solid var(--border)' }}>
+                                    <div key={order.order_id} style={{ 
+                                        paddingBottom: '20px',
+                                        borderBottom: '1px solid var(--border)'
+                                    }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: '700' }}>ORDER #{order.order_seq || 1}</span>
@@ -141,7 +124,7 @@ export const KitchenDisplay: React.FC = () => {
                                         </div>
 
                                         <button 
-                                            onClick={() => markAsDone(order.order_id, group.table)}
+                                            onClick={() => markAsDone(order.order_id)}
                                             style={{ 
                                                 width: '100%',
                                                 padding: '14px', 

@@ -135,17 +135,9 @@ manager = ConnectionManager()
 async def get_pool():
     pool_path = os.path.join(os.path.dirname(__file__), "..", "knowledge_pool.json")
     if os.path.exists(pool_path):
-        try:
-            with open(pool_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if isinstance(data, list):
-                    return data
-                elif isinstance(data, dict):
-                    return data.get("items", [])
-        except Exception as e:
-            print(f"Error reading pool: {e}")
-            return []
-    return []
+        with open(pool_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"items": []}
 
 @app.post("/api/session/check-in")
 async def check_in(data: Dict):
@@ -439,57 +431,6 @@ async def chat(data: Dict):
     answer = analyze_history(query, history, store)
     return {"answer": answer}
 
-@app.post("/api/situation")
-async def process_situation(data: Dict):
-    """상황 지능형 엔진: 입력된 텍스트를 분석하여 지식 풀에 저장"""
-    text = data.get("text")
-    store = data.get("store", "Total")
-    context = data.get("context", "")
-    
-    from ai_engine import parse_situation_text
-    # 1. AI 분석 수행
-    analysis_result = parse_situation_text(text, store, context)
-    
-    # 2. 지식 풀(knowledge_pool.json)에 저장
-    pool_path = os.path.join(os.path.dirname(__file__), "..", "knowledge_pool.json")
-    try:
-        pool_list = []
-        if os.path.exists(pool_path):
-            with open(pool_path, "r", encoding="utf-8") as f:
-                raw = json.load(f)
-                # 최상위가 리스트인 경우와 {"items":[...]} 딕셔너리인 경우 모두 처리
-                if isinstance(raw, list):
-                    pool_list = raw
-                elif isinstance(raw, dict):
-                    pool_list = raw.get("items", [])
-        
-        # 새 분석 결과 추가 (최신 항목을 맨 앞에)
-        new_entry = {
-            "id": f"SIT-{uuid.uuid4().hex[:6].upper()}",
-            "store_id": store,
-            "type": analysis_result.get("type", "Log"),
-            "title": analysis_result.get("title", "분석된 상황"),
-            "timestamp": datetime.now().isoformat(),
-            "items": analysis_result.get("items", []),
-            "status": None,
-            "order_code": None,
-            "store": store,
-            "table": None,
-            "Package": None,
-            "payment": None
-        }
-        pool_list.insert(0, new_entry)
-        
-        # 항상 리스트 형식으로 저장 (표준화)
-        with open(pool_path, "w", encoding="utf-8") as f:
-            json.dump(pool_list, f, ensure_ascii=False, indent=2)
-            
-        print(f"✨ [Situation Saved] Type: {new_entry['type']} | Title: {new_entry['title']}")
-        return {"status": "success", "result": new_entry}
-    except Exception as e:
-        print(f"🚨 [Situation Save Error] {e}")
-        return {"status": "error", "message": str(e)}
-
 @app.websocket("/ws/kitchen")
 async def ws_kitchen(websocket: WebSocket):
     await manager.connect(websocket, "kitchen")
@@ -507,4 +448,3 @@ async def ws_table(websocket: WebSocket, table_id: str):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket, table_id)
-# Last Updated: 2026-05-03 02:57:00

@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './ConversationalUI.css';
 import { CounterPad } from './CounterPad';
 import { MenuManager } from './MenuManager';
 import { KitchenDisplay } from './KitchenDisplay';
 import type { BundleData } from '../types';
 import { API_BASE } from '../config';
-import { useAIVoice } from '../hooks/useAIVoice';
 
 export interface ConversationalUIProps {
     bundles: BundleData[];
@@ -15,65 +14,76 @@ export interface ConversationalUIProps {
 
 export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, storeName, onNavigate }) => {
     const [messages, setMessages] = useState<any[]>([]);
-    const [isListeningLocal, setIsListeningLocal] = useState(false);
-    const [inputValue, setInputValue] = useState('');
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const { speak, startListening } = useAIVoice();
 
-    // 최초 진입 시 인사
     useEffect(() => {
         if (messages.length === 0 && storeName) {
-            const greeting = `안녕하세요! ${storeName} AI 비서입니다.\n음성으로 메뉴 추천, 주문 현황, 화면 이동 등을 요청해 보세요.`;
-            setMessages([{ id: 1, text: greeting, sender: 'ai', timestamp: '현재' }]);
-            speak(greeting);
+            setMessages([
+                { id: 1, text: "Ai비서는 음성 지원합니다.\n주문이라고 말해 보세요.", sender: "ai", timestamp: "현재" }
+            ]);
         }
-    }, [storeName]); // eslint-disable-line
+    }, [storeName, messages.length]);
 
-    const addAiMessage = useCallback((text: string, richComponent?: string) => {
-        // [GOTO:tab] 패턴 감지 → 화면 이동
+    const speak = (text: string) => {
+        if (!window.speechSynthesis) return;
+        // GOTO 태그 등 특수 문구 제거 후 읽기
+        const speechText = text.replace(/\[GOTO:(\w+)\]/g, '').trim();
+        const utterance = new SpeechSynthesisUtterance(speechText);
+        utterance.lang = 'ko-KR';
+        utterance.rate = 1.0;
+        window.speechSynthesis.speak(utterance);
+    };
+
+    const scrollRef = useRef<HTMLDivElement>(null);
+
+    const addAiMessage = (text: string, richComponent?: string) => {
+        let cleanText = text;
+        
+        // [GOTO:tab_name] 패턴 감지 및 추출
         const gotoMatch = text.match(/\[GOTO:(\w+)\]/);
-        const cleanText = text.replace(/\[GOTO:\w+\]/g, '').trim();
-        if (gotoMatch && onNavigate) onNavigate(gotoMatch[1]);
+        if (gotoMatch && onNavigate) {
+            const targetTab = gotoMatch[1];
+            onNavigate(targetTab);
+            // 텍스트에서는 태그 제거
+            cleanText = text.replace(/\[GOTO:(\w+)\]/g, '').trim();
+        }
+
+        // 음성 출력 호출
         speak(cleanText);
+
         setMessages(prev => [...prev, {
             id: Date.now(),
             text: cleanText,
-            sender: 'ai',
+            sender: "ai",
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             richComponent
         }]);
-    }, [onNavigate, speak]);
+    };
 
-    const sendMessage = useCallback(async (text: string) => {
-        if (!text.trim()) return;
-        setMessages(prev => [...prev, {
-            id: Date.now(),
-            text,
-            sender: 'user',
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }]);
+    // 메세지 전송 함수 (지능형 비서에게 메시지 전달)
+    const sendMessage = async (text: string) => {
+        // 사용자 메시지 추가
+        const userMsg = { id: Date.now(), text, sender: "user", timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+        setMessages(prev => [...prev, userMsg]);
 
         try {
             const response = await fetch(`${API_BASE}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: text, history: bundles, store: storeName })
+                body: JSON.stringify({ 
+                    query: text, 
+                    history: bundles,
+                    store: storeName 
+                })
             });
             const data = await response.json();
-            if (data.answer) addAiMessage(data.answer);
-        } catch {
-            addAiMessage('죄송합니다. 메시지 처리 중 오류가 발생했습니다.');
+            if (data.answer) {
+                addAiMessage(data.answer);
+            }
+        } catch (error) {
+            console.error("AI Chat error:", error);
+            addAiMessage("죄송합니다. 메시지 처리 중 오류가 발생했습니다.");
         }
-    }, [bundles, storeName, addAiMessage]);
-
-    // 음성 입력
-    const handleVoiceInput = useCallback(() => {
-        setIsListeningLocal(true);
-        startListening(
-            (text) => { sendMessage(text); },
-            () => setIsListeningLocal(false)
-        );
-    }, [startListening, sendMessage]);
+    };
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -88,7 +98,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                     <div key={msg.id} className={`message-bubble ${msg.sender}`}>
                         <div className="msg-text">{msg.text}</div>
                         {msg.richComponent === 'counter' && <CounterPad />}
-                        {msg.richComponent === 'menu' && <MenuManager bundles={bundles} />}
+                        {msg.richComponent === 'menu' && <MenuManager bundles={bundles} onUpdate={() => {}} />}
                         {msg.richComponent === 'kitchen' && <KitchenDisplay />}
                         <div className="msg-time">{msg.timestamp}</div>
                     </div>
@@ -97,32 +107,22 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
             
             <div className="chat-input-area">
                 <input 
-                    type="text"
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
+                    type="text" 
                     placeholder="매장에 대해 궁금한 점을 물어보세요..."
                     onKeyDown={(e) => {
-                        if (e.key === 'Enter' && inputValue.trim()) {
-                            sendMessage(inputValue);
-                            setInputValue('');
+                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                            sendMessage(e.currentTarget.value);
+                            e.currentTarget.value = '';
                         }
                     }}
                 />
-                {/* 마이크 버튼 */}
-                <button
-                    className={`voice-btn ${isListeningLocal ? 'listening' : ''}`}
-                    onClick={handleVoiceInput}
-                    title="음성으로 입력"
-                    style={{
-                        background: isListeningLocal ? '#ef4444' : 'var(--primary)',
-                        color: 'white', border: 'none', borderRadius: '10px',
-                        padding: '0 16px', fontSize: '1.2rem', cursor: 'pointer',
-                        transition: 'background 0.2s'
-                    }}
-                >
-                    {isListeningLocal ? '🔴' : '🎙️'}
-                </button>
-                <button className="send-btn" onClick={() => { if (inputValue.trim()) { sendMessage(inputValue); setInputValue(''); } }}>전송</button>
+                <button className="send-btn" onClick={(e) => {
+                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                    if (input.value.trim()) {
+                        sendMessage(input.value);
+                        input.value = '';
+                    }
+                }}>전송</button>
             </div>
         </div>
     );

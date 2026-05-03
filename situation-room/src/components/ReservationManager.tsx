@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import type { BundleData } from '../types';
+
 import { useStoreFilter } from '../hooks/useStoreFilter';
-import { useAIVoice } from '../hooks/useAIVoice';
 
 interface ReservationManagerProps {
     bundles: BundleData[];
@@ -10,17 +10,9 @@ interface ReservationManagerProps {
 export const ReservationManager: React.FC<ReservationManagerProps> = ({ bundles }) => {
     const { storeId, storeName } = useStoreFilter();
     const [isProcessing, setIsProcessing] = useState(false);
-    const { speak, announce } = useAIVoice();
+    
+    // 현재 매장의 예약 정보만 필터링
     const reservations = bundles.filter(b => b.type === 'Reservations' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
-
-    useEffect(() => {
-        const pending = reservations.filter(r => r.status === 'pending').length;
-        if (pending > 0) {
-            announce(`예약 관리 화면입니다. 확정 대기 중인 예약이 ${pending}건 있습니다.`);
-        } else {
-            announce(`예약 관리 화면입니다. 전체 예약 ${reservations.length}건이 있습니다.`);
-        }
-    }, []); // eslint-disable-line
 
     const handleAction = async (bundle: any, action: 'confirmed' | 'canceled' | 'finished') => {
         setIsProcessing(true);
@@ -31,8 +23,7 @@ export const ReservationManager: React.FC<ReservationManagerProps> = ({ bundles 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...bundle, status: action, store: storeName, store_id: storeId }),
             });
-            const msg = action === 'confirmed' ? '확정' : action === 'canceled' ? '취소' : '종료';
-            speak(`예약이 ${msg} 처리되었습니다.`);
+            alert(`예약이 ${action === 'confirmed' ? '확정' : action === 'canceled' ? '취소' : '종료'} 처리되었습니다.`);
         } catch (err) { console.error(err); } finally { setIsProcessing(false); }
     };
 
