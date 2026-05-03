@@ -101,7 +101,7 @@ def parse_situation_text(text: str, store: str = "Total", context: str = "") -> 
     except Exception as e:
         return {"type": "Log", "title": "AI 분석 오류", "items": [{"name": "에러", "value": str(e)}], "timestamp": time_str}
 
-def analyze_history(query: str, history: list, store: str = "Total") -> str:
+def analyze_history(query: str, history: list, store: str = "Total", manual: str = "") -> str:
     if not client:
         return "ChatGPT API 엔진이 설정되지 않았습니다."
 
@@ -112,17 +112,21 @@ def analyze_history(query: str, history: list, store: str = "Total") -> str:
         context += f"[{b.timestamp}] {b.type}({b.title}): {items_str}\n"
 
     prompt = f"""
-[지식 창고 데이터 요약 (매장: {store})]
+[매장 고정 매뉴얼 및 원칙]
+{manual if manual else "설정된 매뉴얼이 없습니다."}
+
+[지식 창고 데이터 요약 (최근 운영 이력)]
 {context}
 
 [사용자 질문]
 "{query}"
 
 [답변 지침]
-1. 답변은 한국어로, 핵심 위주로 명확하게 하세요. 마크다운 형식을 사용하세요.
-2. 만약 사용자의 질문이 특정 화면으로 이동하거나 기능을 확인하려는 의도라면, 답변 끝에 반드시 `[GOTO:탭이름]` 형식을 포함하세요.
-   - 통계/홈: [GOTO:home] | 주문: [GOTO:order] | 주방: [GOTO:kitchen] | 카운터: [GOTO:counter] | 메뉴: [GOTO:menu] | 설정: [GOTO:settings] | 인벤토리: [GOTO:inventory] | 대기: [GOTO:waiting] | 예약: [GOTO:reserve] | QR: [GOTO:qr]
-3. 데이터에 없는 내용은 추측하지 말고 데이터가 더 필요하다고 답하세요.
+1. 사장님이 설정하신 [매장 고정 매뉴얼 및 원칙]을 최우선으로 준수하여 답변하세요.
+2. 매뉴얼에 없는 구체적인 운영 데이터는 [지식 창고 데이터 요약]을 참고하세요.
+3. 답변은 한국어로, 핵심 위주로 명확하게 하세요. 마크다운 형식을 사용하세요.
+4. 특정 화면 이동이 필요하다면 답변 끝에 `[GOTO:탭이름]` 형식을 포함하세요.
+   (home, order, kitchen, counter, menu, settings, inventory, waiting, reserve, qr)
 """
     try:
         response = client.chat.completions.create(

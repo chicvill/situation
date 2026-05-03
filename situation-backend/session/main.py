@@ -421,15 +421,69 @@ async def update_status(update: StatusUpdate):
         return {"status": "success"}
     return {"status": "failed"}
 
+# --- Store Config Management ---
+def init_config_db():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS store_configs (
+            store_id TEXT PRIMARY KEY,
+            manual TEXT DEFAULT ''
+        )
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
+
+init_config_db()
+
+@app.get("/api/store/manual")
+async def get_manual(store_id: str = "store-1"):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT manual FROM store_configs WHERE store_id = %s", (store_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return {"manual": row[0] if row else ""}
+
+@app.post("/api/store/manual")
+async def update_manual(data: dict):
+    store_id = data.get("store_id", "store-1")
+    manual = data.get("manual", "")
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO store_configs (store_id, manual) 
+        VALUES (%s, %s) 
+        ON CONFLICT (store_id) DO UPDATE SET manual = EXCLUDED.manual
+    """, (store_id, manual))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return {"status": "success"}
+
 @app.post("/api/chat")
 async def chat(data: Dict):
     query = data.get("query")
     history = data.get("history", [])
-    store = data.get("store", "Total")
+    store_id = data.get("store_id", "store-1")
     
-    from ai_engine import analyze_history
-    answer = analyze_history(query, history, store)
-    return {"answer": answer}
+    # 지식 인벤토리 데이터(최근 상황들) 가져오기
+    pool_history = get_situation_history(store_id, limit=50)
+    
+    # 매장 고정 매뉴얼 가져오기
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT manual FROM store_configs WHERE store_id = %s", (store_id,))
+    row = cur.fetchone()
+    manual = row[0] if row else ""
+    cur.close()
+    conn.close()
+
+    # AI 엔진 호출 (매뉴얼 포함)
+    response = ai_engine.analyze_history(query, pool_history, store=store_id, manual=manual)
+    return {"response": response}
 
 @app.websocket("/ws/kitchen")
 async def ws_kitchen(websocket: WebSocket):

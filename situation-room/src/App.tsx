@@ -15,13 +15,14 @@ import { HRManager } from './components/HRManager';
 import { WaitingManager } from './components/WaitingManager';
 import { ReservationManager } from './components/ReservationManager';
 import { Login } from './components/Login';
+import { StoreManualEditor } from './components/StoreManualEditor';
 import MobileOrderV2 from './components/v2/MobileOrderV2';
 import { useSituation } from './hooks/useSituation';
 import { useStoreFilter } from './hooks/useStoreFilter';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
 
-type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'admin' | 'call';
+type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'admin' | 'call' | 'manual';
 
 function App() {
   const { storeId, storeName: initialStoreName, updateStore } = useStoreFilter();
@@ -300,6 +301,7 @@ function App() {
       case 'call':
       case 'home': return <AdminDashboard bundles={bundles} />;
       case 'inventory': return <LogicInventory />;
+      case 'manual': return <StoreManualEditor storeId={storeId} />;
       case 'hr': return <HRManager bundles={bundles} user={user} />;
       case 'waiting': return <WaitingManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'waiting', sId, sName)} />;
       case 'reserve': return <ReservationManager bundles={bundles} />;
@@ -326,6 +328,7 @@ function App() {
             <button onClick={() => setIsMenuOpen(false)}>×</button>
           </div>
           <nav className="drawer-nav">
+            <button onClick={() => navigateTo('manual')}>📜 AI 전용 매뉴얼 설정</button>
             <button onClick={() => navigateTo('settings')}>⚙️ 매장 설정</button>
             <button onClick={() => navigateTo('menu')}>📔 메뉴 설정</button>
             <button onClick={() => navigateTo('hr')}>👥 직원관리 (직원 등록, 근태관리 등)</button>
