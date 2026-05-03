@@ -72,6 +72,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                 // 테스트 모드
                 await new Promise(r => setTimeout(r, 1000));
                 setIsVerified(true);
+                console.log("Business verified (Test Mode)");
                 alert("✅ [테스트 모드] 사업자 정보가 확인되었습니다.");
                 return;
             }
@@ -92,8 +93,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
             const result = await response.json();
             if (result.data && result.data[0].valid === '01') {
                 setIsVerified(true);
+                console.log("Business verified (NTS API)");
                 alert("✅ 사업자 정보가 국세청 데이터를 통해 검증되었습니다.");
             } else {
+                console.warn("Business verification failed:", result);
                 alert("❌ 일치하는 사업자 정보가 없습니다. 입력 정보를 다시 확인해 주세요.");
             }
         } catch (err) {
@@ -107,6 +110,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
         e.preventDefault();
 
         if (role === 'owner' && !isVerified) {
+            console.error("Signup blocked: Business not verified");
             setError('점주 가입을 위해 먼저 사업자 진위 확인을 완료해 주세요.');
             return;
         }
@@ -183,7 +187,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                             <input 
                                 type="text" 
                                 value={name} 
-                                onChange={(e) => setName(e.target.value)} 
+                                onChange={(e) => { setName(e.target.value); setIsVerified(false); }} 
                                 placeholder="실명을 입력하세요"
                                 required 
                             />
@@ -265,7 +269,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                                                 disabled={isVerifying || isVerified}
                                                 style={{ 
                                                     padding: '0 15px', borderRadius: 'var(--radius-sm)', border: 'none',
-                                                    background: isVerified ? 'var(--success-green)' : 'var(--primary)',
+                                                    background: isVerified ? 'var(--success)' : 'var(--primary)',
                                                     color: 'white', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
                                                     whiteSpace: 'nowrap'
                                                 }}
@@ -274,6 +278,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                                             </button>
                                         </div>
                                     </div>
+                                    {isVerified && <p style={{ fontSize: '0.8rem', color: 'var(--success)', margin: '5px 0 0 0', textAlign: 'left' }}>✅ 국세청 데이터와 일치함이 확인되었습니다.</p>}
                                 </>
                             )}
                         </>

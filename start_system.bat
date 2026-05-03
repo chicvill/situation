@@ -8,7 +8,7 @@ echo ======================================================
 echo.
 
 echo [1/2] Starting Backend on Port 8001...
-start "BACKEND" cmd /k "cd situation-backend && py -m uvicorn session.main:app --reload --host 0.0.0.0 --port 8001"
+start "BACKEND" cmd /k "cd situation-backend && ..\venv\Scripts\python.exe -m uvicorn session.main:app --reload --host 0.0.0.0 --port 8001"
 
 echo [2/2] Starting Frontend...
 start "FRONTEND" cmd /c "cd situation-room && npm run dev"
