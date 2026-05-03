@@ -18,6 +18,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
     const [storeName, setStoreName] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
+    // 사업자 인증 필드 (점주용)
+    const [regNo, setRegNo] = useState('');
+    const [openDate, setOpenDate] = useState('');
+    const [isVerified, setIsVerified] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
+
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -52,8 +58,59 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
         }
     };
 
+    const handleVerifyBusiness = async () => {
+        if (!regNo || !openDate || !name) {
+            alert("⚠️ 사업자번호, 개업일자, 대표자명(이름)이 모두 필요합니다.");
+            return;
+        }
+
+        setIsVerifying(true);
+        try {
+            const SERVICE_KEY = import.meta.env.VITE_DATA_GO_KR_SERVICE_KEY;
+            
+            if (!SERVICE_KEY || SERVICE_KEY === "your_key_here") {
+                // 테스트 모드
+                await new Promise(r => setTimeout(r, 1000));
+                setIsVerified(true);
+                alert("✅ [테스트 모드] 사업자 정보가 확인되었습니다.");
+                return;
+            }
+
+            const encodedKey = encodeURIComponent(SERVICE_KEY);
+            const response = await fetch(`https://api.odcloud.kr/api/nts-prompts/v1/validate?serviceKey=${encodedKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    businesses: [{
+                        b_no: regNo.replace(/[^0-9]/g, ''),
+                        start_dt: openDate.replace(/[^0-9]/g, ''),
+                        p_nm: name
+                    }]
+                })
+            });
+
+            const result = await response.json();
+            if (result.data && result.data[0].valid === '01') {
+                setIsVerified(true);
+                alert("✅ 사업자 정보가 국세청 데이터를 통해 검증되었습니다.");
+            } else {
+                alert("❌ 일치하는 사업자 정보가 없습니다. 입력 정보를 다시 확인해 주세요.");
+            }
+        } catch (err) {
+            alert("❌ 검증 중 오류가 발생했습니다.");
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (role === 'owner' && !isVerified) {
+            setError('점주 가입을 위해 먼저 사업자 진위 확인을 완료해 주세요.');
+            return;
+        }
+
         setIsProcessing(true);
         setError('');
 
@@ -80,7 +137,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                     { name: '이름', value: name },
                     { name: '아이디', value: id },
                     { name: '비밀번호', value: pw },
-                    { name: '권한', value: role }
+                    { name: '권한', value: role },
+                    { name: '사업자번호', value: regNo },
+                    { name: '개업일자', value: openDate }
                 ],
                 status: 'pending',
                 timestamp: new Date().toLocaleString(),
@@ -176,6 +235,47 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                                     required 
                                 />
                             </div>
+
+                            {role === 'owner' && (
+                                <>
+                                    <div className="input-group">
+                                        <label>사업자 등록번호</label>
+                                        <input 
+                                            type="text" 
+                                            value={regNo} 
+                                            onChange={(e) => { setRegNo(e.target.value); setIsVerified(false); }} 
+                                            placeholder="000-00-00000"
+                                            required 
+                                        />
+                                    </div>
+                                    <div className="input-group">
+                                        <label>개업연월일</label>
+                                        <div style={{ display: 'flex', gap: '10px' }}>
+                                            <input 
+                                                type="text" 
+                                                value={openDate} 
+                                                onChange={(e) => { setOpenDate(e.target.value); setIsVerified(false); }} 
+                                                placeholder="YYYYMMDD (8자리)"
+                                                style={{ flex: 1 }}
+                                                required 
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={handleVerifyBusiness}
+                                                disabled={isVerifying || isVerified}
+                                                style={{ 
+                                                    padding: '0 15px', borderRadius: 'var(--radius-sm)', border: 'none',
+                                                    background: isVerified ? 'var(--success-green)' : 'var(--primary)',
+                                                    color: 'white', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
+                                                    whiteSpace: 'nowrap'
+                                                }}
+                                            >
+                                                {isVerifying ? '확인 중...' : isVerified ? '✅ 완료' : '진위 확인'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </>
                     )}
                     
