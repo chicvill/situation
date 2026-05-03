@@ -423,7 +423,7 @@ async def update_status(update: StatusUpdate):
 
 # --- Store Config Management ---
 def init_config_db():
-    conn = get_db_connection()
+    conn = get_db_conn()
     cur = conn.cursor()
     cur.execute("""
         CREATE TABLE IF NOT EXISTS store_configs (
@@ -439,7 +439,7 @@ init_config_db()
 
 @app.get("/api/store/manual")
 async def get_manual(store_id: str = "store-1"):
-    conn = get_db_connection()
+    conn = get_db_conn()
     cur = conn.cursor()
     cur.execute("SELECT manual FROM store_configs WHERE store_id = %s", (store_id,))
     row = cur.fetchone()
@@ -451,7 +451,7 @@ async def get_manual(store_id: str = "store-1"):
 async def update_manual(data: dict):
     store_id = data.get("store_id", "store-1")
     manual = data.get("manual", "")
-    conn = get_db_connection()
+    conn = get_db_conn()
     cur = conn.cursor()
     cur.execute("""
         INSERT INTO store_configs (store_id, manual) 
@@ -473,7 +473,7 @@ async def chat(data: Dict):
     pool_history = get_situation_history(store_id, limit=50)
     
     # 매장 고정 매뉴얼 가져오기
-    conn = get_db_connection()
+    conn = get_db_conn()
     cur = conn.cursor()
     cur.execute("SELECT manual FROM store_configs WHERE store_id = %s", (store_id,))
     row = cur.fetchone()
