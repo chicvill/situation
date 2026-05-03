@@ -132,7 +132,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
     const tables = Array.from({ length: 12 }, (_, i) => i + 1);
 
     return (
-        <div className="counter-pad-premium" style={{ padding: '40px', background: 'var(--bg-main)', minHeight: '100vh' }}>
+        <div className="counter-pad-premium" style={{ padding: '20px', background: 'var(--bg-main)', minHeight: 'auto' }}>
             <div style={{ 
                 marginBottom: '40px', 
                 padding: '30px', 
@@ -148,7 +148,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                     <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-main)' }}>신규 세션 개시</h3>
                     <p style={{ margin: '0 0 20px 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>입장하신 고객님의 테이블을 선택하여 활성화해 주세요.</p>
                     
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                         {tables.map(num => {
                             const tableId = `T${String(num).padStart(2, '0')}`;
                             const isOccupied = sessions.some(s => s.table_id === tableId);
@@ -266,13 +266,13 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                 <div style={{ display: 'flex', gap: '10px' }}>
                                                     <button 
                                                         onClick={() => {
-                                                            if(window.confirm('이 주문을 취소하시겠습니까?')) {
+                                                            if(window.confirm('이 주문을 삭제하시겠습니까?')) {
                                                                  handleStatusUpdate(order.order_id, 'cancelled');
                                                             }
                                                         }}
                                                         style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--danger)', padding: '6px 12px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '500' }}
                                                     >
-                                                        취소
+                                                        삭제
                                                     </button>
                                                     <button 
                                                         disabled={order.status !== 'ready'}
