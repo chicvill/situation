@@ -12,6 +12,8 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
     const storeId = propStoreId || filterStoreId;
     const [sessions, setSessions] = useState<any[]>([]);
     const [selectedSessionForPay, setSelectedSessionForPay] = useState<any | null>(null);
+    const [selectedOrderForPay, setSelectedOrderForPay] = useState<any | null>(null);
+    const [pendingJoins, setPendingJoins] = useState<Record<string, any[]>>({});
 
     const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 
@@ -39,6 +41,18 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
             if (['NEW_ORDER', 'STATUS_UPDATE', 'SESSION_CLOSED'].includes(data.type)) {
                 fetchSessions();
             }
+            if (data.type === 'JOIN_REQUEST') {
+                setPendingJoins(prev => ({
+                    ...prev,
+                    [data.table_id]: [...(prev[data.table_id] || []), data]
+                }));
+            }
+            if (data.type === 'JOIN_RESPONSE') {
+                setPendingJoins(prev => {
+                    const tableRequests = (prev[data.table_id] || []).filter(r => r.device_id !== data.device_id);
+                    return { ...prev, [data.table_id]: tableRequests };
+                });
+            }
         };
         return () => ws.close();
     }, [storeId]);
@@ -54,6 +68,26 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
             fetchSessions();
         } catch (e) {
             console.error('Status Update Error:', e);
+        }
+    };
+
+    const handleApproveJoin = async (tableId: string, sessionId: string, deviceId: string, approved: boolean) => {
+        try {
+            const apiUrl = getApiUrl();
+            const res = await fetch(`${apiUrl}/api/session/approve-join`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    device_id: deviceId,
+                    table_id: tableId,
+                    approved
+                })
+            });
+            if (!res.ok) throw new Error('Approval failed');
+        } catch (e) {
+            console.error('Join Approval Error:', e);
+            alert('승인 처리 중 오류가 발생했습니다.');
         }
     };
 
@@ -73,10 +107,36 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                     alert('정산이 완료되었습니다.');
                 }
                 setSelectedSessionForPay(null);
+                setSelectedOrderForPay(null);
                 fetchSessions();
+            } else {
+                throw new Error(data.detail || '정산 실패');
             }
         } catch (e) {
             console.error('Close Session Error:', e);
+            throw e;
+        }
+    };
+
+    const handlePartialPayment = async (orderId: string) => {
+        try {
+            const apiUrl = getApiUrl();
+            const res = await fetch(`${apiUrl}/api/order/status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: orderId, status: 'served' }) // served로 변경하여 결제 완료 처리
+            });
+            if (res.ok) {
+                alert('부분 결제가 완료되었습니다.');
+                setSelectedOrderForPay(null);
+                fetchSessions();
+            } else {
+                const data = await res.json();
+                throw new Error(data.detail || '결제 실패');
+            }
+        } catch (e) {
+            console.error('Partial Payment Error:', e);
+            throw e;
         }
     };
 
@@ -184,11 +244,20 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                 </h3>
             </div>
 
-            {selectedSessionForPay && (
+            {(selectedSessionForPay || selectedOrderForPay) && (
                 <PaymentModal 
-                    totalPrice={selectedSessionForPay.orders.reduce((sum: number, o: any) => sum + o.total_price, 0)}
-                    onClose={() => setSelectedSessionForPay(null)}
-                    onSubmit={() => handleCloseSession(selectedSessionForPay.session_id)}
+                    totalPrice={selectedOrderForPay ? selectedOrderForPay.total_price : selectedSessionForPay.orders.reduce((sum: number, o: any) => sum + o.total_price, 0)}
+                    onClose={() => {
+                        setSelectedSessionForPay(null);
+                        setSelectedOrderForPay(null);
+                    }}
+                    onSubmit={() => {
+                        if (selectedOrderForPay) {
+                            return handlePartialPayment(selectedOrderForPay.order_id);
+                        } else {
+                            return handleCloseSession(selectedSessionForPay.session_id);
+                        }
+                    }}
                     isCounter={true}
                 />
             )}
@@ -233,6 +302,37 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                         )}
                                         <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{session.session_id}</span>
                                     </div>
+                                    
+                                    {/* 합류 요청 알림 */}
+                                    {(pendingJoins[session.table_id] || []).length > 0 && (
+                                        <div style={{ 
+                                            background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '12px', padding: '15px',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '15px'
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                                                <div>
+                                                    <div style={{ fontWeight: '700', color: '#991b1b', fontSize: '0.9rem' }}>새로운 기기 합류 요청</div>
+                                                    <div style={{ fontSize: '0.75rem', color: '#b91c1c' }}>1차 주문 고객에게 확인 후 승인해 주세요.</div>
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <button 
+                                                    onClick={() => handleApproveJoin(session.table_id, session.session_id, pendingJoins[session.table_id][0].device_id, false)}
+                                                    style={{ background: 'white', border: '1px solid #fee2e2', color: '#ef4444', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer' }}
+                                                >
+                                                    거절
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleApproveJoin(session.table_id, session.session_id, pendingJoins[session.table_id][0].device_id, true)}
+                                                    style={{ background: '#ef4444', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer' }}
+                                                >
+                                                    승인하기
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div style={{ textAlign: 'right' }}>
                                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>합계 금액</div>
                                         <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)' }}>{sessionTotal.toLocaleString()}원</div>
@@ -275,20 +375,19 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                         삭제
                                                     </button>
                                                     <button 
-                                                        disabled={order.status !== 'ready'}
-                                                        onClick={() => handleStatusUpdate(order.order_id, 'served')}
+                                                        onClick={() => setSelectedOrderForPay(order)}
                                                         style={{ 
-                                                            background: order.status === 'ready' ? 'var(--primary)' : 'transparent', 
-                                                            border: order.status === 'ready' ? 'none' : '1px solid var(--border)', 
-                                                            color: order.status === 'ready' ? 'white' : 'var(--text-muted)', 
+                                                            background: 'var(--accent)', 
+                                                            border: 'none', 
+                                                            color: 'white', 
                                                             padding: '6px 16px', 
                                                             borderRadius: 'var(--radius-sm)', 
                                                             fontSize: '0.8rem', 
-                                                            cursor: order.status === 'ready' ? 'pointer' : 'default',
+                                                            cursor: 'pointer',
                                                             fontWeight: '600',
                                                         }}
                                                     >
-                                                        {order.status === 'served' ? '서빙완료' : '서빙하기'}
+                                                        결제
                                                     </button>
                                                 </div>
                                             </div>
@@ -316,7 +415,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                 onClick={() => setSelectedSessionForPay(session)}
                                                 style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '10px 32px', borderRadius: 'var(--radius-sm)', fontWeight: '600', fontSize: '1rem', cursor: 'pointer' }}
                                             >
-                                                정산 및 결제
+                                                전체 결제
                                             </button>
                                         </>
                                     )}

@@ -226,6 +226,18 @@ async def check_in(data: Dict):
     
     active = get_active_session(store_id, table_id)
     if active:
+        # 이미 활성화된 세션이 있는 경우, 기기ID 확인
+        if active['device_id'] and active['device_id'] != device_id:
+            # 다른 기기에서 접속 시도 -> 기존 일행 및 카운터에 승인 요청 전송
+            msg = {
+                "type": "JOIN_REQUEST",
+                "device_id": device_id,
+                "session_id": active['session_id'],
+                "table_id": table_id
+            }
+            await manager.send_to_table(table_id, msg)
+            await manager.broadcast_to_kitchen(msg) # 카운터(주방)에서도 확인 가능하도록
+            return {"status": "waiting_party_approval", "session_id": active['session_id']}
         return active
     
     new_session = {
@@ -345,6 +357,26 @@ async def close_session(data: Dict):
             return {"status": "success", "message": "모든 주문이 정산되어 세션이 종료되었습니다."}
     
     return {"status": "failed"}
+
+@app.post("/api/session/approve-join")
+async def approve_join(data: Dict):
+    """일행 합류 승인/거절 처리"""
+    session_id = data.get("session_id")
+    target_device_id = data.get("device_id")
+    approved = data.get("approved", True)
+    table_id = data.get("table_id")
+    
+    if not session_id or not target_device_id or not table_id:
+        raise HTTPException(status_code=400, detail="Missing required fields")
+    
+    # 해당 테이블의 모든 기기에 결과 전송
+    await manager.send_to_table(table_id, {
+        "type": "JOIN_RESPONSE",
+        "device_id": target_device_id,
+        "approved": approved,
+        "session_id": session_id
+    })
+    return {"status": "success"}
 
 @app.post("/api/message/send")
 async def send_message_to_table(data: Dict):

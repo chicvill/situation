@@ -25,6 +25,8 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
   const [isCartView, setIsCartView] = useState(false);
   const [isOrdered, setIsOrdered] = useState(false);
   const [userPhone, setUserPhone] = useState('');
+  const [isWaitingForPartyApproval, setIsWaitingForPartyApproval] = useState(false);
+  const [pendingJoinRequest, setPendingJoinRequest] = useState<{ deviceId: string; sessionId: string } | null>(null);
 
 
   const tableNo = useMemo(() => {
@@ -54,6 +56,10 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
       const res = await fetch(`${apiUrl}/api/session/${tableId}?store_id=${storeId}`);
       const data = await res.json();
       if (data && data.session && data.session.status === 'active') {
+        // 합류 대기 중이었는데 활성 세션이 확인되면 (승인된 경우)
+        if (isWaitingForPartyApproval) {
+          setIsWaitingForPartyApproval(false);
+        }
         setHasSession(true);
       } else {
         setHasSession(false);
@@ -80,6 +86,20 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
           // Clear alert handling removed
         } else if (data.type === 'SESSION_CLOSED') {
           window.location.reload(); // 세션 종료 시 새로고침
+        } else if (data.type === 'JOIN_REQUEST') {
+          // 다른 기기가 이 테이블에 합류하려고 함
+          setPendingJoinRequest({ deviceId: data.device_id, sessionId: data.session_id });
+        } else if (data.type === 'JOIN_RESPONSE') {
+          // 내 합류 요청에 대한 결과
+          if (data.device_id === deviceId) {
+            if (data.approved) {
+              setIsWaitingForPartyApproval(false);
+              setHasSession(true);
+            } else {
+              alert("일행이 합류를 거절했습니다.");
+              window.location.href = "/"; // 메인으로 튕겨냄
+            }
+          }
         }
       } catch (e) {
         console.error("WS Message Error:", e);
@@ -96,14 +116,40 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
 
   // 접속 시 체크인 요청
   useEffect(() => {
-    if (!isApproved) {
+    if (!isApproved && !isWaitingForPartyApproval) {
       fetch(`${API_BASE}/api/checkin/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tableNo, deviceId, store: storeName, store_id: storeId })
-      }).catch(err => console.error("Checkin Request Error:", err));
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'waiting_party_approval') {
+          setIsWaitingForPartyApproval(true);
+        }
+      })
+      .catch(err => console.error("Checkin Request Error:", err));
     }
-  }, [tableNo, deviceId, storeName, storeId, isApproved]);
+  }, [tableNo, deviceId, storeName, storeId, isApproved, isWaitingForPartyApproval]);
+
+  const handleJoinApproval = async (approved: boolean) => {
+    if (!pendingJoinRequest) return;
+    try {
+      await fetch(`${API_BASE}/api/session/approve-join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: pendingJoinRequest.sessionId,
+          device_id: pendingJoinRequest.deviceId,
+          table_id: tableId,
+          approved
+        })
+      });
+      setPendingJoinRequest(null);
+    } catch (e) {
+      console.error("Join Approval Error:", e);
+    }
+  };
 
   // 현재 테이블의 기존 주문 내역 실시간 필터링
   const myOrders = useMemo(() => {
@@ -239,9 +285,50 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
     );
   }
 
+  if (isWaitingForPartyApproval) {
+    return (
+      <div className="mobile-app-container flex-center animate-fade-in" style={{ padding: '40px', textAlign: 'center' }}>
+        <div style={{ fontSize: '4rem', marginBottom: '20px' }}>⏳</div>
+        <h1 style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>일행 승인 대기 중</h1>
+        <p style={{ color: 'var(--text-muted)', lineHeight: 1.6 }}>
+          이미 이용 중인 일행이 있습니다.<br/>
+          테이블에 있는 일행이 승인해주면 주문을 시작할 수 있습니다.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mobile-app-container animate-fade-in">
-      {/* 매장 알림 (삭제됨) */}
+      {pendingJoinRequest && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 5000,
+          background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+        }}>
+          <div style={{ background: '#1e293b', borderRadius: '24px', padding: '30px', width: '100%', maxWidth: '320px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '15px' }}>👥</div>
+            <h3 style={{ color: 'white', marginBottom: '10px' }}>새로운 일행 합류</h3>
+            <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '25px', lineHeight: 1.5 }}>
+              누군가 우리 테이블에 합류를 요청했습니다. 일행이 맞으신가요?
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <button 
+                onClick={() => handleJoinApproval(false)}
+                style={{ padding: '14px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', color: '#ef4444', border: 'none', fontWeight: 'bold' }}
+              >
+                거절
+              </button>
+              <button 
+                onClick={() => handleJoinApproval(true)}
+                style={{ padding: '14px', borderRadius: '12px', background: 'var(--accent-orange)', color: 'white', border: 'none', fontWeight: 'bold' }}
+              >
+                승인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <header className="mobile-header">
         <div className="header-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
