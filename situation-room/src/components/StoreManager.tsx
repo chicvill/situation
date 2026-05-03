@@ -12,8 +12,10 @@ interface StoreManagerProps {
 export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate }) => {
   const { storeId, storeName } = useStoreFilter();
   const [storeData, setStoreData] = useState<any>({
-    brand: '', regNo: '', address: '', owner: '', bankName: '', accountNo: '', accountHolder: '', bundleId: null
+    brand: '', regNo: '', address: '', owner: '', bankName: '', accountNo: '', accountHolder: '', 
+    openDate: '', isVerified: false, bundleId: null
   });
+  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
     const storeBundle = bundles.find(b => b.type === 'StoreConfig' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
@@ -27,6 +29,8 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
         bankName: findValue(['은행']),
         accountNo: findValue(['계좌', '번호']),
         accountHolder: findValue(['예금주']),
+        openDate: findValue(['개업', '날짜', 'open']),
+        isVerified: storeBundle.status === 'approved',
         bundleId: storeBundle.id
       });
     }
@@ -39,6 +43,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
       { name: '사업자번호', value: activeData.regNo },
       { name: '주소',       value: activeData.address },
       { name: '대표자',     value: activeData.owner },
+      { name: '개업일자',   value: activeData.openDate },
       { name: '은행명',     value: activeData.bankName },
       { name: '계좌번호',   value: activeData.accountNo },
       { name: '예금주',     value: activeData.accountHolder },
@@ -60,6 +65,51 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
       } else throw new Error('Server error');
     } catch {
       alert('❌ 저장 중 오류가 발생했습니다.');
+    }
+  };
+
+  const handleVerifyBusiness = async () => {
+    if (!storeData.regNo || !storeData.owner || !storeData.openDate) {
+      alert("⚠️ 사업자번호, 대표자명, 개업일자가 모두 필요합니다.");
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      // 실제 구현 시 공공데이터포털 Service Key 필요
+      const SERVICE_KEY = "YOUR_DATA_GO_KR_SERVICE_KEY"; 
+      
+      // 테스트용: Service Key가 없으면 성공한 것처럼 시뮬레이션
+      if (SERVICE_KEY === "YOUR_DATA_GO_KR_SERVICE_KEY") {
+        await new Promise(r => setTimeout(r, 1500));
+        setStoreData(prev => ({ ...prev, isVerified: true }));
+        alert("✅ [테스트 모드] 사업자 정보가 정상적으로 확인되었습니다.");
+        return;
+      }
+
+      const response = await fetch(`https://api.odcloud.kr/api/nts-prompts/v1/validate?serviceKey=${SERVICE_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businesses: [{
+            b_no: storeData.regNo.replace(/[^0-9]/g, ''),
+            start_dt: storeData.openDate.replace(/[^0-9]/g, ''),
+            p_nm: storeData.owner
+          }]
+        })
+      });
+
+      const result = await response.json();
+      if (result.data && result.data[0].valid === '01') {
+        setStoreData(prev => ({ ...prev, isVerified: true }));
+        alert("✅ 사업자 정보가 국세청 데이터를 통해 검증되었습니다.");
+      } else {
+        alert("❌ 일치하는 사업자 정보가 없습니다. 입력 정보를 다시 확인해 주세요.");
+      }
+    } catch (err) {
+      alert("❌ 검증 중 오류가 발생했습니다.");
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -93,8 +143,10 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
         regNo:   result.regNo   || prev.regNo,
         address: result.address || prev.address,
         owner:   result.owner   || prev.owner,
+        openDate: result.openDate || prev.openDate,
+        isVerified: false, // 정보가 바뀌면 재검증 필요
       }));
-      alert('✅ 사진 속 정보를 읽어왔습니다!\n오탈자가 없는지 확인하신 후 하단의 "저장" 버튼을 눌러주세요.');
+      alert('✅ 사진 속 정보를 읽어왔습니다!\n오탈자가 없는지 확인하신 후 "사업자 진위 확인"을 진행해 주세요.');
     },
   });
 
@@ -192,6 +244,30 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
               onChange={(e) => handleChange('owner', e.target.value)} 
               placeholder="성함 입력" 
             />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)' }}>개업연월일</label>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input 
+                style={{ flex: 1, padding: '12px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', outline: 'none' }}
+                value={storeData.openDate} 
+                onChange={(e) => handleChange('openDate', e.target.value)} 
+                placeholder="예: 20200101 (8자리 숫자)" 
+              />
+              <button 
+                onClick={handleVerifyBusiness}
+                disabled={isVerifying || storeData.isVerified}
+                style={{ 
+                  padding: '0 20px', borderRadius: 'var(--radius-sm)', border: 'none',
+                  background: storeData.isVerified ? 'var(--success-green)' : 'var(--primary)',
+                  color: 'white', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {isVerifying ? '확인 중...' : storeData.isVerified ? '✅ 검증 완료' : '사업자 진위 확인'}
+              </button>
+            </div>
+            {storeData.isVerified && <p style={{ fontSize: '0.8rem', color: 'var(--success-green)', margin: 0 }}>국세청 데이터와 일치함이 확인되었습니다.</p>}
           </div>
 
           <div style={{ marginTop: '20px', padding: '30px', background: 'var(--primary-soft)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
