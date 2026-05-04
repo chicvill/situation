@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import '../../MobileV2.css';
+import './MobileOrderV2.css';
 import type { BundleData } from '../../types';
 import { WS_BASE, API_BASE } from '../../config';
 import { PaymentModal } from '../PaymentModal';

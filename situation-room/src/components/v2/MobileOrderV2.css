@@ -244,6 +244,7 @@
   margin-bottom: 8px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -375,7 +376,7 @@
 }
 
 .modal-header h3 { font-size: 1.4rem; font-weight: 800; }
-.modal-header button { background: none; border: none; fontSize: 1.5rem; color: var(--text-muted); cursor: pointer; }
+.modal-header button { background: none; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer; }
 
 .cart-items-list {
   flex: 1;
