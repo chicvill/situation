@@ -322,7 +322,11 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     setShowPayModal(false);
     try {
       const currentCart = [...cart];
+      const usePoints = extraData?.usePoints || 0;
+      const finalAmount = totalPrice - usePoints;
       
+      console.log(`🚀 Payment Start: ${method}, Amount: ${finalAmount} (Original: ${totalPrice}, Points: ${usePoints})`);
+
       // 1. 주문 생성 요청
       const res = await fetch(`${API_BASE}/api/order/direct`, {
         method: 'POST',
@@ -330,7 +334,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         body: JSON.stringify({
           table_id: tableId, device_id: deviceId, store_id: storeId,
           items: cart.map(c => ({ name: c.name, quantity: c.qty || 1, price: c.price, qty: c.qty || 1 })),
-          total_price: totalPrice,
+          total_price: finalAmount, // 실제 결제할 금액으로 주문 생성
           // 카운터 결제는 unpaid, 카드는 결제 대기(pending) 상태로 시작
           payment_status: (method === '카운터에서 결제' || method === '현금 결제' || method === 'cash') ? 'unpaid' : 'pending',
           payment_method: method,
@@ -351,22 +355,33 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
           setShowProgress(true);
         } else {
           // 카드 / 계좌이체 -> 토스 결제창 호출
+          if (!(window as any).TossPayments) {
+            alert('결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
+            setIsOrdering(false);
+            return;
+          }
+
           const tossPayments = (window as any).TossPayments('test_ck_D5b4Zne68wxL1Pn6k0m8rlzYWBn1');
           const tossMethod = method.includes('카드') ? '카드' : '계좌이체';
           
+          console.log(`💳 Redircting to Toss: ${tossMethod}, OrderId: ${orderId}`);
+
           await tossPayments.requestPayment(tossMethod, {
-            amount: totalPrice,
+            amount: finalAmount,
             orderId: orderId,
             orderName: `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,
             customerName: '손님',
-            successUrl: `${window.location.origin}${window.location.pathname}?payment_success=true&order_id=${orderId}&amount=${totalPrice}`,
+            successUrl: `${window.location.origin}${window.location.pathname}?payment_success=true&order_id=${orderId}&amount=${finalAmount}`,
             failUrl: `${window.location.origin}${window.location.pathname}?payment_fail=true&order_id=${orderId}`,
           });
         }
+      } else {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || '주문 생성 실패');
       }
-    } catch (err) { 
+    } catch (err: any) { 
       console.error("Order process failed", err);
-      alert('주문 처리 중 오류가 발생했습니다.');
+      alert(`주문 처리 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}`);
     } finally { 
       setIsOrdering(false); 
     }

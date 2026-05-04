@@ -6,11 +6,6 @@ const getApiBase = () => {
     if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
     const host = window.location.hostname;
     const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
-    
-    // Production (same origin): no port needed
-    if (host !== 'localhost' && !host.match(/^\d+\.\d+\.\d+\.\d+$/)) {
-        return `${protocol}://${host}`;
-    }
     return `${protocol}://${host}:8000`;
 };
 
