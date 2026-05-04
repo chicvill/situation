@@ -666,8 +666,14 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
               transform: `translate(${cartPos.x}px, ${cartPos.y}px)`,
               zIndex: 2000,
               cursor: 'move',
-              boxShadow: '0 12px 30px rgba(0,0,0,0.25)',
-              margin: 0
+              background: 'linear-gradient(135deg, var(--accent), #f97316)',
+              borderRadius: '50px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 15px 35px rgba(245, 158, 11, 0.4), 0 5px 15px rgba(0,0,0,0.2)',
+              margin: 0,
+              border: '2px solid rgba(255,255,255,0.2)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', color: 'white' }}>
