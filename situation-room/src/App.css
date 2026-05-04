@@ -59,8 +59,10 @@ body {
   width: 100%;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding-top: 60px; /* 📅 예약 관리 카드 스타일 */
-  /* 📅 예약 관리 카드 스타일 */
+  padding-top: 60px;
+}
+
+/* 📅 예약 관리 카드 스타일 */
 .reservation-card {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: default;
