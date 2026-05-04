@@ -159,6 +159,34 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     return () => { ws.close(); clearInterval(timer); };
   }, [tableId, storeId, fetchMySession]);
 
+  // --- Payment Result Handling ---
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isSuccess = params.get('payment_success') === 'true';
+    const isFail = params.get('payment_fail') === 'true';
+
+    if (isSuccess) {
+      // 결제 성공 시 메시지 표시 및 화면 갱신
+      setTimeout(() => {
+        alert('✅ 결제가 완료되었습니다.\n주문이 정상적으로 접수되어 조리를 시작합니다.');
+        fetchMySession();
+        setShowProgress(true); // 진행 현황 화면 표시
+        
+        // URL 파라미터 제거 (중복 알림 방지)
+        const newUrl = window.location.pathname + window.location.search.replace(/[?&]payment_success=true[^&]*/, '').replace(/[?&]order_id=[^&]*/, '').replace(/[?&]amount=[^&]*/, '');
+        window.history.replaceState({}, '', newUrl || '/');
+      }, 500);
+    } else if (isFail) {
+      // 결제 실패 시 메시지 표시
+      setTimeout(() => {
+        alert('❌ 결제에 실패하였습니다.\n네트워크 상태를 확인하시거나 카드 정보를 다시 확인해 주세요.');
+        
+        const newUrl = window.location.pathname + window.location.search.replace(/[?&]payment_fail=true[^&]*/, '').replace(/[?&]order_id=[^&]*/, '');
+        window.history.replaceState({}, '', newUrl || '/');
+      }, 500);
+    }
+  }, [fetchMySession]);
+
   // --- Draggable Cart Logic ---
   const handleDragStart = (e: any) => {
     isDragging.current = false;
