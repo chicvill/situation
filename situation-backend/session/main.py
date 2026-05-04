@@ -91,6 +91,7 @@ class OrderRequest(BaseModel):
     total_price: int
     payment_status: Optional[str] = "unpaid"
     payment_method: Optional[str] = None
+    metadata: Optional[Dict] = None
 
 class StatusUpdate(BaseModel):
     order_id: str
