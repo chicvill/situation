@@ -111,7 +111,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       <div style={{ borderTop:'1px solid var(--border)', paddingTop:'20px' }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <span style={{ color:'var(--text-muted)', fontWeight:500 }}>총 결제 금액</span>
-          <span style={{ color:'var(--accent)', fontSize:'1.4rem', fontWeight:700 }}>{totalPrice.toLocaleString()}원</span>
+          <span style={{ color:'var(--accent-orange)', fontSize:'1.4rem', fontWeight:700 }}>{totalPrice.toLocaleString()}원</span>
         </div>
       </div>
     </div>
@@ -126,29 +126,66 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       borderRadius:'var(--radius-lg)', padding:'28px', border:'1px solid var(--border)',
       boxShadow:'0 25px 60px rgba(0,0,0,0.1)',
     }}>
-      <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'24px' }}>
-        <button onClick={() => setStep('select')} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:'1.2rem', cursor:'pointer' }}>❮</button>
-        <h2 style={{ color:'var(--text-main)', margin:0, fontSize:'1.1rem', fontWeight:700 }}>포인트 적립</h2>
+      <div style={{ display:'flex', alignItems:'center', justifyContent: 'space-between', marginBottom:'30px' }}>
+        <button onClick={() => setStep('select')} style={{ background:'rgba(0,0,0,0.05)', border:'none', color:'var(--text-main)', width: '40px', height: '40px', borderRadius: '50%', cursor:'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>❮</button>
+        <h2 style={{ color:'var(--text-main)', margin:0, fontSize:'1.2rem', fontWeight:800 }}>결제 및 적립</h2>
+        <div style={{ width: '40px' }}></div>
       </div>
 
       {/* 선택된 결제수단 배지 */}
-      <div style={{ marginBottom:'20px', padding:'14px 18px', borderRadius:'14px', background:`${selectedMethod?.color}18`, border:`1px solid ${selectedMethod?.color}44`, display:'flex', alignItems:'center', gap:'12px' }}>
-        <span style={{ fontSize:'1.6rem' }}>{selectedMethod?.icon}</span>
-        <span style={{ color:'white', fontWeight:700 }}>{selectedMethod?.name}</span>
+      <div style={{ 
+        marginBottom:'20px', padding:'16px 20px', borderRadius:'16px', 
+        background:`${selectedMethod?.color}08`, border:`1px solid ${selectedMethod?.color}22`, 
+        display:'flex', alignItems:'center', gap:'12px' 
+      }}>
+        <span style={{ fontSize:'1.8rem' }}>{selectedMethod?.icon}</span>
+        <div>
+          <div style={{ color:'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600 }}>선택된 결제수단</div>
+          <div style={{ color: selectedMethod?.color, fontWeight:800, fontSize: '1rem' }}>{selectedMethod?.name}</div>
+        </div>
       </div>
 
       {/* 계좌이체 매장 계좌 안내 */}
       {selectedMethod?.id === 'transfer' && (
-        <div style={{ marginBottom:'16px', padding:'16px', borderRadius:'14px', background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.3)' }}>
-          <div style={{ color:'#f97316', fontSize:'0.75rem', fontWeight:700, marginBottom:'4px' }}>입금 계좌</div>
-          <div style={{ color:'white', fontWeight:700 }}>{bankInfo.name} {bankInfo.account}</div>
-          <div style={{ color:'rgba(255,255,255,0.5)', fontSize:'0.85rem' }}>예금주: {bankInfo.holder}</div>
+        <div style={{ 
+          marginBottom:'24px', padding:'20px', borderRadius:'16px', 
+          background:'rgba(249,115,22,0.05)', border:'1px solid rgba(249,115,22,0.15)' 
+        }}>
+          <div style={{ color:'#f97316', fontSize:'0.8rem', fontWeight:800, marginBottom:'8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            🏦 입금 계좌 정보
+          </div>
+          <div style={{ color:'var(--text-main)', fontWeight:800, fontSize: '1.1rem', marginBottom: '4px' }}>{bankInfo.name} {bankInfo.account}</div>
+          <div style={{ color:'var(--text-muted)', fontSize:'0.9rem', fontWeight: 500 }}>예금주: {bankInfo.holder}</div>
+          <button 
+            onClick={() => {
+              navigator.clipboard.writeText(bankInfo.account);
+              alert('계좌번호가 복사되었습니다.');
+            }}
+            style={{ 
+              marginTop: '12px', width: '100%', padding: '8px', borderRadius: '8px', 
+              border: '1px solid rgba(249,115,22,0.2)', background: 'white', 
+              color: '#f97316', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' 
+            }}
+          >
+            📋 계좌번호 복사하기
+          </button>
         </div>
       )}
 
-      {/* 포인트 적립 여부 체크 */}
-      <div style={{ marginBottom: '16px', padding: '16px', borderRadius: '16px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: accumulatePoints ? '15px' : '0' }}>
+      {/* 포인트 적립 영역 */}
+      <div style={{ 
+        marginBottom: '20px', padding: '20px', borderRadius: '20px', 
+        background: 'var(--bg-main)', border: '1px solid var(--border)' 
+      }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', marginBottom: accumulatePoints ? '20px' : '0' }}>
+          <div style={{ 
+            width: '24px', height: '24px', borderRadius: '6px', border: '2px solid var(--border)',
+            background: accumulatePoints ? 'var(--accent-orange)' : 'white',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.2s'
+          }}>
+            {accumulatePoints && <span style={{ color: 'white', fontSize: '14px' }}>✓</span>}
+          </div>
           <input 
             type="checkbox" 
             checked={accumulatePoints} 
@@ -159,38 +196,61 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 lookupPoints(initialPhone);
               }
             }} 
-            style={{ width: '20px', height: '20px', accentColor: '#f97316' }}
+            style={{ display: 'none' }}
           />
-          <span style={{ color: 'white', fontWeight: 700, fontSize: '1.05rem' }}>포인트 적립을 하시겠습니까?</span>
+          <span style={{ color: 'var(--text-main)', fontWeight: 800, fontSize: '1.05rem' }}>포인트 적립/사용</span>
         </label>
 
         {accumulatePoints && (
-          <div className="animate-fade-in">
-            <input
-              type="tel"
-              placeholder="010-0000-0000"
-              value={phoneForPoints}
-              onChange={(e) => {
-                const val = e.target.value.replace(/[^0-9]/g, '');
-                setPhoneForPoints(val);
-                if (val.length >= 10) lookupPoints(val);
-              }}
-              style={{
-                width: '100%', padding: '14px', borderRadius: '12px',
-                border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
-                color: 'white', fontSize: '1.1rem', outline: 'none', textAlign: 'center'
-              }}
-            />
-            <div style={{ display:'flex', justifyContent:'space-between', fontSize:'0.9rem', color:'white', marginTop: '12px' }}>
-              <span>적립 예정: <strong style={{ color:'#f97316' }}>+{potentialPoints.toLocaleString()}P</strong></span>
-              <span>보유: <strong>{existingPoints.toLocaleString()}P</strong></span>
+          <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            <div style={{ position: 'relative' }}>
+              <input
+                type="tel"
+                placeholder="휴대폰 번호 입력"
+                value={phoneForPoints}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^0-9]/g, '');
+                  setPhoneForPoints(val);
+                  if (val.length >= 10) lookupPoints(val);
+                }}
+                style={{
+                  width: '100%', padding: '16px', borderRadius: '12px',
+                  border: '1px solid var(--border)', background: 'white',
+                  color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: 700, 
+                  outline: 'none', textAlign: 'center', boxSizing: 'border-box'
+                }}
+              />
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '6px' }}>
+                번호 입력 시 자동으로 포인트를 조회합니다.
+              </div>
             </div>
+
+            <div style={{ 
+              display:'flex', justifyContent:'space-between', padding: '15px', 
+              background: 'white', borderRadius: '12px', border: '1px solid var(--border)' 
+            }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>보유 포인트</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>{existingPoints.toLocaleString()} P</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>적립 예정</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent-orange)' }}>+{potentialPoints.toLocaleString()} P</span>
+              </div>
+            </div>
+
             {existingPoints >= 1000 && (
               <button
                 onClick={() => setUsePoints(usePoints === 0 ? existingPoints : 0)}
-                style={{ width:'100%', marginTop:'12px', padding:'10px', background: usePoints > 0 ? '#f97316' : 'rgba(255,255,255,0.08)', color:'white', border:'none', borderRadius:'10px', fontWeight:700, cursor:'pointer' }}
+                style={{ 
+                  width:'100%', padding:'14px', borderRadius:'12px', fontWeight:800, cursor:'pointer',
+                  background: usePoints > 0 ? 'var(--text-main)' : 'white', 
+                  color: usePoints > 0 ? 'white' : 'var(--text-main)', 
+                  border: usePoints > 0 ? 'none' : '1px solid var(--text-main)',
+                  transition: 'all 0.2s'
+                }}
               >
-                {usePoints > 0 ? `사용 취소 (-${usePoints.toLocaleString()}원)` : `${existingPoints.toLocaleString()}P 포인트 사용`}
+                {usePoints > 0 ? `사용 취소 (-${usePoints.toLocaleString()}원)` : `모든 포인트 사용하기`}
               </button>
             )}
           </div>
@@ -199,32 +259,50 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
       {/* 현금영수증 (현금/계좌이체) */}
       {(selectedMethod?.id === 'cash' || selectedMethod?.id === 'transfer') && (
-        <label style={{ display:'flex', alignItems:'center', gap:'10px', marginBottom:'16px', color:'white', cursor:'pointer', padding:'14px', background:'rgba(255,255,255,0.03)', borderRadius:'12px' }}>
-          <input type="checkbox" checked={requestCashReceipt} onChange={e => setRequestCashReceipt(e.target.checked)} style={{ width:'16px', height:'16px' }} />
-          <span style={{ fontWeight:600 }}>현금영수증 발행 신청</span>
+        <label style={{ 
+          display:'flex', alignItems:'center', gap:'12px', marginBottom:'20px', 
+          cursor:'pointer', padding:'16px', background:'var(--bg-main)', 
+          borderRadius:'16px', border: '1px solid var(--border)'
+        }}>
+          <div style={{ 
+            width: '20px', height: '20px', borderRadius: '4px', border: '2px solid var(--border)',
+            background: requestCashReceipt ? 'var(--text-main)' : 'white',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}>
+            {requestCashReceipt && <span style={{ color: 'white', fontSize: '12px' }}>✓</span>}
+          </div>
+          <input type="checkbox" checked={requestCashReceipt} onChange={e => setRequestCashReceipt(e.target.checked)} style={{ display: 'none' }} />
+          <span style={{ fontWeight:700, color: 'var(--text-main)', fontSize: '0.95rem' }}>현금영수증 발행 신청</span>
         </label>
       )}
 
-      {/* 최종 금액 */}
-      <div style={{ borderTop:'1px dashed rgba(255,255,255,0.1)', paddingTop:'18px', marginBottom:'20px', display:'flex', justifyContent:'space-between', alignItems:'baseline' }}>
-        <span style={{ color:'#94a3b8', fontWeight:600 }}>최종 결제액</span>
-        <span style={{ color:'#f97316', fontSize:'1.6rem', fontWeight:900 }}>{finalTotal.toLocaleString()}원</span>
-      </div>
+      {/* 최종 금액 및 버튼 */}
+      <div style={{ 
+        borderTop:'2px solid var(--bg-main)', paddingTop:'24px', marginTop: '10px'
+      }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom: '20px' }}>
+          <span style={{ color:'var(--text-muted)', fontWeight:700, fontSize: '1rem' }}>최종 결제액</span>
+          <span style={{ color:'var(--accent-orange)', fontSize:'1.8rem', fontWeight:900 }}>{finalTotal.toLocaleString()}원</span>
+        </div>
 
-      {/* 완료 버튼 */}
-      <button
-        onClick={async () => {
-          try {
-            await onSubmit(selectedMethod?.name || '기타', { phone: phoneForPoints, usePoints });
-            onClose();
-          } catch (err) {
-            alert('결제 처리 중 오류가 발생했습니다.');
-          }
-        }}
-        style={{ width:'100%', padding:'18px', background:'var(--primary)', color:'white', border:'none', borderRadius:'16px', fontSize:'1.15rem', fontWeight:800, cursor:'pointer', boxShadow:'0 6px 20px rgba(0,0,0,0.2)', letterSpacing:'0.02em' }}
-      >
-        {finalTotal.toLocaleString()}원 결제하기
-      </button>
+        <button
+          onClick={async () => {
+            try {
+              await onSubmit(selectedMethod?.name || '기타', { phone: phoneForPoints, usePoints });
+              onClose();
+            } catch (err) {
+              alert('결제 처리 중 오류가 발생했습니다.');
+            }
+          }}
+          style={{ 
+            width:'100%', padding:'20px', background:'var(--primary)', color:'white', 
+            border:'none', borderRadius:'18px', fontSize:'1.2rem', fontWeight:900, 
+            cursor:'pointer', boxShadow:'0 10px 25px rgba(30, 41, 59, 0.15)' 
+          }}
+        >
+          {finalTotal.toLocaleString()}원 결제하기
+        </button>
+      </div>
     </div>
   );
 
