@@ -30,20 +30,28 @@ app.add_middleware(
 
 # --- Render Keep-Alive ---
 async def keep_alive_task():
-    """Render 서버가 잠들지 않도록 10분마다 Supabase에 더미 데이터를 쓰고 지웁니다."""
+    """Render 서버가 잠들지 않도록 10분마다 DB 작업 및 셀프 핑을 수행합니다."""
+    import httpx
     while True:
         try:
+            # 1. DB 작업 (요청하신 대로 1을 저장하고 지움)
             conn = get_db_conn()
             if conn:
                 cur = conn.cursor()
-                # 테이블 확인 및 더미 데이터 작업
                 cur.execute("CREATE TABLE IF NOT EXISTS render_keep_alive (id INTEGER PRIMARY KEY, val TEXT)")
-                cur.execute("INSERT INTO render_keep_alive (id, val) VALUES (1, 'keep_alive') ON CONFLICT (id) DO UPDATE SET val = 'keep_alive'")
+                cur.execute("INSERT INTO render_keep_alive (id, val) VALUES (1, '1') ON CONFLICT (id) DO UPDATE SET val = '1'")
                 cur.execute("DELETE FROM render_keep_alive WHERE id = 1")
                 conn.commit()
                 cur.close()
                 conn.close()
-                print(f"💓 [{datetime.now().strftime('%H:%M:%S')}] Render Keep-alive pulse sent.")
+                print(f"💓 [{datetime.now().strftime('%H:%M:%S')}] DB Keep-alive pulse sent.")
+
+            # 2. 셀프 핑 (HTTP 요청이 있어야 Render가 잠들지 않음)
+            render_url = os.getenv("RENDER_EXTERNAL_URL") or "http://localhost:8000"
+            async with httpx.AsyncClient() as client:
+                await client.get(render_url)
+                print(f"🌐 [{datetime.now().strftime('%H:%M:%S')}] Self-ping sent to {render_url}")
+
         except Exception as e:
             print(f"⚠️ Keep-alive pulse failed: {e}")
         
