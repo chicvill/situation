@@ -398,7 +398,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
                 </div>
                 {order.items.map((item: OrderItem, i: number) => {
                   const qty = item.quantity || item.qty || 0;
-                  const isPending = order.status === 'pending';
+                  const isPending = order.status === 'pending' || order.status === 'pending_payment';
                   return (
                     <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' }}>
                       <div style={{ flex: 1 }}>

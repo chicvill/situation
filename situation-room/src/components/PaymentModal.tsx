@@ -310,9 +310,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     <div style={{
       position:'fixed', inset:0, zIndex:4000,
       background:'rgba(0,0,0,0.85)', backdropFilter:'blur(10px)',
-      display:'flex', alignItems:'center', justifyContent:'center',
+      padding: '20px', display:'flex', alignItems:'center', justifyContent:'center',
     }}>
-      <div className="animate-pop-in">
+      <div className="animate-pop-in" style={{ 
+        maxHeight: '90vh', overflowY: 'auto', borderRadius: 'var(--radius-lg)',
+        scrollbarWidth: 'none', msOverflowStyle: 'none'
+      }}>
         {step === 'select' && renderSelect()}
         {step === 'points' && renderPoints()}
       </div>
