@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 import uuid
 import json
 import os
@@ -91,7 +91,7 @@ class OrderRequest(BaseModel):
     total_price: int
     payment_status: Optional[str] = "unpaid"
     payment_method: Optional[str] = None
-    metadata: Optional[Dict] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 class StatusUpdate(BaseModel):
     order_id: str

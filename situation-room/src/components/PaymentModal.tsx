@@ -312,7 +312,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       position:'fixed', inset:0, zIndex:4000,
       background:'rgba(0,0,0,0.85)', backdropFilter:'blur(10px)',
       padding: '40px 20px', display:'flex', flexDirection: 'column', alignItems:'center',
-      overflowY: 'auto', WebkitOverflowScrolling: 'touch'
+      overflowY: 'auto'
     }}>
       <div className="animate-pop-in" style={{ 
         width: '100%', maxWidth: '420px', borderRadius: 'var(--radius-lg)',

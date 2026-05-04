@@ -181,30 +181,44 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
 
     if (isSuccess) {
       // 결제 성공 시 메시지 표시 및 화면 갱신
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         alert('✅ 결제가 완료되었습니다.\n주문이 정상적으로 접수되어 조리를 시작합니다.');
         fetchMySession();
         setShowProgress(true); // 진행 현황 화면 표시
         
         // URL 파라미터 제거 (중복 알림 방지)
-        const newParams = new URLSearchParams(window.location.search);
-        newParams.delete('payment_success');
-        newParams.delete('order_id');
-        newParams.delete('amount');
-        const newSearch = newParams.toString();
-        window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
+        try {
+          const newParams = new URLSearchParams(window.location.search);
+          if (newParams.has('payment_success')) {
+            newParams.delete('payment_success');
+            newParams.delete('order_id');
+            newParams.delete('amount');
+            const newSearch = newParams.toString();
+            window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
+          }
+        } catch (e) {
+          console.error("URL cleanup failed", e);
+        }
       }, 500);
+      return () => clearTimeout(timer);
     } else if (isFail) {
       // 결제 실패 시 메시지 표시
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         alert('❌ 결제에 실패하였습니다.\n네트워크 상태를 확인하시거나 카드 정보를 다시 확인해 주세요.');
         
-        const newParams = new URLSearchParams(window.location.search);
-        newParams.delete('payment_fail');
-        newParams.delete('order_id');
-        const newSearch = newParams.toString();
-        window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
+        try {
+          const newParams = new URLSearchParams(window.location.search);
+          if (newParams.has('payment_fail')) {
+            newParams.delete('payment_fail');
+            newParams.delete('order_id');
+            const newSearch = newParams.toString();
+            window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
+          }
+        } catch (e) {
+          console.error("URL cleanup failed", e);
+        }
       }, 500);
+      return () => clearTimeout(timer);
     }
   }, [fetchMySession]);
 
@@ -253,7 +267,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     }
 
     window.addEventListener('popstate', handlePopState);
-    return () => window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [showHistory, showProgress]);
 
   useEffect(() => {
