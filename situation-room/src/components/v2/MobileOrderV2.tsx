@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import './MobileOrderV2.css';
 import type { BundleData } from '../../types';
-import { WS_BASE, API_BASE } from '../../config';
+import { WS_BASE, API_BASE, TOSS_CLIENT_KEY } from '../../config';
 import { PaymentModal } from '../PaymentModal';
 
 interface Props {
@@ -361,7 +361,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             return;
           }
 
-          const tossPayments = (window as any).TossPayments('test_ck_D5b4Zne68wxL1Pn6k0m8rlzYWBn1');
+          const tossPayments = (window as any).TossPayments(TOSS_CLIENT_KEY);
           const tossMethod = method.includes('카드') ? '카드' : '계좌이체';
           
           console.log(`💳 Redircting to Toss: ${tossMethod}, OrderId: ${orderId}`);
