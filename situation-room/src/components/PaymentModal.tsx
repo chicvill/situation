@@ -112,8 +112,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <span style={{ color:'var(--text-muted)', fontWeight:500 }}>총 결제 금액</span>
           <span style={{ color:'var(--accent-orange)', fontSize:'1.4rem', fontWeight:700 }}>{totalPrice.toLocaleString()}원</span>
-        </div>
       </div>
+      <div style={{ height: '20px' }}></div>
     </div>
   );
 
@@ -303,6 +303,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           {finalTotal.toLocaleString()}원 결제하기
         </button>
       </div>
+      <div style={{ height: '30px' }}></div>
     </div>
   );
 
@@ -310,11 +311,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     <div style={{
       position:'fixed', inset:0, zIndex:4000,
       background:'rgba(0,0,0,0.85)', backdropFilter:'blur(10px)',
-      padding: '20px', display:'flex', alignItems:'center', justifyContent:'center',
+      padding: '40px 20px', display:'flex', flexDirection: 'column', alignItems:'center',
+      overflowY: 'auto', WebkitOverflowScrolling: 'touch'
     }}>
       <div className="animate-pop-in" style={{ 
-        maxHeight: '90vh', overflowY: 'auto', borderRadius: 'var(--radius-lg)',
-        scrollbarWidth: 'none', msOverflowStyle: 'none'
+        width: '100%', maxWidth: '420px', borderRadius: 'var(--radius-lg)',
+        flexShrink: 0, margin: 'auto 0'
       }}>
         {step === 'select' && renderSelect()}
         {step === 'points' && renderPoints()}

@@ -383,7 +383,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   };
 
   const renderHistoryView = () => (
-    <div className="history-view animate-fade-in" style={{ fontSize: '0.65rem', padding: '15px' }}>
+    <div className="history-view animate-fade-in" style={{ fontSize: '0.65rem', padding: '15px 15px 100px' }}>
       <h2 className="section-title" style={{ fontSize: '1.2rem', marginBottom: '15px', textAlign: 'center' }}>내 주문 현황</h2>
       <div className="orders-stack">
         {myOrders.length === 0 ? <p style={{ textAlign:'center', opacity:0.5 }}>주문 내역이 없습니다.</p> : 
@@ -453,7 +453,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   );
 
   const renderCartView = () => (
-    <div className="cart-view animate-fade-in" style={{ padding: '20px' }}>
+    <div className="cart-view animate-fade-in" style={{ padding: '20px 20px 180px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '25px' }}>
         <button onClick={() => setShowCart(false)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', fontSize: '1.2rem', cursor: 'pointer' }}>❮</button>
         <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>장바구니 확인</h2>
