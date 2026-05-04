@@ -355,13 +355,22 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
           setShowProgress(true);
         } else {
           // 카드 / 계좌이체 -> 토스 결제창 호출
+          let activeKey = TOSS_CLIENT_KEY;
+          try {
+            const keyRes = await fetch(`${API_BASE}/api/config/toss-key`);
+            const keyData = await keyRes.json();
+            if (keyData.clientKey) activeKey = keyData.clientKey;
+          } catch (e) {
+            console.warn("Failed to fetch dynamic Toss key, using fallback", e);
+          }
+
           if (!(window as any).TossPayments) {
             alert('결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
             setIsOrdering(false);
             return;
           }
 
-          const tossPayments = (window as any).TossPayments(TOSS_CLIENT_KEY);
+          const tossPayments = (window as any).TossPayments(activeKey);
           const tossMethod = method.includes('카드') ? '카드' : '계좌이체';
           
           console.log(`💳 Redircting to Toss: ${tossMethod}, OrderId: ${orderId}`);
