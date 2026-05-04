@@ -294,6 +294,21 @@ def update_order_status(order_id: str, status: str):
         print(f"Update Order Status Error: {e}")
         return False
 
+def update_order_payment_status(order_id: str, payment_status: str):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE table_orders SET payment_status = %(ps)s WHERE order_id = %(oid)s", 
+                   {'ps': payment_status, 'oid': order_id})
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Update Order Payment Status Error: {e}")
+        return False
+
 def update_session_status(session_id: str, status: str):
     conn = get_db_conn()
     if not conn: return False

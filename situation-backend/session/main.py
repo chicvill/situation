@@ -12,7 +12,7 @@ import asyncio
 from .database import (
     save_session, save_order, get_active_session, 
     get_orders_by_session, update_order_status, get_max_order_seq, init_db_v2,
-    get_db_conn, get_situation_history
+    get_db_conn, get_situation_history, update_order_payment_status
 )
 import ai_engine
 
@@ -441,6 +441,15 @@ async def confirm_payment(data: Dict):
     
     # 실제 운영 환경에서는 여기서 토스 API 호출하여 승인 확인 필요
     # 현재는 목업(Mock)으로 성공 처리
+    update_order_payment_status(order_id, "paid")
+    update_order_status(order_id, "cooking")
+    
+    # 주방 및 테이블에 결제 완료 알림 전송
+    msg = {"type": "PAYMENT_CONFIRMED", "order_id": order_id, "status": "paid"}
+    await manager.broadcast_to_kitchen(msg)
+    for table_id in manager.active_connections:
+        await manager.send_to_table(table_id, msg)
+
     return {"status": "success", "order_id": order_id}
 
 @app.get("/api/points/{phone}")
@@ -492,7 +501,7 @@ async def process_order(order_req: OrderRequest):
         "device_id": order_req.device_id,
         "items": [item.dict() for item in order_req.items],
         "total_price": order_req.total_price,
-        "status": "cooking",
+        "status": "cooking" if order_req.payment_status != "pending" else "pending_payment",
         "payment_status": order_req.payment_status,
         "payment_method": order_req.payment_method,
         "order_seq": next_seq,
