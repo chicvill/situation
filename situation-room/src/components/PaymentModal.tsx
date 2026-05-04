@@ -113,7 +113,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           <span style={{ color:'var(--text-muted)', fontWeight:500 }}>총 결제 금액</span>
           <span style={{ color:'var(--accent-orange)', fontSize:'1.4rem', fontWeight:700 }}>{totalPrice.toLocaleString()}원</span>
       </div>
-      <div style={{ height: '20px' }}></div>
+        <div style={{ height: '20px' }}></div>
+      </div>
     </div>
   );
 
