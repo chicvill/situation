@@ -344,31 +344,46 @@ function App() {
         </div>
       )}
 
-      <header className="premium-top-bar" style={{ height: '85px', padding: '0 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1.2 }}>
-          {!isCustomerMode && <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: 'var(--text-main)', padding: 0 }}>☰</button>}
-          <div style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)', lineHeight: 1.1, letterSpacing: '-0.5px' }}>
-            {(storeName || '우리식당').split(' ').map((word, i) => <div key={i}>{word}</div>)}
+      <header className="premium-top-bar" style={{ 
+          padding: '15px 20px', 
+          background: 'var(--surface)',
+          borderBottom: '1px solid var(--border)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000
+      }}>
+        {/* Line 1: Hamburger + Store Name */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          {!isCustomerMode && (
+            <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: 'var(--text-main)', padding: 0 }}>
+              ☰
+            </button>
+          )}
+          <div style={{ fontSize: '1.4rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>
+            {storeName || '우리식당'}
           </div>
         </div>
 
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+        {/* Line 2: Manager + Date/Time */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {!isCustomerMode && (
             <div style={{ 
-              background: '#e2e8f0', color: 'var(--text-main)', padding: '6px 14px', 
-              borderRadius: '6px', fontSize: '0.9rem', fontWeight: '700', whiteSpace: 'nowrap' 
+              background: '#e2e8f0', color: 'var(--text-main)', padding: '4px 12px', 
+              borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' 
             }}>
               관리자
             </div>
           )}
-        </div>
-
-        <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: 1.2 }}>
-          <div style={{ color: '#ef4444', fontSize: '0.75rem', fontWeight: '700' }}>
-            {currentTime.getFullYear()}.{String(currentTime.getMonth()+1).padStart(2,'0')}.{String(currentTime.getDate()).padStart(2,'0')}
-          </div>
-          <div style={{ color: 'var(--text-main)', fontSize: '1.2rem', fontWeight: '900' }}>
-            {String(currentTime.getHours()).padStart(2,'0')}:{String(currentTime.getMinutes()).padStart(2,'0')}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <div style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: '700' }}>
+              {currentTime.getFullYear()}.{String(currentTime.getMonth()+1).padStart(2,'0')}.{String(currentTime.getDate()).padStart(2,'0')}
+            </div>
+            <div style={{ color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: '900' }}>
+              {String(currentTime.getHours()).padStart(2,'0')}:{String(currentTime.getMinutes()).padStart(2,'0')}
+            </div>
           </div>
         </div>
       </header>
