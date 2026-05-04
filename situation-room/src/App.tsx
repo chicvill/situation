@@ -16,7 +16,7 @@ import { WaitingManager } from './components/WaitingManager';
 import { ReservationManager } from './components/ReservationManager';
 import { Login } from './components/Login';
 import { StoreManualEditor } from './components/StoreManualEditor';
-import Orders from './components/v2/Orders';
+import MobileOrderV2 from './components/v2/MobileOrderV2';
 import { useSituation } from './hooks/useSituation';
 import { useStoreFilter } from './hooks/useStoreFilter';
 import './components/ConversationalUI.css';
@@ -287,7 +287,7 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'guide': return <ConversationalUI bundles={bundles} storeName={storeName} onNavigate={navigateTo as any} />;
-      case 'orderV2': return <Orders bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} />;
+      case 'orderV2': return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} />;
       case 'kitchen': return <KitchenDisplay />;
       case 'counter': return <CounterPad storeId={storeId} />;
       case 'display': return <DisplayBoard bundles={bundles} />;
