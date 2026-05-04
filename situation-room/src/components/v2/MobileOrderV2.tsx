@@ -347,7 +347,10 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         const orderId = orderData.order_id;
 
         // 2. 결제 수단별 분기 처리
-        if (method === '카운터에서 결제' || method === '현금 결제' || method === 'cash') {
+        const isCounterPay = method.includes('카운터') || method.includes('현금') || method.includes('cash');
+
+        if (isCounterPay) {
+          console.log("💰 Counter/Cash Payment - Skipping Toss");
           // 카운터에서 결제 (현금 등) -> 즉시 완료 단계로 이동
           setCart([]);
           fetchMySession();
@@ -355,6 +358,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
           setShowProgress(true);
         } else {
           // 카드 / 계좌이체 -> 토스 결제창 호출
+          console.log(`💳 Electronic Payment (${method}) - Initiating Toss`);
           let activeKey = TOSS_CLIENT_KEY;
           try {
             const keyRes = await fetch(`${API_BASE}/api/config/toss-key`);
