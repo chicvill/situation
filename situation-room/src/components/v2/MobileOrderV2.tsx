@@ -173,16 +173,23 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         setShowProgress(true); // 진행 현황 화면 표시
         
         // URL 파라미터 제거 (중복 알림 방지)
-        const newUrl = window.location.pathname + window.location.search.replace(/[?&]payment_success=true[^&]*/, '').replace(/[?&]order_id=[^&]*/, '').replace(/[?&]amount=[^&]*/, '');
-        window.history.replaceState({}, '', newUrl || '/');
+        const newParams = new URLSearchParams(window.location.search);
+        newParams.delete('payment_success');
+        newParams.delete('order_id');
+        newParams.delete('amount');
+        const newSearch = newParams.toString();
+        window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
       }, 500);
     } else if (isFail) {
       // 결제 실패 시 메시지 표시
       setTimeout(() => {
         alert('❌ 결제에 실패하였습니다.\n네트워크 상태를 확인하시거나 카드 정보를 다시 확인해 주세요.');
         
-        const newUrl = window.location.pathname + window.location.search.replace(/[?&]payment_fail=true[^&]*/, '').replace(/[?&]order_id=[^&]*/, '');
-        window.history.replaceState({}, '', newUrl || '/');
+        const newParams = new URLSearchParams(window.location.search);
+        newParams.delete('payment_fail');
+        newParams.delete('order_id');
+        const newSearch = newParams.toString();
+        window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
       }, 500);
     }
   }, [fetchMySession]);
@@ -379,6 +386,19 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
               </div>
             ))}
           </div>
+
+          {!isPaid && latestOrder?.payment_status === 'pending' && (
+            <div style={{ 
+              background: 'rgba(239, 68, 68, 0.1)', padding: '15px', borderRadius: '20px', 
+              border: '1px solid rgba(239, 68, 68, 0.3)', marginBottom: '20px',
+              animation: 'fadeIn 0.5s ease-in-out'
+            }}>
+              <p style={{ color: '#f87171', fontSize: '12px', fontWeight: 700, margin: 0, textAlign: 'center', lineHeight: 1.5 }}>
+                ⚠️ 결제가 아직 확인되지 않았습니다.<br/>
+                네트워크 지연이 발생할 수 있으니 잠시만 기다려 주세요.
+              </p>
+            </div>
+          )}
 
           <div className="glass-card" style={{ padding: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px' }}>
             <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '10px' }}>{aiStoryContent.icon}</div>
