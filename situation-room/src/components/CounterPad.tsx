@@ -124,10 +124,10 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
             const res = await fetch(`${apiUrl}/api/order/status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order_id: orderId, status: 'served' }) // served로 변경하여 결제 완료 처리
+                body: JSON.stringify({ order_id: orderId, status: 'paid' }) // paid로 변경하여 결제 완료 처리
             });
             if (res.ok) {
-                alert('부분 결제가 완료되었습니다.');
+                // alert 제거하여 흐름 끊김 방지
                 setSelectedOrderForPay(null);
                 fetchSessions();
             } else {
@@ -206,7 +206,6 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
             }}>
                 <div style={{ flex: 1 }}>
                     <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-main)' }}>활성 테이블 선택</h3>
-                    <p style={{ margin: '0 0 20px 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>사용할 테이블을 활성화해 주세요.</p>
                     
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                         {tables.map(num => {
@@ -253,7 +252,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                         setSelectedSessionForPay(null);
                         setSelectedOrderForPay(null);
                     }}
-                    onSubmit={() => {
+                    onSubmit={(method, extraData) => {
                         if (selectedOrderForPay) {
                             return handlePartialPayment(selectedOrderForPay.order_id);
                         } else {
@@ -368,20 +367,21 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                         삭제
                                                     </button>
                                                     <button 
+                                                        disabled={order.status === 'paid'}
                                                         onClick={() => setSelectedOrderForPay(order)}
                                                         style={{ 
-                                                            background: 'var(--accent)', 
+                                                            background: order.status === 'paid' ? 'var(--border)' : 'var(--accent)', 
                                                             border: 'none', 
-                                                            color: 'white', 
+                                                            color: order.status === 'paid' ? 'var(--text-muted)' : 'white', 
                                                             padding: '6px 16px', 
                                                             borderRadius: 'var(--radius-sm)', 
                                                             fontSize: '0.8rem', 
-                                                            cursor: 'pointer',
+                                                            cursor: order.status === 'paid' ? 'default' : 'pointer',
                                                             fontWeight: '600',
                                                             whiteSpace: 'nowrap'
                                                         }}
                                                     >
-                                                        결제
+                                                        {order.status === 'paid' ? '결제완료' : '결제'}
                                                     </button>
                                                 </div>
                                             </div>

@@ -87,14 +87,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         {METHODS.map(m => (
           <button
             key={m.id}
-            onClick={async () => {
+            onClick={() => {
               setSelectedMethod(m);
-              try {
-                await onSubmit(m.name);
-                setStep('points');
-              } catch (err) {
-                alert('주문 처리 중 오류가 발생했습니다.');
-              }
+              setStep('points');
             }}
             style={{
               display:'flex', alignItems:'center', gap:'16px', padding:'16px 20px',
@@ -218,10 +213,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
       {/* 완료 버튼 */}
       <button
-        onClick={onClose}
-        style={{ width:'100%', padding:'18px', background:'linear-gradient(135deg,#1e293b,#0f172a)', color:'white', border:'1px solid rgba(255,255,255,0.1)', borderRadius:'16px', fontSize:'1.15rem', fontWeight:800, cursor:'pointer', boxShadow:'0 6px 20px rgba(0,0,0,0.2)', letterSpacing:'0.02em' }}
+        onClick={async () => {
+          try {
+            await onSubmit(selectedMethod?.name || '기타', { phone: phoneForPoints, usePoints });
+            onClose();
+          } catch (err) {
+            alert('결제 처리 중 오류가 발생했습니다.');
+          }
+        }}
+        style={{ width:'100%', padding:'18px', background:'var(--primary)', color:'white', border:'none', borderRadius:'16px', fontSize:'1.15rem', fontWeight:800, cursor:'pointer', boxShadow:'0 6px 20px rgba(0,0,0,0.2)', letterSpacing:'0.02em' }}
       >
-        적립 완료 및 확인하기
+        {finalTotal.toLocaleString()}원 결제하기
       </button>
     </div>
   );

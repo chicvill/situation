@@ -73,6 +73,15 @@ def init_db_v2():
             )
         """)
         
+        # 4. 고객 포인트 테이블
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS customer_points (
+                phone TEXT PRIMARY KEY,
+                points INTEGER DEFAULT 0,
+                last_updated TEXT NOT NULL
+            )
+        """)
+        
         try:
             # device_id 컬럼 누락 방지 (기존 테이블 마이그레이션)
             cur.execute("ALTER TABLE table_sessions ADD COLUMN IF NOT EXISTS device_id TEXT")
@@ -369,3 +378,40 @@ def get_all_active_sessions(store_id: str = None):
     except Exception as e:
         print(f"Get All Active Sessions Error: {e}")
         return []
+def get_customer_points(phone: str):
+    conn = get_db_conn()
+    if not conn: return 0
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT points FROM customer_points WHERE phone = %(phone)s", {'phone': phone})
+        result = cur.fetchone()
+        cur.close()
+        conn.close()
+        return result[0] if result else 0
+    except Exception as e:
+        print(f"Get Points Error: {e}")
+        return 0
+
+def update_customer_points(phone: str, points_to_add: int):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO customer_points (phone, points, last_updated)
+            VALUES (%(phone)s, %(points)s, %(last_updated)s)
+            ON CONFLICT (phone) DO UPDATE SET
+                points = customer_points.points + %(points)s,
+                last_updated = %(last_updated)s
+        """, {
+            'phone': phone, 
+            'points': points_to_add, 
+            'last_updated': datetime.now().isoformat()
+        })
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Update Points Error: {e}")
+        return False

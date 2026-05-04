@@ -435,6 +435,12 @@ async def confirm_payment(data: Dict):
     # 현재는 목업(Mock)으로 성공 처리
     return {"status": "success", "order_id": order_id}
 
+@app.get("/api/points/{phone}")
+async def get_points(phone: str):
+    from .database import get_customer_points
+    points = get_customer_points(phone)
+    return {"phone": phone, "points": points}
+
 @app.post("/api/order/direct")
 async def process_order(order_req: OrderRequest):
     print(f"🔥 [Order Request] Table: {order_req.table_id}, Store: {order_req.store_id}, Price: {order_req.total_price}")
@@ -488,6 +494,17 @@ async def process_order(order_req: OrderRequest):
     # 4. DB 저장
     print(f"💾 [Saving Order] {order_id} to Session {session['session_id']}...")
     save_order(new_order)
+    
+    # 4-1. 포인트 처리 (metadata에 phone이 있는 경우)
+    metadata = order_req.metadata or {}
+    phone = metadata.get("phone")
+    if phone:
+        from .database import update_customer_points
+        # 기본 0.1% 적립
+        pts = int(order_req.total_price * 0.001)
+        update_customer_points(phone, pts)
+        print(f"💰 [Points] Accumulated {pts}P for {phone}")
+
     print(f"✨ [Order Saved Successfully] {order_id}")
     
     # 5. 주방에 알림 전송
