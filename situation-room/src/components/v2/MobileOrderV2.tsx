@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'; // Git Force Trigger: 2026-05-04 23:27
 import './MobileOrderV2.css';
 import type { BundleData } from '../../types';
 import { WS_BASE, API_BASE, TOSS_CLIENT_KEY } from '../../config';
