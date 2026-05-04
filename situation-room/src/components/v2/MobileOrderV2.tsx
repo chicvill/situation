@@ -52,6 +52,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   const [showPayModal, setShowPayModal] = useState(false);
   const [userPhone] = useState('');
   const [aiStoryContent, setAiStoryContent] = useState({ title: '', body: '', icon: '🍽️' });
+  const [showDelayedHelp, setShowDelayedHelp] = useState(false);
 
   // --- Memos & Config ---
   const tableNo = useMemo(() => {
@@ -158,6 +159,19 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     const timer = setInterval(fetchMySession, 5000);
     return () => { ws.close(); clearInterval(timer); };
   }, [tableId, storeId, fetchMySession]);
+
+  // --- Delayed Payment Watcher ---
+  useEffect(() => {
+    const latestOrder = myOrders.length > 0 ? myOrders[myOrders.length - 1] : null;
+    const isPending = latestOrder?.payment_status === 'pending';
+
+    if (showProgress && isPending) {
+      const timer = setTimeout(() => setShowDelayedHelp(true), 15000); // 15초 이상 지연 시
+      return () => clearTimeout(timer);
+    } else {
+      setShowDelayedHelp(false);
+    }
+  }, [showProgress, myOrders]);
 
   // --- Payment Result Handling ---
   useEffect(() => {
@@ -397,6 +411,31 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
                 ⚠️ 결제가 아직 확인되지 않았습니다.<br/>
                 네트워크 지연이 발생할 수 있으니 잠시만 기다려 주세요.
               </p>
+              
+              {showDelayedHelp && (
+                <div className="animate-fade-in" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed rgba(239, 68, 68, 0.2)' }}>
+                  <p style={{ color: 'white', fontSize: '11px', fontWeight: 500, margin: '0 0 8px 0', textAlign: 'center' }}>
+                    지속적으로 결제 확인이 안 되시나요?
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      onClick={() => alert('직원을 호출했습니다. 잠시만 기다려 주세요.')}
+                      style={{ flex: 1, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', padding: '8px', borderRadius: '10px', fontSize: '11px', fontWeight: 700 }}
+                    >
+                      카운터에 문의
+                    </button>
+                    <button 
+                      onClick={() => {
+                        alert('후불 결제(카운터 결제)로 전환을 요청했습니다. 식사 후 나가실 때 결제해 주세요.');
+                        setShowProgress(false);
+                      }}
+                      style={{ flex: 1, background: '#f97316', border: 'none', color: 'white', padding: '8px', borderRadius: '10px', fontSize: '11px', fontWeight: 800 }}
+                    >
+                      나중에 결제하기
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
