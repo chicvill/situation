@@ -132,13 +132,22 @@ function App() {
             const targetBundle = safeBundles.find(b => b.order_code === orderId || b.id === orderId);
             const items = targetBundle?.items.filter(i => i.name !== '결제수단' && i.name !== '테이블') || [];
             
-            setReceiptData({
+          setReceiptData({
               orderId,
               totalPrice: amount,
               paymentMethod: '카드',
               items: items,
               receiptUrl: `https://dashboard.tosspayments.com/sales-receipt?paymentKey=${paymentKey}`
-            });
+          });
+
+          // URL 정제 (중복 처리 방지)
+          const newParams = new URLSearchParams(window.location.search);
+          ['payment_success', 'payment_fail', 'order_id', 'amount', 'paymentKey'].forEach(p => newParams.delete(p));
+          const newSearch = newParams.toString();
+          window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
+          
+          // 하위 컴포넌트(MobileOrderV2 등)에 결제 완료 신호 전달
+          window.dispatchEvent(new CustomEvent('payment_finished', { detail: { orderId, success: true } }));
             window.history.replaceState({}, document.title, window.location.pathname);
           }
         } catch (err) {
@@ -310,7 +319,17 @@ function App() {
 
   return (
     <div className={`saas-container mobile-full-mode ${isCustomerMode ? 'customer-mode' : ''}`}>
-      {receiptData && <ReceiptModal {...receiptData} onClose={() => setReceiptData(null)} />}
+      {receiptData && (
+        <ReceiptModal 
+          {...receiptData} 
+          onClose={() => {
+            setReceiptData(null);
+            if (isCustomerMode) {
+              alert('✅ 결제가 완료되었습니다. 감사합니다.');
+            }
+          }} 
+        />
+      )}
       
       {isListening && (
         <div className="voice-overlay animate-fade-in">

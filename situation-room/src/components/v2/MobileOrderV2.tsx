@@ -174,43 +174,18 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     }
   }, [showProgress, myOrders]);
 
-  // --- Payment Result Handling ---
+  // --- Payment Result Handling (Event driven from App.tsx) ---
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const isSuccess = params.get('payment_success') === 'true';
-    const isFail = params.get('payment_fail') === 'true';
-    const orderId = params.get('order_id');
-    const amount = params.get('amount');
-
-    const cleanupUrl = () => {
-      try {
-        const newParams = new URLSearchParams(window.location.search);
-        ['payment_success', 'payment_fail', 'order_id', 'amount'].forEach(p => newParams.delete(p));
-        const newSearch = newParams.toString();
-        window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
-      } catch (e) { console.error("URL cleanup failed", e); }
+    const handleFinished = (e: any) => {
+      const { success } = e.detail;
+      if (success) {
+        fetchMySession();
+        setShowProgress(false); // 진행창 닫기 (주문창으로 이동)
+        setShowCart(false);     // 장바구니 초기화
+      }
     };
-
-    if (isSuccess && orderId) {
-      const confirmPayment = async () => {
-        try {
-          // orderId와 amount가 null이 아님을 보장하여 타입 에러 방지
-          await PaymentService.confirmOnBackend(orderId, amount || '0');
-          alert('✅ 결제가 완료되었습니다. 감사합니다.');
-          fetchMySession();
-          setShowProgress(false); // 진행창 닫기 (주문창으로 이동)
-          setShowCart(false);     // 장바구니 초기화
-          cleanupUrl();
-        } catch (err) {
-          console.error("Payment confirmation failed", err);
-          alert('⚠️ 결제 승인 처리 중 오류가 발생했습니다. 카운터에 문의해 주세요.');
-        }
-      };
-      confirmPayment();
-    } else if (isFail) {
-      alert('❌ 결제에 실패하였습니다.\n카드 한도나 네트워크 상태를 확인 후 다시 시도해 주세요.');
-      cleanupUrl();
-    }
+    window.addEventListener('payment_finished', handleFinished);
+    return () => window.removeEventListener('payment_finished', handleFinished);
   }, [fetchMySession]);
 
   // --- Draggable Cart Logic ---
