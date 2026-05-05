@@ -163,9 +163,12 @@ function App() {
           const newSearch = newParams.toString();
           window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
           
-          // 하위 컴포넌트(MobileOrderV2 등)에 결제 완료 신호 전달
-          window.dispatchEvent(new CustomEvent('payment_finished', { detail: { orderId, success: true } }));
-            window.history.replaceState({}, document.title, window.location.pathname);
+          // 하위 컴포넌트(MobileOrderV2 등)가 마운트될 시간을 주기 위해 약간의 지연 후 신호 전달
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('payment_finished', { detail: { orderId, success: true } }));
+          }, 500);
+
+          window.history.replaceState({}, document.title, window.location.pathname);
           }
         } catch (err) {
           console.error("Payment Confirmation Error:", err);

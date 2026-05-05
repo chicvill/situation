@@ -184,6 +184,15 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         setShowCart(false);    // 장바구니 초기화
       }
     };
+
+    // Fail-safe: 마운트 시점에 URL에 결제 성공 파라미터가 있다면 즉시 진행창 노출
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment_success') === 'true') {
+      fetchMySession();
+      setShowProgress(true);
+      setShowCart(false);
+    }
+
     window.addEventListener('payment_finished', handleFinished);
     return () => window.removeEventListener('payment_finished', handleFinished);
   }, [fetchMySession]);
