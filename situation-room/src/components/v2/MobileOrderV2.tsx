@@ -3,6 +3,7 @@ import './MobileOrderV2.css';
 import type { BundleData } from '../../types';
 import { WS_BASE, API_BASE, TOSS_CLIENT_KEY } from '../../config';
 import { PaymentModal } from '../PaymentModal';
+import { PaymentService } from '../../services/paymentService';
 
 interface Props {
   bundles: BundleData[];
@@ -178,47 +179,35 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     const params = new URLSearchParams(window.location.search);
     const isSuccess = params.get('payment_success') === 'true';
     const isFail = params.get('payment_fail') === 'true';
+    const orderId = params.get('order_id');
+    const amount = params.get('amount');
 
-    if (isSuccess) {
-      // 결제 성공 시 메시지 표시 및 화면 갱신
-      const timer = setTimeout(() => {
-        alert('✅ 결제가 완료되었습니다.\n주문이 정상적으로 접수되어 조리를 시작합니다.');
-        fetchMySession();
-        setShowProgress(true); // 진행 현황 화면 표시
-        
-        // URL 파라미터 제거 (중복 알림 방지)
+    const cleanupUrl = () => {
+      try {
+        const newParams = new URLSearchParams(window.location.search);
+        ['payment_success', 'payment_fail', 'order_id', 'amount'].forEach(p => newParams.delete(p));
+        const newSearch = newParams.toString();
+        window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
+      } catch (e) { console.error("URL cleanup failed", e); }
+    };
+
+    if (isSuccess && orderId) {
+      const confirmPayment = async () => {
         try {
-          const newParams = new URLSearchParams(window.location.search);
-          if (newParams.has('payment_success')) {
-            newParams.delete('payment_success');
-            newParams.delete('order_id');
-            newParams.delete('amount');
-            const newSearch = newParams.toString();
-            window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
-          }
-        } catch (e) {
-          console.error("URL cleanup failed", e);
+          await PaymentService.confirmOnBackend(orderId, amount || 0);
+          alert('✅ 결제가 완료되었습니다!\n주문이 주방으로 전달되어 조리를 시작합니다.');
+          fetchMySession();
+          setShowProgress(true);
+          cleanupUrl();
+        } catch (err) {
+          console.error("Payment confirmation failed", err);
+          alert('⚠️ 결제 승인 처리 중 오류가 발생했습니다. 카운터에 문의해 주세요.');
         }
-      }, 500);
-      return () => clearTimeout(timer);
+      };
+      confirmPayment();
     } else if (isFail) {
-      // 결제 실패 시 메시지 표시
-      const timer = setTimeout(() => {
-        alert('❌ 결제에 실패하였습니다.\n네트워크 상태를 확인하시거나 카드 정보를 다시 확인해 주세요.');
-        
-        try {
-          const newParams = new URLSearchParams(window.location.search);
-          if (newParams.has('payment_fail')) {
-            newParams.delete('payment_fail');
-            newParams.delete('order_id');
-            const newSearch = newParams.toString();
-            window.history.replaceState({}, '', window.location.pathname + (newSearch ? '?' + newSearch : ''));
-          }
-        } catch (e) {
-          console.error("URL cleanup failed", e);
-        }
-      }, 500);
-      return () => clearTimeout(timer);
+      alert('❌ 결제에 실패하였습니다.\n카드 한도나 네트워크 상태를 확인 후 다시 시도해 주세요.');
+      cleanupUrl();
     }
   }, [fetchMySession]);
 
@@ -320,80 +309,61 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   const executeOrderWithPayment = useCallback(async (method: string, extraData?: any) => {
     setIsOrdering(true);
     setShowPayModal(false);
+    
+    // [CP-00] 주문 시작 로그
+    PaymentService.log("CP-00", "Order process initiated", { method, cartSize: cart.length });
+
     try {
       const currentCart = [...cart];
       const usePoints = extraData?.usePoints || 0;
       const finalAmount = totalPrice - usePoints;
-      
-      console.log(`🚀 Payment Start: ${method}, Amount: ${finalAmount} (Original: ${totalPrice}, Points: ${usePoints})`);
 
-      // 1. 주문 생성 요청
+      // [CP-01] 백엔드 주문 생성 시도
+      PaymentService.log("CP-01", "Creating order on backend...");
       const res = await fetch(`${API_BASE}/api/order/direct`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           table_id: tableId, device_id: deviceId, store_id: storeId,
           items: cart.map(c => ({ name: c.name, quantity: c.qty || 1, price: c.price, qty: c.qty || 1 })),
-          total_price: finalAmount, // 실제 결제할 금액으로 주문 생성
-          // 카운터 결제는 unpaid, 카드는 결제 대기(pending) 상태로 시작
-          payment_status: (method === '카운터에서 결제' || method === '현금 결제' || method === 'cash') ? 'unpaid' : 'pending',
+          total_price: finalAmount,
+          payment_status: (method.includes('카운터') || method.includes('현금') || method.includes('cash')) ? 'unpaid' : 'pending',
           payment_method: method,
           metadata: extraData
         })
       });
 
-      if (res.ok) {
-        const orderData = await res.json();
-        const orderId = orderData.order_id;
-
-        // 2. 결제 수단별 분기 처리
-        const isCounterPay = method.includes('카운터') || method.includes('현금') || method.includes('cash');
-
-        if (isCounterPay) {
-          console.log("💰 Counter/Cash Payment - Skipping Toss");
-          // 카운터에서 결제 (현금 등) -> 즉시 완료 단계로 이동
-          setCart([]);
-          fetchMySession();
-          generateAiStory(currentCart);
-          setShowProgress(true);
-        } else {
-          // 카드 / 계좌이체 -> 토스 결제창 호출
-          console.log(`💳 Electronic Payment (${method}) - Initiating Toss`);
-          let activeKey = TOSS_CLIENT_KEY;
-          try {
-            const keyRes = await fetch(`${API_BASE}/api/config/toss-key`);
-            const keyData = await keyRes.json();
-            if (keyData.clientKey) activeKey = keyData.clientKey;
-          } catch (e) {
-            console.warn("Failed to fetch dynamic Toss key, using fallback", e);
-          }
-
-          if (!(window as any).TossPayments) {
-            alert('결제 모듈을 불러오는 중입니다. 잠시 후 다시 시도해 주세요.');
-            setIsOrdering(false);
-            return;
-          }
-
-          const tossPayments = (window as any).TossPayments(activeKey);
-          const tossMethod = method.includes('카드') ? '카드' : '계좌이체';
-          
-          console.log(`💳 Redircting to Toss: ${tossMethod}, OrderId: ${orderId}`);
-
-          await tossPayments.requestPayment(tossMethod, {
-            amount: finalAmount,
-            orderId: orderId,
-            orderName: `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,
-            customerName: '손님',
-            successUrl: `${window.location.origin}${window.location.pathname}?payment_success=true&order_id=${orderId}&amount=${finalAmount}`,
-            failUrl: `${window.location.origin}${window.location.pathname}?payment_fail=true&order_id=${orderId}`,
-          });
-        }
-      } else {
+      if (!res.ok) {
         const errorData = await res.json();
+        PaymentService.log("CP-01-ERR", "Backend order creation failed", errorData);
         throw new Error(errorData.detail || '주문 생성 실패');
       }
+
+      const orderData = await res.json();
+      const orderId = orderData.order_id;
+      PaymentService.log("CP-01", "Success: Order created", { orderId });
+
+      // [CP-02] 결제 수단 분기
+      const isCounterPay = method.includes('카운터') || method.includes('현금') || method.includes('cash');
+
+      if (isCounterPay) {
+        PaymentService.log("CP-02", "Counter/Cash Flow - Skipping external PG");
+        setCart([]);
+        fetchMySession();
+        generateAiStory(currentCart);
+        setShowProgress(true);
+      } else {
+        // [CP-03] 토스 결제 호출 (Service 모듈로 위임)
+        PaymentService.log("CP-02", "Electronic Payment Flow - Handoff to PaymentService");
+        await PaymentService.requestTossPayment(method, {
+          amount: finalAmount,
+          orderId: orderId,
+          orderName: `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,
+          customerName: '손님'
+        });
+      }
     } catch (err: any) { 
-      console.error("Order process failed", err);
+      PaymentService.log("CP-ERR-GLOBAL", "Process interrupted", err.message);
       alert(`주문 처리 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}`);
     } finally { 
       setIsOrdering(false); 
