@@ -365,7 +365,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
       }
     } catch (err: any) { 
       PaymentService.log("CP-ERR-GLOBAL", "Process interrupted", err.message);
-      alert(`주문 처리 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}`);
+      alert(`[CP-ERR] 주문 처리 중 오류가 발생했습니다: ${err.message || '알 수 없는 오류'}`);
     } finally { 
       setIsOrdering(false); 
     }

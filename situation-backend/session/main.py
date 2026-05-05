@@ -463,6 +463,8 @@ async def get_points(phone: str):
 async def get_toss_key():
     """프론트엔드에 토스 클라이언트 키 전달 (동적 로딩용)"""
     key = os.getenv("VITE_TOSS_CLIENT_KEY") or os.getenv("TOSS_CLIENT_KEY") or "test_ck_D5b4Zne68wxL1Pn6k0m8rlzYWBn1"
+    masked_key = f"{key[:8]}...{key[-4:]}" if key else "None"
+    print(f"🔑 [Config] Serving Toss Client Key: {masked_key}")
     return {"clientKey": key}
 
 @app.post("/api/order/direct")
