@@ -194,7 +194,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     if (isSuccess && orderId) {
       const confirmPayment = async () => {
         try {
-          await PaymentService.confirmOnBackend(orderId, amount || 0);
+          // orderId와 amount가 null이 아님을 보장하여 타입 에러 방지
+          await PaymentService.confirmOnBackend(orderId, amount || '0');
           alert('✅ 결제가 완료되었습니다!\n주문이 주방으로 전달되어 조리를 시작합니다.');
           fetchMySession();
           setShowProgress(true);
