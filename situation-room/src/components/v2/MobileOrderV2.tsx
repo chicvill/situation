@@ -285,7 +285,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
 
   const executeOrderWithPayment = useCallback(async (method: string, extraData?: any) => {
     setIsOrdering(true);
-    setShowPayModal(false);
+    // setShowPayModal(false); // <--- 여기서 미리 닫지 않고, 서버 처리가 끝나면 닫도록 변경
     
     // [CP-00] 주문 시작 로그
     PaymentService.log("CP-00", "Order process initiated", { method, cartSize: cart.length });
@@ -322,6 +322,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
 
       // [CP-02] 결제 수단 분기
       const isCounterPay = method.includes('카운터') || method.includes('현금') || method.includes('cash');
+
+      // 주문서 생성이 완료되었으므로 이제 결제창을 닫습니다.
+      setShowPayModal(false);
 
       if (isCounterPay) {
         PaymentService.log("CP-02", "Counter/Cash Flow - Skipping external PG");
