@@ -154,7 +154,7 @@ function App() {
               totalPrice: amount,
               paymentMethod: '카드',
               items: items,
-              receiptUrl: `https://dashboard.tosspayments.com/sales-receipt?paymentKey=${paymentKey}`
+              receiptUrl: `https://dashboard.tosspayments.com/receipt/helper?paymentKey=${paymentKey}`
           });
 
           // URL 정제 (중복 처리 방지)
