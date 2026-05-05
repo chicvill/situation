@@ -180,8 +180,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
       const { success } = e.detail;
       if (success) {
         fetchMySession();
-        setShowProgress(false); // 진행창 닫기 (주문창으로 이동)
-        setShowCart(false);     // 장바구니 초기화
+        setShowProgress(true); // 진행창 보여주기 (주문 진행 현황으로 이동)
+        setShowCart(false);    // 장바구니 초기화
       }
     };
     window.addEventListener('payment_finished', handleFinished);

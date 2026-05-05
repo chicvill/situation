@@ -324,9 +324,7 @@ function App() {
           {...receiptData} 
           onClose={() => {
             setReceiptData(null);
-            if (isCustomerMode) {
-              alert('✅ 결제가 완료되었습니다. 감사합니다.');
-            }
+            // alert 제거: 결제 완료 후 바로 진행 현황판으로 연결되도록 함
           }} 
         />
       )}
