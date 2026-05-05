@@ -228,7 +228,7 @@ function App() {
   };
 
   // 시스템 관리자(Admin)인 경우 매장 선택 화면 노출
-  if (user.role === 'admin' && !selectedAdminStore) {
+  if (user?.role === 'admin' && !selectedAdminStore) {
     const stores = safeBundles.filter(b => b.type === 'StoreConfig');
     
     return (
@@ -357,7 +357,7 @@ function App() {
         </div>
       )}
 
-      {!isCustomerMode && (
+      {!isCustomerMode && user && (
         <div className={`side-menu-drawer ${isMenuOpen ? 'open' : ''}`}>
           <div className="drawer-header">
             <div className="drawer-logo">{storeName} <span>{user.role.toUpperCase()}</span></div>
@@ -394,7 +394,7 @@ function App() {
       }}>
         {/* Line 1: Hamburger + Store Name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          {!isCustomerMode && (
+          {!isCustomerMode && user && (
             <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: 'var(--text-main)', padding: 0 }}>
               ☰
             </button>
@@ -406,7 +406,7 @@ function App() {
 
         {/* Line 2: Manager + Date/Time */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          {!isCustomerMode && (
+          {!isCustomerMode && user && (
             <div style={{ 
               background: '#e2e8f0', color: 'var(--text-main)', padding: '4px 12px', 
               borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' 
@@ -431,7 +431,7 @@ function App() {
         </div>
       </main>
 
-      {!isCustomerMode && activeTab !== 'order' && activeTab !== 'orderV2' && (
+      {!isCustomerMode && user && activeTab !== 'order' && activeTab !== 'orderV2' && (
         <nav className="bottom-nav-bar-9" style={{ display: 'flex', overflowX: 'auto', gap: '5px', padding: '10px 15px', background: 'var(--surface)', borderTop: '1px solid var(--border)', justifyContent: 'space-between', alignItems: 'center' }}>
           {navItems.map((item, idx) => (
             <div key={idx} className={`nav-item-9 ${item.special ? 'mic-special-centered' : ''} ${activeTab === item.tab ? 'active' : ''}`} onClick={() => item.special ? startVoiceRecognition() : navigateTo(item.tab as MainTab)} style={{ minWidth: item.special ? '70px' : '50px', textAlign: 'center' }}>
