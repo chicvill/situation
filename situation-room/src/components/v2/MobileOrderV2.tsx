@@ -196,9 +196,10 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         try {
           // orderId와 amount가 null이 아님을 보장하여 타입 에러 방지
           await PaymentService.confirmOnBackend(orderId, amount || '0');
-          alert('✅ 결제가 완료되었습니다!\n주문이 주방으로 전달되어 조리를 시작합니다.');
+          alert('✅ 결제가 완료되었습니다. 감사합니다.');
           fetchMySession();
-          setShowProgress(true);
+          setShowProgress(false); // 진행창 닫기 (주문창으로 이동)
+          setShowCart(false);     // 장바구니 초기화
           cleanupUrl();
         } catch (err) {
           console.error("Payment confirmation failed", err);
