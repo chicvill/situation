@@ -87,9 +87,20 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         {METHODS.map(m => (
           <button
             key={m.id}
-            onClick={() => {
-              setSelectedMethod(m);
-              setStep('points');
+            onClick={async () => {
+              if (m.id === 'card' || m.id === 'transfer') {
+                // 카드/계좌이체는 즉시 결제창 호출
+                try {
+                  await onSubmit(m.name, { phone: '', usePoints: 0 });
+                  onClose();
+                } catch (err) {
+                  alert('결제 준비 중 오류가 발생했습니다.');
+                }
+              } else {
+                // 카운터 결제 등은 기존대로 포인트 확인 단계로 이동 가능 (혹은 선택)
+                setSelectedMethod(m);
+                setStep('points');
+              }
             }}
             style={{
               display:'flex', alignItems:'center', gap:'16px', padding:'16px 20px',

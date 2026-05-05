@@ -721,17 +721,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>[Table {tableNo}]</div>
-            
-            <button 
-              onClick={() => setShowHistory(true)}
-              style={{ 
-                background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', 
-                padding: '6px 12px', borderRadius: '12px', fontSize: '13px', fontWeight: 800, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '4px'
-              }}
-            >
-              💳 주문내역 / 결제 (출구)
-            </button>
           </div>
         </div>
 
