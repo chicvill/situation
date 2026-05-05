@@ -69,10 +69,27 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const mode = params.get('mode');
     
+    // 1. URL 모드 체크 (고객 등)
     if (mode === 'customer') {
-      setActiveTab('orderV2'); // 모든 고객 모드를 모바일 전용 UI로 통합
-      setUser({ id: 'guest', name: '손님', role: 'customer' });
-    } else if (mode === 'kitchen') {
+      const guest = { id: 'guest', name: '손님', role: 'customer' };
+      setActiveTab('orderV2');
+      setUser(guest);
+      return;
+    } 
+
+    // 2. 저장된 세션 복구 (영구 로그인)
+    const savedUser = localStorage.getItem('mqnet_user');
+    if (savedUser) {
+      try {
+        const u = JSON.parse(savedUser);
+        setUser(u);
+        // 저장된 탭 정보가 있다면 복구 (선택 사항)
+      } catch (e) {
+        localStorage.removeItem('mqnet_user');
+      }
+    }
+
+    if (mode === 'kitchen') {
       setActiveTab('kitchen');
     } else if (mode === 'counter') {
       setActiveTab('counter');
@@ -210,18 +227,6 @@ function App() {
     recognition.start();
   };
 
-  if (!user) return (
-    <Login 
-      onLogin={(userData) => {
-        setUser(userData);
-        if (userData.storeId && userData.storeName) {
-          updateStore(userData.storeId, userData.storeName);
-        }
-      }} 
-      bundles={bundles} 
-    />
-  );
-
   // 시스템 관리자(Admin)인 경우 매장 선택 화면 노출
   if (user.role === 'admin' && !selectedAdminStore) {
     const stores = safeBundles.filter(b => b.type === 'StoreConfig');
@@ -317,6 +322,21 @@ function App() {
     }
   };
 
+  const handleLogin = (u: any) => {
+    setUser(u);
+    if (u.storeId && u.storeName) {
+      updateStore(u.storeId, u.storeName);
+    }
+    if (u.role !== 'customer') {
+      localStorage.setItem('mqnet_user', JSON.stringify(u));
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('mqnet_user');
+  };
+
   return (
     <div className={`saas-container mobile-full-mode ${isCustomerMode ? 'customer-mode' : ''}`}>
       {receiptData && (
@@ -356,7 +376,7 @@ function App() {
               </>
             )}
             <hr style={{ margin: '15px 0', border: 'none', borderTop: '1px solid rgba(0,0,0,0.05)' }} />
-            <button onClick={() => setUser(null)} style={{ color: '#ef4444' }}>🔓 로그아웃</button>
+            <button onClick={() => handleLogout()} style={{ color: '#ef4444' }}>🔓 로그아웃</button>
           </nav>
         </div>
       )}
@@ -406,7 +426,9 @@ function App() {
       </header>
 
       <main className="saas-main-full" style={{ paddingBottom: isCustomerMode ? '0' : '90px' }}>
-        <div className="view-content">{renderContent()}</div>
+        <div className="view-content">
+          {user ? renderContent() : <Login onLogin={handleLogin} bundles={bundles} />}
+        </div>
       </main>
 
       {!isCustomerMode && activeTab !== 'order' && activeTab !== 'orderV2' && (
