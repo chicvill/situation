@@ -26,7 +26,7 @@ export const KitchenDisplay: React.FC = () => {
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
             // 모든 신규 주문이나 상태 업데이트 시 리프레시
-            if (data.type === 'NEW_ORDER' || data.type === 'STATUS_UPDATE') {
+            if (data.type === 'NEW_ORDER' || data.type === 'STATUS_UPDATE' || data.type === 'PAYMENT_CONFIRMED') {
                 fetchKitchenOrders();
             }
         };

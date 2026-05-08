@@ -1,8 +1,9 @@
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import psycopg2  # type: ignore
+from psycopg2.extras import RealDictCursor  # type: ignore
 import os
 import json
 from datetime import datetime
+from typing import Optional
 from dotenv import load_dotenv, find_dotenv
 
 # .env 파일 로드 (상위 디렉토리 포함 자동 탐색)
@@ -79,6 +80,92 @@ def init_db_v2():
                 phone TEXT PRIMARY KEY,
                 points INTEGER DEFAULT 0,
                 last_updated TEXT NOT NULL
+            )
+        """)
+        
+        # 5. 스마트 대기 테이블 (table_waitings)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS table_waitings (
+                waiting_id TEXT PRIMARY KEY,
+                phone_number TEXT NOT NULL,
+                party_size INTEGER NOT NULL,
+                status TEXT DEFAULT 'waiting',
+                timestamp TEXT NOT NULL
+            )
+        """)
+        
+        # 6. 스마트 직원 호출 테이블 (table_calls)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS table_calls (
+                call_id TEXT PRIMARY KEY,
+                table_id TEXT NOT NULL,
+                session_id TEXT NOT NULL,
+                call_type TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',
+                timestamp TEXT NOT NULL
+            )
+        """)
+        
+        # 7. 실시간 사전 예약 테이블 (table_reservations)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS table_reservations (
+                reservation_id TEXT PRIMARY KEY,
+                customer_name TEXT NOT NULL,
+                phone_number TEXT NOT NULL,
+                party_size INTEGER NOT NULL,
+                reserved_time TEXT NOT NULL,
+                table_id TEXT NOT NULL,
+                status TEXT DEFAULT 'requested'
+            )
+        """)
+        
+        # 8. 원클릭 셀프 주차 테이블 (table_parkings)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS table_parkings (
+                parking_id TEXT PRIMARY KEY,
+                session_id TEXT NOT NULL,
+                vehicle_number TEXT NOT NULL,
+                discount_minutes INTEGER NOT NULL,
+                status TEXT DEFAULT 'applied',
+                timestamp TEXT NOT NULL
+            )
+        """)
+        
+        # 9. 스태프 마스터 테이블 (table_staff_accounts)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS table_staff_accounts (
+                staff_id TEXT PRIMARY KEY,
+                store_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                role TEXT NOT NULL,
+                hourly_wage INTEGER NOT NULL,
+                status TEXT DEFAULT 'pending',
+                contract_period JSONB NOT NULL
+            )
+        """)
+
+        # 10. 일일 출퇴근 타임카드 테이블 (table_attendance_logs)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS table_attendance_logs (
+                log_id TEXT PRIMARY KEY,
+                staff_id TEXT NOT NULL,
+                store_id TEXT NOT NULL,
+                check_in_time TEXT,
+                check_out_time TEXT,
+                work_minutes INTEGER,
+                status TEXT DEFAULT 'working',
+                tardy BOOLEAN DEFAULT FALSE
+            )
+        """)
+
+        # 11. 스태프 스케줄 테이블 (table_staff_schedules)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS table_staff_schedules (
+                schedule_id TEXT PRIMARY KEY,
+                staff_id TEXT NOT NULL,
+                day_of_week INTEGER NOT NULL,
+                start_time TEXT NOT NULL,
+                end_time TEXT NOT NULL
             )
         """)
         
@@ -343,7 +430,7 @@ def get_max_order_seq(session_id: str):
         print(f"Get Max Order Seq Error: {e}")
         return 0
 
-def get_kitchen_orders(store_id: str = None):
+def get_kitchen_orders(store_id: Optional[str] = None):
     conn = get_db_conn()
     if not conn: return []
     try:
@@ -368,7 +455,7 @@ def get_kitchen_orders(store_id: str = None):
         print(f"Get All Active Orders Error: {e}")
         return []
 
-def get_all_active_sessions(store_id: str = None):
+def get_all_active_sessions(store_id: Optional[str] = None):
     conn = get_db_conn()
     if not conn: return []
     try:
@@ -430,3 +517,426 @@ def update_customer_points(phone: str, points_to_add: int):
     except Exception as e:
         print(f"Update Points Error: {e}")
         return False
+
+# --- 🚶 5-1. 스마트 대기 관리 (Waiting) ---
+def save_waiting(waiting_data: dict):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        query = """
+            INSERT INTO table_waitings (waiting_id, phone_number, party_size, status, timestamp)
+            VALUES (%(waiting_id)s, %(phone_number)s, %(party_size)s, %(status)s, %(timestamp)s)
+            ON CONFLICT (waiting_id) DO UPDATE SET
+                status = EXCLUDED.status
+        """
+        cur.execute(query, {
+            'waiting_id': waiting_data['waiting_id'],
+            'phone_number': waiting_data['phone_number'],
+            'party_size': waiting_data['party_size'],
+            'status': waiting_data.get('status', 'waiting'),
+            'timestamp': waiting_data.get('timestamp', datetime.now().isoformat())
+        })
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Save Waiting Error: {e}")
+        return False
+
+def get_active_waitings():
+    conn = get_db_conn()
+    if not conn: return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM table_waitings WHERE status IN ('waiting', 'called') ORDER BY timestamp ASC")
+        results = cur.fetchall()
+        cur.close()
+        conn.close()
+        return results
+    except Exception as e:
+        print(f"Get Active Waitings Error: {e}")
+        return []
+
+def update_waiting_status(waiting_id: str, status: str):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE table_waitings SET status = %(status)s WHERE waiting_id = %(waiting_id)s",
+                   {'status': status, 'waiting_id': waiting_id})
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Update Waiting Status Error: {e}")
+        return False
+
+# --- 🛎️ 5-2. 스마트 직원 호출 (Staff Call) ---
+def save_call(call_data: dict):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        query = """
+            INSERT INTO table_calls (call_id, table_id, session_id, call_type, status, timestamp)
+            VALUES (%(call_id)s, %(table_id)s, %(session_id)s, %(call_type)s, %(status)s, %(timestamp)s)
+            ON CONFLICT (call_id) DO UPDATE SET
+                status = EXCLUDED.status
+        """
+        cur.execute(query, {
+            'call_id': call_data['call_id'],
+            'table_id': call_data['table_id'],
+            'session_id': call_data['session_id'],
+            'call_type': call_data['call_type'],
+            'status': call_data.get('status', 'pending'),
+            'timestamp': call_data.get('timestamp', datetime.now().isoformat())
+        })
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Save Call Error: {e}")
+        return False
+
+def get_active_calls(table_id: Optional[str] = None):
+    conn = get_db_conn()
+    if not conn: return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        if table_id:
+            cur.execute("SELECT * FROM table_calls WHERE table_id = %(table_id)s AND status = 'pending' ORDER BY timestamp ASC", {'table_id': table_id})
+        else:
+            cur.execute("SELECT * FROM table_calls WHERE status = 'pending' ORDER BY timestamp ASC")
+        results = cur.fetchall()
+        cur.close()
+        conn.close()
+        return results
+    except Exception as e:
+        print(f"Get Active Calls Error: {e}")
+        return []
+
+def update_call_status(call_id: str, status: str):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE table_calls SET status = %(status)s WHERE call_id = %(call_id)s",
+                   {'status': status, 'call_id': call_id})
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Update Call Status Error: {e}")
+        return False
+
+# --- 📆 5-3. 실시간 사전 예약 (Reservation) ---
+def save_reservation(res_data: dict):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        query = """
+            INSERT INTO table_reservations (reservation_id, customer_name, phone_number, party_size, reserved_time, table_id, status)
+            VALUES (%(reservation_id)s, %(customer_name)s, %(phone_number)s, %(party_size)s, %(reserved_time)s, %(table_id)s, %(status)s)
+            ON CONFLICT (reservation_id) DO UPDATE SET
+                status = EXCLUDED.status,
+                table_id = EXCLUDED.table_id
+        """
+        cur.execute(query, {
+            'reservation_id': res_data['reservation_id'],
+            'customer_name': res_data['customer_name'],
+            'phone_number': res_data['phone_number'],
+            'party_size': res_data['party_size'],
+            'reserved_time': res_data['reserved_time'],
+            'table_id': res_data['table_id'],
+            'status': res_data.get('status', 'requested')
+        })
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Save Reservation Error: {e}")
+        return False
+
+def get_active_reservations():
+    conn = get_db_conn()
+    if not conn: return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM table_reservations WHERE status IN ('requested', 'confirmed') ORDER BY reserved_time ASC")
+        results = cur.fetchall()
+        cur.close()
+        conn.close()
+        return results
+    except Exception as e:
+        print(f"Get Active Reservations Error: {e}")
+        return []
+
+def update_reservation_status(res_id: str, status: str):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE table_reservations SET status = %(status)s WHERE reservation_id = %(res_id)s",
+                   {'status': status, 'res_id': res_id})
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Update Reservation Status Error: {e}")
+        return False
+
+# --- 🚗 5-4. 원클릭 셀프 주차 할인 (Parking) ---
+def save_parking(park_data: dict):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        query = """
+            INSERT INTO table_parkings (parking_id, session_id, vehicle_number, discount_minutes, status, timestamp)
+            VALUES (%(parking_id)s, %(session_id)s, %(vehicle_number)s, %(discount_minutes)s, %(status)s, %(timestamp)s)
+            ON CONFLICT (parking_id) DO UPDATE SET
+                status = EXCLUDED.status
+        """
+        cur.execute(query, {
+            'parking_id': park_data['parking_id'],
+            'session_id': park_data['session_id'],
+            'vehicle_number': park_data['vehicle_number'],
+            'discount_minutes': park_data['discount_minutes'],
+            'status': park_data.get('status', 'applied'),
+            'timestamp': park_data.get('timestamp', datetime.now().isoformat())
+        })
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Save Parking Error: {e}")
+        return False
+
+def get_parking_by_session(session_id: str):
+    conn = get_db_conn()
+    if not conn: return None
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM table_parkings WHERE session_id = %(session_id)s LIMIT 1", {'session_id': session_id})
+        result = cur.fetchone()
+        cur.close()
+        conn.close()
+        return result
+    except Exception as e:
+        print(f"Get Parking By Session Error: {e}")
+        return None
+
+# --- 👥 9. 통합 매장 직원 및 근로 관리 (Staff & Labor Management) ---
+def save_staff(staff_data: dict):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        query = """
+            INSERT INTO table_staff_accounts (staff_id, store_id, name, role, hourly_wage, status, contract_period)
+            VALUES (%(staff_id)s, %(store_id)s, %(name)s, %(role)s, %(hourly_wage)s, %(status)s, %(contract_period)s)
+            ON CONFLICT (staff_id) DO UPDATE SET
+                status = EXCLUDED.status,
+                hourly_wage = EXCLUDED.hourly_wage,
+                contract_period = EXCLUDED.contract_period
+        """
+        cur.execute(query, {
+            'staff_id': staff_data['staff_id'],
+            'store_id': staff_data['store_id'],
+            'name': staff_data['name'],
+            'role': staff_data['role'],
+            'hourly_wage': staff_data['hourly_wage'],
+            'status': staff_data.get('status', 'pending'),
+            'contract_period': json.dumps(staff_data['contract_period']) if isinstance(staff_data['contract_period'], (dict, list)) else staff_data['contract_period']
+        })
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Save Staff Error: {e}")
+        return False
+
+def get_staff(staff_id: str):
+    conn = get_db_conn()
+    if not conn: return None
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM table_staff_accounts WHERE staff_id = %(staff_id)s", {'staff_id': staff_id})
+        res = cur.fetchone()
+        if res and isinstance(res['contract_period'], str):
+            res['contract_period'] = json.loads(res['contract_period'])
+        cur.close()
+        conn.close()
+        return res
+    except Exception as e:
+        print(f"Get Staff Error: {e}")
+        return None
+
+def get_active_staff_list(store_id: str = "default_store"):
+    conn = get_db_conn()
+    if not conn: return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM table_staff_accounts WHERE store_id = %(store_id)s", {'store_id': store_id})
+        rows = cur.fetchall()
+        for r in rows:
+            if r and isinstance(r['contract_period'], str):
+                r['contract_period'] = json.loads(r['contract_period'])
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"Get Active Staff List Error: {e}")
+        return []
+
+def update_staff_status(staff_id: str, status: str):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE table_staff_accounts SET status = %(status)s WHERE staff_id = %(staff_id)s",
+                   {'status': status, 'staff_id': staff_id})
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Update Staff Status Error: {e}")
+        return False
+
+def save_schedule(sched_data: dict):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        query = """
+            INSERT INTO table_staff_schedules (schedule_id, staff_id, day_of_week, start_time, end_time)
+            VALUES (%(schedule_id)s, %(staff_id)s, %(day_of_week)s, %(start_time)s, %(end_time)s)
+            ON CONFLICT (schedule_id) DO UPDATE SET
+                day_of_week = EXCLUDED.day_of_week,
+                start_time = EXCLUDED.start_time,
+                end_time = EXCLUDED.end_time
+        """
+        cur.execute(query, {
+            'schedule_id': sched_data['schedule_id'],
+            'staff_id': sched_data['staff_id'],
+            'day_of_week': sched_data['day_of_week'],
+            'start_time': sched_data['start_time'],
+            'end_time': sched_data['end_time']
+        })
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Save Schedule Error: {e}")
+        return False
+
+def get_staff_schedules(staff_id: str):
+    conn = get_db_conn()
+    if not conn: return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM table_staff_schedules WHERE staff_id = %(staff_id)s ORDER BY day_of_week ASC", {'staff_id': staff_id})
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"Get Staff Schedules Error: {e}")
+        return []
+
+def save_attendance_checkin(log_id: str, staff_id: str, store_id: str, check_in_time: str, tardy: bool = False):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        query = """
+            INSERT INTO table_attendance_logs (log_id, staff_id, store_id, check_in_time, status, tardy)
+            VALUES (%(log_id)s, %(staff_id)s, %(store_id)s, %(check_in_time)s, 'working', %(tardy)s)
+            ON CONFLICT (log_id) DO UPDATE SET
+                check_in_time = EXCLUDED.check_in_time,
+                tardy = EXCLUDED.tardy
+        """
+        cur.execute(query, {
+            'log_id': log_id,
+            'staff_id': staff_id,
+            'store_id': store_id,
+            'check_in_time': check_in_time,
+            'tardy': tardy
+        })
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Save Attendance Checkin Error: {e}")
+        return False
+
+def save_attendance_checkout(staff_id: str, check_out_time: str, work_minutes: int):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE table_attendance_logs 
+            SET check_out_time = %(check_out_time)s, 
+                work_minutes = %(work_minutes)s, 
+                status = 'completed'
+            WHERE staff_id = %(staff_id)s AND status = 'working'
+        """, {
+            'staff_id': staff_id,
+            'check_out_time': check_out_time,
+            'work_minutes': work_minutes
+        })
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Save Attendance Checkout Error: {e}")
+        return False
+
+def get_active_attendance_log(staff_id: str):
+    conn = get_db_conn()
+    if not conn: return None
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM table_attendance_logs WHERE staff_id = %(staff_id)s AND status = 'working' LIMIT 1", {'staff_id': staff_id})
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        return row
+    except Exception as e:
+        print(f"Get Active Attendance Log Error: {e}")
+        return None
+
+def get_staff_attendance_logs(staff_id: str, month: Optional[str] = None):
+    conn = get_db_conn()
+    if not conn: return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        query = "SELECT * FROM table_attendance_logs WHERE staff_id = %(staff_id)s"
+        params = {'staff_id': staff_id}
+        if month:
+            query += " AND check_in_time LIKE %(month)s"
+            params['month'] = f"{month}%"
+        query += " ORDER BY check_in_time DESC"
+        cur.execute(query, params)
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        return rows
+    except Exception as e:
+        print(f"Get Staff Attendance Logs Error: {e}")
+        return []

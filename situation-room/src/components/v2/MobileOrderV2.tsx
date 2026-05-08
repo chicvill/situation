@@ -142,6 +142,27 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     setCart(prev => prev.filter(c => c.name !== name));
   }, []);
 
+  const generateAiStory = useCallback((items: MenuItem[]) => {
+    if (items.length === 0) return;
+    const firstItem = items[0];
+    const stories: any = {
+      '스테이크': { title: '🥩 왕의 요리, 스테이크', body: '스테이크의 어원은 "구운 고기"를 뜻하는 스칸디나비아어 "steik"에서 유래했습니다. 고단백 영양소뿐만 아니라 철분이 풍부해 활력을 불어넣어 주죠.', icon: '🥩' },
+      '파스타': { title: '🍝 이탈리아의 자부심, 파스타', body: '파스타는 13세기 마르코 폴로가 중국에서 가져왔다는 설이 유명하지만, 사실 고대 로마 시대부터 즐겨 먹던 요리입니다. 듀럼밀 세몰리나로 만들어 천천히 소화되는 건강한 탄수화물이죠.', icon: '🍝' },
+      '커피': { title: '☕ 에티오피아의 눈물, 커피', body: '9세기 에티오피아의 목동 칼디가 발견한 커피는 전 세계에서 가장 사랑받는 음료가 되었습니다. 적당한 카페인은 집중력을 높여주고 항산화 성분이 풍부합니다.', icon: '☕' },
+      '와인': { title: '🍷 신의 물방울, 와인', body: '인류 역사와 함께해온 와인은 항산화제인 레스베라트롤이 풍부해 심혈관 건강에 도움을 줄 수 있습니다. 주문하신 메뉴와 환상적인 조화를 이룰 거예요.', icon: '🍷' }
+    };
+    const foundKey = Object.keys(stories).find(key => firstItem.name.includes(key));
+    if (foundKey) {
+      setAiStoryContent(stories[foundKey]);
+    } else {
+      setAiStoryContent({
+        title: `✨ ${firstItem.name}의 미식 이야기`,
+        body: `주문하신 ${firstItem.name}은(는) 셰프님이 가장 정성을 들여 준비하는 메뉴 중 하나입니다. 신선한 재료와 완벽한 조리법으로 최고의 맛을 선사해 드릴게요.`,
+        icon: '🍳'
+      });
+    }
+  }, []);
+
   // --- Effects ---
   useEffect(() => {
     fetchMySession();
@@ -194,6 +215,22 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     window.addEventListener('payment_finished', handleFinished);
     return () => window.removeEventListener('payment_finished', handleFinished);
   }, [fetchMySession]);
+
+  // --- Auto Generate AI Story for Electronic/Loaded Orders ---
+  useEffect(() => {
+    if (showProgress && myOrders.length > 0 && !aiStoryContent.title) {
+      const latestOrder = myOrders[myOrders.length - 1];
+      if (latestOrder && latestOrder.items && latestOrder.items.length > 0) {
+        generateAiStory(latestOrder.items as any);
+      }
+    }
+  }, [showProgress, myOrders, aiStoryContent.title, generateAiStory]);
+
+  useEffect(() => {
+    if (!showProgress) {
+      setAiStoryContent({ title: '', body: '', icon: '🍽️' });
+    }
+  }, [showProgress]);
 
   // --- Draggable Cart Logic ---
   const handleDragStart = (e: any) => {
@@ -250,26 +287,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     }).catch(err => console.error("Checkin Error:", err));
   }, [tableNo, deviceId, storeName, storeId]);
 
-  const generateAiStory = useCallback((items: MenuItem[]) => {
-    if (items.length === 0) return;
-    const firstItem = items[0];
-    const stories: any = {
-      '스테이크': { title: '🥩 왕의 요리, 스테이크', body: '스테이크의 어원은 "구운 고기"를 뜻하는 스칸디나비아어 "steik"에서 유래했습니다. 고단백 영양소뿐만 아니라 철분이 풍부해 활력을 불어넣어 주죠.', icon: '🥩' },
-      '파스타': { title: '🍝 이탈리아의 자부심, 파스타', body: '파스타는 13세기 마르코 폴로가 중국에서 가져왔다는 설이 유명하지만, 사실 고대 로마 시대부터 즐겨 먹던 요리입니다. 듀럼밀 세몰리나로 만들어 천천히 소화되는 건강한 탄수화물이죠.', icon: '🍝' },
-      '커피': { title: '☕ 에티오피아의 눈물, 커피', body: '9세기 에티오피아의 목동 칼디가 발견한 커피는 전 세계에서 가장 사랑받는 음료가 되었습니다. 적당한 카페인은 집중력을 높여주고 항산화 성분이 풍부합니다.', icon: '☕' },
-      '와인': { title: '🍷 신의 물방울, 와인', body: '인류 역사와 함께해온 와인은 항산화제인 레스베라트롤이 풍부해 심혈관 건강에 도움을 줄 수 있습니다. 주문하신 메뉴와 환상적인 조화를 이룰 거예요.', icon: '🍷' }
-    };
-    const foundKey = Object.keys(stories).find(key => firstItem.name.includes(key));
-    if (foundKey) {
-      setAiStoryContent(stories[foundKey]);
-    } else {
-      setAiStoryContent({
-        title: `✨ ${firstItem.name}의 미식 이야기`,
-        body: `주문하신 ${firstItem.name}은(는) 셰프님이 가장 정성을 들여 준비하는 메뉴 중 하나입니다. 신선한 재료와 완벽한 조리법으로 최고의 맛을 선사해 드릴게요.`,
-        icon: '🍳'
-      });
-    }
-  }, []);
+
 
 
 

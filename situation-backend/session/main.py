@@ -16,18 +16,6 @@ from .database import (
 )
 import ai_engine
 
-app = FastAPI()
-
-# DB 초기화
-init_db_v2()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 # --- Render Keep-Alive ---
 async def keep_alive_task():
     """Render 서버가 잠들지 않도록 10분마다 DB 작업 및 셀프 핑을 수행합니다."""
@@ -57,9 +45,25 @@ async def keep_alive_task():
         
         await asyncio.sleep(600) # 10분 간격
 
-@app.on_event("startup")
-async def startup_event():
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start render keepalive task
     asyncio.create_task(keep_alive_task())
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
+# DB 초기화
+init_db_v2()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Frontend Serving ---
 # Render 환경과 로컬 환경 모두 지원하는 경로 설정
@@ -162,7 +166,7 @@ def save_pool(pool):
         return False
 
 @app.get("/api/pool")
-async def get_pool(store_id: str = None):
+async def get_pool(store_id: Optional[str] = None):
     pool = load_pool()
     if store_id and store_id != "Total":
         # store_id가 일치하거나 매장 정보가 없는(공용) 번들만 반환
@@ -192,6 +196,8 @@ async def update_bundle(bundle_id: str, bundle: Dict):
 @app.post("/api/situation")
 async def process_situation(data: Dict):
     text = data.get("text")
+    if not isinstance(text, str):
+        raise HTTPException(status_code=400, detail="text must be a string")
     store = data.get("store", "Total")
     store_id = data.get("store_id")
     context = data.get("context", "")
@@ -215,7 +221,7 @@ async def process_situation(data: Dict):
     raise HTTPException(status_code=500, detail="Failed to save situation")
 
 @app.delete("/api/pool")
-async def reset_pool(store_id: str = None):
+async def reset_pool(store_id: Optional[str] = None):
     if not store_id or store_id == "Total":
         save_pool([])
     else:
@@ -229,7 +235,7 @@ async def reset_pool(store_id: str = None):
 async def check_in(data: Dict):
     store_id = data.get("store_id", "default_store")
     table_id = data.get("table_id")
-    device_id = data.get("device_id") or ""
+    device_id = data.get("device_id") or data.get("deviceId") or ""
     
     if not table_id: raise HTTPException(status_code=400, detail="table_id required")
     
@@ -299,6 +305,8 @@ async def checkin_request(data: Dict):
     # CustomerOrder.tsx에서 보내는 형식에 맞춰 tableId 보정
     if "tableNo" in data and "table_id" not in data:
         data["table_id"] = f"T{data['tableNo'].zfill(2)}"
+    if "deviceId" in data and "device_id" not in data:
+        data["device_id"] = data["deviceId"]
     return await check_in(data)
 
 @app.get("/api/kitchen/orders")
@@ -334,6 +342,7 @@ async def reset_session(data: Dict):
 @app.post("/api/session/close")
 async def close_session(data: Dict):
     session_id = data.get("session_id")
+    force = data.get("force", False)
     if not session_id: raise HTTPException(status_code=400, detail="session_id required")
     
     from .database import update_session_status, get_orders_by_session, update_order_status
@@ -344,7 +353,7 @@ async def close_session(data: Dict):
     # 2. 아직 조리 중인 주문이 있는지 확인 (pending, cooking)
     has_pending = any(o['status'] in ['pending', 'cooking'] for o in orders)
     
-    if has_pending:
+    if has_pending and not force:
         # 조리 중인 주문이 있다면: 나온 음식들만 'paid'로 바꾸고 세션은 유지
         for order in orders:
             if order['status'] in ['ready', 'served']:
@@ -354,7 +363,7 @@ async def close_session(data: Dict):
         await manager.broadcast_to_kitchen({"type": "PARTIAL_SETTLEMENT", "session_id": session_id})
         return {"status": "partial", "message": "조리 중인 주문이 있어 세션을 유지합니다. 나온 음식만 정산되었습니다."}
     else:
-        # 모든 음식이 조리/서빙 완료되었다면: 전체 정산 및 세션 종료
+        # 모든 음식이 조리/서빙 완료되었거나 강제 종료인 경우: 전체 정산 및 세션 종료
         success = update_session_status(session_id, "closed")
         if success:
             for order in orders:
@@ -371,20 +380,24 @@ async def close_session(data: Dict):
 async def approve_join(data: Dict):
     """일행 합류 승인/거절 처리"""
     session_id = data.get("session_id")
-    target_device_id = data.get("device_id")
+    target_device_id = data.get("device_id") or data.get("deviceId")
     approved = data.get("approved", True)
     table_id = data.get("table_id")
     
     if not session_id or not target_device_id or not table_id:
         raise HTTPException(status_code=400, detail="Missing required fields")
     
-    # 해당 테이블의 모든 기기에 결과 전송
-    await manager.send_to_table(table_id, {
+    msg = {
         "type": "JOIN_RESPONSE",
         "device_id": target_device_id,
         "approved": approved,
-        "session_id": session_id
-    })
+        "session_id": session_id,
+        "table_id": table_id
+    }
+    # 해당 테이블의 모든 기기에 결과 전송
+    await manager.send_to_table(table_id, msg)
+    # 주방/카운터에도 알림 전송하여 대기 목록에서 제거되도록 함
+    await manager.broadcast_to_kitchen(msg)
     return {"status": "success"}
 
 @app.post("/api/message/send")
@@ -440,16 +453,24 @@ async def confirm_payment(data: Dict):
     
     print(f"💰 [Payment Confirm] Order: {order_id}, Amount: {amount}")
     
+    if not order_id or not isinstance(order_id, str):
+        raise HTTPException(status_code=400, detail="orderId is required and must be a string")
+    
     # 실제 운영 환경에서는 여기서 토스 API 호출하여 승인 확인 필요
     # 현재는 목업(Mock)으로 성공 처리
     update_order_payment_status(order_id, "paid")
     update_order_status(order_id, "cooking")
     
-    # 주방 및 테이블에 결제 완료 알림 전송
-    msg = {"type": "PAYMENT_CONFIRMED", "order_id": order_id, "status": "paid"}
-    await manager.broadcast_to_kitchen(msg)
+    # 주방 및 테이블에 결제 완료 알림 전송 (STATUS_UPDATE 및 PAYMENT_CONFIRMED 둘 다 전송하여 실시간 동기화 보장)
+    msg_confirmed = {"type": "PAYMENT_CONFIRMED", "order_id": order_id, "status": "paid"}
+    await manager.broadcast_to_kitchen(msg_confirmed)
+    
+    msg_update = {"type": "STATUS_UPDATE", "order_id": order_id, "status": "cooking", "payment_status": "paid"}
+    await manager.broadcast_to_kitchen(msg_update)
+    
     for table_id in manager.active_connections:
-        await manager.send_to_table(table_id, msg)
+        await manager.send_to_table(table_id, msg_confirmed)
+        await manager.send_to_table(table_id, msg_update)
 
     return {"status": "success", "order_id": order_id}
 
@@ -494,21 +515,26 @@ async def process_order(order_req: OrderRequest):
             "device_id": order_req.device_id
         })
     
-    print(f"✅ [Target Session] ID: {session['session_id']} | Table: {session['table_id']} | Store: {session['store_id']}")
+    session_dict = session if isinstance(session, dict) else {}
+    session_id = str(session_dict.get('session_id', ''))
+    table_id_val = str(session_dict.get('table_id', ''))
+    store_id_val = str(session_dict.get('store_id', ''))
+
+    print(f"✅ [Target Session] ID: {session_id} | Table: {table_id_val} | Store: {store_id_val}")
 
     # 2. 다음 차수 결정
-    current_max_seq = get_max_order_seq(session['session_id'])
+    current_max_seq = get_max_order_seq(session_id)
     next_seq = current_max_seq + 1
     
     # 3. 주문 객체 생성
     order_id = f"ORD-{uuid.uuid4().hex[:8].upper()}"
     new_order = {
         "order_id": order_id,
-        "session_id": session['session_id'],
+        "session_id": session_id,
         "store_id": effective_store_id,
         "table_id": order_req.table_id,
         "device_id": order_req.device_id,
-        "items": [item.dict() for item in order_req.items],
+        "items": [item.model_dump() for item in order_req.items],
         "total_price": order_req.total_price,
         "status": "cooking" if order_req.payment_status != "pending" else "pending_payment",
         "payment_status": order_req.payment_status,
@@ -518,7 +544,7 @@ async def process_order(order_req: OrderRequest):
     }
     
     # 4. DB 저장
-    print(f"💾 [Saving Order] {order_id} to Session {session['session_id']}...")
+    print(f"💾 [Saving Order] {order_id} to Session {session_id}...")
     save_order(new_order)
     
     # 4-1. 포인트 처리 (metadata에 phone이 있는 경우)
@@ -554,7 +580,7 @@ async def update_items(data: Dict):
     success = update_order_items(order_id, items, total_price)
     if success:
         # 주방/카운터에 업데이트 알림 전송 (필요시)
-        await manager.broadcast({"type": "ORDER_UPDATED", "order_id": order_id, "items": items, "total_price": total_price})
+        await manager.broadcast_to_kitchen({"type": "ORDER_UPDATED", "order_id": order_id, "items": items, "total_price": total_price})
         return {"status": "success"}
     raise HTTPException(status_code=500, detail="Update failed")
 
@@ -618,6 +644,8 @@ async def update_manual(data: dict):
 @app.post("/api/chat")
 async def chat(data: Dict):
     query = data.get("query")
+    if not isinstance(query, str):
+        raise HTTPException(status_code=400, detail="query must be a string")
     history = data.get("history", [])
     store_id = data.get("store_id", "store-1")
     
@@ -636,6 +664,477 @@ async def chat(data: Dict):
     # AI 엔진 호출 (매뉴얼 포함)
     response = ai_engine.analyze_history(query, pool_history, store=store_id, manual=manual)
     return {"response": response}
+
+# --- 🚶 5-1. 스마트 대기 관리 (Waiting) Endpoints ---
+@app.post("/api/waiting/register")
+async def register_waiting(data: Dict):
+    phone_number = data.get("phone_number") or data.get("phone")
+    party_size_raw = data.get("party_size") or data.get("partySize") or 1
+    try:
+        party_size = int(party_size_raw)
+    except:
+        party_size = 1
+        
+    if not phone_number:
+        raise HTTPException(status_code=400, detail="phone_number is required")
+        
+    waiting_id = f"WAIT-{uuid.uuid4().hex[:4].upper()}"
+    waiting_data = {
+        "waiting_id": waiting_id,
+        "phone_number": phone_number,
+        "party_size": party_size,
+        "status": "waiting",
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    from .database import save_waiting
+    if save_waiting(waiting_data):
+        # 주방/카운터에 실시간 알림 전송
+        await manager.broadcast_to_kitchen({
+            "type": "WAITING_REGISTERED",
+            "waiting_id": waiting_id,
+            "phone_number": phone_number,
+            "party_size": party_size
+        })
+        return waiting_data
+    raise HTTPException(status_code=500, detail="Failed to register waiting")
+
+@app.get("/api/waiting/active")
+async def get_active_waitings_endpoint():
+    from .database import get_active_waitings
+    return get_active_waitings()
+
+@app.post("/api/waiting/status")
+async def update_waiting_status_endpoint(data: Dict):
+    waiting_id = data.get("waiting_id") or data.get("waitingId")
+    status = data.get("status")
+    
+    if not waiting_id or not status:
+        raise HTTPException(status_code=400, detail="waiting_id and status required")
+        
+    from .database import update_waiting_status
+    if update_waiting_status(waiting_id, status):
+        # 대기 상태 변경 알림 전파
+        await manager.broadcast_to_kitchen({
+            "type": "WAITING_UPDATED",
+            "waiting_id": waiting_id,
+            "status": status
+        })
+        return {"status": "success"}
+    raise HTTPException(status_code=500, detail="Failed to update waiting status")
+
+# --- 🛎️ 5-2. 스마트 직원 호출 (Staff Call) Endpoints ---
+@app.post("/api/call")
+async def staff_call(data: Dict):
+    table_id = data.get("table_id") or data.get("tableId")
+    call_type = data.get("call_type") or data.get("callType") or "직원호출"
+    
+    if not table_id:
+        raise HTTPException(status_code=400, detail="table_id required")
+        
+    # 현재 활성 세션 가져와서 호출 기록을 세션에 종속시키기
+    from .database import get_active_session, save_call
+    active = get_active_session("default_store", table_id)
+    session_id = active['session_id'] if active else "SESS-NONE"
+    
+    call_id = f"CALL-{uuid.uuid4().hex[:4].upper()}"
+    call_data = {
+        "call_id": call_id,
+        "table_id": table_id,
+        "session_id": session_id,
+        "call_type": call_type,
+        "status": "pending",
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    if save_call(call_data):
+        # 주방/카운터에 실시간 호출 브로드캐스트
+        msg = {
+            "type": "STAFF_CALL",
+            "call_id": call_id,
+            "table_id": table_id,
+            "call_type": call_type,
+            "status": "pending"
+        }
+        await manager.broadcast_to_kitchen(msg)
+        await manager.send_to_table(table_id, msg)
+        return call_data
+    raise HTTPException(status_code=500, detail="Failed to process staff call")
+
+@app.get("/api/call/active")
+async def get_active_calls_endpoint(table_id: Optional[str] = None):
+    from .database import get_active_calls
+    return get_active_calls(table_id)
+
+@app.post("/api/call/status")
+async def update_call_status_endpoint(data: Dict):
+    call_id = data.get("call_id") or data.get("callId")
+    status = data.get("status")
+    
+    if not call_id or not status:
+        raise HTTPException(status_code=400, detail="call_id and status required")
+        
+    from .database import update_call_status
+    if update_call_status(call_id, status):
+        msg = {
+            "type": "CALL_STATUS_UPDATED",
+            "call_id": call_id,
+            "status": status
+        }
+        await manager.broadcast_to_kitchen(msg)
+        return {"status": "success"}
+    raise HTTPException(status_code=500, detail="Failed to update call status")
+
+# --- 📆 5-3. 실시간 사전 예약 (Reservation) Endpoints ---
+@app.post("/api/reservation/request")
+async def request_reservation(data: Dict):
+    customer_name = data.get("customer_name") or data.get("customerName")
+    phone_number = data.get("phone_number") or data.get("phone")
+    party_size_raw = data.get("party_size") or data.get("partySize") or 1
+    reserved_time = data.get("reserved_time") or data.get("reservedTime")
+    table_id = data.get("table_id") or data.get("tableId") or "T01"
+    
+    try:
+        party_size = int(party_size_raw)
+    except:
+        party_size = 1
+        
+    if not customer_name or not phone_number or not reserved_time:
+        raise HTTPException(status_code=400, detail="customer_name, phone_number, and reserved_time are required")
+        
+    reservation_id = f"RESV-{uuid.uuid4().hex[:4].upper()}"
+    res_data = {
+        "reservation_id": reservation_id,
+        "customer_name": customer_name,
+        "phone_number": phone_number,
+        "party_size": party_size,
+        "reserved_time": reserved_time,
+        "table_id": table_id,
+        "status": "requested"
+    }
+    
+    from .database import save_reservation
+    if save_reservation(res_data):
+        await manager.broadcast_to_kitchen({
+            "type": "RESERVATION_UPDATED",
+            "reservation_id": reservation_id,
+            "status": "requested"
+        })
+        return res_data
+    raise HTTPException(status_code=500, detail="Failed to save reservation")
+
+@app.get("/api/reservation/active")
+async def get_active_reservations_endpoint():
+    from .database import get_active_reservations
+    return get_active_reservations()
+
+@app.post("/api/reservation/status")
+async def update_reservation_status_endpoint(data: Dict):
+    reservation_id = data.get("reservation_id") or data.get("reservationId")
+    status = data.get("status")
+    
+    if not reservation_id or not status:
+        raise HTTPException(status_code=400, detail="reservation_id and status required")
+        
+    from .database import update_reservation_status
+    if update_reservation_status(reservation_id, status):
+        await manager.broadcast_to_kitchen({
+            "type": "RESERVATION_UPDATED",
+            "reservation_id": reservation_id,
+            "status": status
+        })
+        return {"status": "success"}
+    raise HTTPException(status_code=500, detail="Failed to update reservation status")
+
+# --- 🚗 5-4. 원클릭 셀프 주차 할인 (Parking) Endpoints ---
+@app.post("/api/parking/validate")
+async def validate_parking(data: Dict):
+    session_id = data.get("session_id") or data.get("sessionId")
+    vehicle_number = data.get("vehicle_number") or data.get("vehicleNumber")
+    discount_minutes = data.get("discount_minutes") or data.get("discountMinutes") or 120
+    
+    if not session_id or not vehicle_number:
+        raise HTTPException(status_code=400, detail="session_id and vehicle_number are required")
+        
+    parking_id = f"PARK-{uuid.uuid4().hex[:4].upper()}"
+    park_data = {
+        "parking_id": parking_id,
+        "session_id": session_id,
+        "vehicle_number": vehicle_number,
+        "discount_minutes": int(discount_minutes),
+        "status": "applied",
+        "timestamp": datetime.now().isoformat()
+    }
+    
+    from .database import save_parking
+    if save_parking(park_data):
+        await manager.broadcast_to_kitchen({
+            "type": "PARKING_APPLIED",
+            "parking_id": parking_id,
+            "session_id": session_id,
+            "vehicle_number": vehicle_number,
+            "status": "applied"
+        })
+        return park_data
+    raise HTTPException(status_code=500, detail="Failed to save parking registration")
+
+@app.get("/api/parking/session/{session_id}")
+async def get_parking_by_session_endpoint(session_id: str):
+    from .database import get_parking_by_session
+    parking = get_parking_by_session(session_id)
+    return {"parking": parking}
+
+# --- 👥 9. 통합 매장 직원 및 근로 관리 (Staff & Labor Management) Endpoints ---
+@app.post("/api/staff/register")
+async def register_staff(data: Dict):
+    staff_id = f"STF-{uuid.uuid4().hex[:4].upper()}"
+    store_id = data.get("store_id") or "default_store"
+    name = data.get("name")
+    role = data.get("role") or "staff" # staff or manager
+    hourly_wage = int(data.get("hourly_wage") or 10500)
+    contract_start = data.get("contract_start") or datetime.now().strftime("%Y-%m-%d")
+    contract_end = data.get("contract_end") or "2026-12-31"
+    
+    if not name:
+        raise HTTPException(status_code=400, detail="name is required")
+        
+    staff_data = {
+        "staff_id": staff_id,
+        "store_id": store_id,
+        "name": name,
+        "role": role,
+        "hourly_wage": hourly_wage,
+        "status": "pending",
+        "contract_period": {
+            "start": contract_start,
+            "end": contract_end
+        }
+    }
+    
+    from .database import save_staff
+    if save_staff(staff_data):
+        await manager.broadcast_to_kitchen({
+            "type": "STAFF_REGISTERED",
+            "staff_id": staff_id,
+            "name": name,
+            "role": role
+        })
+        return staff_data
+    raise HTTPException(status_code=500, detail="Failed to register staff account")
+
+@app.get("/api/staff/list")
+async def get_staff_list(store_id: str = "default_store"):
+    from .database import get_active_staff_list
+    return get_active_staff_list(store_id)
+
+@app.post("/api/staff/approve")
+async def approve_staff(data: Dict):
+    staff_id = data.get("staff_id")
+    status = data.get("status") or "approved" # approved, retired
+    
+    if not staff_id:
+        raise HTTPException(status_code=400, detail="staff_id is required")
+        
+    from .database import update_staff_status
+    if update_staff_status(staff_id, status):
+        await manager.broadcast_to_kitchen({
+            "type": "STAFF_STATUS_UPDATED",
+            "staff_id": staff_id,
+            "status": status
+        })
+        return {"status": "success"}
+    raise HTTPException(status_code=500, detail="Failed to update staff status")
+
+@app.post("/api/staff/schedule")
+async def register_staff_schedule(data: Dict):
+    staff_id = data.get("staff_id")
+    day_of_week = int(data.get("day_of_week", 0)) # 0: Monday, ..., 6: Sunday
+    start_time = data.get("start_time") # format "HH:MM"
+    end_time = data.get("end_time") # format "HH:MM"
+    
+    if not staff_id or start_time is None or end_time is None:
+        raise HTTPException(status_code=400, detail="staff_id, start_time, and end_time are required")
+        
+    schedule_id = f"SCHED-{uuid.uuid4().hex[:4].upper()}"
+    sched_data = {
+        "schedule_id": schedule_id,
+        "staff_id": staff_id,
+        "day_of_week": day_of_week,
+        "start_time": start_time,
+        "end_time": end_time
+    }
+    
+    from .database import save_schedule
+    if save_schedule(sched_data):
+        return sched_data
+    raise HTTPException(status_code=500, detail="Failed to register schedule")
+
+@app.get("/api/staff/schedule/{staff_id}")
+async def get_staff_schedules_endpoint(staff_id: str):
+    from .database import get_staff_schedules
+    return get_staff_schedules(staff_id)
+
+@app.post("/api/staff/check-in")
+async def staff_check_in(data: Dict):
+    staff_id = data.get("staff_id")
+    store_id = data.get("store_id") or "default_store"
+    
+    if not staff_id:
+        raise HTTPException(status_code=400, detail="staff_id required")
+        
+    from .database import get_staff, get_staff_schedules, save_attendance_checkin, get_active_attendance_log
+    
+    staff = get_staff(staff_id)
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff account not found")
+        
+    if staff['status'] != 'approved':
+        raise HTTPException(status_code=400, detail="승인된 직원만 출퇴근이 가능합니다. 점주의 승인을 받으세요.")
+        
+    # 계약 기간 확인
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    contract = staff['contract_period']
+    if not (contract.get("start") <= today_str <= contract.get("end")):
+        raise HTTPException(status_code=400, detail="근로계약 기간 외 출퇴근은 불가합니다. 계약 기간을 확인하세요.")
+        
+    # 이미 출근 중인지 확인
+    active_log = get_active_attendance_log(staff_id)
+    if active_log:
+        raise HTTPException(status_code=400, detail="이미 출근 상태입니다.")
+        
+    # 요일별 스케줄 체크 (0: 월요일, ..., 6: 일요일)
+    current_weekday = datetime.now().weekday()
+    schedules = get_staff_schedules(staff_id)
+    today_schedule = next((s for s in schedules if s['day_of_week'] == current_weekday), None)
+    
+    if not today_schedule:
+        raise HTTPException(status_code=400, detail="오늘 배정된 근무 일정이 없습니다. 점주 수동 등록이 필요합니다.")
+        
+    # 10분 가드 계산
+    now = datetime.now()
+    sched_start_str = today_schedule['start_time'] # e.g., "10:00"
+    try:
+        shour, smin = map(int, sched_start_str.split(":"))
+        sched_time = now.replace(hour=shour, minute=smin, second=0, microsecond=0)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"스케줄 형식 오류: {e}")
+        
+    diff_minutes = (now - sched_time).total_seconds() / 60.0
+    
+    # 가드 분배
+    if diff_minutes < -10.0:
+        raise HTTPException(status_code=400, detail=f"출근 스케줄 시작 10분 전부터만 출근 등록이 가능합니다. (출근예정: {sched_start_str})")
+    elif diff_minutes > 10.0:
+        raise HTTPException(status_code=400, detail=f"출근 허용 시간(10분)을 초과했습니다. 점주 수동 승인을 받으세요. (출근예정: {sched_start_str})")
+        
+    tardy = diff_minutes >= 1.0 # 1분 넘게 늦었으면 지각 처리
+    
+    log_id = f"ATT-{uuid.uuid4().hex[:6].upper()}"
+    check_in_time = now.isoformat()
+    
+    if save_attendance_checkin(log_id, staff_id, store_id, check_in_time, tardy):
+        msg = {
+            "type": "STAFF_ATTENDANCE_UPDATE",
+            "staff_id": staff_id,
+            "name": staff['name'],
+            "action": "check-in",
+            "tardy": tardy,
+            "timestamp": check_in_time
+        }
+        await manager.broadcast_to_kitchen(msg)
+        return {"status": "success", "tardy": tardy, "check_in_time": check_in_time}
+    raise HTTPException(status_code=500, detail="출근 저장 실패")
+
+@app.post("/api/staff/check-out")
+async def staff_check_out(data: Dict):
+    staff_id = data.get("staff_id")
+    if not staff_id:
+        raise HTTPException(status_code=400, detail="staff_id required")
+        
+    from .database import get_staff, get_staff_schedules, save_attendance_checkout, get_active_attendance_log
+    
+    staff = get_staff(staff_id)
+    if not staff: raise HTTPException(status_code=404, detail="Staff account not found")
+        
+    active_log = get_active_attendance_log(staff_id)
+    if not active_log:
+        raise HTTPException(status_code=400, detail="현재 출근 상태가 아닙니다. 먼저 출근 등록을 완료하세요.")
+        
+    # 요일별 스케줄 체크
+    current_weekday = datetime.now().weekday()
+    schedules = get_staff_schedules(staff_id)
+    today_schedule = next((s for s in schedules if s['day_of_week'] == current_weekday), None)
+    
+    now = datetime.now()
+    if today_schedule:
+        sched_end_str = today_schedule['end_time'] # e.g., "18:00"
+        try:
+            ehour, emin = map(int, sched_end_str.split(":"))
+            sched_time = now.replace(hour=ehour, minute=emin, second=0, microsecond=0)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"스케줄 형식 오류: {e}")
+            
+        diff_minutes = (now - sched_time).total_seconds() / 60.0
+        
+        if diff_minutes < -10.0:
+            raise HTTPException(status_code=400, detail=f"퇴근 스케줄 종료 10분 전부터만 퇴근 등록이 가능합니다. (퇴근예정: {sched_end_str})")
+        elif diff_minutes > 10.0:
+            raise HTTPException(status_code=400, detail=f"퇴근 허용 시간(10분)을 초과했습니다. 점주 수동 연장 승인을 받으세요. (퇴근예정: {sched_end_str})")
+            
+    # 근무시간 계산
+    check_in_dt = datetime.fromisoformat(active_log['check_in_time'])
+    work_minutes = int((now - check_in_dt).total_seconds() / 60)
+    if work_minutes < 0: work_minutes = 0
+    
+    check_out_time = now.isoformat()
+    if save_attendance_checkout(staff_id, check_out_time, work_minutes):
+        msg = {
+            "type": "STAFF_ATTENDANCE_UPDATE",
+            "staff_id": staff_id,
+            "name": staff['name'],
+            "action": "check-out",
+            "work_minutes": work_minutes,
+            "timestamp": check_out_time
+        }
+        await manager.broadcast_to_kitchen(msg)
+        return {"status": "success", "work_minutes": work_minutes, "check_out_time": check_out_time}
+    raise HTTPException(status_code=500, detail="퇴근 저장 실패")
+
+@app.get("/api/staff/payroll/{staff_id}")
+async def get_staff_payroll(staff_id: str, month: Optional[str] = None):
+    """지정 직원의 특정 월(Format YYYY-MM) 급여 산출 리포트"""
+    from .database import get_staff, get_staff_attendance_logs
+    staff = get_staff(staff_id)
+    if not staff: raise HTTPException(status_code=404, detail="Staff not found")
+        
+    logs = get_staff_attendance_logs(staff_id, month)
+    
+    total_minutes = sum(log['work_minutes'] or 0 for log in logs)
+    total_hours = total_minutes / 60.0
+    hourly_wage = staff['hourly_wage']
+    
+    base_wage = int(total_hours * hourly_wage)
+    
+    # 주휴수당 간단 연산식 (주 15시간 이상 기준 보정)
+    weekly_holiday_allowance = 0
+    if total_hours >= 60.0: # 한 달 누계 60시간(주 15시간 이상) 기준
+        weekly_holiday_allowance = int((total_hours / 40.0) * 8.0 * hourly_wage)
+        
+    net_payroll = int((base_wage + weekly_holiday_allowance) * 0.967) # 3.3% 사업소득세 원천징수 적용
+    
+    return {
+        "staff_id": staff_id,
+        "name": staff['name'],
+        "month": month or "All",
+        "hourly_wage": hourly_wage,
+        "total_hours": round(total_hours, 1),
+        "total_minutes": total_minutes,
+        "base_wage": base_wage,
+        "weekly_holiday_allowance": weekly_holiday_allowance,
+        "tax_deduction": int((base_wage + weekly_holiday_allowance) * 0.033),
+        "net_payroll": net_payroll,
+        "attendance_logs": logs
+    }
 
 @app.websocket("/ws/kitchen")
 async def ws_kitchen(websocket: WebSocket):

@@ -38,7 +38,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
         const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            if (['NEW_ORDER', 'STATUS_UPDATE', 'SESSION_CLOSED'].includes(data.type)) {
+            if (['NEW_ORDER', 'STATUS_UPDATE', 'SESSION_CLOSED', 'PAYMENT_CONFIRMED'].includes(data.type)) {
                 fetchSessions();
             }
             if (data.type === 'JOIN_REQUEST') {
@@ -85,6 +85,12 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                 })
             });
             if (!res.ok) throw new Error('Approval failed');
+            
+            // 승인 성공 시 로컬 상태에서 즉시 제거 (즉각적인 UI 반응 제공)
+            setPendingJoins(prev => {
+                const tableRequests = (prev[tableId] || []).filter(r => r.device_id !== deviceId);
+                return { ...prev, [tableId]: tableRequests };
+            });
         } catch (e) {
             console.error('Join Approval Error:', e);
             alert('승인 처리 중 오류가 발생했습니다.');
@@ -291,6 +297,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                     Array.isArray(sessions) && sessions.map((session) => {
                         const sessionTotal = session.orders.reduce((sum: number, o: any) => sum + o.total_price, 0);
                         const isPending = session.status === 'pending';
+                        const isAllPrepaid = session.orders.length > 0 && session.orders.every((o: any) => o.payment_status === 'prepaid' || o.payment_status === 'paid' || o.status === 'paid');
                         
                         return (
                             <div key={session.session_id} style={{ 
@@ -362,10 +369,10 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                                     <span style={{ 
                                                         fontSize: '0.75rem', 
-                                                        color: order.payment_status === 'prepaid' ? 'var(--danger)' : 'var(--text-muted)',
+                                                        color: (order.payment_status === 'prepaid' || order.payment_status === 'paid') ? '#10b981' : 'var(--text-muted)',
                                                         fontWeight: '600'
                                                     }}>
-                                                        {order.payment_status === 'prepaid' ? 'PREPAID' : 'POSTPAID'}
+                                                        {(order.payment_status === 'prepaid' || order.payment_status === 'paid') ? '선불' : '후불'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -454,12 +461,41 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                             >
                                                 초기화
                                             </button>
-                                            <button 
-                                                onClick={() => setSelectedSessionForPay(session)}
-                                                style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '10px 32px', borderRadius: 'var(--radius-sm)', fontWeight: '600', fontSize: '1rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                                            >
-                                                전체 결제
-                                            </button>
+                                            {isAllPrepaid ? (
+                                                <button 
+                                                    onClick={async () => {
+                                                        if (window.confirm('모든 주문이 선불로 결제 완료되었습니다. 테이블 세션을 종료하고 비우시겠습니까?')) {
+                                                            try {
+                                                                const apiUrl = getApiUrl();
+                                                                const res = await fetch(`${apiUrl}/api/session/close`, {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ session_id: session.session_id, force: true })
+                                                                });
+                                                                if (res.ok) {
+                                                                    alert('테이블 세션이 종료되고 비워졌습니다.');
+                                                                    fetchSessions();
+                                                                } else {
+                                                                    alert('종료 처리 중 오류가 발생했습니다.');
+                                                                }
+                                                            } catch (e) {
+                                                                console.error(e);
+                                                                alert('종료 처리 중 오류가 발생했습니다.');
+                                                            }
+                                                        }
+                                                    }}
+                                                    style={{ background: 'var(--accent)', border: 'none', color: 'white', padding: '10px 32px', borderRadius: 'var(--radius-sm)', fontWeight: '600', fontSize: '1rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                >
+                                                    결제완료
+                                                </button>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => setSelectedSessionForPay(session)}
+                                                    style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '10px 32px', borderRadius: 'var(--radius-sm)', fontWeight: '600', fontSize: '1rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                >
+                                                    전체 결제
+                                                </button>
+                                            )}
                                         </>
                                     )}
                                 </div>
