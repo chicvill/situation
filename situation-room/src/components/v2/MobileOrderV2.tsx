@@ -233,6 +233,26 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     }
   }, [showProgress]);
 
+  const requestStaffCall = useCallback(async (callType: string = "직원호출") => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const res = await fetch(`${apiUrl}/api/call`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          table_id: tableId,
+          call_type: callType
+        })
+      });
+      if (res.ok) {
+        alert(`🔔 직원을 호출했습니다: [요청 사항: ${callType}]`);
+      }
+    } catch (err) {
+      console.error("Staff call error:", err);
+      alert("호출을 전송하지 못했습니다. 카운터로 직접 문의해 주세요.");
+    }
+  }, [tableId]);
+
   // --- AI Voice Ordering Logic ---
   const speakResponse = (msg: string) => {
     if ('speechSynthesis' in window) {
@@ -247,6 +267,17 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   const parseVoiceCommand = useCallback((text: string) => {
     const textClean = text.replace(/\s+/g, '');
     
+    // 직원 호출 음성 키워드 매칭
+    if (textClean.includes('호출') || textClean.includes('도와줘') || textClean.includes('직원') || textClean.includes('벨') || textClean.includes('물좀') || textClean.includes('물주세') || textClean.includes('물필요')) {
+      const isWater = textClean.includes('물');
+      const callType = isWater ? "물 제공 요청" : "직원호출";
+      speakResponse(`${callType} 요청을 완료했습니다. 잠시만 기다려 주세요.`);
+      setVoiceToast(`🔔 [음성 인식] ${callType}을 요청했습니다.`);
+      requestStaffCall(callType);
+      setTimeout(() => setVoiceToast(null), 2500);
+      return;
+    }
+
     // 1. Utility commands
     if (textClean.includes('장바구니') || textClean.includes('결제') || textClean.includes('주문하기')) {
       if (cart.length > 0) {
@@ -758,27 +789,48 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>[Table {tableNo}]</div>
-            <button 
-              onClick={toggleVoiceOrdering}
-              style={{
-                background: isListening ? 'rgba(239, 68, 68, 0.2)' : 'rgba(249, 115, 22, 0.1)',
-                border: isListening ? '1px solid #ef4444' : '1px solid rgba(249, 115, 22, 0.3)',
-                color: isListening ? '#ef4444' : '#f97316',
-                borderRadius: '50px',
-                padding: '8px 16px',
-                fontSize: '12px',
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                boxShadow: isListening ? '0 0 15px rgba(239, 68, 68, 0.4)' : 'none',
-                animation: isListening ? 'pulse-voice 1.5s infinite' : 'none',
-                transition: 'all 0.3s'
-              }}
-            >
-              <span>{isListening ? '🔊 음성 인식 중...' : '🎙️ 말로 편하게 주문'}</span>
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                onClick={() => requestStaffCall("직원호출")}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#ef4444',
+                  borderRadius: '50px',
+                  padding: '8px 16px',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.3s'
+                }}
+              >
+                <span>🔔 직원 호출</span>
+              </button>
+              <button 
+                onClick={toggleVoiceOrdering}
+                style={{
+                  background: isListening ? 'rgba(239, 68, 68, 0.2)' : 'rgba(249, 115, 22, 0.1)',
+                  border: isListening ? '1px solid #ef4444' : '1px solid rgba(249, 115, 22, 0.3)',
+                  color: isListening ? '#ef4444' : '#f97316',
+                  borderRadius: '50px',
+                  padding: '8px 16px',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: isListening ? '0 0 15px rgba(239, 68, 68, 0.4)' : 'none',
+                  animation: isListening ? 'pulse-voice 1.5s infinite' : 'none',
+                  transition: 'all 0.3s'
+                }}
+              >
+                <span>{isListening ? '🔊 음성 인식 중...' : '🎙️ 말로 편하게 주문'}</span>
+              </button>
+            </div>
           </div>
         </div>
 
