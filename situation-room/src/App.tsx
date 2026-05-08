@@ -15,6 +15,7 @@ import { HRManager } from './components/HRManager';
 import { WaitingManager } from './components/WaitingManager';
 import { ReservationManager } from './components/ReservationManager';
 import { Login } from './components/Login';
+import { CallManager } from './components/CallManager';
 import { StoreManualEditor } from './components/StoreManualEditor';
 import MobileOrderV2 from './components/v2/MobileOrderV2';
 import { useSituation } from './hooks/useSituation';
@@ -314,8 +315,8 @@ function App() {
       case 'paper': return <PaperViewer />;
       case 'stats':
       case 'admin':
-      case 'call':
       case 'home': return <AdminDashboard bundles={bundles} />;
+      case 'call': return <CallManager />;
       case 'inventory': return <LogicInventory />;
       case 'manual': return <StoreManualEditor storeId={storeId} />;
       case 'hr': return <HRManager bundles={bundles} user={user} />;
