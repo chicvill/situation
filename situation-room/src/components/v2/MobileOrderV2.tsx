@@ -82,7 +82,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         
         // --- Image Selection Logic ---
         let photoUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=200&h=200"; // Default
-        if (nameClean.includes('에스프레소')) photoUrl = "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&q=80&w=200&h=200";
+        if (item.icon && (item.icon.startsWith('http://') || item.icon.startsWith('https://'))) {
+            photoUrl = item.icon;
+        } else if (nameClean.includes('에스프레소')) photoUrl = "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&q=80&w=200&h=200";
         else if (nameClean.includes('아메리카노')) photoUrl = "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=200&h=200";
         else if (nameClean.includes('스테이크')) photoUrl = "https://images.unsplash.com/photo-1546241072-48010ad2862c?auto=format&fit=crop&q=80&w=200&h=200";
         else if (nameClean.includes('파스타')) photoUrl = "https://images.unsplash.com/photo-1473093226795-af9932fe5856?auto=format&fit=crop&q=80&w=200&h=200";
