@@ -43,7 +43,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   const [myOrders, setMyOrders] = useState<Order[]>([]);
   const [activeCategory, setActiveCategory] = useState('전체');
   const [isOrdering, setIsOrdering] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
   const [cartPos, setCartPos] = useState({ x: 0, y: 0 });
   const isDragging = useRef(false);
@@ -231,19 +230,18 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   useEffect(() => {
     const handlePopState = () => {
       // 만약 서브 뷰가 열려있다면 닫고 브라우저 이동은 막음
-      if (showHistory || showProgress) {
-        setShowHistory(false);
+      if (showProgress) {
         setShowProgress(false);
       }
     };
 
-    if (showHistory || showProgress) {
+    if (showProgress) {
       window.history.pushState({ subView: true }, '');
     }
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [showHistory, showProgress]);
+  }, [showProgress]);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/checkin/request`, {
@@ -455,13 +453,16 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={() => { setShowProgress(false); setShowHistory(true); }}
-              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '12px', borderRadius: '15px', fontWeight: 700 }}>
-              주문현황 보기
-            </button>
-            <button onClick={() => setShowProgress(false)}
-              style={{ flex: 1, background: '#f97316', border: 'none', color: 'white', padding: '12px', borderRadius: '15px', fontWeight: 800 }}>
+          <div style={{ display: 'flex' }}>
+            <button onClick={() => {
+              setShowProgress(false);
+              if (onNavigate) {
+                onNavigate('home');
+              } else {
+                window.dispatchEvent(new CustomEvent('changeTab', { detail: 'home' }));
+              }
+            }}
+              style={{ flex: 1, background: '#f97316', border: 'none', color: 'white', padding: '16px', borderRadius: '15px', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer' }}>
               닫기
             </button>
           </div>
@@ -470,75 +471,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     );
   };
 
-  const renderHistoryView = () => (
-    <div className="history-view animate-fade-in" style={{ fontSize: '0.65rem', padding: '15px 15px 100px' }}>
-      <h2 className="section-title" style={{ fontSize: '1.2rem', marginBottom: '15px', textAlign: 'center' }}>내 주문 현황</h2>
-      <div className="orders-stack">
-        {myOrders.length === 0 ? <p style={{ textAlign:'center', opacity:0.5 }}>주문 내역이 없습니다.</p> : 
-          myOrders.map((order: Order, idx) => {
-            const isPaid = order.payment_status === 'paid' || order.payment_status === 'prepaid';
-            const borderColor = isPaid ? '#EF4444' : (order.status === 'served' ? '#10B981' : '#F59E0B');
-            return (
-              <div key={idx} className="glass-card order-card" style={{ borderLeft: `3px solid ${borderColor}`, padding: '10px', marginBottom: '10px' }}>
-                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'8px' }}>
-                  <span style={{ color: borderColor, fontWeight: 800 }}>{order.order_seq}차 주문 {isPaid && ' (결제완료)'}</span>
-                  <span style={{ color: borderColor, fontWeight: 900 }}>{order.status === 'cooking' ? '🔥 조리중' : '✅ 서빙완료'}</span>
-                </div>
-                {order.items.map((item: OrderItem, i: number) => {
-                  const qty = item.quantity || item.qty || 0;
-                  const isPending = order.status === 'pending' || order.status === 'pending_payment';
-                  return (
-                    <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'4px' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600 }}>{item.name}</div>
-                      </div>
-                      
-                      {isPending ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '8px' }}>
-                          <button onClick={() => {
-                            const newItems = [...order.items];
-                            newItems[i] = { ...item, quantity: Math.max(0, qty - 1) };
-                            handleUpdateOrderItem(order.order_id, newItems);
-                          }} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '14px' }}>-</button>
-                          <span style={{ fontWeight: 800, minWidth: '15px', textAlign: 'center' }}>{qty}</span>
-                          <button onClick={() => {
-                            const newItems = [...order.items];
-                            newItems[i] = { ...item, quantity: qty + 1 };
-                            handleUpdateOrderItem(order.order_id, newItems);
-                          }} style={{ background: 'none', border: 'none', color: '#f97316', fontSize: '14px' }}>+</button>
-                          <button onClick={() => {
-                            const newItems = order.items.filter((_: OrderItem, idx: number) => idx !== i);
-                            handleUpdateOrderItem(order.order_id, newItems);
-                          }} style={{ marginLeft: '5px', background: 'none', border: 'none', color: '#ef4444', fontSize: '10px' }}>✕</button>
-                        </div>
-                      ) : (
-                        <span style={{ fontWeight: '600' }}>{qty}개 | {(item.price * qty).toLocaleString()}원</span>
-                      )}
-                    </div>
-                  );
-                })}
-                <div style={{ textAlign:'right', marginTop:'8px', borderTop:'1px solid rgba(255,255,255,0.05)', paddingTop:'5px', fontWeight:900 }}>
-                  합계: {order.total_price.toLocaleString()}원
-                </div>
-              </div>
-            );
-          })
-        }
-        <div className="total-summary-card" style={{ textAlign:'center', padding:'20px' }}>
-          <div style={{ fontSize: '1.2rem', color: '#94a3b8', marginBottom: '10px' }}>총 합계</div>
-          <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#f97316' }}>{sessionTotal.toLocaleString()}원</div>
-          
-          <button 
-            onClick={() => setShowHistory(false)}
-            className="premium-button"
-            style={{ marginTop: '25px', width: '100%', padding: '20px', fontSize: '1.2rem', borderRadius: '40px' }}
-          >
-            ➕ 추가 주문
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 
   const renderCartView = () => (
     <div className="cart-view animate-fade-in" style={{ padding: '20px 20px 180px' }}>
@@ -593,26 +525,30 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
 
   const renderContent = () => {
     if (showCart) return renderCartView();
-    if (showHistory) return renderHistoryView();
     if (showProgress) return renderProgressScreen();
     
     return (
       <>
-        <div className="menu-grid">
+        <div className="menu-grid-v2">
           {menus.filter(m => activeCategory === '전체' || m.category === activeCategory).map((item, idx) => {
             const cartItem = cart.find(c => c.name === item.name);
             return (
-              <div key={idx} className="menu-item-card" onClick={() => addToCart(item)}>
-                <img src={item.icon} alt={item.name} className="menu-image" />
-                <div className="menu-details">
-                  <div className="name">{item.name}</div>
-                  <div className="desc">{item.description}</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                    <div className="price">
-                      {cartItem 
-                        ? `${item.price.toLocaleString()}원 x ${cartItem.qty}` 
-                        : `${item.price.toLocaleString()}원`
-                      }
+              <div key={idx} className="menu-card-v2" onClick={() => addToCart(item)}>
+                <div className="menu-image-container">
+                  <img src={item.icon} alt={item.name} />
+                  <span className="menu-category-tag">{item.category}</span>
+                  {cartItem && (
+                    <span className="add-quick-btn">
+                      {cartItem.qty}
+                    </span>
+                  )}
+                </div>
+                <div className="menu-info">
+                  <div className="menu-name">{item.name}</div>
+                  <div className="menu-desc">{item.description}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div className="menu-price">
+                      {item.price.toLocaleString()}원
                     </div>
                     {cartItem && (
                       <button 
@@ -621,9 +557,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
                           deleteFromCart(item.name);
                         }}
                         style={{ 
-                          width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: 'white', border: '1px solid #ef4444', borderRadius: '4px', color: '#ef4444', 
-                          fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' 
+                          width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', color: '#ef4444', 
+                          fontSize: '13px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s'
                         }}
                       >
                         ✕
