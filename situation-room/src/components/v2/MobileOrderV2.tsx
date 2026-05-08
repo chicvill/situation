@@ -101,7 +101,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
 
   const categories = useMemo(() => ['전체', ...new Set(menus.map(m => m.category))], [menus]);
   const totalPrice = useMemo(() => cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0), [cart]);
-  const sessionTotal = useMemo(() => myOrders.reduce((sum, order: Order) => sum + order.total_price, 0), [myOrders]);
 
   // --- Functions ---
   const fetchMySession = useCallback(async () => {
@@ -272,23 +271,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     }
   }, []);
 
-  const handleUpdateOrderItem = useCallback(async (orderId: string, items: OrderItem[]) => {
-    try {
-      const filteredItems = items.filter(i => (i.quantity || i.qty || 0) > 0);
-      if (filteredItems.length === 0) {
-        await fetch(`${API_BASE}/api/order/status`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ order_id: orderId, status: 'cancelled' })
-        });
-      } else {
-        await fetch(`${API_BASE}/api/order/update-items`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ order_id: orderId, items: filteredItems })
-        });
-      }
-      fetchMySession();
-    } catch (err) { console.error('Update Item Error:', err); }
-  }, [fetchMySession]);
+
 
   const executeOrderWithPayment = useCallback(async (method: string, extraData?: any) => {
     setIsOrdering(true);
