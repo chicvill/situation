@@ -13,6 +13,8 @@ from database import (
     save_attendance_checkin, save_attendance_checkout,
     get_staff_attendance_logs
 )
+from psycopg2.extras import RealDictCursor  # type: ignore
+
 
 # 1. 시뮬레이션용 데이터 생성 구성요소
 STAFF_TEMPLATES = [
@@ -112,15 +114,17 @@ def run_simulation_500_cases():
         save_staff(staff_data)
         
         # 요일별 스케줄링 등록 (0: 월, ..., 6: 일)
-        for d in temp["days"]:
-            schedule_id = f"SCHED-{uuid.uuid4().hex[:4].upper()}"
-            save_schedule({
-                "schedule_id": schedule_id,
-                "staff_id": staff_id,
-                "day_of_week": d,
-                "start_time": "10:00" if temp["role"] == "manager" else "12:00",
-                "end_time": "19:00" if temp["role"] == "manager" else "18:00"
-            })
+        days = temp["days"]
+        if isinstance(days, list):
+            for d in days:
+                schedule_id = f"SCHED-{uuid.uuid4().hex[:4].upper()}"
+                save_schedule({
+                    "schedule_id": schedule_id,
+                    "staff_id": staff_id,
+                    "day_of_week": d,
+                    "start_time": "10:00" if temp["role"] == "manager" else "12:00",
+                    "end_time": "19:00" if temp["role"] == "manager" else "18:00"
+                })
             
     print(f"  - 👥 직원 계정 {len(staff_ids)}개 및 요일별 업무 스케줄 수립 완료.")
 
@@ -136,7 +140,8 @@ def run_simulation_500_cases():
         # A. 직원의 출퇴근 기록 시뮬레이션 (약 120개 케이스)
         # 해당 요일에 스케줄이 있는 직원 출근 처리
         for i, temp in enumerate(STAFF_TEMPLATES):
-            if weekday in temp["days"]:
+            days = temp["days"]
+            if isinstance(days, list) and weekday in days:
                 staff_id = staff_ids[i]
                 log_id = f"ATT-{target_date.strftime('%Y%m%d')}-{staff_id[:5]}"
                 
@@ -211,7 +216,7 @@ def run_simulation_500_cases():
                 for _ in range(random.randint(1, 3)):
                     ordered_items.append(random.choice(MENU_ITEMS))
                     
-                total_amount = sum(item["price"] for item in ordered_items)
+                total_amount = sum(int(item["price"]) for item in ordered_items)
                 
                 cur.execute("""
                     INSERT INTO table_orders (order_id, session_id, device_id, order_seq, items, total_amount, status, payment_status, payment_method, timestamp)

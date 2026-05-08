@@ -1,3 +1,4 @@
 [tool.pyrefly]
 python-interpreter-path = "venv/Scripts/python.exe"
-search-path = ["situation-backend"]
+search-path = ["situation-backend", "situation-backend/session"]
+
