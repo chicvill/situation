@@ -1417,3 +1417,24 @@ td {
     margin: 0 auto;
   }
 }
+
+/* 🚨 실시간 직원 호출 하단 벨 아이콘 깜빡임 애니메이션 */
+@keyframes blink-call-icon {
+  0%, 100% {
+    background-color: transparent;
+    transform: scale(1);
+    box-shadow: none;
+  }
+  50% {
+    background-color: rgba(239, 68, 68, 0.25);
+    transform: scale(1.15);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+    border-radius: 12px;
+  }
+}
+
+.blink-call-bell {
+  animation: blink-call-icon 1.2s infinite cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 900 !important;
+}
+

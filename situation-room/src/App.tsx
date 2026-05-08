@@ -66,6 +66,44 @@ function App() {
     return () => clearInterval(timer);
   }, []);
 
+  const [hasActiveCalls, setHasActiveCalls] = useState(false);
+
+  // --- 🛎️ 실시간 직원 호출 상태 모니터링 ---
+  useEffect(() => {
+    const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+    
+    const checkActiveCalls = async () => {
+      try {
+        const apiUrl = getApiUrl();
+        const res = await fetch(`${apiUrl}/api/call/active`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setHasActiveCalls(data.length > 0);
+        }
+      } catch (e) {
+        console.error('Fetch active calls error in App:', e);
+      }
+    };
+
+    checkActiveCalls();
+
+    const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'STAFF_CALL') {
+          setHasActiveCalls(true);
+        } else if (data.type === 'CALL_STATUS_UPDATED') {
+          checkActiveCalls();
+        }
+      } catch (err) {
+        console.error("Error parsing WebSocket event in App:", err);
+      }
+    };
+
+    return () => ws.close();
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const mode = params.get('mode');
@@ -341,6 +379,19 @@ function App() {
     localStorage.removeItem('mqnet_user');
   };
 
+  // --- 🛎️ 대기 및 예약 실시간 알림을 위한 상태 계산 ---
+  const waitingList = safeBundles.filter(b => b.type === 'Waiting' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
+  const hasWaitingTeams = waitingList.length > 0;
+
+  const reservations = safeBundles.filter(b => b.type === 'Reservations' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
+  const activeReservations = reservations.filter(r => r.status === 'pending' || r.status === 'confirmed');
+  
+  const todayStr = currentTime.getFullYear() + '-' + String(currentTime.getMonth() + 1).padStart(2, '0') + '-' + String(currentTime.getDate()).padStart(2, '0');
+  const hasTodayReservations = activeReservations.some(r => {
+    const timeVal = r.items.find(i => i.name === '예약시간')?.value || '';
+    return timeVal.includes(todayStr) || timeVal.includes('오늘') || !timeVal.includes('-');
+  });
+
   return (
     <div className={`saas-container mobile-full-mode ${isCustomerMode ? 'customer-mode' : ''}`}>
       {receiptData && (
@@ -437,12 +488,24 @@ function App() {
 
       {!isCustomerMode && user && activeTab !== 'order' && activeTab !== 'orderV2' && (
         <nav className="bottom-nav-bar-9" style={{ display: 'flex', overflowX: 'auto', gap: '5px', padding: '10px 15px', background: 'var(--surface)', borderTop: '1px solid var(--border)', justifyContent: 'space-between', alignItems: 'center' }}>
-          {navItems.map((item, idx) => (
-            <div key={idx} className={`nav-item-9 ${item.special ? 'mic-special-centered' : ''} ${activeTab === item.tab ? 'active' : ''}`} onClick={() => item.special ? startVoiceRecognition() : navigateTo(item.tab as MainTab)} style={{ minWidth: item.special ? '70px' : '50px', textAlign: 'center' }}>
-              <div className="nav-icon" style={{ fontSize: item.special ? '1.8rem' : '1.2rem' }}>{item.icon}</div>
-              <div className="nav-label" style={{ fontSize: '0.65rem', marginTop: '4px', whiteSpace: 'nowrap' }}>{item.label}</div>
-            </div>
-          ))}
+          {navItems.map((item, idx) => {
+            const shouldBlink = 
+              (item.tab === 'call' && hasActiveCalls && activeTab !== 'call') ||
+              (item.tab === 'waiting' && hasWaitingTeams && activeTab !== 'waiting') ||
+              (item.tab === 'reserve' && hasTodayReservations && activeTab !== 'reserve');
+
+            return (
+              <div 
+                key={idx} 
+                className={`nav-item-9 ${item.special ? 'mic-special-centered' : ''} ${activeTab === item.tab ? 'active' : ''} ${shouldBlink ? 'blink-call-bell' : ''}`} 
+                onClick={() => item.special ? startVoiceRecognition() : navigateTo(item.tab as MainTab)} 
+                style={{ minWidth: item.special ? '70px' : '50px', textAlign: 'center' }}
+              >
+                <div className="nav-icon" style={{ fontSize: item.special ? '1.8rem' : '1.2rem' }}>{item.icon}</div>
+                <div className="nav-label" style={{ fontSize: '0.65rem', marginTop: '4px', whiteSpace: 'nowrap' }}>{item.label}</div>
+              </div>
+            );
+          })}
         </nav>
       )}
     </div>

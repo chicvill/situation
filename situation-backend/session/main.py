@@ -734,7 +734,8 @@ async def staff_call(data: Dict):
         
     # 현재 활성 세션 가져와서 호출 기록을 세션에 종속시키기
     from .database import get_active_session, save_call
-    active = get_active_session("default_store", table_id)
+    store_id = data.get("store_id") or data.get("storeId") or "Total"
+    active = get_active_session(store_id, table_id)
     session_id = active['session_id'] if active else "SESS-NONE"
     
     call_id = f"CALL-{uuid.uuid4().hex[:4].upper()}"
