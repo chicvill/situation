@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'; // Git Force Trigger: 2026-05-04 23:27
+import React, { useState, useEffect, useMemo, useCallback } from 'react'; // Git Force Trigger: 2026-05-04 23:27
 import './MobileOrderV2.css';
 import type { BundleData } from '../../types';
 import { WS_BASE, API_BASE } from '../../config';
@@ -44,9 +44,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   const [activeCategory, setActiveCategory] = useState('전체');
   const [isOrdering, setIsOrdering] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
-  const [cartPos, setCartPos] = useState({ x: 0, y: 0 });
-  const isDragging = useRef(false);
-  const dragStartPos = useRef({ x: 0, y: 0 });
+  const [isListening, setIsListening] = useState(false);
+  const [voiceToast, setVoiceToast] = useState<string | null>(null);
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
@@ -234,35 +233,123 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     }
   }, [showProgress]);
 
-  // --- Draggable Cart Logic ---
-  const handleDragStart = (e: any) => {
-    isDragging.current = false;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    dragStartPos.current = { x: clientX - cartPos.x, y: clientY - cartPos.y };
+  // --- AI Voice Ordering Logic ---
+  const speakResponse = (msg: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(msg);
+      utterance.lang = 'ko-KR';
+      utterance.rate = 1.0;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const parseVoiceCommand = useCallback((text: string) => {
+    const textClean = text.replace(/\s+/g, '');
     
-    const moveHandler = (me: any) => {
-      isDragging.current = true;
-      const mX = me.touches ? me.touches[0].clientX : me.clientX;
-      const mY = me.touches ? me.touches[0].clientY : me.clientY;
-      setCartPos({
-        x: mX - dragStartPos.current.x,
-        y: mY - dragStartPos.current.y
-      });
-    };
-    
-    const endHandler = () => {
-      window.removeEventListener('mousemove', moveHandler);
-      window.removeEventListener('mouseup', endHandler);
-      window.removeEventListener('touchmove', moveHandler);
-      window.removeEventListener('touchend', endHandler);
+    // 1. Utility commands
+    if (textClean.includes('장바구니') || textClean.includes('결제') || textClean.includes('주문하기')) {
+      if (cart.length > 0) {
+        speakResponse("장바구니를 열고 결제를 진행합니다.");
+        setShowCart(true);
+        setTimeout(() => setVoiceToast(null), 2500);
+        return;
+      } else {
+        speakResponse("장바구니가 비어 있습니다. 주문할 메뉴를 먼저 골라 담아주세요.");
+        return;
+      }
+    }
+
+    if (textClean.includes('비워') || textClean.includes('초기화')) {
+      setCart([]);
+      speakResponse("장바구니를 모두 비웠습니다.");
+      setVoiceToast("🗑️ 장바구니를 모두 비웠습니다.");
+      setTimeout(() => setVoiceToast(null), 2500);
+      return;
+    }
+
+    // 2. Exact match against items in active store's menu
+    let found = false;
+    const sortedMenus = [...menus].sort((a, b) => b.name.length - a.name.length);
+
+    for (const item of sortedMenus) {
+      // Strip emojis from the comparison name
+      const nameOnly = item.name.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/, '').trim();
+      const matches = text.includes(nameOnly) || textClean.includes(nameOnly.replace(/\s+/g, ''));
+      
+      if (matches) {
+        let qty = 1;
+        if (text.includes('두') || text.includes('2') || text.includes('둘') || text.includes('이개') || text.includes('이 개')) qty = 2;
+        else if (text.includes('세') || text.includes('3') || text.includes('셋') || text.includes('삼개') || text.includes('삼 개')) qty = 3;
+        else if (text.includes('네') || text.includes('4') || text.includes('넷') || text.includes('사개') || text.includes('사 개')) qty = 4;
+        else if (text.includes('다섯') || text.includes('5')) qty = 5;
+        
+        setCart(prev => {
+          const existing = prev.find(c => c.name === item.name);
+          if (existing) {
+            return prev.map(c => c.name === item.name ? { ...c, qty: (c.qty || 0) + qty } : c);
+          }
+          return [...prev, { ...item, qty }];
+        });
+
+        const replyMsg = `${nameOnly} ${qty}개를 장바구니에 담았습니다.`;
+        speakResponse(replyMsg);
+        setVoiceToast(`🎯 담기 완료: ${item.name} ${qty}개`);
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      const failMsg = "메뉴를 찾지 못했습니다. 메뉴판에 기재된 정확한 명칭을 말씀해 주세요.";
+      speakResponse(failMsg);
+      setVoiceToast("❓ 일치하는 메뉴를 찾지 못했습니다.");
+    }
+
+    setTimeout(() => setVoiceToast(null), 4000);
+  }, [menus, cart]);
+
+  const toggleVoiceOrdering = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("이 브라우저는 음성 인식을 지원하지 않습니다. 구글 크롬 또는 모바일 사파리 브라우저를 이용해 주세요.");
+      return;
+    }
+
+    if (isListening) {
+      setIsListening(false);
+      return;
+    }
+
+    const rec = new SpeechRecognition();
+    rec.lang = 'ko-KR';
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+
+    rec.onstart = () => {
+      setIsListening(true);
+      setVoiceToast("🎙️ 마이크가 활성화되었습니다. '갈비찜 2개' 또는 '장바구니 보여줘' 라고 말씀해 주세요!");
     };
 
-    window.addEventListener('mousemove', moveHandler);
-    window.addEventListener('mouseup', endHandler);
-    window.addEventListener('touchmove', moveHandler, { passive: false });
-    window.addEventListener('touchend', endHandler);
-  };
+    rec.onend = () => {
+      setIsListening(false);
+    };
+
+    rec.onerror = (e: any) => {
+      console.error("Speech Error:", e);
+      setIsListening(false);
+      setVoiceToast("⚠️ 음성 인식 실패. 마이크 접근 권한이나 노이즈를 확인해 주세요.");
+      setTimeout(() => setVoiceToast(null), 3000);
+    };
+
+    rec.onresult = (event: any) => {
+      const speechText = event.results[0][0].transcript;
+      setVoiceToast(`🎙️ 인식 결과: "${speechText}"`);
+      parseVoiceCommand(speechText);
+    };
+
+    rec.start();
+  }, [isListening, parseVoiceCommand]);
 
   // --- Android/Browser Back Button Handling ---
   useEffect(() => {
@@ -577,34 +664,32 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         {cart.length > 0 && (
           <div 
             className="floating-cart animate-slide-up" 
-            onMouseDown={handleDragStart}
-            onTouchStart={handleDragStart}
-            onClick={() => {
-              if (!isDragging.current) setShowCart(true);
-            }}
+            onClick={() => setShowCart(true)}
             style={{
               position: 'fixed',
-              bottom: '40px',
-              right: '20px',
-              left: 'auto',
-              width: '180px',
+              bottom: '24px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: '92%',
+              maxWidth: '450px',
               height: '60px',
-              transform: `translate(${cartPos.x}px, ${cartPos.y}px)`,
               zIndex: 2000,
-              cursor: 'move',
+              cursor: 'pointer',
               background: 'linear-gradient(135deg, var(--accent), #f97316)',
               borderRadius: '50px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: '0 15px 35px rgba(245, 158, 11, 0.4), 0 5px 15px rgba(0,0,0,0.2)',
-              margin: 0,
+              margin: '0 auto',
               border: '2px solid rgba(255,255,255,0.2)'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', color: 'white' }}>
-              <span style={{ fontSize: '1.1rem', fontWeight: 800, whiteSpace: 'nowrap' }}>주문하기</span>
-              <span style={{ fontSize: '1.1rem', fontWeight: 900, whiteSpace: 'nowrap' }}>{totalPrice.toLocaleString()}원</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', width: '100%', color: 'white' }}>
+              <span style={{ fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🛒 장바구니 보기 <span style={{ background: 'white', color: 'var(--accent)', fontSize: '12px', fontWeight: 900, padding: '2px 8px', borderRadius: '12px' }}>{cart.reduce((sum, item) => sum + (item.qty || 0), 0)}</span>
+              </span>
+              <span style={{ fontSize: '1.1rem', fontWeight: 900 }}>{totalPrice.toLocaleString()}원 주문하기 ➔</span>
             </div>
           </div>
         )}
@@ -631,6 +716,31 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
 
   return (
     <div className="mobile-v2-container unified-mode">
+      {voiceToast && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '90%',
+          maxWidth: '400px',
+          background: 'rgba(15, 23, 42, 0.95)',
+          border: '1px solid rgba(249, 115, 22, 0.5)',
+          borderRadius: '16px',
+          padding: '12px 18px',
+          color: 'white',
+          fontSize: '13px',
+          fontWeight: 700,
+          zIndex: 15000,
+          textAlign: 'center',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(10px)',
+          animation: 'fadeInDown 0.3s'
+        }}>
+          {voiceToast}
+        </div>
+      )}
+
       <header className="glass-card sticky-header" style={{ padding: '0', minHeight: '160px', display: 'flex', flexDirection: 'column', zIndex: 1001 }}>
         <div style={{ padding: '20px 24px 12px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -648,6 +758,27 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>[Table {tableNo}]</div>
+            <button 
+              onClick={toggleVoiceOrdering}
+              style={{
+                background: isListening ? 'rgba(239, 68, 68, 0.2)' : 'rgba(249, 115, 22, 0.1)',
+                border: isListening ? '1px solid #ef4444' : '1px solid rgba(249, 115, 22, 0.3)',
+                color: isListening ? '#ef4444' : '#f97316',
+                borderRadius: '50px',
+                padding: '8px 16px',
+                fontSize: '12px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: isListening ? '0 0 15px rgba(239, 68, 68, 0.4)' : 'none',
+                animation: isListening ? 'pulse-voice 1.5s infinite' : 'none',
+                transition: 'all 0.3s'
+              }}
+            >
+              <span>{isListening ? '🔊 음성 인식 중...' : '🎙️ 말로 편하게 주문'}</span>
+            </button>
           </div>
         </div>
 
