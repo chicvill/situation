@@ -22,6 +22,7 @@ import { useSituation } from './hooks/useSituation';
 import { useStoreFilter } from './hooks/useStoreFilter';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
+import { WS_BASE } from './config';
 
 type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'admin' | 'call' | 'manual';
 
