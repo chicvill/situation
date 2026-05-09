@@ -21,11 +21,13 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
     );
 
     const handleCall = (waitingNo: string) => {
-        onSendMessage(`대기 ${waitingNo}번 손님 호출`, storeId, storeName);
+        const cleanNo = waitingNo.startsWith('대기 ') ? waitingNo : `대기 ${waitingNo}`;
+        onSendMessage(`${cleanNo} 손님 호출`, storeId, storeName);
     };
 
     const handleEnter = async (bundle: BundleData, waitingNo: string) => {
-        if (window.confirm(`${waitingNo}번 손님을 입장 처리하시겠습니까?`)) {
+        const cleanNo = waitingNo.startsWith('대기 ') ? waitingNo : `대기 ${waitingNo}`;
+        if (window.confirm(`${cleanNo} 손님을 입장 처리하시겠습니까?`)) {
             try {
                 const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
                 await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
@@ -33,7 +35,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ...bundle, status: 'finished', store: storeName, store_id: storeId }),
                 });
-                onSendMessage(`대기 ${waitingNo}번 입장 완료`, storeId, storeName);
+                onSendMessage(`${cleanNo} 입장 완료`, storeId, storeName);
             } catch (err) {
                 console.error("Failed to enter waiting:", err);
             }
@@ -41,7 +43,8 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
     };
 
     const handleCancel = async (bundle: BundleData, waitingNo: string) => {
-        if (window.confirm(`${waitingNo}번 대기를 취소하시겠습니까?`)) {
+        const cleanNo = waitingNo.startsWith('대기 ') ? waitingNo : `대기 ${waitingNo}`;
+        if (window.confirm(`${cleanNo}을 취소하시겠습니까?`)) {
             try {
                 const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
                 await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
@@ -49,7 +52,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ...bundle, status: 'canceled', store: storeName, store_id: storeId }),
                 });
-                onSendMessage(`대기 ${waitingNo}번 취소`, storeId, storeName);
+                onSendMessage(`${cleanNo} 취소`, storeId, storeName);
             } catch (err) {
                 console.error("Failed to cancel waiting:", err);
             }
@@ -84,7 +87,24 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
                     </thead>
                     <tbody>
                         {waitingList.map((w, idx) => {
-                            const idInfo = w.items?.find(i => i.name.includes('번호') || i.name.includes('이름'))?.value || (idx + 1).toString();
+                            const nameItem = w.items?.find(i => i.name === '이름' || i.name === '예약자' || i.name.includes('고객명'));
+                            const phoneItem = w.items?.find(i => i.name.includes('연락처') || i.name.includes('번호') || i.name.includes('전화'));
+                            
+                            // 1. 만약 한글/영문 이름이 있으면 이름 우선 표시
+                            let idInfo = nameItem?.value || '';
+                            
+                            // 2. 만약 이름이 없고 연락처 뒷자리 등이 있으면 그것을 표시
+                            if (!idInfo && phoneItem && isNaN(Number(phoneItem.value)) === false) {
+                                idInfo = `손님 (${phoneItem.value.slice(-4)})`;
+                            }
+                            
+                            // 3. 만약 이름도 연락처도 없거나 그냥 단일 숫자라면, 고유한 4자리 영숫자 티켓 번호를 결합하여 절대 중복되지 않게 생성!
+                            if (!idInfo || !isNaN(Number(idInfo))) {
+                                const shortId = (w.id.includes('-') ? w.id.split('-')[1] : w.id).substring(0, 4).toUpperCase();
+                                const numberPrefix = idInfo ? `${idInfo}번` : `${idx + 1}번`;
+                                idInfo = `대기 ${numberPrefix} [${shortId}]`;
+                            }
+                            
                             const headCount = w.items?.find(i => i.name.includes('인원'))?.value || '2명';
                             
                             return (
