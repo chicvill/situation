@@ -13,7 +13,7 @@ export interface BundleData {
   title: string;
   items: BundleItem[];
   timestamp: string;
-  status?: 'pending' | 'cooking' | 'ready' | 'served' | 'archived' | 'canceled' | 'paid' | 'approved' | 'confirmed';
+  status?: 'pending' | 'cooking' | 'ready' | 'served' | 'archived' | 'canceled' | 'paid' | 'approved' | 'confirmed' | 'finished' | 'seated';
   order_code?: string;
   table?: string;
   payment?: string;
