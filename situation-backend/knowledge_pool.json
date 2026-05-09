@@ -1,6 +1,550 @@
 [
   {
     "type": "Waiting",
+    "title": "대기 손님 입장",
+    "items": [
+      {
+        "name": "대기 손님 수",
+        "value": 1
+      },
+      {
+        "name": "상황",
+        "value": "입장 완료"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:39:39",
+    "id": "BND-545E7C96",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 등록",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1"
+      },
+      {
+        "name": "대기 ID",
+        "value": "A3EF"
+      },
+      {
+        "name": "상태",
+        "value": "입장 완료"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:39:06",
+    "id": "BND-835D4882",
+    "store_id": "store-korean",
+    "status": "finished"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 중 주문 취소",
+    "items": [
+      {
+        "name": "대기번호",
+        "value": "1번"
+      },
+      {
+        "name": "주문 ID",
+        "value": "2626"
+      },
+      {
+        "name": "상태",
+        "value": "취소"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:39:02",
+    "id": "BND-A3EF2E20",
+    "store_id": "store-korean",
+    "status": "finished"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 취소",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번"
+      },
+      {
+        "name": "테이블 번호",
+        "value": "A477"
+      },
+      {
+        "name": "상태",
+        "value": "취소"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:38:58",
+    "id": "BND-2626B8D2",
+    "store_id": "store-korean",
+    "status": "canceled"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 등록",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번"
+      },
+      {
+        "name": "전화 번호",
+        "value": "7627"
+      },
+      {
+        "name": "상태",
+        "value": "입장 완료"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:38:45",
+    "id": "BND-A47726F7",
+    "store_id": "store-korean",
+    "status": "canceled"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 등록",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번"
+      },
+      {
+        "name": "테이블 번호",
+        "value": "B56D"
+      },
+      {
+        "name": "상태",
+        "value": "입장 완료"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:38:39",
+    "id": "BND-76279379",
+    "store_id": "store-korean",
+    "status": "finished"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 취소",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번"
+      },
+      {
+        "name": "고객 ID",
+        "value": "1773"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:38:33",
+    "id": "BND-B56DCDD0",
+    "store_id": "store-korean",
+    "status": "finished"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 손님 취소",
+    "items": [
+      {
+        "name": "대기 손님 수",
+        "value": "5"
+      },
+      {
+        "name": "조치 사항",
+        "value": "취소"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:37:06",
+    "id": "BND-17731502",
+    "store_id": "store-korean",
+    "status": "canceled"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 손님 취소",
+    "items": [
+      {
+        "name": "대기 손님 수",
+        "value": 5
+      },
+      {
+        "name": "상태",
+        "value": "취소됨"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:35:46",
+    "id": "BND-DAE096FC",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 손님 입장",
+    "items": [
+      {
+        "name": "대기 손님 수",
+        "value": 4
+      },
+      {
+        "name": "입장 시간",
+        "value": "2026-05-10 06:35:15"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:35:15",
+    "id": "BND-8EA22E9C",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 손님 취소",
+    "items": [
+      {
+        "name": "대기 손님 수",
+        "value": "0"
+      },
+      {
+        "name": "취소된 손님 수",
+        "value": "1"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:35:07",
+    "id": "BND-2CF8CADC",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 등록 취소",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번"
+      },
+      {
+        "name": "고객ID",
+        "value": "F017"
+      },
+      {
+        "name": "상태",
+        "value": "취소"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:34:59",
+    "id": "BND-AC50C4E8",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 리스트 업데이트",
+    "items": [
+      {
+        "name": "대기 인원",
+        "value": "1번"
+      },
+      {
+        "name": "테이블 번호",
+        "value": "134F"
+      },
+      {
+        "name": "상태",
+        "value": "취소"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:34:54",
+    "id": "BND-F017A910",
+    "store_id": "store-korean",
+    "status": "canceled"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 손님 취소",
+    "items": [
+      {
+        "name": "대기 손님 수",
+        "value": "0"
+      },
+      {
+        "name": "취소된 손님 수",
+        "value": "1"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:34:43",
+    "id": "BND-134FB835",
+    "store_id": "store-korean",
+    "status": "canceled"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 취소",
+    "items": [
+      {
+        "name": "대기번호",
+        "value": "1"
+      },
+      {
+        "name": "고객 ID",
+        "value": "C081"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:34:37",
+    "id": "BND-A61E2225",
+    "store_id": "store-korean",
+    "status": "canceled"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 취소",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번"
+      },
+      {
+        "name": "주문 번호",
+        "value": "[DD31]"
+      },
+      {
+        "name": "상태",
+        "value": "취소"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:34:32",
+    "id": "BND-C081CAD5",
+    "store_id": "store-korean",
+    "status": "canceled"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 등록",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번"
+      },
+      {
+        "name": "테이블 번호",
+        "value": "650C"
+      },
+      {
+        "name": "입장 상태",
+        "value": "입장 완료"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:34:25",
+    "id": "BND-DD3131C3",
+    "store_id": "store-korean",
+    "status": "canceled"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 등록",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번"
+      },
+      {
+        "name": "상태",
+        "value": "입장 완료"
+      },
+      {
+        "name": "고객 ID",
+        "value": "0DA0"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:34:19",
+    "id": "BND-650C477E",
+    "store_id": "store-korean",
+    "status": "finished"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 등록",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번"
+      },
+      {
+        "name": "테이블 번호",
+        "value": "840A"
+      },
+      {
+        "name": "상태",
+        "value": "입장 완료"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:34:13",
+    "id": "BND-0DA05C65",
+    "store_id": "store-korean",
+    "status": "finished"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 고객 취소",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번"
+      },
+      {
+        "name": "주문 번호",
+        "value": "6B45"
+      },
+      {
+        "name": "상태",
+        "value": "취소"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:34:05",
+    "id": "BND-840A3665",
+    "store_id": "store-korean",
+    "status": "finished"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 번호 취소",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번"
+      },
+      {
+        "name": "고객 번호",
+        "value": "886A"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:33:59",
+    "id": "BND-6B45257E",
+    "store_id": "store-korean",
+    "status": "canceled"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 요청 취소",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번"
+      },
+      {
+        "name": "고객 코드",
+        "value": "38DB"
+      },
+      {
+        "name": "상태",
+        "value": "취소"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:33:49",
+    "id": "BND-886A6113",
+    "store_id": "store-korean",
+    "status": "canceled"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 등록 취소",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번"
+      },
+      {
+        "name": "고객 코드",
+        "value": "8AD2"
+      },
+      {
+        "name": "행동",
+        "value": "취소"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:33:41",
+    "id": "BND-38DB99B3",
+    "store_id": "store-korean",
+    "status": "canceled"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 취소",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1번 [97F1]"
+      },
+      {
+        "name": "상태",
+        "value": "취소"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:33:33",
+    "id": "BND-8AD28E9F",
+    "store_id": "store-korean",
+    "status": "canceled"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 손님 취소",
+    "items": [
+      {
+        "name": "대기 손님 수",
+        "value": "0"
+      },
+      {
+        "name": "취소된 고객 수",
+        "value": "1"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:33:22",
+    "id": "BND-97F147E0",
+    "store_id": "store-korean",
+    "status": "canceled"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 손님 취소",
+    "items": [
+      {
+        "name": "대기 손님 수",
+        "value": "0"
+      },
+      {
+        "name": "취소된 손님",
+        "value": "1"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 06:33:16",
+    "id": "BND-A9B2C9DD",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
     "title": "대기 취소",
     "items": [
       {
@@ -15,7 +559,8 @@
     "store": "대장금 수라간",
     "timestamp": "2026-05-09 11:18:01",
     "id": "BND-B407E5AD",
-    "store_id": "store-korean"
+    "store_id": "store-korean",
+    "status": "canceled"
   },
   {
     "type": "Waiting",
@@ -143,7 +688,8 @@
     "store": "대장금 수라간",
     "timestamp": "2026-05-09 11:17:12",
     "id": "BND-34EC81C4",
-    "store_id": "store-korean"
+    "store_id": "store-korean",
+    "status": "canceled"
   },
   {
     "type": "Waiting",
@@ -552,7 +1098,8 @@
     "store": "대장금 수라간",
     "timestamp": "2026-05-09 11:11:27",
     "id": "BND-7052FF38",
-    "store_id": "store-korean"
+    "store_id": "store-korean",
+    "status": "canceled"
   },
   {
     "type": "Waiting",
@@ -570,7 +1117,8 @@
     "store": "대장금 수라간",
     "timestamp": "2026-05-09 11:11:19",
     "id": "BND-FE4FD61F",
-    "store_id": "store-korean"
+    "store_id": "store-korean",
+    "status": "finished"
   },
   {
     "type": "Waiting",
@@ -622,7 +1170,8 @@
     "store": "대장금 수라간",
     "timestamp": "2026-05-09 11:10:26",
     "id": "BND-50E879DA",
-    "store_id": "store-korean"
+    "store_id": "store-korean",
+    "status": "canceled"
   },
   {
     "type": "Waiting",

@@ -380,8 +380,20 @@ function App() {
     localStorage.removeItem('mqnet_user');
   };
 
-  // --- 🛎️ 대기 및 예약 실시간 알림을 위한 상태 계산 ---
-  const waitingList = safeBundles.filter(b => b.type === 'Waiting' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
+  const waitingList = safeBundles.filter(b => {
+    if (b.type !== 'Waiting') return false;
+    const storeMatch = storeId === 'Total' || b.store_id === storeId || !b.store_id;
+    if (!storeMatch) return false;
+    if (b.status === 'canceled' || b.status === 'finished' || b.status === 'seated') return false;
+    const title = b.title || '';
+    if (title.includes('취소') || title.includes('입장') || title.includes('완료') || title.includes('퇴장')) return false;
+    const statusItem = b.items?.find(i => i.name === '상태' || i.name.includes('조치') || i.name.includes('진행'));
+    if (statusItem) {
+      const val = statusItem.value?.toString() || '';
+      if (val.includes('취소') || val.includes('완료') || val.includes('입장') || val.includes('종료')) return false;
+    }
+    return true;
+  });
   const hasWaitingTeams = waitingList.length > 0;
 
   const reservations = safeBundles.filter(b => b.type === 'Reservations' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
