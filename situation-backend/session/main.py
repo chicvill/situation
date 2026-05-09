@@ -475,10 +475,10 @@ async def confirm_payment(data: Dict):
     return {"status": "success", "order_id": order_id}
 
 @app.get("/api/points/{phone}")
-async def get_points(phone: str):
+async def get_points(phone: str, store_id: str = 'store-1'):
     from .database import get_customer_points
-    points = get_customer_points(phone)
-    return {"phone": phone, "points": points}
+    points = get_customer_points(phone, store_id)
+    return {"phone": phone, "points": points, "store_id": store_id}
     
 @app.get("/api/config/toss-key")
 async def get_toss_key():
@@ -547,15 +547,23 @@ async def process_order(order_req: OrderRequest):
     print(f"💾 [Saving Order] {order_id} to Session {session_id}...")
     save_order(new_order)
     
-    # 4-1. 포인트 처리 (metadata에 phone이 있는 경우)
+    # 4-1. 포인트 처리 (metadata에 phone이 있는 경우 - 다중 매장 격리 연동)
     metadata = order_req.metadata or {}
     phone = metadata.get("phone")
     if phone:
         from .database import update_customer_points
         # 기본 0.1% 적립
         pts = int(order_req.total_price * 0.001)
-        update_customer_points(phone, pts)
-        print(f"💰 [Points] Accumulated {pts}P for {phone}")
+        update_customer_points(phone, pts, effective_store_id)
+        print(f"💰 [Points] Accumulated {pts}P for {phone} under Store {effective_store_id}")
+        
+        # 주방/카운터에 실시간 포인트 적립 브로드캐스트 전송
+        await manager.broadcast_to_kitchen({
+            "type": "POINTS_UPDATED",
+            "phone": phone,
+            "points": pts,
+            "store_id": effective_store_id
+        })
 
     print(f"✨ [Order Saved Successfully] {order_id}")
     
@@ -670,6 +678,7 @@ async def chat(data: Dict):
 async def register_waiting(data: Dict):
     phone_number = data.get("phone_number") or data.get("phone")
     party_size_raw = data.get("party_size") or data.get("partySize") or 1
+    store_id = data.get("store_id") or data.get("storeId") or "store-1"
     try:
         party_size = int(party_size_raw)
     except:
@@ -681,6 +690,7 @@ async def register_waiting(data: Dict):
     waiting_id = f"WAIT-{uuid.uuid4().hex[:4].upper()}"
     waiting_data = {
         "waiting_id": waiting_id,
+        "store_id": store_id,
         "phone_number": phone_number,
         "party_size": party_size,
         "status": "waiting",
@@ -693,6 +703,7 @@ async def register_waiting(data: Dict):
         await manager.broadcast_to_kitchen({
             "type": "WAITING_REGISTERED",
             "waiting_id": waiting_id,
+            "store_id": store_id,
             "phone_number": phone_number,
             "party_size": party_size
         })
@@ -700,9 +711,9 @@ async def register_waiting(data: Dict):
     raise HTTPException(status_code=500, detail="Failed to register waiting")
 
 @app.get("/api/waiting/active")
-async def get_active_waitings_endpoint():
+async def get_active_waitings_endpoint(store_id: Optional[str] = None):
     from .database import get_active_waitings
-    return get_active_waitings()
+    return get_active_waitings(store_id)
 
 @app.post("/api/waiting/status")
 async def update_waiting_status_endpoint(data: Dict):
@@ -755,7 +766,8 @@ async def staff_call(data: Dict):
             "call_id": call_id,
             "table_id": table_id,
             "call_type": call_type,
-            "status": "pending"
+            "status": "pending",
+            "store_id": store_id
         }
         await manager.broadcast_to_kitchen(msg)
         await manager.send_to_table(table_id, msg)
@@ -763,9 +775,9 @@ async def staff_call(data: Dict):
     raise HTTPException(status_code=500, detail="Failed to process staff call")
 
 @app.get("/api/call/active")
-async def get_active_calls_endpoint(table_id: Optional[str] = None):
+async def get_active_calls_endpoint(table_id: Optional[str] = None, store_id: Optional[str] = None):
     from .database import get_active_calls
-    return get_active_calls(table_id)
+    return get_active_calls(table_id, store_id)
 
 @app.post("/api/call/status")
 async def update_call_status_endpoint(data: Dict):
@@ -867,14 +879,18 @@ async def validate_parking(data: Dict):
         "timestamp": datetime.now().isoformat()
     }
     
-    from .database import save_parking
+    from .database import save_parking, get_session_by_id
+    session_info = get_session_by_id(session_id)
+    store_id = session_info.get("store_id") if session_info else "store-1"
+
     if save_parking(park_data):
         await manager.broadcast_to_kitchen({
             "type": "PARKING_APPLIED",
             "parking_id": parking_id,
             "session_id": session_id,
             "vehicle_number": vehicle_number,
-            "status": "applied"
+            "status": "applied",
+            "store_id": store_id
         })
         return park_data
     raise HTTPException(status_code=500, detail="Failed to save parking registration")
@@ -884,6 +900,16 @@ async def get_parking_by_session_endpoint(session_id: str):
     from .database import get_parking_by_session
     parking = get_parking_by_session(session_id)
     return {"parking": parking}
+
+@app.get("/api/parking/active")
+async def get_active_parkings_endpoint(store_id: Optional[str] = None):
+    from .database import get_active_parkings_db
+    return get_active_parkings_db(store_id)
+
+@app.get("/api/points/list")
+async def get_points_list_endpoint(store_id: Optional[str] = None):
+    from .database import get_points_list_db
+    return get_points_list_db(store_id)
 
 # --- 👥 9. 통합 매장 직원 및 근로 관리 (Staff & Labor Management) Endpoints ---
 @app.post("/api/staff/register")

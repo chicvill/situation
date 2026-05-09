@@ -17,18 +17,22 @@ import { ReservationManager } from './components/ReservationManager';
 import { Login } from './components/Login';
 import { CallManager } from './components/CallManager';
 import { StoreManualEditor } from './components/StoreManualEditor';
+import { ParkingManager } from './components/ParkingManager';
+import { PointsManager } from './components/PointsManager';
 import MobileOrderV2 from './components/v2/MobileOrderV2';
 import { useSituation } from './hooks/useSituation';
 import { useStoreFilter } from './hooks/useStoreFilter';
+import { useStoreSync } from './hooks/useStoreSync';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
 import { WS_BASE } from './config';
 
-type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'admin' | 'call' | 'manual';
+type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'admin' | 'call' | 'manual' | 'parking' | 'points';
 
 function App() {
   const { storeId, storeName: initialStoreName, updateStore } = useStoreFilter();
   const { bundles, handleSendMessage } = useSituation(storeId, initialStoreName);
+  const { flashingTabs, resetFlash } = useStoreSync(storeId);
 
   const [user, setUser] = useState<any>(null);
   const [selectedAdminStore, setSelectedAdminStore] = useState<string | null>(null);
@@ -67,52 +71,14 @@ function App() {
     return () => clearInterval(timer);
   }, []);
 
-  const [hasActiveCalls, setHasActiveCalls] = useState(false);
-
-  // --- 🛎️ 실시간 직원 호출 상태 모니터링 ---
-  useEffect(() => {
-    const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-    
-    const checkActiveCalls = async () => {
-      try {
-        const apiUrl = getApiUrl();
-        const res = await fetch(`${apiUrl}/api/call/active`);
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setHasActiveCalls(data.length > 0);
-        }
-      } catch (e) {
-        console.error('Fetch active calls error in App:', e);
-      }
-    };
-
-    checkActiveCalls();
-
-    const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'STAFF_CALL') {
-          setHasActiveCalls(true);
-        } else if (data.type === 'CALL_STATUS_UPDATED') {
-          checkActiveCalls();
-        }
-      } catch (err) {
-        console.error("Error parsing WebSocket event in App:", err);
-      }
-    };
-
-    return () => ws.close();
-  }, []);
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const mode = params.get('mode');
     
-    // 1. URL 모드 체크 (고객 등)
-    if (mode === 'customer') {
+    // 1. URL 모드 체크 (고객 주문 및 고객 대기 등록 등)
+    if (mode === 'customer' || mode === 'waiting') {
       const guest = { id: 'guest', name: '손님', role: 'customer' };
-      setActiveTab('orderV2');
+      setActiveTab(mode === 'waiting' ? 'guide' : 'orderV2');
       setUser(guest);
       return;
     } 
@@ -222,6 +188,12 @@ function App() {
   const navigateTo = (tab: MainTab) => {
     setActiveTab(tab);
     setIsMenuOpen(false);
+    if (tab === 'parking') {
+      setIsParkingFlashing(false);
+    }
+    if (tab === 'points') {
+      setIsPointsFlashing(false);
+    }
   };
 
   const navItems = [
@@ -230,6 +202,8 @@ function App() {
     { label: '카운터', icon: '💰', tab: 'counter', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '호출', icon: '🔔', tab: 'call', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '대기', icon: '🛎️', tab: 'waiting', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: '주차', icon: '🚗', tab: 'parking', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: '포인트', icon: '🪙', tab: 'points', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '비서', icon: '🎤', tab: 'guide', roles: ['admin', 'owner', 'manager', 'staff'], special: true }, // 중앙 마이크
     { label: '홈', icon: '🏠', tab: 'home', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '예약', icon: '📅', tab: 'reserve', roles: ['admin', 'owner', 'manager', 'staff'] },
@@ -350,17 +324,19 @@ function App() {
       case 'display': return <DisplayBoard bundles={bundles} />;
       case 'menu': return <MenuManager bundles={bundles} />;
       case 'settings': return <StoreManager bundles={bundles} onNavigate={navigateTo as any} />;
-      case 'qr': return <QRManager bundles={bundles} />;
+      case 'qr': return <QRManager bundles={bundles} storeId={storeId} />;
       case 'paper': return <PaperViewer />;
       case 'stats':
       case 'admin':
       case 'home': return <AdminDashboard bundles={bundles} />;
-      case 'call': return <CallManager />;
+      case 'call': return <CallManager storeId={storeId} />;
       case 'inventory': return <LogicInventory />;
       case 'manual': return <StoreManualEditor storeId={storeId} />;
       case 'hr': return <HRManager bundles={bundles} user={user} />;
       case 'waiting': return <WaitingManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'waiting', sId, sName)} />;
       case 'reserve': return <ReservationManager bundles={bundles} />;
+      case 'parking': return <ParkingManager storeId={storeId} />;
+      case 'points': return <PointsManager storeId={storeId} />;
       default: return <ConversationalUI bundles={bundles} storeName={storeName} onNavigate={navigateTo as any} />;
     }
   };
@@ -503,9 +479,11 @@ function App() {
         <nav className="bottom-nav-bar-9" style={{ display: 'flex', overflowX: 'auto', gap: '5px', padding: '10px 15px', background: 'var(--surface)', borderTop: '1px solid var(--border)', justifyContent: 'space-between', alignItems: 'center' }}>
           {navItems.map((item, idx) => {
             const shouldBlink = 
-              (item.tab === 'call' && hasActiveCalls && activeTab !== 'call') ||
-              (item.tab === 'waiting' && hasWaitingTeams && activeTab !== 'waiting') ||
-              (item.tab === 'reserve' && hasTodayReservations && activeTab !== 'reserve');
+              (item.tab === 'call' && flashingTabs.call && activeTab !== 'call') ||
+              (item.tab === 'waiting' && flashingTabs.waiting && activeTab !== 'waiting') ||
+              (item.tab === 'reserve' && flashingTabs.reserve && activeTab !== 'reserve') ||
+              (item.tab === 'parking' && flashingTabs.parking && activeTab !== 'parking') ||
+              (item.tab === 'points' && flashingTabs.points && activeTab !== 'points');
 
             return (
               <div 

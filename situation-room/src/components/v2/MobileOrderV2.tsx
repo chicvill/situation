@@ -47,8 +47,12 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   const [isListening, setIsListening] = useState(false);
   const [voiceToast, setVoiceToast] = useState<string | null>(null);
   const [hasActiveSession, setHasActiveSession] = useState(false);
+  const [sessionId, setSessionId] = useState('');
   const [showCart, setShowCart] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [showParkingModal, setShowParkingModal] = useState(false);
+  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [parkingApplied, setParkingApplied] = useState(false);
   const [userPhone] = useState('');
   const [aiStoryContent, setAiStoryContent] = useState({ title: '', body: '', icon: '🍽️' });
   const [showDelayedHelp, setShowDelayedHelp] = useState(false);
@@ -110,9 +114,11 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
       const data = await res.json();
       if (data && data.session && data.session.status === 'active') {
         setHasActiveSession(true);
+        setSessionId(data.session.session_id);
         setMyOrders(data.orders || []);
       } else {
         setHasActiveSession(false);
+        setSessionId('');
       }
     } catch (err) {
       console.error("Session sync failed", err);
@@ -241,17 +247,78 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           table_id: tableId,
-          call_type: callType
+          call_type: callType,
+          store_id: storeId // 다중 매장 완벽 분리 지원
         })
       });
       if (res.ok) {
-        alert(`🔔 직원을 호출했습니다: [요청 사항: ${callType}]`);
+        setVoiceToast(`🔔 직원을 호출했습니다: [${callType}]`);
+        setTimeout(() => setVoiceToast(null), 3000);
       }
     } catch (err) {
       console.error("Staff call error:", err);
-      alert("호출을 전송하지 못했습니다. 카운터로 직접 문의해 주세요.");
+      setVoiceToast("❌ 호출 전송 실패. 카운터로 직접 문의해 주세요.");
+      setTimeout(() => setVoiceToast(null), 3000);
     }
-  }, [tableId]);
+  }, [tableId, storeId]);
+
+  const handleParkingSubmit = async () => {
+    if (!vehicleNumber.trim() || vehicleNumber.trim().length < 4) {
+      setVoiceToast("차량 번호 뒤 4자리를 정확하게 입력해 주세요.");
+      setTimeout(() => setVoiceToast(null), 3000);
+      return;
+    }
+    
+    let targetSessionId = sessionId;
+    if (!targetSessionId) {
+      try {
+        const res = await fetch(`${API_BASE}/api/session/${tableId}?store_id=${storeId}`);
+        const data = await res.json();
+        if (data && data.session) {
+          targetSessionId = data.session.session_id;
+          setSessionId(targetSessionId);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    
+    if (!targetSessionId) {
+      setVoiceToast("현재 테이블 주문 세션이 활성화되지 않았습니다. 먼저 주문을 진행해 주세요!");
+      setTimeout(() => setVoiceToast(null), 3000);
+      return;
+    }
+    
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const res = await fetch(`${apiUrl}/api/parking/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: targetSessionId,
+          vehicle_number: vehicleNumber,
+          discount_minutes: 120
+        })
+      });
+      if (res.ok) {
+        setParkingApplied(true);
+        setVoiceToast("🚗 무료 주차 2시간 등록이 완료되었습니다!");
+        setTimeout(() => setVoiceToast(null), 3000);
+        setTimeout(() => {
+          setShowParkingModal(false);
+          setVehicleNumber('');
+        }, 2000);
+      } else {
+        const errData = await res.json();
+        setVoiceToast(errData.detail || "주차 등록에 실패했습니다. 다시 시도해 주세요.");
+        setTimeout(() => setVoiceToast(null), 3000);
+      }
+    } catch (err) {
+      console.error(err);
+      setVoiceToast("⚠️ 주차 등록 실패. 카운터로 문의해 주세요.");
+      setTimeout(() => setVoiceToast(null), 3000);
+    }
+  };
 
   // --- AI Voice Ordering Logic ---
   const speakResponse = (msg: string) => {
@@ -791,6 +858,25 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>[Table {tableNo}]</div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button 
+                onClick={() => setShowParkingModal(true)}
+                style={{
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                  color: '#3b82f6',
+                  borderRadius: '50px',
+                  padding: '8px 16px',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.3s'
+                }}
+              >
+                <span>🚗 셀프 주차</span>
+              </button>
+              <button 
                 onClick={() => requestStaffCall("직원호출")}
                 style={{
                   background: 'rgba(239, 68, 68, 0.1)',
@@ -857,6 +943,116 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
           initialPhone={userPhone}
           bundles={bundles}
         />
+      )}
+
+      {showParkingModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(12px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 14000,
+          padding: '20px'
+        }} className="animate-fade-in">
+          <div style={{
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: '24px',
+            width: '100%',
+            maxWidth: '400px',
+            padding: '30px',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+            position: 'relative'
+          }} className="animate-pop-in">
+            <button 
+              onClick={() => {
+                setShowParkingModal(false);
+                setVehicleNumber('');
+                setParkingApplied(false);
+              }}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'rgba(0,0,0,0.05)',
+                border: 'none',
+                borderRadius: '50px',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                fontSize: '16px',
+                color: 'var(--text-main)',
+                fontWeight: 'bold'
+              }}
+            >
+              ✕
+            </button>
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚗</div>
+              <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 8px' }}>원클릭 셀프 주차 등록</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                식사 시간 동안 무료 주차 2시간 혜택을<br />직접 편리하게 적용하세요.
+              </p>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>차량 번호 입력 (뒤 4자리)</label>
+              <input
+                type="text"
+                maxLength={4}
+                placeholder="예: 1234"
+                value={vehicleNumber}
+                onChange={(e) => setVehicleNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                style={{
+                  width: '100%',
+                  padding: '16px',
+                  background: 'rgba(0,0,0,0.02)',
+                  border: '1.5px solid var(--border)',
+                  borderRadius: '12px',
+                  fontSize: '24px',
+                  fontWeight: 800,
+                  textAlign: 'center',
+                  letterSpacing: '8px',
+                  color: 'var(--text-main)',
+                  outline: 'none',
+                  transition: 'border-color 0.2s'
+                }}
+              />
+            </div>
+
+            <button
+              onClick={handleParkingSubmit}
+              style={{
+                width: '100%',
+                padding: '16px',
+                background: parkingApplied ? '#10b981' : 'var(--primary)',
+                border: 'none',
+                borderRadius: '12px',
+                color: 'white',
+                fontSize: '15px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                boxShadow: '0 10px 15px -3px rgba(59, 130, 246, 0.3)',
+                transition: 'all 0.3s'
+              }}
+            >
+              {parkingApplied ? '✓ 주차 등록 완료' : '🚗 2시간 무료 정산 등록'}
+            </button>
+            <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '11px', color: 'var(--text-muted)' }}>
+              * 주차 등록 후에는 취소나 변경이 불가하니 신중히 입력바랍니다.
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -10,7 +10,11 @@ interface Call {
     timestamp: string;
 }
 
-export const CallManager: React.FC = () => {
+interface CallManagerProps {
+    storeId?: string;
+}
+
+export const CallManager: React.FC<CallManagerProps> = ({ storeId }) => {
     const [calls, setCalls] = useState<Call[]>([]);
 
     const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
@@ -18,7 +22,8 @@ export const CallManager: React.FC = () => {
     const fetchCalls = async () => {
         try {
             const apiUrl = getApiUrl();
-            const res = await fetch(`${apiUrl}/api/call/active`);
+            const queryParam = storeId && storeId !== "Total" ? `?store_id=${storeId}` : '';
+            const res = await fetch(`${apiUrl}/api/call/active${queryParam}`);
             const data = await res.json();
             if (Array.isArray(data)) {
                 setCalls(data);
@@ -53,6 +58,11 @@ export const CallManager: React.FC = () => {
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
             if (data.type === 'STAFF_CALL') {
+                // 다중 매장 데이터 노출 방지 체크
+                if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
+                    return;
+                }
+
                 setCalls(prev => {
                     if (prev.some(c => c.call_id === data.call_id)) return prev;
                     return [...prev, {
@@ -81,7 +91,7 @@ export const CallManager: React.FC = () => {
         };
 
         return () => ws.close();
-    }, []);
+    }, [storeId]);
 
     return (
         <div className="admin-page animate-fade-in" style={{ padding: '24px', background: 'var(--bg-main)' }}>

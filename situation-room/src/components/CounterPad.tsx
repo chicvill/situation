@@ -414,7 +414,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                 <div style={{ display: 'flex', gap: '10px' }}>
                                                     <button 
                                                         onClick={() => {
-                                                            if(window.confirm('이 주문을 삭제하시겠습니까?')) {
+                                                            if (true) {
                                                                  handleStatusUpdate(order.order_id, 'cancelled');
                                                             }
                                                         }}

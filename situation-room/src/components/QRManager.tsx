@@ -2,17 +2,19 @@ import React, { useState } from 'react';
 
 interface Props {
   bundles: any[];
+  storeId?: string;
 }
 
-export const QRManager: React.FC<Props> = ({ bundles }) => {
+export const QRManager: React.FC<Props> = ({ bundles, storeId }) => {
     const [wifiSSID, setWifiSSID] = useState('MQnet_Wifi');
     const [wifiPass, setWifiPass] = useState('12345678');
     
     // 매장 정보 추출
     const safeBundles = Array.isArray(bundles) ? bundles : [];
-    const storeBundle = safeBundles.find(b => (b.type as string) === 'StoreConfig');
+    const storeBundle = (storeId && safeBundles.find(b => b.type === 'StoreConfig' && b.id === storeId))
+        || safeBundles.find(b => b.type === 'StoreConfig');
     const safeItems = Array.isArray(storeBundle?.items) ? storeBundle!.items : [];
-    const storeId = storeBundle?.store_id || storeBundle?.id || '';
+    const resolvedStoreId = storeBundle?.store_id || storeBundle?.id || '';
     const storeName = safeItems.find((i: any) => i.name === '상호명' || i.name === 'brand')?.value || 'UnknownStore';
 
     const baseUrl = `https://situation.chicvill.store`;
@@ -32,22 +34,22 @@ export const QRManager: React.FC<Props> = ({ bundles }) => {
         {
             title: "🛎️ 웨이팅 등록",
             label: "WT",
-            data: `${baseUrl}/?mode=waiting&action=register&storeId=${storeId}&store=${encodeURIComponent(storeName)}`
+            data: `${baseUrl}/?mode=waiting&action=register&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
         },
         {
             title: "👥 직원 출퇴근",
             label: "AB",
-            data: `${baseUrl}/?mode=hr&action=checkin&storeId=${storeId}&store=${encodeURIComponent(storeName)}`
+            data: `${baseUrl}/?mode=hr&action=checkin&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
         },
         {
             title: "📚 사용자 매뉴얼",
             label: "MU",
-            data: `${baseUrl}/?mode=admin&tab=manual&storeId=${storeId}&store=${encodeURIComponent(storeName)}`
+            data: `${baseUrl}/?mode=admin&tab=manual&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
         },
         {
             title: "💳 자리에서 결제",
             label: "PY",
-            data: `${baseUrl}/?mode=customer&action=pay&storeId=${storeId}&store=${encodeURIComponent(storeName)}`
+            data: `${baseUrl}/?mode=customer&action=pay&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
         }
     ];
 
@@ -58,7 +60,7 @@ export const QRManager: React.FC<Props> = ({ bundles }) => {
             <header className="page-header no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h2>🔳 QR 마스터 인쇄 센터</h2>
-                    <p>매장명: {storeName} (ID: {storeId})</p>
+                    <p>매장명: {storeName} (ID: {resolvedStoreId})</p>
                 </div>
                 <button className="premium-btn" onClick={() => window.print()} style={{ padding: '10px 30px' }}>
                     🖨️ 페이지 전체 인쇄하기
@@ -83,10 +85,10 @@ export const QRManager: React.FC<Props> = ({ bundles }) => {
                         <div key={num} className="qr-card-v2">
                             <h3 className="qr-title-v2">Table {num}</h3>
                             <div className="qr-image-wrapper-v2">
-                                <img src={getQRUri(`${baseUrl}/?mode=customer&table=${num}&storeId=${storeId}&store=${encodeURIComponent(storeName)}`)} alt={`Table ${num} QR`} />
+                                <img src={getQRUri(`${baseUrl}/?mode=customer&table=${num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`)} alt={`Table ${num} QR`} />
                             </div>
                             <div className="qr-badge-v2">{`T${num}`}</div>
-                            <div className="qr-url-text">{`${baseUrl}/?mode=customer&table=${num}&storeId=${storeId}&store=${encodeURIComponent(storeName)}`}</div>
+                            <div className="qr-url-text">{`${baseUrl}/?mode=customer&table=${num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`}</div>
                         </div>
                     ))}
                 </div>
