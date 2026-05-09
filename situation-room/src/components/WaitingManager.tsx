@@ -56,8 +56,8 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
                     </thead>
                     <tbody>
                         {waitingList.map((w, idx) => {
-                            const idInfo = w.items.find(i => i.name.includes('번호') || i.name.includes('이름'))?.value || (idx + 1).toString();
-                            const headCount = w.items.find(i => i.name.includes('인원'))?.value || '2명';
+                            const idInfo = w.items?.find(i => i.name.includes('번호') || i.name.includes('이름'))?.value || (idx + 1).toString();
+                            const headCount = w.items?.find(i => i.name.includes('인원'))?.value || '2명';
                             
                             return (
                                 <tr key={w.id} className="animate-pop-in" style={{ animationDelay: `${idx * 0.05}s` }}>

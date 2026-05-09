@@ -389,7 +389,7 @@ function App() {
   
   const todayStr = currentTime.getFullYear() + '-' + String(currentTime.getMonth() + 1).padStart(2, '0') + '-' + String(currentTime.getDate()).padStart(2, '0');
   const hasTodayReservations = activeReservations.some(r => {
-    const timeVal = r.items.find(i => i.name === '예약시간')?.value || '';
+    const timeVal = r.items?.find(i => i.name === '예약시간')?.value || '';
     return timeVal.includes(todayStr) || timeVal.includes('오늘') || !timeVal.includes('-');
   });
 

@@ -1,5 +1,19 @@
 [
   {
+    "type": "Waiting",
+    "title": "대기 손님 등록",
+    "items": [
+      {
+        "name": "손님 이름",
+        "value": "홍길동"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-09 11:05:09",
+    "id": "BND-1A781AA9",
+    "store_id": "store-korean"
+  },
+  {
     "type": "stats",
     "title": "오늘 대장금 매출 정보",
     "items": [

@@ -36,10 +36,10 @@ export const ReservationManager: React.FC<ReservationManagerProps> = ({ bundles 
 
             <div className="reservation-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '30px' }}>
                 {reservations.map((r) => {
-                    const name = r.items.find(i => i.name === '예약자')?.value || '무명 고객';
-                    const time = r.items.find(i => i.name === '예약시간')?.value || '시간 미지정';
-                    const people = r.items.find(i => i.name === '인원')?.value || '2명';
-                    const memo = r.items.find(i => i.name === '메모')?.value || '';
+                    const name = r.items?.find(i => i.name === '예약자')?.value || '무명 고객';
+                    const time = r.items?.find(i => i.name === '예약시간')?.value || '시간 미지정';
+                    const people = r.items?.find(i => i.name === '인원')?.value || '2명';
+                    const memo = r.items?.find(i => i.name === '메모')?.value || '';
                     const status: string = (r.status as string) || 'pending';
 
                     const statusColors = {
