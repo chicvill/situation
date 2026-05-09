@@ -1,6 +1,170 @@
 [
   {
     "type": "Waiting",
+    "title": "대기 취소",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-09 11:11:56",
+    "id": "BND-0A68D897",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 번호 취소",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "7"
+      },
+      {
+        "name": "상태",
+        "value": "취소됨"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-09 11:11:46",
+    "id": "BND-BC6B971C",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 등록 취소",
+    "items": [
+      {
+        "name": "고객 이름",
+        "value": "홍길동"
+      },
+      {
+        "name": "상태",
+        "value": "취소됨"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-09 11:11:39",
+    "id": "BND-9E0D487F",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 5번 취소",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "5"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-09 11:11:32",
+    "id": "BND-6DA91003",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 인원 취소",
+    "items": [
+      {
+        "name": "취소된 대기 번호",
+        "value": "5"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-09 11:11:27",
+    "id": "BND-7052FF38",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 취소",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "4"
+      },
+      {
+        "name": "상태",
+        "value": "취소"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-09 11:11:19",
+    "id": "BND-FE4FD61F",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 등록",
+    "items": [
+      {
+        "name": "대기 인원",
+        "value": "3번"
+      },
+      {
+        "name": "상태",
+        "value": "입장 완료"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-09 11:10:47",
+    "id": "BND-204B5153",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 홍길동번 입장 완료",
+    "items": [
+      {
+        "name": "대기 손님",
+        "value": "홍길동"
+      },
+      {
+        "name": "현재 대기 상태",
+        "value": "입장 완료"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-09 11:10:38",
+    "id": "BND-9C114BEC",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 1번 손님 호출",
+    "items": [
+      {
+        "name": "대기 번호",
+        "value": "1"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-09 11:10:26",
+    "id": "BND-50E879DA",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
+    "title": "대기 등록 완료",
+    "items": [
+      {
+        "name": "대기자",
+        "value": "홍길동"
+      },
+      {
+        "name": "상태",
+        "value": "입장 완료"
+      }
+    ],
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-09 11:10:10",
+    "id": "BND-B6DDBF49",
+    "store_id": "store-korean"
+  },
+  {
+    "type": "Waiting",
     "title": "대기 손님 등록",
     "items": [
       {
