@@ -37,7 +37,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
 
     // Extract menus from bundles dynamically
     const menus = bundles
-        .filter(b => b.type === 'Menu')
+        .filter(b => b.type === 'Menus')
         .map(b => ({
             name: b.items.find(i => i.name === '메뉴명' || i.name === 'name')?.value || '',
             price: parseInt(b.items.find(i => i.name === '가격' || i.name === 'price')?.value || '0'),
