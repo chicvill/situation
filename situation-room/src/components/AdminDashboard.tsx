@@ -1,3 +1,4 @@
+import React from 'react';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 
 export const AdminDashboard: React.FC<{ bundles: any[] }> = ({ bundles }) => {
