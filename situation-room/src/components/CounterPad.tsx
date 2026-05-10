@@ -282,7 +282,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                         setSelectedSessionForPay(null);
                         setSelectedOrderForPay(null);
                     }}
-                    onSubmit={(_method, _extraData) => {
+                    onSubmit={() => {
                         if (selectedOrderForPay) {
                             return handlePartialPayment(selectedOrderForPay.order_id);
                         } else {
