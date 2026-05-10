@@ -154,6 +154,75 @@ stateDiagram-v2
 
 ---
 
+### 📡 3-4. ⚡ 초고속 실시간 매장 전역 동시성 동기화 아키텍처 (Cross-Terminal Real-Time Event Sync)
+
+본 플랫폼은 주문 창(모바일 고객), 주방 모니터(KDS), 카운터 POS 패널, 대형 전광판(Display Board) 등 **매장 내의 서로 다른 다중 웹 페이지들이 실시간으로 완벽하게 상호작용하며 통신하는 분산형 동기화 구조**를 지니고 있습니다. 손님이 폰으로 주문을 넣거나 주방장이 완료 버튼을 클릭하는 등의 행동이 발생하는 즉시, 전 기기에 0.1초 이내로 실시간 반영됩니다.
+
+#### 1. 🌟 시스템 핵심 특징 (Key System Characteristics)
+* **단일 연결 원칙 (Single Connection Protocol):** 각 클라이언트 페이지는 브라우저 기동 시 백엔드의 WebSocket 채널(`ws/kitchen` 또는 `ws/table/{table_id}`)로 단 하나의 커넥션만 유지합니다. 이를 통해 서버 부하를 무결하게 억제하면서 초고속 수납 채널을 보장합니다.
+* **이벤트 소싱 기반 경량 알림 (Lightweight Event Sourcing):** 무겁고 변조의 여지가 있는 가공되지 않은 통 데이터 전체를 웹소켓으로 직접 퍼 나르지 않습니다. 대신 백엔드는 `"NEW_ORDER"`, `"STATUS_UPDATED"`, `"PAYMENT_APPROVED"`와 같은 **초경량 표준 액션 이벤트 시그널**만을 순간적으로 멀티캐스트(Multicast)합니다.
+* **사일런트 풀링 동기화 (Silent Pull-Sync Architecture):** 액션 시그널을 수신한 클라이언트 페이지는 해당 신호의 종류에 알맞은 API를 배경에서 자동으로 정밀 호출(Silent Fetch)하여 수렴 데이터를 조회합니다. 데이터 유실 및 메모리 상태 정합성 오염을 100% 차단하며, 최상의 렌더링 성능과 무결한 영구 상태 정합성을 동시에 달성합니다.
+* **다중 가상 매장 논리 격리 (Multi-Tenant Logic Isolation):** 통합 소켓 허브(`ws/kitchen`)를 이용함에도 불구하고, 수신된 소켓 프레임에 담긴 `store_id`를 각 브라우저가 본인의 활성 `store_id`와 대조하여 필터링하므로 여러 가맹 매장이 동시 접속하더라도 데이터 혼선이 완벽히 예방됩니다.
+
+---
+
+#### 2. 🔌 실시간 통신 흐름 상세도 (Event Broadcasting Pipeline)
+
+```mermaid
+sequenceDiagram
+    participant Mobile as 📱 손님 모바일 (주문창)
+    participant Server as ⚡ 백엔드 서버 (WebSocket Hub)
+    participant KDS as 👨‍🍳 주방 모니터 (Kitchen Display)
+    participant POS as 💻 카운터 패드 (Counter POS)
+    participant Display as 📺 대형 전광판 (Display Board)
+
+    %% 1. 주문 발생 파이프라인
+    Note over Mobile,Display: [시나리오 A: 주문창에서 선결제 또는 후불 주문 완료 발생]
+    Mobile->>Server: 1. 주문서 전송 & 결제 처리 (HTTP POST)
+    Server->>Server: 2. DB 트랜잭션 완료 & 이벤트 생성
+    Server-->>KDS: 3. Websocket 전파 (NEW_ORDER)
+    Server-->>POS: 4. Websocket 전파 (NEW_ORDER)
+    KDS->>Server: 5. 신규 데이터 자동 조회 (Silent Fetch)
+    POS->>Server: 6. 신규 데이터 자동 조회 (Silent Fetch)
+    Note over KDS,POS: 💡 주방과 카운터 화면이 수동 새로고침 없이 즉시 갱신!
+
+    %% 2. 조리 완료 파이프라인
+    Note over Mobile,Display: [시나리오 B: 주방에서 특정 주문 "조리 완료" 처리]
+    KDS->>Server: 1. 조리 완료 상태 변경 요청 (HTTP POST)
+    Server->>Server: 2. DB 주문 상태 'ready' 갱신
+    Server-->>Display: 3. Websocket 전파 (STATUS_UPDATED)
+    Server-->>Mobile: 4. Websocket 전파 (KITCHEN_DONE)
+    Display->>Server: 5. 완료 주문 리스트 자동 조회 (Silent Fetch)
+    Mobile->>Server: 6. 세션 정보 갱신 (fetchMySession)
+    Note over Mobile,Display: 💡 전광판에 알림 전등 및 고객 스마트폰의 조리 상태바가 실시간 변경!
+
+    %% 3. 정산 및 마감 파이프라인
+    Note over Mobile,Display: [시나리오 C: 카운터에서 사장님이 정산 마감 및 테이블 세션 초기화]
+    POS->>Server: 1. 세션 종료 처리 (HTTP POST)
+    Server->>Server: 2. DB 세션 상태 'closed' 갱신
+    Server-->>Mobile: 3. Websocket 전파 (SESSION_CLOSED)
+    Mobile->>Mobile: 4. 브라우저 세션 클리어 및 리로드
+    Note over Mobile: 💡 고객 스마트폰 화면이 "감사합니다"와 함께 메인으로 안전 퇴장!
+```
+
+---
+
+#### 3. 📝 실시간 공유 이벤트 규격 명세 (Real-Time Event Schemas)
+
+시스템 내에서 공유 및 멀티캐스팅되는 대표적인 실시간 이벤트 종류 및 프레임 구조입니다.
+
+| 이벤트명 (Type) | 송신 주체 | 수신 대상 | 주요 동작 및 영향 |
+| :--- | :--- | :--- | :--- |
+| `NEW_ORDER` | 주문창 (모바일) | 주방, 카운터 | 주방 화면에 주문서 카드 추가, 대기 중 주문 카운트 실시간 증가 |
+| `PAYMENT_APPROVED` | 외부 결제 대행 (Toss) | 주문창, 카운터 | 결제 대기 상태가 해제되며 주방으로 정상 주문 발송 처리 |
+| `STATUS_UPDATED` | 주방 (조리 완료) | 전광판, 주문창 | 대형 전광판에 호출 번호 자동 점등, 고객폰 알림 활성화 |
+| `STAFF_CALL` | 주문창 (호출 버튼) | 카운터 | 카운터 화면 하단의 직원 호출 탭에 알림 깜빡임 점멸 가동 |
+| `SESSION_OPENED` | 카운터 (점장 승인) | 주문창 (모바일) | QR 스캔 대기 화면에서 실시간 메뉴판 화면으로 페이지 즉시 자동 전환 |
+| `SESSION_CLOSED` | 카운터 (정산/퇴장) | 주문창 (모바일) | 식사가 끝난 고객의 주문 페이지를 영구 정지하고 홈으로 내보냄 |
+| `WAITING_REGISTERED`| 웨이팅 패드 (입구) | 카운터 | 실시간 웨이팅 탭에 신규 고객 대기 신청을 자동 갱신 및 경보 |
+
+---
+
 ## 4. 💳 주문 생성 및 선불/후불 결제 정밀 흐름도 (Order & Payment Flow)
 
 손님이 장바구니에 담은 음식이 실제 주방에 전달되어 조리가 시작되기까지의 분기 처리 흐름입니다.
