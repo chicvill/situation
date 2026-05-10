@@ -421,6 +421,71 @@ def init_db_v2():
                     }
                 ]
                 
+                # 4) 현존하는 모든 매장(취홍루, 시크빌 등)의 동적 맞춤형 카탈로그 메뉴 자동 복구 및 시딩
+                cur.execute("SELECT id, name FROM stores")
+                existing_db_stores = cur.fetchall()
+                seeded_ids = {"store-korean", "store-coffee", "store-beef", "store-tofu", "store-bibim"}
+                
+                for s_row in existing_db_stores:
+                    s_id, s_name = s_row[0], s_row[1]
+                    if s_id in seeded_ids:
+                        continue
+                    
+                    items = []
+                    # 중국집 / 중식 테마 (취홍루 등)
+                    if any(k in s_name for k in ["취홍루", "중화", "반점", "루", "성", "객잔", "중식", "짜장", "짬뽕"]):
+                        items = [
+                            {"name": "수제 손짜장면", "value": 7500, "icon": "🍜", "category": "식사류", "description": "춘장의 고소함과 쫄깃한 수타면발이 일품인 대표 유니짜장"},
+                            {"name": "얼큰 낙지짬뽕", "value": 9500, "icon": "🌶️", "category": "식사류", "description": "신선한 낙지 한 마리와 불향 가득한 해산물 육수의 얼큰함"},
+                            {"name": "해물쟁반짜장 (2인)", "value": 18000, "icon": "🍛", "category": "식사류", "description": "오징어, 새우와 면을 춘장에 강한 화력으로 함께 볶아낸 요리"},
+                            {"name": "찹쌀 탕수육 (소)", "value": 19000, "icon": "🐖", "category": "요리류", "description": "국내산 등심을 바삭하게 튀겨 쫄깃하고 투명한 소스를 얹은 한 접시"},
+                            {"name": "매콤 칠리새우", "value": 26000, "icon": "🍤", "category": "요리류", "description": "새콤매콤 달콤한 특제 소스에 버무린 바삭한 대하 튀김"},
+                            {"name": "명품 고추잡채 & 꽃빵", "value": 28000, "icon": "🫓", "category": "요리류", "description": "피망과 돼지고기 채를 고추기름에 볶아 따끈한 꽃빵과 싸 먹는 일품"},
+                            {"name": "연태고량주 (중)", "value": 16000, "icon": "🍶", "category": "주류", "description": "파인애플 향이 은은하게 퍼지는 대표 프리미엄 중국 명주"},
+                            {"name": "시원한 콜라/사이다", "value": 2000, "icon": "🥤", "category": "음료", "description": "기름진 입맛을 리셋해주는 시원한 청량음료"}
+                        ]
+                    # 카페 / 베이커리 / 브런치 테마 (시크빌, 카페 등)
+                    elif any(k in s_name.lower() or k in s_id.lower() for k in ["시크빌", "cafe", "coffee", "카페", "커피", "디저트", "브런치", "베이커리"]):
+                        items = [
+                            {"name": "시그니처 아메리카노", "value": 4500, "icon": "☕", "category": "커피", "description": "과테말라 프리미엄 원두로 깊고 바디감 넘치는 오리지널 블랙"},
+                            {"name": "벨벳 카페 라떼", "value": 5000, "icon": "🥛", "category": "커피", "description": "실크처럼 부드러운 스팀밀크와 진한 에스프레소의 아늑한 한 잔"},
+                            {"name": "에스프레소 마끼아또", "value": 4000, "icon": "☕", "category": "커피", "description": "진한 에스프레소 위에 살포시 얹은 고소한 우유 거품"},
+                            {"name": "제주 청귤 에이드", "value": 6000, "icon": "🍹", "category": "음료", "description": "새콤달콤한 청귤 청에 톡 쏘는 탄산수를 블렌딩한 시즌 청량음료"},
+                            {"name": "메이플 크로플 & 아이스크림", "value": 6500, "icon": "🧇", "category": "디저트", "description": "버터향 가득한 생지를 구워 젤라또 아이스크림과 메이플 시럽을 토핑"},
+                            {"name": "바스크 치즈케이크", "value": 7000, "icon": "🍰", "category": "디저트", "description": "고온에서 그을려 구워내 스모키한 향과 진한 크림치즈의 텍스처"}
+                        ]
+                    # 전통 한식 테마
+                    elif any(k in s_name for k in ["한식", "수라간", "가든", "정식", "식당", "찌개", "밥"]):
+                        items = [
+                            {"name": "우정 돼지김치찌개 정식", "value": 8500, "icon": "🍲", "category": "식사류", "description": "국내산 암돼지와 푹 익은 김치를 끓여내 구수한 돌솥밥과 제공"},
+                            {"name": "전통 제육볶음 반상", "value": 9500, "icon": "🍖", "category": "식사류", "description": "직화로 불향을 가득 입혀 매콤 짭조름하게 볶아낸 점심 인기메뉴"},
+                            {"name": "노릇 해물파전", "value": 16000, "icon": "전류", "category": "요리류", "description": "해산물과 실파를 가득 얹어 겉은 바삭하고 속은 촉촉하게 구워낸 파전"},
+                            {"name": "참숯 매콤 닭갈비", "value": 24000, "icon": "🐔", "category": "요리류", "description": "매콤한 고추장 양념에 재운 정통 닭갈비를 석쇠에 직화로 구운 요리"},
+                            {"name": "시원한 참이슬 소주", "value": 5000, "icon": "🍶", "category": "주류", "description": "한식과 가장 완벽한 마리아주를 자랑하는 소주"},
+                            {"name": "탄산음료 (칠성사이다)", "value": 2000, "icon": "🥤", "category": "음료", "description": "시원한 목 넘김의 오리지널 탄산음료"}
+                        ]
+                    # 기본 패밀리 레스토랑 / 호프 테마 (나머지 일반 매장 전체)
+                    else:
+                        items = [
+                            {"name": "프리미엄 모듬 바베큐 플레이트", "value": 29000, "icon": "🍖", "category": "대표요리", "description": "등갈비, 삼겹살, 소시지를 훈연 참숯 그릴에 직접 구워낸 플래터"},
+                            {"name": "바삭 후라이드 치킨", "value": 19000, "icon": "🍗", "category": "대표요리", "description": "고소한 전용 크리스피 밀가루로 바삭하게 튀겨낸 치킨의 정석"},
+                            {"name": "매콤 골뱅이 소면 무침", "value": 18000, "icon": "🐚", "category": "사이드/안주", "description": "새콤달콤 매콤한 소스에 쫄깃한 골뱅이와 야채, 소면을 함께 버무린 별미"},
+                            {"name": "시원한 어묵 조개탕", "value": 15000, "icon": "🍲", "category": "사이드/안주", "description": "맑고 개운한 조개 육수에 모듬 고급 어묵을 끓여낸 소주 안주 최고봉"},
+                            {"name": "살얼음 생맥주 500cc", "value": 4500, "icon": "🍺", "category": "주류", "description": "잔까지 영하로 꽁꽁 얼려 머리가 깨질 듯한 시원함의 오리지널 생맥주"},
+                            {"name": "코카콜라 / 스프라이트", "value": 2000, "icon": "🥤", "category": "음료", "description": "언제 마셔도 상쾌한 시원한 탄산음료"}
+                        ]
+                        
+                    dynamic_menu = {
+                        "id": f"MENUS_{s_id}",
+                        "type": "Menus",
+                        "title": "메뉴 정보",
+                        "store_id": s_id,
+                        "store": s_name,
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "items": items
+                    }
+                    new_menus.append(dynamic_menu)
+                
                 # 새로운 메뉴들을 pool 앞쪽에 추가
                 pool_data = new_menus + pool_data
                 
@@ -428,7 +493,7 @@ def init_db_v2():
                 with open(pool_file, "w", encoding="utf-8") as f:
                     json.dump(pool_data, f, ensure_ascii=False, indent=2)
                 
-                print("✅ 5대 매장의 카탈로그별 예제 메뉴가 성공적으로 일괄 리셋/시딩되었습니다.")
+                print("✅ 5대 매장 및 현존 모든 매장의 카탈로그별 맞춤형 예제 메뉴 시딩이 완료되었습니다.")
             except Exception as m_err:
                 print(f"⚠️ Failed to seed menu catalogs: {m_err}")
         

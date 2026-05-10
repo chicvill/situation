@@ -5,7 +5,7 @@
     "title": "메뉴 정보",
     "store_id": "store-korean",
     "store": "대장금 수라간",
-    "timestamp": "2026-05-10 12:50:11",
+    "timestamp": "2026-05-10 12:56:45",
     "items": [
       {
         "name": "수라간 정식",
@@ -57,7 +57,7 @@
     "title": "메뉴 정보",
     "store_id": "store-coffee",
     "store": "그레이스 하이테크 커피",
-    "timestamp": "2026-05-10 12:50:11",
+    "timestamp": "2026-05-10 12:56:45",
     "items": [
       {
         "name": "스마트 아메리카노",
@@ -109,7 +109,7 @@
     "title": "메뉴 정보",
     "store_id": "store-beef",
     "store": "대관령 황금 한우",
-    "timestamp": "2026-05-10 12:50:11",
+    "timestamp": "2026-05-10 12:56:45",
     "items": [
       {
         "name": "황금 한우 꽃등심",
@@ -161,7 +161,7 @@
     "title": "메뉴 정보",
     "store_id": "store-tofu",
     "store": "한옥마을 수제 초당순두부",
-    "timestamp": "2026-05-10 12:50:11",
+    "timestamp": "2026-05-10 12:56:45",
     "items": [
       {
         "name": "초당 맑은 순두부",
@@ -213,7 +213,7 @@
     "title": "메뉴 정보",
     "store_id": "store-bibim",
     "store": "우정 전주 돌솥비빔밥",
-    "timestamp": "2026-05-10 12:50:11",
+    "timestamp": "2026-05-10 12:56:45",
     "items": [
       {
         "name": "전통 전주 돌솥비빔밥",
@@ -249,6 +249,228 @@
         "icon": "🥤",
         "category": "음료",
         "description": "시원하고 청량한 오리지널 칠성사이다"
+      }
+    ]
+  },
+  {
+    "id": "MENUS_store-chinese",
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store_id": "store-chinese",
+    "store": "취홍루",
+    "timestamp": "2026-05-10 12:56:45",
+    "items": [
+      {
+        "name": "수제 손짜장면",
+        "value": 7500,
+        "icon": "🍜",
+        "category": "식사류",
+        "description": "춘장의 고소함과 쫄깃한 수타면발이 일품인 대표 유니짜장"
+      },
+      {
+        "name": "얼큰 낙지짬뽕",
+        "value": 9500,
+        "icon": "🌶️",
+        "category": "식사류",
+        "description": "신선한 낙지 한 마리와 불향 가득한 해산물 육수의 얼큰함"
+      },
+      {
+        "name": "해물쟁반짜장 (2인)",
+        "value": 18000,
+        "icon": "🍛",
+        "category": "식사류",
+        "description": "오징어, 새우와 면을 춘장에 강한 화력으로 함께 볶아낸 요리"
+      },
+      {
+        "name": "찹쌀 탕수육 (소)",
+        "value": 19000,
+        "icon": "🐖",
+        "category": "요리류",
+        "description": "국내산 등심을 바삭하게 튀겨 쫄깃하고 투명한 소스를 얹은 한 접시"
+      },
+      {
+        "name": "매콤 칠리새우",
+        "value": 26000,
+        "icon": "🍤",
+        "category": "요리류",
+        "description": "새콤매콤 달콤한 특제 소스에 버무린 바삭한 대하 튀김"
+      },
+      {
+        "name": "명품 고추잡채 & 꽃빵",
+        "value": 28000,
+        "icon": "🫓",
+        "category": "요리류",
+        "description": "피망과 돼지고기 채를 고추기름에 볶아 따끈한 꽃빵과 싸 먹는 일품"
+      },
+      {
+        "name": "연태고량주 (중)",
+        "value": 16000,
+        "icon": "🍶",
+        "category": "주류",
+        "description": "파인애플 향이 은은하게 퍼지는 대표 프리미엄 중국 명주"
+      },
+      {
+        "name": "시원한 콜라/사이다",
+        "value": 2000,
+        "icon": "🥤",
+        "category": "음료",
+        "description": "기름진 입맛을 리셋해주는 시원한 청량음료"
+      }
+    ]
+  },
+  {
+    "id": "MENUS_store-western",
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store_id": "store-western",
+    "store": "라 벨라 이탈리아",
+    "timestamp": "2026-05-10 12:56:45",
+    "items": [
+      {
+        "name": "프리미엄 모듬 바베큐 플레이트",
+        "value": 29000,
+        "icon": "🍖",
+        "category": "대표요리",
+        "description": "등갈비, 삼겹살, 소시지를 훈연 참숯 그릴에 직접 구워낸 플래터"
+      },
+      {
+        "name": "바삭 후라이드 치킨",
+        "value": 19000,
+        "icon": "🍗",
+        "category": "대표요리",
+        "description": "고소한 전용 크리스피 밀가루로 바삭하게 튀겨낸 치킨의 정석"
+      },
+      {
+        "name": "매콤 골뱅이 소면 무침",
+        "value": 18000,
+        "icon": "🐚",
+        "category": "사이드/안주",
+        "description": "새콤달콤 매콤한 소스에 쫄깃한 골뱅이와 야채, 소면을 함께 버무린 별미"
+      },
+      {
+        "name": "시원한 어묵 조개탕",
+        "value": 15000,
+        "icon": "🍲",
+        "category": "사이드/안주",
+        "description": "맑고 개운한 조개 육수에 모듬 고급 어묵을 끓여낸 소주 안주 최고봉"
+      },
+      {
+        "name": "살얼음 생맥주 500cc",
+        "value": 4500,
+        "icon": "🍺",
+        "category": "주류",
+        "description": "잔까지 영하로 꽁꽁 얼려 머리가 깨질 듯한 시원함의 오리지널 생맥주"
+      },
+      {
+        "name": "코카콜라 / 스프라이트",
+        "value": 2000,
+        "icon": "🥤",
+        "category": "음료",
+        "description": "언제 마셔도 상쾌한 시원한 탄산음료"
+      }
+    ]
+  },
+  {
+    "id": "MENUS_store-japanese",
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store_id": "store-japanese",
+    "store": "미도리 스시",
+    "timestamp": "2026-05-10 12:56:45",
+    "items": [
+      {
+        "name": "프리미엄 모듬 바베큐 플레이트",
+        "value": 29000,
+        "icon": "🍖",
+        "category": "대표요리",
+        "description": "등갈비, 삼겹살, 소시지를 훈연 참숯 그릴에 직접 구워낸 플래터"
+      },
+      {
+        "name": "바삭 후라이드 치킨",
+        "value": 19000,
+        "icon": "🍗",
+        "category": "대표요리",
+        "description": "고소한 전용 크리스피 밀가루로 바삭하게 튀겨낸 치킨의 정석"
+      },
+      {
+        "name": "매콤 골뱅이 소면 무침",
+        "value": 18000,
+        "icon": "🐚",
+        "category": "사이드/안주",
+        "description": "새콤달콤 매콤한 소스에 쫄깃한 골뱅이와 야채, 소면을 함께 버무린 별미"
+      },
+      {
+        "name": "시원한 어묵 조개탕",
+        "value": 15000,
+        "icon": "🍲",
+        "category": "사이드/안주",
+        "description": "맑고 개운한 조개 육수에 모듬 고급 어묵을 끓여낸 소주 안주 최고봉"
+      },
+      {
+        "name": "살얼음 생맥주 500cc",
+        "value": 4500,
+        "icon": "🍺",
+        "category": "주류",
+        "description": "잔까지 영하로 꽁꽁 얼려 머리가 깨질 듯한 시원함의 오리지널 생맥주"
+      },
+      {
+        "name": "코카콜라 / 스프라이트",
+        "value": 2000,
+        "icon": "🥤",
+        "category": "음료",
+        "description": "언제 마셔도 상쾌한 시원한 탄산음료"
+      }
+    ]
+  },
+  {
+    "id": "MENUS_store-1",
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store_id": "store-1",
+    "store": "시크앤프레시",
+    "timestamp": "2026-05-10 12:56:45",
+    "items": [
+      {
+        "name": "프리미엄 모듬 바베큐 플레이트",
+        "value": 29000,
+        "icon": "🍖",
+        "category": "대표요리",
+        "description": "등갈비, 삼겹살, 소시지를 훈연 참숯 그릴에 직접 구워낸 플래터"
+      },
+      {
+        "name": "바삭 후라이드 치킨",
+        "value": 19000,
+        "icon": "🍗",
+        "category": "대표요리",
+        "description": "고소한 전용 크리스피 밀가루로 바삭하게 튀겨낸 치킨의 정석"
+      },
+      {
+        "name": "매콤 골뱅이 소면 무침",
+        "value": 18000,
+        "icon": "🐚",
+        "category": "사이드/안주",
+        "description": "새콤달콤 매콤한 소스에 쫄깃한 골뱅이와 야채, 소면을 함께 버무린 별미"
+      },
+      {
+        "name": "시원한 어묵 조개탕",
+        "value": 15000,
+        "icon": "🍲",
+        "category": "사이드/안주",
+        "description": "맑고 개운한 조개 육수에 모듬 고급 어묵을 끓여낸 소주 안주 최고봉"
+      },
+      {
+        "name": "살얼음 생맥주 500cc",
+        "value": 4500,
+        "icon": "🍺",
+        "category": "주류",
+        "description": "잔까지 영하로 꽁꽁 얼려 머리가 깨질 듯한 시원함의 오리지널 생맥주"
+      },
+      {
+        "name": "코카콜라 / 스프라이트",
+        "value": 2000,
+        "icon": "🥤",
+        "category": "음료",
+        "description": "언제 마셔도 상쾌한 시원한 탄산음료"
       }
     ]
   },
