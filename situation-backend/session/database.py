@@ -184,31 +184,46 @@ def init_db_v2():
         """)
         
         # 12. 매장 관리용 테이블 (stores)
+        # 만약 기존에 stores 테이블이 있고 'id' 컬럼이 있는 경우 (실제 가맹점 운영 테이블)
+        # 새롭게 생성하지 않고 기존 테이블 구조를 마이그레이션 합니다.
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS stores (
-                store_id TEXT PRIMARY KEY,
-                store_name TEXT NOT NULL,
-                owner_name TEXT NOT NULL,
-                owner_id TEXT NOT NULL,
-                monthly_fee INTEGER DEFAULT 0,
-                payment_status TEXT DEFAULT '정상',
-                payment_history JSONB DEFAULT '[]',
-                timestamp TEXT NOT NULL
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_name = 'stores' AND column_name = 'id'
             )
         """)
+        is_production_stores = cur.fetchone()[0]
+
+        if is_production_stores:
+            # 기존 프로덕션 테이블에 결제 기록 관리용 컬럼 추가
+            cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS payment_history JSONB DEFAULT '[]'")
+        else:
+            # 신규 설치인 경우의 스키마 (프로덕션 규격에 맞춰 생성)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS stores (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    ceo_name TEXT NOT NULL,
+                    signature_owner TEXT NOT NULL,
+                    monthly_fee INTEGER DEFAULT 0,
+                    payment_status TEXT DEFAULT '정상',
+                    payment_history JSONB DEFAULT '[]',
+                    created_at TIMESTAMP DEFAULT NOW()
+                )
+            """)
         
         # 1. 초기 기본 가맹점 정보 삽입
         initial_stores = [
-            ("store-1", "우정돌솥밥", "홍길동", "owner-1", 50000, "정상", json.dumps([{"date": "2026-05-01", "amount": 50000, "status": "완료"}]), datetime.now().isoformat()),
-            ("store-2", "한옥초당순두부", "이순신", "owner-2", 60000, "미납", json.dumps([{"date": "2026-05-01", "amount": 0, "status": "미납"}]), datetime.now().isoformat()),
-            ("store-3", "대관령한우구이", "강감찬", "owner-3", 100000, "정상", json.dumps([{"date": "2026-05-01", "amount": 100000, "status": "완료"}]), datetime.now().isoformat())
+            ("store-1", "우정돌솥밥", "홍길동", "owner-1", 50000, "정상", json.dumps([{"date": "2026-05-01", "amount": 50000, "status": "완료"}])),
+            ("store-2", "한옥초당순두부", "이순신", "owner-2", 60000, "미납", json.dumps([{"date": "2026-05-01", "amount": 0, "status": "미납"}])),
+            ("store-3", "대관령한우구이", "강감찬", "owner-3", 100000, "정상", json.dumps([{"date": "2026-05-01", "amount": 100000, "status": "완료"}]))
         ]
         for s in initial_stores:
-            cur.execute("SELECT COUNT(*) FROM stores WHERE store_id = %s", (s[0],))
+            cur.execute("SELECT COUNT(*) FROM stores WHERE id = %s", (s[0],))
             if cur.fetchone()[0] == 0:
                 cur.execute("""
-                    INSERT INTO stores (store_id, store_name, owner_name, owner_id, monthly_fee, payment_status, payment_history, timestamp)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO stores (id, name, ceo_name, signature_owner, monthly_fee, payment_status, payment_history, created_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
                 """, s)
 
         # 2. knowledge_pool.json 데이터에 포함된 매장들 자동 동기화 및 복구

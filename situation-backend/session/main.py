@@ -187,6 +187,52 @@ class StoreUpdateRequest(BaseModel):
 async def get_stores():
     return get_stores_db()
 
+@app.get("/api/debug-db")
+async def debug_db_endpoint():
+    status = {}
+    try:
+        db_url = os.getenv("DATABASE_URL")
+        status["database_url_configured"] = bool(db_url)
+        if db_url:
+            status["database_url_masked"] = db_url.split("@")[-1] if "@" in db_url else "configured"
+        
+        import psycopg2
+        conn = psycopg2.connect(db_url)
+        status["connection_test"] = "SUCCESS"
+        
+        cur = conn.cursor()
+        # 테이블 존재 여부 확인
+        cur.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'stores'
+            )
+        """)
+        stores_table_exists = cur.fetchone()[0]
+        status["stores_table_exists"] = stores_table_exists
+        
+        if stores_table_exists:
+            # 컬럼 정보 조회
+            cur.execute("""
+                SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_name = 'stores'
+            """)
+            status["stores_columns"] = [{"column_name": r[0], "data_type": r[1]} for r in cur.fetchall()]
+            
+            cur.execute("SELECT COUNT(*) FROM stores")
+            status["stores_count"] = cur.fetchone()[0]
+        else:
+            status["stores_columns"] = []
+            status["stores_count"] = 0
+            
+        cur.close()
+        conn.close()
+    except Exception as e:
+        status["connection_test"] = "FAILED"
+        status["error"] = str(e)
+    return status
+
 @app.post("/api/stores")
 async def add_store(store: StoreCreateRequest):
     history_str = json.dumps(store.payment_history or [])
