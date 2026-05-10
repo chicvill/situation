@@ -36,17 +36,43 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         window.speechSynthesis.speak(utterance);
     };
 
-    // Extract menus from bundles dynamically
-    const menus = bundles
-        .filter(b => b.type === 'Menus')
-        .map(b => ({
-            name: b.items.find(i => i.name === '메뉴명' || i.name === 'name')?.value || '',
-            price: parseInt(b.items.find(i => i.name === '가격' || i.name === 'price')?.value || '0'),
-            category: b.items.find(i => i.name === '카테고리' || i.name === 'category')?.value || '기타',
-            desc: b.items.find(i => i.name === '설명' || i.name === 'description')?.value || '',
-            image: b.items.find(i => i.name === '이미지' || i.name === 'image')?.value || ''
-        }))
-        .filter(m => m.name);
+    // Extract menus from bundles dynamically using the ultra-robust defensive matching strategy
+    const menus = (() => {
+        const safeBundles = Array.isArray(bundles) ? bundles : [];
+        
+        // 1. Try matching by exact store_id
+        let menuBundle = safeBundles.find(b => b.type === 'Menus' && b.store_id === storeId);
+        
+        // 2. Try exact store name match
+        if (!menuBundle && storeName) {
+            menuBundle = safeBundles.find(b => b.type === 'Menus' && b.store === storeName);
+        }
+        
+        // 3. Try partial store name match (e.g., '초당' or '이탈리아' keywords)
+        if (!menuBundle && storeName) {
+            const cleanStoreName = storeName.replace(/\s+/g, '');
+            menuBundle = safeBundles.find(b => {
+                if (b.type !== 'Menus' || !b.store) return false;
+                const cleanBStoreName = b.store.replace(/\s+/g, '');
+                return cleanStoreName.includes(cleanBStoreName) || cleanBStoreName.includes(cleanStoreName);
+            });
+        }
+        
+        // 4. Absolute fallback to first available Menus bundle
+        if (!menuBundle) {
+            menuBundle = safeBundles.find(b => b.type === 'Menus');
+        }
+        
+        if (!menuBundle) return [];
+        
+        return menuBundle.items.map((item: any) => ({
+            name: String(item.name || '').trim(),
+            price: typeof item.value === 'number' ? item.value : (parseInt(String(item.value || '').replace(/[^0-9]/g, '')) || 0),
+            category: item.category || '기타',
+            desc: item.description || '',
+            image: item.icon && (item.icon.startsWith('http://') || item.icon.startsWith('https://')) ? item.icon : ''
+        })).filter((m: any) => m.name);
+    })();
 
     // Initial Welcome Message or Post-Payment Restoration Dialog
     useEffect(() => {

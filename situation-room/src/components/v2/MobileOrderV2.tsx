@@ -76,7 +76,31 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
 
   const menus = useMemo(() => {
     const safeBundles = Array.isArray(bundles) ? bundles : [];
-    const menuBundle = safeBundles.find(b => b.type === 'Menus' && (b.store_id === storeId || !b.store_id));
+    
+    // Defensive multi-stage matching strategy to ensure menus never go blank
+    // 1. Match by exact store_id (highest priority)
+    let menuBundle = safeBundles.find(b => b.type === 'Menus' && b.store_id === storeId);
+    
+    // 2. Fallback to exact store name match
+    if (!menuBundle && storeName) {
+        menuBundle = safeBundles.find(b => b.type === 'Menus' && b.store === storeName);
+    }
+    
+    // 3. Fallback to partial store name match (e.g., '초당' or '이탈리아' keywords)
+    if (!menuBundle && storeName) {
+        const cleanStoreName = storeName.replace(/\s+/g, '');
+        menuBundle = safeBundles.find(b => {
+            if (b.type !== 'Menus' || !b.store) return false;
+            const cleanBStoreName = b.store.replace(/\s+/g, '');
+            return cleanStoreName.includes(cleanBStoreName) || cleanBStoreName.includes(cleanStoreName);
+        });
+    }
+    
+    // 4. Fallback to first available Menus bundle if still not found (absolute fallback)
+    if (!menuBundle) {
+        menuBundle = safeBundles.find(b => b.type === 'Menus');
+    }
+
     if (!menuBundle) return [];
     
     return menuBundle.items.map((item: any) => {
@@ -104,7 +128,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             description: item.description || '최고의 재료로 만든 시그니처 메뉴'
         };
     });
-  }, [bundles, storeId]);
+  }, [bundles, storeId, storeName]);
 
   const categories = useMemo(() => ['전체', ...new Set(menus.map(m => m.category))], [menus]);
   const totalPrice = useMemo(() => cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0), [cart]);
