@@ -1148,8 +1148,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             setShowPayModal(true);
           }}
         >
-          <span className="nav-icon" style={{ color: '#10b981' }}>💳</span>
-          <span className="nav-label" style={{ color: '#10b981', fontWeight: 800 }}>바로결제</span>
+          <span className="nav-icon" style={{ color: '#059669' }}>💳</span>
+          <span className="nav-label" style={{ color: '#059669', fontWeight: 800 }}>바로결제</span>
         </button>
       </nav>
 
