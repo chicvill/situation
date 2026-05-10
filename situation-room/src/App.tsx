@@ -20,6 +20,7 @@ import { StoreManualEditor } from './components/StoreManualEditor';
 import { ParkingManager } from './components/ParkingManager';
 import { PointsManager } from './components/PointsManager';
 import MobileOrderV2 from './components/v2/MobileOrderV2';
+import { AdminStoreManager } from './components/AdminStoreManager';
 import { useSituation } from './hooks/useSituation';
 import { useStoreFilter } from './hooks/useStoreFilter';
 import { useStoreSync } from './hooks/useStoreSync';
@@ -239,74 +240,16 @@ function App() {
     recognition.start();
   };
 
-  // 시스템 관리자(Admin)인 경우 매장 선택 화면 노출
+  // 시스템 관리자(Admin)인 경우 매장 선택 및 관리 화면 노출
   if (user?.role === 'admin' && !selectedAdminStore) {
-    const stores = safeBundles.filter(b => b.type === 'StoreConfig');
-    
     return (
-      <div className="admin-store-selector animate-fade-in" style={{ background: 'var(--bg-main)', minHeight: '100vh', padding: '100px 20px' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <h1 style={{ textAlign: 'center', marginBottom: '12px', fontSize: '2.2rem', fontWeight: '800', color: 'var(--text-main)' }}>MQNET SERVICE</h1>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '60px', fontSize: '1.1rem' }}>관리하실 매장을 선택해 주세요.</p>
-          
-          {safeBundles.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
-              <div className="spinner" style={{ margin: '0 auto 20px' }}></div>
-              <p>지식 풀에서 매장 정보를 불러오는 중입니다...</p>
-            </div>
-          ) : stores.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px' }}>
-              <p style={{ marginBottom: '20px' }}>등록된 매장 정보가 없습니다.</p>
-              <button 
-                onClick={() => {
-                  setSelectedAdminStore('temp-store');
-                  updateStore('temp-store', '테스트 매장');
-                }}
-                className="premium-button"
-              >
-                테스트 매장으로 시작하기
-              </button>
-            </div>
-          ) : (
-            <>
-              <p style={{ textAlign: 'center', opacity: 0.7, marginBottom: '40px' }}>점검 및 관리를 진행할 매장을 선택해 주세요.</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '30px' }}>
-                {stores.map(store => {
-                  const name = store.items.find((i: any) => i.name === '상호명')?.value || '알 수 없는 매장';
-                  const payStatus = store.items.find((i: any) => i.name === '납부상태')?.value || '정상';
-                  const isHealthy = payStatus !== '미납';
-
-                  return (
-                    <div key={store.id} 
-                         onClick={() => {
-                           setSelectedAdminStore(store.id);
-                           updateStore(store.id, name);
-                         }}
-                         style={{ 
-                           padding: '50px 30px', background: 'var(--surface)', borderRadius: 'var(--radius-md)', 
-                           border: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                           textAlign: 'center', boxShadow: 'var(--shadow-md)', position: 'relative', overflow: 'hidden'
-                         }}
-                         className="store-card-hover"
-                    >
-                      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '4px', background: isHealthy ? 'var(--accent)' : 'var(--danger)' }}></div>
-                      <h3 style={{ marginBottom: '16px', fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>{name}</h3>
-                      <div style={{ 
-                        fontSize: '0.75rem', padding: '6px 16px', borderRadius: '50px', 
-                        background: isHealthy ? 'var(--primary-soft)' : 'rgba(239, 68, 68, 0.08)', 
-                        color: isHealthy ? 'var(--text-muted)' : 'var(--danger)',
-                        fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px'
-                      }}>
-                        {isHealthy ? 'Connected' : 'Action Required'}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+      <AdminStoreManager 
+        onSelectStore={(id, name) => {
+          setSelectedAdminStore(id);
+          updateStore(id, name);
+        }}
+        onLogout={handleLogout}
+      />
     );
   }
 
@@ -438,8 +381,31 @@ function App() {
               ☰
             </button>
           )}
-          <div style={{ fontSize: '1.4rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>
-            {storeName || '우리식당'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ fontSize: '1.4rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>
+              {storeName || '우리식당'}
+            </div>
+            {user?.role === 'admin' && (
+              <button 
+                onClick={() => setSelectedAdminStore(null)}
+                style={{ 
+                  background: 'rgba(255,255,255,0.08)', 
+                  border: '1px solid var(--border)', 
+                  color: 'var(--accent-orange)', 
+                  padding: '4px 10px', 
+                  borderRadius: '6px', 
+                  fontSize: '0.75rem', 
+                  fontWeight: '700', 
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
+                  whiteSpace: 'nowrap'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
+                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
+              >
+                🔄 매장 전환
+              </button>
+            )}
           </div>
         </div>
 

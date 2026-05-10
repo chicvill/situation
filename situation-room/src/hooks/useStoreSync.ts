@@ -129,11 +129,15 @@ export const useStoreSync = (storeId: string) => {
 
   // 3. 특정 탭 클릭 이동 시 해당 알림 깜빡임 즉시 초기화(Reset)
   const resetFlash = useCallback((tab: string) => {
+    const validKeys: (keyof NotificationStates)[] = ['call', 'waiting', 'reserve', 'parking', 'points'];
+    const key = tab as keyof NotificationStates;
+    if (!validKeys.includes(key)) return;
+
     setFlashingTabs(prev => {
-      if (prev[tab as keyof NotificationStates] === false) return prev;
+      if (prev[key] === false) return prev;
       return {
         ...prev,
-        [tab]: false
+        [key]: false
       };
     });
   }, []);

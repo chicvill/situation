@@ -12,7 +12,8 @@ import asyncio
 from .database import (
     save_session, save_order, get_active_session, 
     get_orders_by_session, update_order_status, get_max_order_seq, init_db_v2,
-    get_db_conn, get_situation_history, update_order_payment_status
+    get_db_conn, get_situation_history, update_order_payment_status,
+    get_stores_db, add_store_db, update_store_db, delete_store_db
 )
 import ai_engine
 
@@ -164,6 +165,66 @@ def save_pool(pool):
     except Exception as e:
         print(f"Save Pool Error: {e}")
         return False
+
+class StoreCreateRequest(BaseModel):
+    store_id: str
+    store_name: str
+    owner_name: str
+    owner_id: str
+    monthly_fee: int
+    payment_status: str
+    payment_history: Optional[List[Dict[str, Any]]] = []
+
+class StoreUpdateRequest(BaseModel):
+    store_name: str
+    owner_name: str
+    owner_id: str
+    monthly_fee: int
+    payment_status: str
+    payment_history: Optional[List[Dict[str, Any]]] = []
+
+@app.get("/api/stores")
+async def get_stores():
+    return get_stores_db()
+
+@app.post("/api/stores")
+async def add_store(store: StoreCreateRequest):
+    history_str = json.dumps(store.payment_history or [])
+    success = add_store_db(
+        store_id=store.store_id,
+        store_name=store.store_name,
+        owner_name=store.owner_name,
+        owner_id=store.owner_id,
+        monthly_fee=store.monthly_fee,
+        payment_status=store.payment_status,
+        payment_history=history_str
+    )
+    if success:
+        return {"status": "success", "message": "Store registered successfully"}
+    raise HTTPException(status_code=500, detail="Failed to add store to DB")
+
+@app.put("/api/stores/{store_id}")
+async def update_store(store_id: str, store: StoreUpdateRequest):
+    history_str = json.dumps(store.payment_history or [])
+    success = update_store_db(
+        store_id=store_id,
+        store_name=store.store_name,
+        owner_name=store.owner_name,
+        owner_id=store.owner_id,
+        monthly_fee=store.monthly_fee,
+        payment_status=store.payment_status,
+        payment_history=history_str
+    )
+    if success:
+        return {"status": "success", "message": "Store updated successfully"}
+    raise HTTPException(status_code=500, detail="Failed to update store in DB")
+
+@app.delete("/api/stores/{store_id}")
+async def delete_store(store_id: str):
+    success = delete_store_db(store_id)
+    if success:
+        return {"status": "success", "message": "Store deleted successfully"}
+    raise HTTPException(status_code=500, detail="Failed to delete store from DB")
 
 @app.get("/api/pool")
 async def get_pool(store_id: Optional[str] = None):

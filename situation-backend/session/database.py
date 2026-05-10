@@ -183,6 +183,34 @@ def init_db_v2():
             )
         """)
         
+        # 12. 매장 관리용 테이블 (stores)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS stores (
+                store_id TEXT PRIMARY KEY,
+                store_name TEXT NOT NULL,
+                owner_name TEXT NOT NULL,
+                owner_id TEXT NOT NULL,
+                monthly_fee INTEGER DEFAULT 0,
+                payment_status TEXT DEFAULT '정상',
+                payment_history JSONB DEFAULT '[]',
+                timestamp TEXT NOT NULL
+            )
+        """)
+        
+        # 초기 기본 가맹점 정보 삽입 (데이터가 없을 때만)
+        cur.execute("SELECT COUNT(*) FROM stores")
+        if cur.fetchone()[0] == 0:
+            initial_stores = [
+                ("store-1", "우정돌솥밥", "홍길동", "owner-1", 50000, "정상", json.dumps([{"date": "2026-05-01", "amount": 50000, "status": "완료"}]), datetime.now().isoformat()),
+                ("store-2", "한옥초당순두부", "이순신", "owner-2", 60000, "미납", json.dumps([{"date": "2026-05-01", "amount": 0, "status": "미납"}]), datetime.now().isoformat()),
+                ("store-3", "대관령한우구이", "강감찬", "owner-3", 100000, "정상", json.dumps([{"date": "2026-05-01", "amount": 100000, "status": "완료"}]), datetime.now().isoformat())
+            ]
+            for s in initial_stores:
+                cur.execute("""
+                    INSERT INTO stores (store_id, store_name, owner_name, owner_id, monthly_fee, payment_status, payment_history, timestamp)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """, s)
+        
         try:
             # device_id 컬럼 누락 방지 (기존 테이블 마이그레이션)
             cur.execute("ALTER TABLE table_sessions ADD COLUMN IF NOT EXISTS device_id TEXT")
@@ -1043,3 +1071,66 @@ def get_points_list_db(store_id: Optional[str] = None):
     except Exception as e:
         print(f"Get Points List DB Error: {e}")
         return []
+
+def get_stores_db():
+    conn = get_db_conn()
+    if not conn: return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM stores ORDER BY timestamp DESC")
+        results = cur.fetchall()
+        cur.close()
+        conn.close()
+        return results
+    except Exception as e:
+        print(f"Get Stores DB Error: {e}")
+        return []
+
+def add_store_db(store_id: str, store_name: str, owner_name: str, owner_id: str, monthly_fee: int, payment_status: str, payment_history: str):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO stores (store_id, store_name, owner_name, owner_id, monthly_fee, payment_status, payment_history, timestamp)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (store_id, store_name, owner_name, owner_id, monthly_fee, payment_status, payment_history, datetime.now().isoformat()))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Add Store DB Error: {e}")
+        return False
+
+def update_store_db(store_id: str, store_name: str, owner_name: str, owner_id: str, monthly_fee: int, payment_status: str, payment_history: str):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE stores 
+            SET store_name = %s, owner_name = %s, owner_id = %s, monthly_fee = %s, payment_status = %s, payment_history = %s
+            WHERE store_id = %s
+        """, (store_name, owner_name, owner_id, monthly_fee, payment_status, payment_history, store_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Update Store DB Error: {e}")
+        return False
+
+def delete_store_db(store_id: str):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM stores WHERE store_id = %s", (store_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Delete Store DB Error: {e}")
+        return False
