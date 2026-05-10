@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { API_BASE } from '../config';
 
 interface Props {
   storeId: string;
 }
 
-export const StoreManualEditor: React.FC<Props> = ({ storeId }) => {
+export const StoreManualEditor = ({ storeId }: Props) => {
   const [manual, setManual] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState("");
