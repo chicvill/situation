@@ -1090,66 +1090,27 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
 
       {/* Bottom Nav */}
       <nav className="customer-bottom-nav">
-        {/* Button 3: 추가 주문 */}
+        {/* 1. 진행상황 */}
         <button 
-          onClick={() => {
-            setShowProgress(false);
-          }}
-          style={{
-            background: 'none', border: 'none', 
-            color: !showProgress ? '#f97316' : 'white', 
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1,
-            transition: 'all 0.2s'
-          }}
+          onClick={() => setShowProgress(prev => !prev)}
+          className={showProgress ? 'active' : ''}
         >
-          <span style={{ fontSize: '1.25rem', transform: !showProgress ? 'scale(1.1)' : 'none', transition: 'all 0.2s' }}>➕</span>
-          <span style={{ fontSize: '9px', color: !showProgress ? '#f97316' : '#94a3b8', fontWeight: 700 }}>추가 주문</span>
+          <span className="nav-icon">📋</span>
+          <span className="nav-label">진행상황</span>
         </button>
 
-        {/* Button 4: 음성 주문 */}
+        {/* 2. 음성주문 */}
         <button 
           onClick={toggleVoiceOrdering}
-          style={{
-            background: 'none', border: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1, position: 'relative'
-          }}
+          className={`voice-nav-btn ${isListening ? 'listening' : ''}`}
         >
-          <div style={{
-            position: 'absolute',
-            top: '-25px',
-            width: '44px',
-            height: '44px',
-            borderRadius: '50%',
-            background: isListening ? '#ef4444' : '#f97316',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: isListening ? '0 0 15px rgba(239, 68, 68, 0.5)' : '0 4px 12px rgba(249, 115, 22, 0.3)',
-            animation: isListening ? 'pulse-voice 1.5s infinite' : 'none',
-            border: '3px solid #0f172a',
-            transition: 'all 0.3s'
-          }}>
-            <span style={{ fontSize: '1.2rem' }}>🎙️</span>
+          <div className="voice-mic-container">
+            <span className="nav-icon">🎙️</span>
           </div>
-          <span style={{ fontSize: '9px', color: isListening ? '#ef4444' : '#f97316', fontWeight: 800, marginTop: '22px' }}>음성 주문</span>
+          <span className="nav-label">음성주문</span>
         </button>
 
-        {/* Button 5: 진행 확인 */}
-        <button 
-          onClick={() => {
-            setShowProgress(!showProgress);
-          }}
-          style={{
-            background: 'none', border: 'none', 
-            color: showProgress ? '#f97316' : 'white', 
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1,
-            transition: 'all 0.2s'
-          }}
-        >
-          <span style={{ fontSize: '1.25rem', transform: showProgress ? 'scale(1.1)' : 'none', transition: 'all 0.2s' }}>🔥</span>
-          <span style={{ fontSize: '9px', color: showProgress ? '#f97316' : '#94a3b8', fontWeight: 700 }}>진행 확인</span>
-        </button>
-
-        {/* Button 6: 장바구니 */}
+        {/* 3. 장바구니 */}
         <button 
           onClick={() => {
             if (cart.length === 0) {
@@ -1159,36 +1120,24 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             }
             setShowPayModal(true);
           }}
-          style={{
-            background: 'none', border: 'none', 
-            color: cart.length > 0 ? '#f97316' : 'white', 
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1,
-            position: 'relative',
-            transition: 'all 0.2s'
-          }}
+          className={cart.length > 0 ? 'active' : ''}
         >
-          <span style={{ fontSize: '1.25rem', transform: cart.length > 0 ? 'scale(1.1)' : 'none', transition: 'all 0.2s' }}>🛒</span>
-          <span style={{ fontSize: '9px', color: cart.length > 0 ? '#f97316' : '#94a3b8', fontWeight: 700 }}>장바구니</span>
+          <span className="nav-icon">🛒</span>
+          <span className="nav-label">장바구니</span>
           {cart.reduce((sum, item) => sum + (item.qty || 0), 0) > 0 && (
-            <span style={{
-              position: 'absolute',
-              top: '-3px',
-              right: '8px',
-              background: '#ef4444',
-              color: 'white',
-              fontSize: '8px',
-              fontWeight: 900,
-              borderRadius: '10px',
-              padding: '2px 5px',
-              boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)',
-              animation: 'pulse-light 2s infinite'
-            }}>
+            <span className="nav-badge">
               {cart.reduce((sum, item) => sum + (item.qty || 0), 0)}
             </span>
           )}
         </button>
 
-        {/* Button 7: 바로 결제 */}
+        {/* 4. 주문금액 */}
+        <div className="nav-amount-box">
+          <span className="nav-amount-label">주문금액</span>
+          <span className="nav-amount-value">{totalPrice.toLocaleString()}원</span>
+        </div>
+
+        {/* 5. 바로결제 */}
         <button 
           onClick={() => {
             if (cart.length === 0) {
@@ -1198,12 +1147,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             }
             setShowPayModal(true);
           }}
-          style={{
-            background: 'none', border: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1
-          }}
         >
-          <span style={{ fontSize: '1.25rem' }}>💳</span>
-          <span style={{ fontSize: '9px', color: '#10b981', fontWeight: 800 }}>바로 결제</span>
+          <span className="nav-icon" style={{ color: '#10b981' }}>💳</span>
+          <span className="nav-label" style={{ color: '#10b981', fontWeight: 800 }}>바로결제</span>
         </button>
       </nav>
 
