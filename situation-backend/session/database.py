@@ -197,19 +197,48 @@ def init_db_v2():
             )
         """)
         
-        # 초기 기본 가맹점 정보 삽입 (데이터가 없을 때만)
-        cur.execute("SELECT COUNT(*) FROM stores")
-        if cur.fetchone()[0] == 0:
-            initial_stores = [
-                ("store-1", "우정돌솥밥", "홍길동", "owner-1", 50000, "정상", json.dumps([{"date": "2026-05-01", "amount": 50000, "status": "완료"}]), datetime.now().isoformat()),
-                ("store-2", "한옥초당순두부", "이순신", "owner-2", 60000, "미납", json.dumps([{"date": "2026-05-01", "amount": 0, "status": "미납"}]), datetime.now().isoformat()),
-                ("store-3", "대관령한우구이", "강감찬", "owner-3", 100000, "정상", json.dumps([{"date": "2026-05-01", "amount": 100000, "status": "완료"}]), datetime.now().isoformat())
-            ]
-            for s in initial_stores:
+        # 1. 초기 기본 가맹점 정보 삽입
+        initial_stores = [
+            ("store-1", "우정돌솥밥", "홍길동", "owner-1", 50000, "정상", json.dumps([{"date": "2026-05-01", "amount": 50000, "status": "완료"}]), datetime.now().isoformat()),
+            ("store-2", "한옥초당순두부", "이순신", "owner-2", 60000, "미납", json.dumps([{"date": "2026-05-01", "amount": 0, "status": "미납"}]), datetime.now().isoformat()),
+            ("store-3", "대관령한우구이", "강감찬", "owner-3", 100000, "정상", json.dumps([{"date": "2026-05-01", "amount": 100000, "status": "완료"}]), datetime.now().isoformat())
+        ]
+        for s in initial_stores:
+            cur.execute("SELECT COUNT(*) FROM stores WHERE store_id = %s", (s[0],))
+            if cur.fetchone()[0] == 0:
                 cur.execute("""
                     INSERT INTO stores (store_id, store_name, owner_name, owner_id, monthly_fee, payment_status, payment_history, timestamp)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """, s)
+
+        # 2. knowledge_pool.json 데이터에 포함된 매장들 자동 동기화 및 복구
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        pool_file = os.path.join(base_dir, "knowledge_pool.json")
+        if os.path.exists(pool_file):
+            try:
+                with open(pool_file, "r", encoding="utf-8") as f:
+                    pool_data = json.load(f)
+                
+                # pool에서 고유 매장 정보 추출
+                pool_stores = {}
+                for item in pool_data:
+                    s_id = item.get("store_id")
+                    s_name = item.get("store")
+                    if s_id and s_name:
+                        pool_stores[s_id] = s_name
+                
+                # 추출된 매장 정보를 DB에 동기화
+                for s_id, s_name in pool_stores.items():
+                    cur.execute("SELECT COUNT(*) FROM stores WHERE store_id = %s", (s_id,))
+                    if cur.fetchone()[0] == 0:
+                        # 신규로 감지된 매장 추가 (예: 대장금 수라간 등)
+                        cur.execute("""
+                            INSERT INTO stores (store_id, store_name, owner_name, owner_id, monthly_fee, payment_status, payment_history, timestamp)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        """, (s_id, s_name, "미지정 점주", f"owner-{s_id}", 50000, "정상", json.dumps([]), datetime.now().isoformat()))
+                        print(f"🔄 Auto-imported store '{s_name}' ({s_id}) from knowledge_pool.json into PostgreSQL.")
+            except Exception as pe:
+                print(f"⚠️ Failed to auto-sync stores from knowledge_pool: {pe}")
         
         try:
             # device_id 컬럼 누락 방지 (기존 테이블 마이그레이션)
