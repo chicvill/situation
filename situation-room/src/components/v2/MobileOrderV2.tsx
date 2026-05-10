@@ -563,11 +563,19 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     ];
 
     return (
-      <div className="payment-modal-overlay" style={{ zIndex: 11000, overflowY: 'auto', padding: '20px 10px' }}>
+      <div className="progress-inline-wrapper animate-fade-in" style={{ 
+        width: '100%', 
+        padding: '10px 15px 120px', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center',
+        gap: '20px'
+      }}>
         <div className="glass-panel animate-pop-in" style={{ 
           width: '100%', maxWidth: '450px', padding: '25px', 
           background: 'linear-gradient(135deg, #0f172a, #1e293b)', border: '1px solid rgba(249,115,22,0.3)',
-          borderRadius: '30px'
+          borderRadius: '30px',
+          boxShadow: '0 15px 35px rgba(0,0,0,0.3)'
         }}>
           <h2 style={{ color: '#f97316', fontSize: '1.4rem', fontWeight: 900, marginBottom: '25px', textAlign: 'center' }}>주문 진행 현황</h2>
           
@@ -644,16 +652,24 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
           </div>
 
           <div style={{ display: 'flex' }}>
-            <button onClick={() => {
-              setShowProgress(false);
-              if (onNavigate) {
-                onNavigate('home');
-              } else {
-                window.dispatchEvent(new CustomEvent('changeTab', { detail: 'home' }));
-              }
-            }}
-              style={{ flex: 1, background: '#f97316', border: 'none', color: 'white', padding: '16px', borderRadius: '15px', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer' }}>
-              닫기
+            <button onClick={() => setShowProgress(false)}
+              style={{ 
+                flex: 1, 
+                background: '#f97316', 
+                border: 'none', 
+                color: 'white', 
+                padding: '16px', 
+                borderRadius: '15px', 
+                fontWeight: 800, 
+                fontSize: '1.05rem', 
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(249, 115, 22, 0.25)',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              📋 메뉴판 보기 (추가 주문)
             </button>
           </div>
         </div>
@@ -858,7 +874,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>[Table {tableNo}]</div>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               <button 
                 onClick={() => setShowParkingModal(true)}
                 style={{
@@ -878,6 +894,28 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
               >
                 <span>🚗 셀프 주차</span>
               </button>
+              {myOrders.length > 0 && (
+                <button 
+                  onClick={() => setShowProgress(true)}
+                  style={{
+                    background: 'rgba(249, 115, 22, 0.12)',
+                    border: '1px solid rgba(249, 115, 22, 0.35)',
+                    color: '#f97316',
+                    borderRadius: '50px',
+                    padding: '8px 16px',
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 0 10px rgba(249, 115, 22, 0.08)',
+                    transition: 'all 0.3s'
+                  }}
+                >
+                  <span>🔥 주문 현황</span>
+                </button>
+              )}
               <button 
                 onClick={() => requestStaffCall("직원호출")}
                 style={{
