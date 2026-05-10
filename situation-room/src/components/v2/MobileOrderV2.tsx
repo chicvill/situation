@@ -741,6 +741,57 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             </p>
           </div>
 
+          {/* 내 주문 내역 (1차, 2차, 3차 누적 표시) */}
+          <div style={{ 
+            background: 'rgba(255,255,255,0.02)', 
+            border: '1px solid rgba(255,255,255,0.05)', 
+            borderRadius: '24px', 
+            padding: '20px', 
+            marginBottom: '20px' 
+          }}>
+            <h3 style={{ color: 'white', fontSize: '15px', margin: '0 0 15px 0', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>🧾 내 주문 내역 (누적)</h3>
+            {myOrders.length === 0 ? (
+              <p style={{ textAlign: 'center', fontSize: '12px', opacity: 0.5, color: '#94a3b8', margin: '10px 0' }}>주문 내역이 없습니다.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {myOrders.map((order, idx) => {
+                  const isPaid = order.payment_status === 'paid' || order.payment_status === 'prepaid';
+                  const borderColor = isPaid ? '#10b981' : '#f59e0b';
+                  return (
+                    <div key={idx} style={{ 
+                      background: 'rgba(255,255,255,0.01)', 
+                      borderLeft: `4px solid ${borderColor}`, 
+                      borderRadius: '12px', 
+                      padding: '12px',
+                      border: '1px solid rgba(255,255,255,0.03)',
+                      borderLeftWidth: '4px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 800, color: borderColor }}>
+                          {order.order_seq}차 주문 {isPaid ? ' (결제완료)' : ' (미결제)'}
+                        </span>
+                        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
+                          {order.status === 'cooking' ? '🔥 조리중' : order.status === 'ready' ? '⚡ 조리완료' : '✅ 서빙완료'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {order.items.map((item: any, i: number) => (
+                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#cbd5e1' }}>
+                            <span>{item.name}</span>
+                            <span style={{ fontWeight: 600 }}>{item.quantity || item.qty}개 | {((item.price || 0) * (item.quantity || item.qty || 1)).toLocaleString()}원</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ textAlign: 'right', marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px', fontSize: '12px', fontWeight: 800, color: '#f97316' }}>
+                        금액: {order.total_price.toLocaleString()}원
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           <div style={{ background: 'rgba(249,115,22,0.1)', padding: '15px', borderRadius: '20px', border: '1px dashed rgba(249,115,22,0.4)', marginBottom: '25px' }}>
             <h4 style={{ color: 'white', fontSize: '14px', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>🎙️ 말로 더 주문해 보세요!</h4>
             <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 8px 0' }}>

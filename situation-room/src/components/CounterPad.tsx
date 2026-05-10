@@ -272,7 +272,12 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
 
             {(selectedSessionForPay || selectedOrderForPay) && (
                 <PaymentModal 
-                    totalPrice={selectedOrderForPay ? selectedOrderForPay.total_price : selectedSessionForPay.orders.reduce((sum: number, o: any) => sum + o.total_price, 0)}
+                    totalPrice={selectedOrderForPay 
+                        ? selectedOrderForPay.total_price 
+                        : selectedSessionForPay.orders
+                            .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
+                            .reduce((sum: number, o: any) => sum + o.total_price, 0)
+                    }
                     onClose={() => {
                         setSelectedSessionForPay(null);
                         setSelectedOrderForPay(null);
@@ -296,6 +301,9 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                 ) : (
                     Array.isArray(sessions) && sessions.map((session) => {
                         const sessionTotal = session.orders.reduce((sum: number, o: any) => sum + o.total_price, 0);
+                        const unpaidTotal = session.orders
+                            .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
+                            .reduce((sum: number, o: any) => sum + o.total_price, 0);
                         const isPending = session.status === 'pending';
                         const isAllPrepaid = session.orders.length > 0 && session.orders.every((o: any) => o.payment_status === 'prepaid' || o.payment_status === 'paid' || o.status === 'paid');
                         
@@ -351,9 +359,17 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                         </div>
                                     )}
 
-                                    <div style={{ textAlign: 'left' }}>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>합계금액</div>
-                                        <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--accent)', whiteSpace: 'nowrap' }}>{sessionTotal.toLocaleString()}원</div>
+                                    <div style={{ display: 'flex', gap: '40px', textAlign: 'left' }}>
+                                        <div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>총 이용 금액</div>
+                                            <div style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>{sessionTotal.toLocaleString()}원</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>미결제 잔액 (후불)</div>
+                                            <div style={{ fontSize: '1.4rem', fontWeight: '800', color: unpaidTotal > 0 ? '#ef4444' : '#10b981', whiteSpace: 'nowrap' }}>
+                                                {unpaidTotal > 0 ? `${unpaidTotal.toLocaleString()}원` : '선불 완납 완료 (0원)'}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
