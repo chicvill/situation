@@ -26,7 +26,6 @@ import { useStoreFilter } from './hooks/useStoreFilter';
 import { useStoreSync } from './hooks/useStoreSync';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
-import { WS_BASE } from './config';
 
 type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'admin' | 'call' | 'manual' | 'parking' | 'points';
 
@@ -310,16 +309,7 @@ function App() {
     }
     return true;
   });
-  const hasWaitingTeams = waitingList.length > 0;
 
-  const reservations = safeBundles.filter(b => b.type === 'Reservations' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
-  const activeReservations = reservations.filter(r => r.status === 'pending' || r.status === 'confirmed');
-  
-  const todayStr = currentTime.getFullYear() + '-' + String(currentTime.getMonth() + 1).padStart(2, '0') + '-' + String(currentTime.getDate()).padStart(2, '0');
-  const hasTodayReservations = activeReservations.some(r => {
-    const timeVal = r.items?.find(i => i.name === '예약시간')?.value || '';
-    return timeVal.includes(todayStr) || timeVal.includes('오늘') || !timeVal.includes('-');
-  });
 
   return (
     <div className={`saas-container mobile-full-mode ${isCustomerMode ? 'customer-mode' : ''}`}>

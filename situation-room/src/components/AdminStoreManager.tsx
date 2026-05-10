@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, FormEvent } from 'react';
+import { useEffect, useState, useMemo, type FormEvent } from 'react';
 import { API_BASE } from '../config';
 
 interface Store {
