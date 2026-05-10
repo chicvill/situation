@@ -73,6 +73,7 @@ function App() {
     }
     if (u.role !== 'customer') {
       localStorage.setItem('mqnet_user', JSON.stringify(u));
+      setActiveTab('counter');
     }
   };
 
@@ -104,7 +105,9 @@ function App() {
       try {
         const u = JSON.parse(savedUser);
         setUser(u);
-        // 저장된 탭 정보가 있다면 복구 (선택 사항)
+        if (u.role !== 'customer') {
+          setActiveTab('counter');
+        }
       } catch (e) {
         localStorage.removeItem('mqnet_user');
       }
@@ -191,7 +194,6 @@ function App() {
             window.dispatchEvent(new CustomEvent('payment_finished', { detail: { orderId, success: true } }));
           }, 500);
 
-          window.history.replaceState({}, document.title, window.location.pathname);
           }
         } catch (err) {
           console.error("Payment Confirmation Error:", err);
@@ -263,6 +265,7 @@ function App() {
         onSelectStore={(id, name) => {
           setSelectedAdminStore(id);
           updateStore(id, name);
+          setActiveTab('counter');
         }}
         onLogout={handleLogout}
       />
