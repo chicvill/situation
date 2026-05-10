@@ -22,7 +22,7 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
             setBundleId(menuBundle.id);
             setMenuItems(menuBundle.items.map(item => ({
                 ...item,
-                value: item.value.replace(/원/g, '').trim(), // '원' 중복 노출 방지를 위해 제거
+                value: typeof item.value === 'number' ? String(item.value) : String(item.value || '').replace(/원/g, '').trim(), // '원' 중복 노출 방지를 위해 제거
                 icon: (item as any).icon || '🍴',
                 category: (item as any).category || '기타',
                 description: (item as any).description || '신선한 재료로 준비했습니다.'
@@ -210,7 +210,7 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <input 
-                                value={item.value.replace(/[^0-9]/g, '')}
+                                value={String(item.value || '').replace(/[^0-9]/g, '')}
                                 onChange={(e) => handleChange(idx, 'value', e.target.value)}
                                 placeholder="0"
                                 style={{ 

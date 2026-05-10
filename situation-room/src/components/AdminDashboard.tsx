@@ -17,8 +17,12 @@ export const AdminDashboard = ({ bundles }: { bundles: any[] }) => {
                     .flatMap(kb => kb.items)
                     .find(ki => ki.name.includes(item.name));
                 
-                const price = menuInfo ? parseInt(menuInfo.value.replace(/[^0-9]/g, '')) : 0;
-                const qtyMatch = item.value.match(/\d+/);
+                const price = menuInfo
+                    ? (typeof menuInfo.value === 'number'
+                        ? menuInfo.value
+                        : (parseInt(String(menuInfo.value || '').replace(/[^0-9]/g, '')) || 0))
+                    : 0;
+                const qtyMatch = String(item.value || '').match(/\d+/);
                 const qty = qtyMatch ? parseInt(qtyMatch[0]) : 1;
                 return sum + (price * qty);
             }, 0);

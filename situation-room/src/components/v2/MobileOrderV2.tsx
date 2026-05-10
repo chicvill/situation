@@ -80,8 +80,10 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     if (!menuBundle) return [];
     
     return menuBundle.items.map((item: any) => {
-        const priceNum = parseInt(item.value.replace(/[^0-9]/g, '')) || 0;
-        const nameClean = item.name.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/, '').trim();
+        const priceNum = typeof item.value === 'number'
+            ? item.value
+            : (parseInt(String(item.value || '').replace(/[^0-9]/g, '')) || 0);
+        const nameClean = String(item.name || '').replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/, '').trim();
         
         // --- Image Selection Logic ---
         let photoUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=200&h=200"; // Default

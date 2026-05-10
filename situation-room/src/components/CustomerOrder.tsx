@@ -169,9 +169,11 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
     
     if (menuBundle) {
       (Array.isArray(menuBundle.items) ? menuBundle.items : []).forEach((item: any) => {
-        const priceNum = parseInt(item.value.replace(/[^0-9]/g, '')) || 0;
+        const priceNum = typeof item.value === 'number'
+            ? item.value
+            : (parseInt(String(item.value || '').replace(/[^0-9]/g, '')) || 0);
         const emojiMatch = item.name.match(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/);
-        const nameClean = item.name.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/, '').trim();
+        const nameClean = String(item.name || '').replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/, '').trim();
         if (nameClean && !menuMap.has(nameClean)) {
             menuMap.set(nameClean, {
               id: nameClean, // 이름 기반 ID로 변경 (안정성 확보)
@@ -353,7 +355,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
                const orderedQty = myOrders.reduce((total, order) => {
                  const matchItem = order.items.find(i => i.name.includes(item.name) || item.name.includes(i.name));
                  if (matchItem) {
-                   const val = matchItem.value.match(/\d+/);
+                   const val = (matchItem as any).value ? String((matchItem as any).value).match(/\d+/) : null;
                    return total + (val ? parseInt(val[0]) : 0);
                  }
                  return total;
