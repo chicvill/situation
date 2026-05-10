@@ -1,11 +1,13 @@
 .login-container {
-    height: 100vh;
-    width: 100vw;
+    height: 100%;
+    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
     background: var(--bg-main);
     overflow: hidden;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .login-glass-panel {
