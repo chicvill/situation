@@ -185,7 +185,7 @@ def init_db_v2():
         
         # 12. 매장 관리용 테이블 (stores) - 테스트용 강제 초기화 및 5대 핵심 가맹점 시딩
         # 사장님의 요청에 따라 가맹점 테이블을 완전히 초기화하고, 정교하게 디자인된 5개의 대표 테스트 매장 데이터를 삽입합니다.
-        cur.execute("DROP TABLE IF EXISTS stores")
+        cur.execute("DROP TABLE IF EXISTS stores CASCADE")
         
         cur.execute("""
             CREATE TABLE stores (

@@ -1,5 +1,258 @@
 [
   {
+    "id": "MENUS_store-korean",
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store_id": "store-korean",
+    "store": "대장금 수라간",
+    "timestamp": "2026-05-10 12:47:28",
+    "items": [
+      {
+        "name": "수라간 정식",
+        "value": 25000,
+        "icon": "🍱",
+        "category": "식사류",
+        "description": "궁중 요리의 진수를 맛볼 수 있는 정갈한 한 상 정식"
+      },
+      {
+        "name": "떡갈비 구이",
+        "value": 18000,
+        "icon": "🥩",
+        "category": "식사류",
+        "description": "수제 가마솥 방식으로 부드럽게 구워낸 떡갈비"
+      },
+      {
+        "name": "구절판",
+        "value": 35000,
+        "icon": "🎨",
+        "category": "요리류",
+        "description": "아홉 가지 밀전병 쌈 요리"
+      },
+      {
+        "name": "신선로",
+        "value": 45000,
+        "icon": "🍲",
+        "category": "요리류",
+        "description": "화로에 보글보글 끓여 먹는 궁중 신선로 전골"
+      },
+      {
+        "name": "감홍로 전통주",
+        "value": 15000,
+        "icon": "🍶",
+        "category": "주류/음료",
+        "description": "육당 최남선이 꼽은 조선 3대 명주 중 하나"
+      },
+      {
+        "name": "수제 식혜",
+        "value": 3000,
+        "icon": "🥤",
+        "category": "주류/음료",
+        "description": "직접 엿기름을 발효시켜 빚어낸 전통 식혜"
+      }
+    ]
+  },
+  {
+    "id": "MENUS_store-coffee",
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store_id": "store-coffee",
+    "store": "그레이스 하이테크 커피",
+    "timestamp": "2026-05-10 12:47:28",
+    "items": [
+      {
+        "name": "스마트 아메리카노",
+        "value": 4500,
+        "icon": "☕",
+        "category": "에스프레소",
+        "description": "정밀 추출 기술로 내린 고소하고 깔끔한 원두커피"
+      },
+      {
+        "name": "벨벳 카페 라떼",
+        "value": 5000,
+        "icon": "🥛",
+        "category": "에스프레소",
+        "description": "실크 같은 마이크로폼 우유와 진한 에스프레소의 조화"
+      },
+      {
+        "name": "하이테크 아인슈페너",
+        "value": 6500,
+        "icon": "🍦",
+        "category": "시그니처",
+        "description": "차가운 더치커피 위에 얹은 달콤하고 묵직한 수제 크림"
+      },
+      {
+        "name": "에메랄드 말차 라떼",
+        "value": 6000,
+        "icon": "🍵",
+        "category": "시그니처",
+        "description": "유기농 보성 말차의 풍미가 살아있는 시그니처 음료"
+      },
+      {
+        "name": "메이플 수플레 팬케이크",
+        "value": 12000,
+        "icon": "🥞",
+        "category": "디저트",
+        "description": "입안에서 사르르 녹는 폭신폭신한 수플레 팬케이크"
+      },
+      {
+        "name": "바스크 탄 치즈케이크",
+        "value": 7000,
+        "icon": "🍰",
+        "category": "디저트",
+        "description": "고온에서 그을려 깊은 스모키 향과 꾸덕함을 품은 치즈케이크"
+      }
+    ]
+  },
+  {
+    "id": "MENUS_store-beef",
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store_id": "store-beef",
+    "store": "대관령 황금 한우",
+    "timestamp": "2026-05-10 12:47:28",
+    "items": [
+      {
+        "name": "황금 한우 꽃등심",
+        "value": 48000,
+        "icon": "🥩",
+        "category": "한우 구이",
+        "description": "최상급 투플러스 마블링의 극강의 고소함을 담은 등심(150g)"
+      },
+      {
+        "name": "황금 한우 안심",
+        "value": 52000,
+        "icon": "🥩",
+        "category": "한우 구이",
+        "description": "육질이 부드럽고 담백한 명품 안심 부위(150g)"
+      },
+      {
+        "name": "전통 육회",
+        "value": 28000,
+        "icon": "🍳",
+        "category": "한우 구이",
+        "description": "참기름 and 마늘로 맛을 내 배와 함께 즐기는 신선한 생육회"
+      },
+      {
+        "name": "차돌 된장찌개",
+        "value": 8000,
+        "icon": "🍲",
+        "category": "식사류",
+        "description": "고소한 한우 차돌박이가 듬뿍 들어가 국물이 깊은 찌개"
+      },
+      {
+        "name": "평양 물냉면",
+        "value": 9000,
+        "icon": "🍜",
+        "category": "식사류",
+        "description": "순메밀 면발과 육향 가득한 육수로 완성한 정통 평양식 물냉면"
+      },
+      {
+        "name": "지리산 참 복분자주",
+        "value": 12000,
+        "icon": "🍷",
+        "category": "주류",
+        "description": "대관령 소고기의 맛을 극대화해 주는 수제 복분자주"
+      }
+    ]
+  },
+  {
+    "id": "MENUS_store-tofu",
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store_id": "store-tofu",
+    "store": "한옥마을 수제 초당순두부",
+    "timestamp": "2026-05-10 12:47:28",
+    "items": [
+      {
+        "name": "초당 맑은 순두부",
+        "value": 9000,
+        "icon": "🥣",
+        "category": "순두부류",
+        "description": "국산 콩과 동해 바닷물로 빚어낸 고소하고 담백한 전통 순두부"
+      },
+      {
+        "name": "매콤 짬뽕 순두부",
+        "value": 10500,
+        "icon": "🌶️",
+        "category": "순두부류",
+        "description": "불향 가득한 해물 육수에 몽글몽글한 순두부를 더한 해장 별미"
+      },
+      {
+        "name": "걸쭉 들깨 순두부",
+        "value": 10000,
+        "icon": "🍲",
+        "category": "순두부류",
+        "description": "들깨가루를 듬뿍 넣어 씹을수록 깊고 고소한 순두부"
+      },
+      {
+        "name": "수제 도토리묵무침",
+        "value": 15000,
+        "icon": "🥗",
+        "category": "곁들임",
+        "description": "직접 쑨 쌉싸름한 묵을 새콤달콤 매콤하게 버무린 별미"
+      },
+      {
+        "name": "바삭 메밀전병",
+        "value": 8000,
+        "icon": "🌯",
+        "category": "곁들임",
+        "description": "메밀전 피에 칼칼한 속을 넣어 노릇노릇 부쳐낸 전병"
+      },
+      {
+        "name": "가평 잣 막걸리",
+        "value": 5000,
+        "icon": "🍶",
+        "category": "전통음료",
+        "description": "잣의 고소한 향이 입안에 맴도는 부드러운 전통 탁주"
+      }
+    ]
+  },
+  {
+    "id": "MENUS_store-bibim",
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store_id": "store-bibim",
+    "store": "우정 전주 돌솥비빔밥",
+    "timestamp": "2026-05-10 12:47:28",
+    "items": [
+      {
+        "name": "전통 전주 돌솥비빔밥",
+        "value": 11000,
+        "icon": "🍚",
+        "category": "비빔밥",
+        "description": "신선한 육회와 온갖 나물이 뜨거운 돌솥에서 지글지글 비벼지는 시그니처"
+      },
+      {
+        "name": "치즈 제육 돌솥비빔밥",
+        "value": 12000,
+        "icon": "🧀",
+        "category": "비빔밥",
+        "description": "매콤하게 볶아낸 제육과 고소한 모짜렐라 치즈의 환상적인 퓨전 돌솥"
+      },
+      {
+        "name": "톡톡 날치알 돌솥비빔밥",
+        "value": 10000,
+        "icon": "🥚",
+        "category": "비빔밥",
+        "description": "톡톡 터지는 날치알과 단무지, 김가루가 어우러진 대중적인 돌솥"
+      },
+      {
+        "name": "노릇 해물파전",
+        "value": 16000,
+        "icon": "🥞",
+        "category": "사이드",
+        "description": "쪽파와 신선한 오징어, 새우를 가득 얹어 튀기듯 구운 해물파전"
+      },
+      {
+        "name": "탄산 사이다",
+        "value": 2000,
+        "icon": "🥤",
+        "category": "음료",
+        "description": "시원하고 청량한 오리지널 칠성사이다"
+      }
+    ]
+  },
+  {
     "type": "Waiting",
     "title": "대기 손님 입장",
     "items": [
@@ -1273,56 +1526,6 @@
     "payment": null
   },
   {
-    "id": "menus-korean",
-    "type": "Menus",
-    "title": "대장금 수라간 메뉴판",
-    "timestamp": "2026.05.09.07:30:00",
-    "items": [
-      {
-        "name": "🍲 궁중 신선로",
-        "value": "45,000",
-        "category": "요리",
-        "icon": "https://images.unsplash.com/photo-1553163147-622ab578dffc?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "전통 화합을 기원하는 모듬 궁중 전골 요리"
-      },
-      {
-        "name": "🍖 한우 갈비찜",
-        "value": "38,000",
-        "category": "요리",
-        "icon": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "최상급 한우를 한방 소스에 정성껏 졸인 요리"
-      },
-      {
-        "name": "🐟 보리굴비 정식",
-        "value": "28,000",
-        "category": "식사",
-        "icon": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "바닷바람에 잘 말려 고소함과 쫄깃함이 가득한 정식"
-      },
-      {
-        "name": "🍚 육회비빔밥",
-        "value": "15,000",
-        "category": "식사",
-        "icon": "https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "신선한 육회와 엄선된 나물, 특제 고추장의 만남"
-      },
-      {
-        "name": "🍜 냉면",
-        "value": "12,000",
-        "category": "식사",
-        "icon": "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "동치미 육수로 우려내어 시원하고 담백한 면 요리"
-      }
-    ],
-    "status": "approved",
-    "order_code": null,
-    "store": "대장금 수라간",
-    "store_id": "store-korean",
-    "table": null,
-    "Package": "매장",
-    "payment": null
-  },
-  {
     "id": "store-chinese",
     "type": "StoreConfig",
     "title": "매장 정보",
@@ -1363,56 +1566,6 @@
       {
         "name": "납부상태",
         "value": "정상"
-      }
-    ],
-    "status": "approved",
-    "order_code": null,
-    "store": "취홍루",
-    "store_id": "store-chinese",
-    "table": null,
-    "Package": "매장",
-    "payment": null
-  },
-  {
-    "id": "menus-chinese",
-    "type": "Menus",
-    "title": "취홍루 메뉴판",
-    "timestamp": "2026.05.09.07:30:00",
-    "items": [
-      {
-        "name": "🦆 북경오리",
-        "value": "85,000",
-        "category": "요리",
-        "icon": "https://images.unsplash.com/photo-1518492104633-130d0cc84637?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "참나무 장작으로 구워내 겉은 바삭하고 속은 부드러운 오리 요리"
-      },
-      {
-        "name": "🍲 전가복",
-        "value": "65,000",
-        "category": "요리",
-        "icon": "https://images.unsplash.com/photo-1546241072-48010ad2862c?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "귀한 해산물과 야채가 가득 들어간 중식 보양식"
-      },
-      {
-        "name": "🐷 꿔바로우",
-        "value": "26,000",
-        "category": "요리",
-        "icon": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "찹쌀 반죽과 특제 레몬 소스로 바삭함을 살린 탕수육"
-      },
-      {
-        "name": "🍜 간짜장",
-        "value": "10,000",
-        "category": "식사",
-        "icon": "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "즉석에서 춘장과 신선한 야채를 볶아낸 진한 맛의 짜장면"
-      },
-      {
-        "name": "🌶️ 짬뽕",
-        "value": "11,000",
-        "category": "식사",
-        "icon": "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "얼큰하고 진한 해물 불맛 가득한 짬뽕"
       }
     ],
     "status": "approved",
@@ -1475,56 +1628,6 @@
     "payment": null
   },
   {
-    "id": "menus-coffee",
-    "type": "Menus",
-    "title": "블루웨이브 로스터즈 메뉴판",
-    "timestamp": "2026.05.09.07:30:00",
-    "items": [
-      {
-        "name": "☕ 아인슈페너",
-        "value": "6,500",
-        "category": "커피",
-        "icon": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "깊고 진한 콜드브루 위에 얹은 달콤 짭조름한 수제 크림"
-      },
-      {
-        "name": "🥤 아메리카노",
-        "value": "4,800",
-        "category": "커피",
-        "icon": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "에티오피아 싱글 원두의 화사하고 산뜻한 산미"
-      },
-      {
-        "name": "🥛 카페라떼",
-        "value": "5,500",
-        "category": "커피",
-        "icon": "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "고소한 유기농 우유와 에스프레소의 완벽한 밸런스"
-      },
-      {
-        "name": "🧇 크로플",
-        "value": "6,000",
-        "category": "디저트",
-        "icon": "https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "프랑스산 고메 버터 생지로 구운 고소하고 달콤한 와플"
-      },
-      {
-        "name": "🍹 딸기 에이드",
-        "value": "6,200",
-        "category": "음료",
-        "icon": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "생딸기 과육을 직접 으깨 만든 새콤달콤 청량 에이드"
-      }
-    ],
-    "status": "approved",
-    "order_code": null,
-    "store": "블루웨이브 로스터즈",
-    "store_id": "store-coffee",
-    "table": null,
-    "Package": "매장",
-    "payment": null
-  },
-  {
     "id": "store-western",
     "type": "StoreConfig",
     "title": "매장 정보",
@@ -1565,56 +1668,6 @@
       {
         "name": "납부상태",
         "value": "정상"
-      }
-    ],
-    "status": "approved",
-    "order_code": null,
-    "store": "라 벨라 이탈리아",
-    "store_id": "store-western",
-    "table": null,
-    "Package": "매장",
-    "payment": null
-  },
-  {
-    "id": "menus-western",
-    "type": "Menus",
-    "title": "라 벨라 이탈리아 메뉴판",
-    "timestamp": "2026.05.09.07:30:00",
-    "items": [
-      {
-        "name": "🥩 티본 스테이크",
-        "value": "69,000",
-        "category": "스테이크",
-        "icon": "https://images.unsplash.com/photo-1432139786598-c113a6ae6408?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "안심과 채끝등심을 가득 품은 오리지널 피렌체식 티본 스테이크"
-      },
-      {
-        "name": "🍝 바질 페스토 파스타",
-        "value": "22,000",
-        "category": "파스타",
-        "icon": "https://images.unsplash.com/photo-1473093226795-af9932fe5856?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "생바질로 직접 만든 페스토와 구운 타이거 새우 파스타"
-      },
-      {
-        "name": "🍄 감자 뇨끼",
-        "value": "24,000",
-        "category": "파스타",
-        "icon": "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "트러플 크림 소스에 쫀득하게 빚어낸 이탈리아 감자 뇨끼"
-      },
-      {
-        "name": "🍕 디아볼라 피자",
-        "value": "19,000",
-        "category": "피자",
-        "icon": "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "스파이시 살라미와 페페론치노로 매콤함을 살린 화덕 피자"
-      },
-      {
-        "name": "🥗 리코타 샐러드",
-        "value": "14,000",
-        "category": "샐러드",
-        "icon": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "수제 홈메이드 리코타 치즈와 새콤한 발사믹 드레싱"
       }
     ],
     "status": "approved",
@@ -1677,56 +1730,6 @@
     "payment": null
   },
   {
-    "id": "menus-japanese",
-    "type": "Menus",
-    "title": "미도리 스시 메뉴판",
-    "timestamp": "2026.05.09.07:30:00",
-    "items": [
-      {
-        "name": "🍣 특선 초밥 (12p)",
-        "value": "35,000",
-        "category": "스시",
-        "icon": "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "당일 새벽 조달한 활어와 제철 생선으로 쥔 프리미엄 모듬 초밥"
-      },
-      {
-        "name": "🐟 참치회 (오도로)",
-        "value": "85,000",
-        "category": "사시미",
-        "icon": "https://images.unsplash.com/photo-1534482421-64566f976cfa?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "입안에 넣자마자 기름지고 고소하게 녹아내리는 참다랑어 대뱃살 사시미"
-      },
-      {
-        "name": "🍜 야끼소바",
-        "value": "16,000",
-        "category": "누들",
-        "icon": "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "신선한 해산물과 생면을 강한 불에 볶아낸 면 요리"
-      },
-      {
-        "name": "🍤 모듬 튀김",
-        "value": "18,000",
-        "category": "사이드",
-        "icon": "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "겉은 실처럼 바삭하고 속은 촉촉한 눈꽃 튀김 모듬"
-      },
-      {
-        "name": "🥃 시그니처 하이볼",
-        "value": "8,000",
-        "category": "주류",
-        "icon": "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?auto=format&fit=crop&q=80&w=300&h=300",
-        "description": "수제 레몬 스퀴즈로 청량감과 산토리 향을 극대화한 하이볼"
-      }
-    ],
-    "status": "approved",
-    "order_code": null,
-    "store": "미도리 스시",
-    "store_id": "store-japanese",
-    "table": null,
-    "Package": "매장",
-    "payment": null
-  },
-  {
     "id": "store-1",
     "type": "StoreConfig",
     "title": "매장 정보",
@@ -1751,41 +1754,6 @@
       {
         "name": "납부상태",
         "value": "정상"
-      }
-    ],
-    "status": "approved",
-    "order_code": null,
-    "store": "시크앤프레시",
-    "store_id": "store-1",
-    "table": null,
-    "Package": "매장",
-    "payment": null
-  },
-  {
-    "id": "MENUS_1777114714778",
-    "type": "Menus",
-    "title": "시크앤프레시 메뉴판",
-    "timestamp": "2026.04.25.19:58:35",
-    "items": [
-      {
-        "name": "에스프레소",
-        "value": "3,500",
-        "category": "커피"
-      },
-      {
-        "name": "아메리카노",
-        "value": "3,500",
-        "category": "커피"
-      },
-      {
-        "name": "카페라떼",
-        "value": "4,500",
-        "category": "커피"
-      },
-      {
-        "name": "카라멜라떼",
-        "value": "5,000",
-        "category": "커피"
       }
     ],
     "status": "approved",
