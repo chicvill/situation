@@ -428,7 +428,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     if (textClean.includes('장바구니') || textClean.includes('결제') || textClean.includes('주문하기')) {
       if (cart.length > 0) {
         speakResponse("장바구니를 열고 결제를 진행합니다.");
-        setShowCart(true);
+        setShowPayModal(true);
         setTimeout(() => setVoiceToast(null), 2500);
         return;
       } else {
