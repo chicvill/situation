@@ -374,7 +374,6 @@ export const AdminStoreManager = ({ onSelectStore, onLogout }: AdminStoreManager
             {filteredStores.map(store => {
               const isPaid = store.payment_status === '정상';
               const isUnpaid = store.payment_status === '미납';
-              const isOverdue = store.payment_status === '연체';
               
               // Safely parse payment history
               let historyList: any[] = [];
