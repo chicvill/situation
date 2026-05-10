@@ -1,7 +1,6 @@
-import React from 'react';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 
-export const AdminDashboard: React.FC<{ bundles: any[] }> = ({ bundles }) => {
+export const AdminDashboard = ({ bundles }: { bundles: any[] }) => {
     const { storeId } = useStoreFilter();
     const now = new Date();
     const todayStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;

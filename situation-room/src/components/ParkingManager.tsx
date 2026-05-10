@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { WS_BASE } from '../config';
 
 interface Parking {
@@ -15,7 +15,7 @@ interface ParkingManagerProps {
     storeId?: string;
 }
 
-export const ParkingManager: React.FC<ParkingManagerProps> = ({ storeId }) => {
+export const ParkingManager = ({ storeId }: ParkingManagerProps) => {
     const [parkings, setParkings] = useState<Parking[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { WS_BASE } from '../config';
 
 interface CustomerPoint {
@@ -11,7 +11,7 @@ interface PointsManagerProps {
     storeId?: string;
 }
 
-export const PointsManager: React.FC<PointsManagerProps> = ({ storeId }) => {
+export const PointsManager = ({ storeId }: PointsManagerProps) => {
     const [points, setPoints] = useState<CustomerPoint[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
 
