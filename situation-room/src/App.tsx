@@ -346,11 +346,11 @@ function App() {
       case 'paper': return <PaperViewer />;
       case 'stats':
       case 'admin':
-      case 'home': return <AdminDashboard bundles={bundles} />;
+      case 'home': return <AdminDashboard bundles={bundles} storeDetails={storeDetails} />;
       case 'call': return <CallManager storeId={storeId} />;
       case 'inventory': return <LogicInventory />;
       case 'manual': return <StoreManualEditor storeId={storeId} />;
-      case 'hr': return <HRManager bundles={bundles} user={user} />;
+      case 'hr': return <HRManager bundles={bundles} user={user} storeDetails={storeDetails} />;
       case 'waiting': return <WaitingManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'waiting', sId, sName)} />;
       case 'reserve': return <ReservationManager bundles={bundles} />;
       case 'parking': return <ParkingManager storeId={storeId} />;
@@ -469,78 +469,6 @@ function App() {
             </div>
           </div>
         </div>
-
-        {/* 가맹비 및 구독 정산 배너 (1개월 무료 체험 & 미납/연체 경고 알림) */}
-        {!isCustomerMode && user && storeDetails && (
-          <div style={{
-            background: storeDetails.payment_status === '연체' 
-              ? 'rgba(239, 68, 68, 0.08)' 
-              : storeDetails.payment_status === '미납' 
-                ? 'rgba(245, 158, 11, 0.08)' 
-                : 'rgba(16, 185, 129, 0.08)',
-            border: `1px solid ${
-              storeDetails.payment_status === '연체' 
-                ? 'rgba(239, 68, 68, 0.2)' 
-                : storeDetails.payment_status === '미납' 
-                  ? 'rgba(245, 158, 11, 0.2)' 
-                  : 'rgba(16, 185, 129, 0.2)'
-            }`,
-            borderRadius: '12px',
-            padding: '10px 15px',
-            marginTop: '4px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-            fontSize: '0.8rem',
-            color: 'var(--text-main)',
-            animation: 'fadeIn 0.5s ease-in-out'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
-              <span style={{ fontSize: '1.1rem' }}>
-                {storeDetails.payment_status === '연체' ? '🚨' : storeDetails.payment_status === '미납' ? '⚠️' : '🎁'}
-              </span>
-              <span>
-                {storeDetails.payment_status === '연체' 
-                  ? `[가맹비 연체] 플랫폼 이용료 정산이 지연되고 있습니다. 관리자에게 납부 문의바랍니다.`
-                  : storeDetails.payment_status === '미납'
-                    ? `[수납 안내] 미확인된 월 가맹 요금이 있습니다. 입금 정보를 확인해 주세요.`
-                    : `현재 1개월 무료 체험 혜택을 이용 중입니다! (다음 납부 예정일: ${
-                        (() => {
-                          const regDateStr = storeDetails.created_at || storeDetails.timestamp;
-                          const regDate = regDateStr ? new Date(regDateStr) : new Date();
-                          const nextPay = new Date(regDate.setMonth(regDate.getMonth() + 1));
-                          return `${nextPay.getFullYear()}년 ${String(nextPay.getMonth() + 1).padStart(2, '0')}월 ${String(nextPay.getDate()).padStart(2, '0')}일`;
-                        })()
-                      })`
-                }
-              </span>
-            </div>
-            <div style={{ 
-              background: storeDetails.payment_status === '연체' ? '#ef4444' : storeDetails.payment_status === '미납' ? '#f59e0b' : '#10b981',
-              color: 'white',
-              padding: '4px 10px',
-              borderRadius: '6px',
-              fontSize: '0.7rem',
-              fontWeight: 800,
-              whiteSpace: 'nowrap'
-            }}>
-              {storeDetails.payment_status === '연체' 
-                ? '서비스 제한 대기' 
-                : storeDetails.payment_status === '미납' 
-                  ? '정산 확인 필요' 
-                  : (() => {
-                      const regDateStr = storeDetails.created_at || storeDetails.timestamp;
-                      const regDate = regDateStr ? new Date(regDateStr) : new Date();
-                      const nextPay = new Date(regDate.setMonth(regDate.getMonth() + 1));
-                      const diffTime = nextPay.getTime() - new Date().getTime();
-                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                      return `체험 종료 D-${diffDays > 0 ? diffDays : 0}`;
-                    })()
-              }
-            </div>
-          </div>
-        )}
       </header>
 
       <main className="saas-main-full" style={{ paddingBottom: isCustomerMode ? '0' : '90px' }}>
