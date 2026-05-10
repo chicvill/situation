@@ -777,38 +777,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             );
           })}
         </div>
-        {cart.length > 0 && (
-          <div 
-            className="floating-cart animate-slide-up" 
-            onClick={() => setShowCart(true)}
-            style={{
-              position: 'fixed',
-              bottom: '24px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: '92%',
-              maxWidth: '450px',
-              height: '60px',
-              zIndex: 2000,
-              cursor: 'pointer',
-              background: 'linear-gradient(135deg, var(--accent), #f97316)',
-              borderRadius: '50px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 15px 35px rgba(245, 158, 11, 0.4), 0 5px 15px rgba(0,0,0,0.2)',
-              margin: '0 auto',
-              border: '2px solid rgba(255,255,255,0.2)'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', width: '100%', color: 'white' }}>
-              <span style={{ fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                🛒 장바구니 보기 <span style={{ background: 'white', color: 'var(--accent)', fontSize: '12px', fontWeight: 900, padding: '2px 8px', borderRadius: '12px' }}>{cart.reduce((sum, item) => sum + (item.qty || 0), 0)}</span>
-              </span>
-              <span style={{ fontSize: '1.1rem', fontWeight: 900 }}>{totalPrice.toLocaleString()}원 주문하기 ➔</span>
-            </div>
-          </div>
-        )}
+
       </>
     );
   };
@@ -857,105 +826,22 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         </div>
       )}
 
-      <header className="glass-card sticky-header" style={{ padding: '0', minHeight: '160px', display: 'flex', flexDirection: 'column', zIndex: 1001 }}>
-        <div style={{ padding: '20px 24px 12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <header className="glass-card sticky-header" style={{ padding: '0', display: 'flex', flexDirection: 'column', zIndex: 1001 }}>
+        <div style={{ padding: '15px 20px 10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <button 
                 onClick={() => onNavigate ? onNavigate('home') : window.dispatchEvent(new CustomEvent('changeTab', { detail: 'home' }))}
-                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-main)', padding: 0 }}
+                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: 'var(--text-main)', padding: 0 }}
               >
                 ✕
               </button>
-              <h1 style={{ fontSize: '22px', margin: 0, fontWeight: 700, color: 'var(--text-main)' }}>{storeName}</h1>
+              <h1 style={{ fontSize: '18px', margin: 0, fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>
+                {storeName} <span style={{ color: '#f97316', marginLeft: '6px', fontSize: '15px' }}>[Table {tableNo}]</span>
+              </h1>
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>{new Date().toLocaleDateString()} {new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}</div>
-          </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>[Table {tableNo}]</div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              <button 
-                onClick={() => setShowParkingModal(true)}
-                style={{
-                  background: 'rgba(59, 130, 246, 0.1)',
-                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                  color: '#3b82f6',
-                  borderRadius: '50px',
-                  padding: '8px 16px',
-                  fontSize: '12px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.3s'
-                }}
-              >
-                <span>🚗 셀프 주차</span>
-              </button>
-              {myOrders.length > 0 && (
-                <button 
-                  onClick={() => setShowProgress(true)}
-                  style={{
-                    background: 'rgba(249, 115, 22, 0.12)',
-                    border: '1px solid rgba(249, 115, 22, 0.35)',
-                    color: '#f97316',
-                    borderRadius: '50px',
-                    padding: '8px 16px',
-                    fontSize: '12px',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    boxShadow: '0 0 10px rgba(249, 115, 22, 0.08)',
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  <span>🔥 주문 현황</span>
-                </button>
-              )}
-              <button 
-                onClick={() => requestStaffCall("직원호출")}
-                style={{
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: '#ef4444',
-                  borderRadius: '50px',
-                  padding: '8px 16px',
-                  fontSize: '12px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.3s'
-                }}
-              >
-                <span>🔔 직원 호출</span>
-              </button>
-              <button 
-                onClick={toggleVoiceOrdering}
-                style={{
-                  background: isListening ? 'rgba(239, 68, 68, 0.2)' : 'rgba(249, 115, 22, 0.1)',
-                  border: isListening ? '1px solid #ef4444' : '1px solid rgba(249, 115, 22, 0.3)',
-                  color: isListening ? '#ef4444' : '#f97316',
-                  borderRadius: '50px',
-                  padding: '8px 16px',
-                  fontSize: '12px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: isListening ? '0 0 15px rgba(239, 68, 68, 0.4)' : 'none',
-                  animation: isListening ? 'pulse-voice 1.5s infinite' : 'none',
-                  transition: 'all 0.3s'
-                }}
-              >
-                <span>{isListening ? '🔊 음성 인식 중...' : '🎙️ 말로 편하게 주문'}</span>
-              </button>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+              {new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}
             </div>
           </div>
         </div>
@@ -969,9 +855,131 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         </div>
       </header>
 
-      <main className="mobile-main">
+      <main className="mobile-main" style={{ paddingBottom: '90px', overflowY: 'auto' }}>
         {renderContent()}
       </main>
+
+      <nav className="customer-bottom-nav" style={{ 
+        position: 'fixed', 
+        bottom: 0, 
+        left: '50%', 
+        transform: 'translateX(-50%)', 
+        width: '100%', 
+        maxWidth: '500px', 
+        height: '75px', 
+        background: 'rgba(15, 23, 42, 0.96)', 
+        backdropFilter: 'blur(15px)', 
+        borderTop: '1px solid rgba(255,255,255,0.08)',
+        borderRadius: '24px 24px 0 0',
+        display: 'flex', 
+        justifyContent: 'space-around', 
+        alignItems: 'center', 
+        zIndex: 10000, 
+        padding: '10px 10px',
+        boxShadow: '0 -10px 30px rgba(0,0,0,0.3)',
+        boxSizing: 'border-box'
+      }}>
+        {/* Button 1: 셀프 주차 */}
+        <button 
+          onClick={() => setShowParkingModal(true)}
+          style={{
+            background: 'none', border: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1
+          }}
+        >
+          <span style={{ fontSize: '1.4rem' }}>🚗</span>
+          <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>셀프 주차</span>
+        </button>
+
+        {/* Button 2: 직원 호출 */}
+        <button 
+          onClick={() => requestStaffCall("직원호출")}
+          style={{
+            background: 'none', border: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1
+          }}
+        >
+          <span style={{ fontSize: '1.4rem' }}>🔔</span>
+          <span style={{ fontSize: '10px', color: '#f87171', fontWeight: 700 }}>직원 호출</span>
+        </button>
+
+        {/* Button 3: 음성 주문 */}
+        <button 
+          onClick={toggleVoiceOrdering}
+          style={{
+            background: 'none', border: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1, position: 'relative'
+          }}
+        >
+          <div style={{
+            position: 'absolute',
+            top: '-25px',
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            background: isListening ? '#ef4444' : '#f97316',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: isListening ? '0 0 15px rgba(239, 68, 68, 0.5)' : '0 4px 12px rgba(249, 115, 22, 0.3)',
+            animation: isListening ? 'pulse-voice 1.5s infinite' : 'none',
+            border: '3px solid #0f172a',
+            transition: 'all 0.3s'
+          }}>
+            <span style={{ fontSize: '1.3rem' }}>🎙️</span>
+          </div>
+          <span style={{ fontSize: '10px', color: isListening ? '#ef4444' : '#f97316', fontWeight: 800, marginTop: '22px' }}>음성 주문</span>
+        </button>
+
+        {/* Button 4: 진행 확인 */}
+        <button 
+          onClick={() => {
+            setShowCart(false);
+            setShowProgress(!showProgress);
+          }}
+          style={{
+            background: 'none', border: 'none', 
+            color: showProgress ? '#f97316' : 'white', 
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1,
+            transition: 'all 0.2s'
+          }}
+        >
+          <span style={{ fontSize: '1.4rem', transform: showProgress ? 'scale(1.15)' : 'none', transition: 'all 0.2s' }}>🔥</span>
+          <span style={{ fontSize: '10px', color: showProgress ? '#f97316' : '#94a3b8', fontWeight: 700 }}>진행 확인</span>
+        </button>
+
+        {/* Button 5: 장바구니 */}
+        <button 
+          onClick={() => {
+            setShowProgress(false);
+            setShowCart(!showCart);
+          }}
+          style={{
+            background: 'none', border: 'none', 
+            color: showCart ? '#f97316' : 'white', 
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1,
+            position: 'relative',
+            transition: 'all 0.2s'
+          }}
+        >
+          <span style={{ fontSize: '1.4rem', transform: showCart ? 'scale(1.15)' : 'none', transition: 'all 0.2s' }}>🛒</span>
+          <span style={{ fontSize: '10px', color: showCart ? '#f97316' : '#94a3b8', fontWeight: 700 }}>장바구니</span>
+          {cart.reduce((sum, item) => sum + (item.qty || 0), 0) > 0 && (
+            <span style={{
+              position: 'absolute',
+              top: '-3px',
+              right: '15px',
+              background: '#ef4444',
+              color: 'white',
+              fontSize: '10px',
+              fontWeight: 900,
+              borderRadius: '10px',
+              padding: '2px 6px',
+              boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)',
+              animation: 'pulse-light 2s infinite'
+            }}>
+              {cart.reduce((sum, item) => sum + (item.qty || 0), 0)}
+            </span>
+          )}
+        </button>
+      </nav>
 
       {isOrdering && <div className="loading-overlay"><div className="spinner"></div><h3>주문 전송 중...</h3></div>}
       
