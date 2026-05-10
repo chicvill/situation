@@ -1121,7 +1121,19 @@ def get_stores_db():
     if not conn: return []
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM stores ORDER BY timestamp DESC")
+        cur.execute("""
+            SELECT 
+                id AS store_id, 
+                name AS store_name, 
+                ceo_name AS owner_name, 
+                COALESCE(signature_owner, 'owner-' || id) AS owner_id, 
+                COALESCE(monthly_fee, 0) AS monthly_fee, 
+                COALESCE(payment_status, '정상') AS payment_status,
+                payment_history,
+                COALESCE(created_at::text, NOW()::text) AS timestamp
+            FROM stores 
+            ORDER BY created_at DESC
+        """)
         results = cur.fetchall()
         cur.close()
         conn.close()
@@ -1136,9 +1148,9 @@ def add_store_db(store_id: str, store_name: str, owner_name: str, owner_id: str,
     try:
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO stores (store_id, store_name, owner_name, owner_id, monthly_fee, payment_status, payment_history, timestamp)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """, (store_id, store_name, owner_name, owner_id, monthly_fee, payment_status, payment_history, datetime.now().isoformat()))
+            INSERT INTO stores (id, name, ceo_name, signature_owner, monthly_fee, payment_status, payment_history, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+        """, (store_id, store_name, owner_name, owner_id, monthly_fee, payment_status, payment_history))
         conn.commit()
         cur.close()
         conn.close()
@@ -1154,8 +1166,8 @@ def update_store_db(store_id: str, store_name: str, owner_name: str, owner_id: s
         cur = conn.cursor()
         cur.execute("""
             UPDATE stores 
-            SET store_name = %s, owner_name = %s, owner_id = %s, monthly_fee = %s, payment_status = %s, payment_history = %s
-            WHERE store_id = %s
+            SET name = %s, ceo_name = %s, signature_owner = %s, monthly_fee = %s, payment_status = %s, payment_history = %s
+            WHERE id = %s
         """, (store_name, owner_name, owner_id, monthly_fee, payment_status, payment_history, store_id))
         conn.commit()
         cur.close()
@@ -1170,7 +1182,7 @@ def delete_store_db(store_id: str):
     if not conn: return False
     try:
         cur = conn.cursor()
-        cur.execute("DELETE FROM stores WHERE store_id = %s", (store_id,))
+        cur.execute("DELETE FROM stores WHERE id = %s", (store_id,))
         conn.commit()
         cur.close()
         conn.close()
