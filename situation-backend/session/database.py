@@ -183,12 +183,10 @@ def init_db_v2():
             )
         """)
         
-        # 12. 매장 관리용 테이블 (stores) - 테스트용 강제 초기화 및 5대 핵심 가맹점 시딩
-        # 사장님의 요청에 따라 가맹점 테이블을 완전히 초기화하고, 정교하게 디자인된 5개의 대표 테스트 매장 데이터를 삽입합니다.
-        cur.execute("DROP TABLE IF EXISTS stores CASCADE")
-        
+        # 12. 매장 관리용 테이블 (stores) - 테스트용 안전 연동 및 5대 핵심 가맹점 시딩
+        # 기존 운영 중인 테이블 및 외래키 종속성을 해치지 않기 위해 DROP/CASCADE 없이 IF NOT EXISTS로 안전하게 생성합니다.
         cur.execute("""
-            CREATE TABLE stores (
+            CREATE TABLE IF NOT EXISTS stores (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 ceo_name TEXT NOT NULL,
@@ -272,6 +270,13 @@ def init_db_v2():
             cur.execute("""
                 INSERT INTO stores (id, name, ceo_name, signature_owner, monthly_fee, payment_status, payment_history, created_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+                ON CONFLICT (id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    ceo_name = EXCLUDED.ceo_name,
+                    signature_owner = EXCLUDED.signature_owner,
+                    monthly_fee = EXCLUDED.monthly_fee,
+                    payment_status = EXCLUDED.payment_status,
+                    payment_history = EXCLUDED.payment_history
             """, s)
 
         # 2. knowledge_pool.json 데이터에 포함된 매장들 자동 동기화 및 복구
