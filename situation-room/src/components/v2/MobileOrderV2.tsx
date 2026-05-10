@@ -392,16 +392,49 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
       return;
     }
 
-    // 2. Exact match against items in active store's menu
+    // 2. Intelligent Partial Keyword Match against items in active store's menu
     let found = false;
     const sortedMenus = [...menus].sort((a, b) => b.name.length - a.name.length);
 
+    // List of common Korean stopwords/particles in ordering context to isolate the core food nouns
+    const stopwords = [
+      '하나', '둘', '셋', '네', '다섯', '여섯', '일곱', '여덟', '아홉', '열',
+      '한개', '두개', '세개', '네개', '다섯개', '개', '개만', '개랑', '개요',
+      '담기', '담아', '담아줘', '담아주세요', '주세요', '주문', '주문해줘', '주문해요',
+      '추가', '추가해줘', '부탁', '부탁해', '부탁해요', '줘', '요'
+    ];
+    
+    // Create a highly stripped down version of the spoken query
+    let speechCleaned = textClean;
+    stopwords.forEach(sw => {
+      speechCleaned = speechCleaned.replace(new RegExp(sw, 'g'), '');
+    });
+
+    // Also extract space-separated words from the original spoken text and clean their suffixes
+    const originalWords = text.split(/\s+/).map(w => {
+      let cleanedWord = w.trim();
+      stopwords.forEach(sw => {
+        cleanedWord = cleanedWord.replace(new RegExp(sw + '$', 'g'), '');
+      });
+      return cleanedWord;
+    }).filter(w => w.length >= 2); // Only keep keywords of at least length 2 to avoid single-char matching
+
     for (const item of sortedMenus) {
-      // Strip emojis from the comparison name
+      // Strip emojis and trim
       const nameOnly = item.name.replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/, '').trim();
-      const matches = text.includes(nameOnly) || textClean.includes(nameOnly.replace(/\s+/g, ''));
+      const cleanName = nameOnly.replace(/\s+/g, '');
       
-      if (matches) {
+      // Smart Multi-tier Matching:
+      // A. Perfect match (user spoke the full exact menu name)
+      const perfectMatch = text.includes(nameOnly) || textClean.includes(cleanName);
+      
+      // B. Spoken noun is a sub-part of the menu name (e.g., "순두부" -> matches "초당 맑은 순두부")
+      const menuContainsSpokenKeyword = speechCleaned.length >= 2 && cleanName.includes(speechCleaned);
+      
+      // C. Any of the separate spoken words (length >= 2) is a sub-part of the menu name
+      const extractedKeywordMatch = originalWords.some(word => cleanName.includes(word));
+      
+      if (perfectMatch || menuContainsSpokenKeyword || extractedKeywordMatch) {
         let qty = 1;
         if (text.includes('두') || text.includes('2') || text.includes('둘') || text.includes('이개') || text.includes('이 개')) qty = 2;
         else if (text.includes('세') || text.includes('3') || text.includes('셋') || text.includes('삼개') || text.includes('삼 개')) qty = 3;
