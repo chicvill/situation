@@ -875,7 +875,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         justifyContent: 'space-around', 
         alignItems: 'center', 
         zIndex: 10000, 
-        padding: '10px 10px',
+        padding: '10px 4px',
         boxShadow: '0 -10px 30px rgba(0,0,0,0.3)',
         boxSizing: 'border-box'
       }}>
@@ -886,8 +886,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             background: 'none', border: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1
           }}
         >
-          <span style={{ fontSize: '1.4rem' }}>🚗</span>
-          <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 700 }}>셀프 주차</span>
+          <span style={{ fontSize: '1.25rem' }}>🚗</span>
+          <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700 }}>셀프 주차</span>
         </button>
 
         {/* Button 2: 직원 호출 */}
@@ -897,11 +897,28 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             background: 'none', border: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1
           }}
         >
-          <span style={{ fontSize: '1.4rem' }}>🔔</span>
-          <span style={{ fontSize: '10px', color: '#f87171', fontWeight: 700 }}>직원 호출</span>
+          <span style={{ fontSize: '1.25rem' }}>🔔</span>
+          <span style={{ fontSize: '9px', color: '#f87171', fontWeight: 700 }}>직원 호출</span>
         </button>
 
-        {/* Button 3: 음성 주문 */}
+        {/* Button 3: 추가 주문 */}
+        <button 
+          onClick={() => {
+            setShowCart(false);
+            setShowProgress(false);
+          }}
+          style={{
+            background: 'none', border: 'none', 
+            color: (!showCart && !showProgress) ? '#f97316' : 'white', 
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1,
+            transition: 'all 0.2s'
+          }}
+        >
+          <span style={{ fontSize: '1.25rem', transform: (!showCart && !showProgress) ? 'scale(1.1)' : 'none', transition: 'all 0.2s' }}>➕</span>
+          <span style={{ fontSize: '9px', color: (!showCart && !showProgress) ? '#f97316' : '#94a3b8', fontWeight: 700 }}>추가 주문</span>
+        </button>
+
+        {/* Button 4: 음성 주문 */}
         <button 
           onClick={toggleVoiceOrdering}
           style={{
@@ -911,8 +928,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
           <div style={{
             position: 'absolute',
             top: '-25px',
-            width: '48px',
-            height: '48px',
+            width: '44px',
+            height: '44px',
             borderRadius: '50%',
             background: isListening ? '#ef4444' : '#f97316',
             display: 'flex',
@@ -923,12 +940,12 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             border: '3px solid #0f172a',
             transition: 'all 0.3s'
           }}>
-            <span style={{ fontSize: '1.3rem' }}>🎙️</span>
+            <span style={{ fontSize: '1.2rem' }}>🎙️</span>
           </div>
-          <span style={{ fontSize: '10px', color: isListening ? '#ef4444' : '#f97316', fontWeight: 800, marginTop: '22px' }}>음성 주문</span>
+          <span style={{ fontSize: '9px', color: isListening ? '#ef4444' : '#f97316', fontWeight: 800, marginTop: '22px' }}>음성 주문</span>
         </button>
 
-        {/* Button 4: 진행 확인 */}
+        {/* Button 5: 진행 확인 */}
         <button 
           onClick={() => {
             setShowCart(false);
@@ -941,11 +958,11 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             transition: 'all 0.2s'
           }}
         >
-          <span style={{ fontSize: '1.4rem', transform: showProgress ? 'scale(1.15)' : 'none', transition: 'all 0.2s' }}>🔥</span>
-          <span style={{ fontSize: '10px', color: showProgress ? '#f97316' : '#94a3b8', fontWeight: 700 }}>진행 확인</span>
+          <span style={{ fontSize: '1.25rem', transform: showProgress ? 'scale(1.1)' : 'none', transition: 'all 0.2s' }}>🔥</span>
+          <span style={{ fontSize: '9px', color: showProgress ? '#f97316' : '#94a3b8', fontWeight: 700 }}>진행 확인</span>
         </button>
 
-        {/* Button 5: 장바구니 */}
+        {/* Button 6: 장바구니 */}
         <button 
           onClick={() => {
             setShowProgress(false);
@@ -959,25 +976,43 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             transition: 'all 0.2s'
           }}
         >
-          <span style={{ fontSize: '1.4rem', transform: showCart ? 'scale(1.15)' : 'none', transition: 'all 0.2s' }}>🛒</span>
-          <span style={{ fontSize: '10px', color: showCart ? '#f97316' : '#94a3b8', fontWeight: 700 }}>장바구니</span>
+          <span style={{ fontSize: '1.25rem', transform: showCart ? 'scale(1.1)' : 'none', transition: 'all 0.2s' }}>🛒</span>
+          <span style={{ fontSize: '9px', color: showCart ? '#f97316' : '#94a3b8', fontWeight: 700 }}>장바구니</span>
           {cart.reduce((sum, item) => sum + (item.qty || 0), 0) > 0 && (
             <span style={{
               position: 'absolute',
               top: '-3px',
-              right: '15px',
+              right: '8px',
               background: '#ef4444',
               color: 'white',
-              fontSize: '10px',
+              fontSize: '8px',
               fontWeight: 900,
               borderRadius: '10px',
-              padding: '2px 6px',
+              padding: '2px 5px',
               boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)',
               animation: 'pulse-light 2s infinite'
             }}>
               {cart.reduce((sum, item) => sum + (item.qty || 0), 0)}
             </span>
           )}
+        </button>
+
+        {/* Button 7: 바로 결제 */}
+        <button 
+          onClick={() => {
+            if (cart.length === 0) {
+              setVoiceToast("🛒 장바구니가 비어 있습니다. 메뉴를 먼저 담아 주세요!");
+              setTimeout(() => setVoiceToast(null), 3000);
+              return;
+            }
+            setShowPayModal(true);
+          }}
+          style={{
+            background: 'none', border: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1
+          }}
+        >
+          <span style={{ fontSize: '1.25rem' }}>💳</span>
+          <span style={{ fontSize: '9px', color: '#10b981', fontWeight: 800 }}>바로 결제</span>
         </button>
       </nav>
 
