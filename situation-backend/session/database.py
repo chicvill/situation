@@ -244,13 +244,13 @@ def init_db_v2():
                 
                 # 추출된 매장 정보를 DB에 동기화
                 for s_id, s_name in pool_stores.items():
-                    cur.execute("SELECT COUNT(*) FROM stores WHERE store_id = %s", (s_id,))
+                    cur.execute("SELECT COUNT(*) FROM stores WHERE id = %s", (s_id,))
                     if cur.fetchone()[0] == 0:
                         # 신규로 감지된 매장 추가 (예: 대장금 수라간 등)
                         cur.execute("""
-                            INSERT INTO stores (store_id, store_name, owner_name, owner_id, monthly_fee, payment_status, payment_history, timestamp)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                        """, (s_id, s_name, "미지정 점주", f"owner-{s_id}", 50000, "정상", json.dumps([]), datetime.now().isoformat()))
+                            INSERT INTO stores (id, name, ceo_name, signature_owner, monthly_fee, payment_status, payment_history, created_at)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+                        """, (s_id, s_name, "미지정 점주", f"owner-{s_id}", 50000, "정상", json.dumps([])))
                         print(f"🔄 Auto-imported store '{s_name}' ({s_id}) from knowledge_pool.json into PostgreSQL.")
             except Exception as pe:
                 print(f"⚠️ Failed to auto-sync stores from knowledge_pool: {pe}")
