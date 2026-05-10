@@ -67,6 +67,21 @@ function App() {
 
   const storeName = resolvedStoreName;
 
+  const handleLogin = (u: any) => {
+    setUser(u);
+    if (u.storeId && u.storeName) {
+      updateStore(u.storeId, u.storeName);
+    }
+    if (u.role !== 'customer') {
+      localStorage.setItem('mqnet_user', JSON.stringify(u));
+    }
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('mqnet_user');
+  };
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -279,20 +294,7 @@ function App() {
     }
   };
 
-  const handleLogin = (u: any) => {
-    setUser(u);
-    if (u.storeId && u.storeName) {
-      updateStore(u.storeId, u.storeName);
-    }
-    if (u.role !== 'customer') {
-      localStorage.setItem('mqnet_user', JSON.stringify(u));
-    }
-  };
 
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('mqnet_user');
-  };
 
   const waitingList = safeBundles.filter(b => {
     if (b.type !== 'Waiting') return false;
