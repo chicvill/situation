@@ -395,19 +395,65 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
 
           <div style={{ background: 'rgba(249,115,22,0.1)', padding: '15px', borderRadius: '20px', border: '1px dashed rgba(249,115,22,0.4)', marginBottom: '25px' }}>
             <h4 style={{ color: 'white', fontSize: '14px', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>🎙️ 말로 더 주문해 보세요!</h4>
-            <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
+            <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 8px 0' }}>
               마이크를 누르고 <strong>"콜라 하나 더"</strong> 또는 <strong>"물 좀 주세요"</strong>라고 말씀해 보세요.
+            </p>
+            <p style={{ fontSize: '11px', color: '#f97316', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              💡 종료 후에는 언제든 QR 코드를 스캔해 추가 주문이 가능합니다.
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button onClick={() => { setShowProgress(false); setShowHistory(true); }}
-              style={{ flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', padding: '12px', borderRadius: '15px', fontWeight: 700 }}>
-              주문현황 보기
-            </button>
+          <div style={{ display: 'flex', gap: '12px' }}>
             <button onClick={() => setShowProgress(false)}
-              style={{ flex: 1, background: '#f97316', border: 'none', color: 'white', padding: '12px', borderRadius: '15px', fontWeight: 800 }}>
-              닫기
+              style={{ 
+                flex: 1.3, 
+                background: 'rgba(255, 255, 255, 0.05)', 
+                border: '1px solid rgba(255, 255, 255, 0.15)', 
+                color: 'white', 
+                padding: '16px', 
+                borderRadius: '15px', 
+                fontWeight: 800, 
+                fontSize: '0.95rem', 
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'scale(1.02)';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              }}
+            >
+              📋 메뉴판 보기 (추가 주문)
+            </button>
+            <button onClick={() => {
+              window.close();
+              setTimeout(() => {
+                const conf = window.confirm("화면을 닫으시겠습니까? (QR코드를 통해 언제든 다시 주문 가능합니다.)");
+                if (conf) {
+                  window.location.href = "about:blank";
+                }
+              }, 100);
+            }}
+              style={{ 
+                flex: 0.7, 
+                background: '#ef4444', 
+                border: 'none', 
+                color: 'white', 
+                padding: '16px', 
+                borderRadius: '15px', 
+                fontWeight: 800, 
+                fontSize: '0.95rem', 
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+              onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              🚪 종료
             </button>
           </div>
         </div>
