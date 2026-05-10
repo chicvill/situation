@@ -12,7 +12,7 @@ const STORAGE_KEYS = {
 export const getStoredStoreId = (): string => {
     // 1. URL Query Parameter takes priority
     const params = new URLSearchParams(window.location.search);
-    const urlStoreId = params.get('storeId');
+    const urlStoreId = params.get('storeId') || params.get('store_id');
     if (urlStoreId) {
         localStorage.setItem(STORAGE_KEYS.STORE_ID, urlStoreId);
         return urlStoreId;
@@ -24,7 +24,7 @@ export const getStoredStoreId = (): string => {
 
 export const getStoredStoreName = (): string => {
     const params = new URLSearchParams(window.location.search);
-    const urlStoreName = params.get('store');
+    const urlStoreName = params.get('store') || params.get('store_name') || params.get('storeName');
     if (urlStoreName) {
         localStorage.setItem(STORAGE_KEYS.STORE_NAME, urlStoreName);
         return urlStoreName;

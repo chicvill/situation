@@ -13,7 +13,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     // Parse table and store parameters from URL
     const params = new URLSearchParams(window.location.search);
     const tableNo = params.get('table') || '3';
-    const storeId = params.get('store_id') || 'default_store';
+    const storeId = params.get('store_id') || params.get('storeId') || 'default_store';
     const initialPaymentSuccess = params.get('payment_success') === 'true';
     const initialAmount = params.get('amount') || '12,000';
 
@@ -24,6 +24,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     const [isListening, setIsListening] = useState<boolean>(false);
 
     const scrollRef = useRef<HTMLDivElement>(null);
+    const hasSpokenWelcome = useRef(false);
 
     // Speak helper for text-to-speech
     const speak = (text: string) => {
@@ -61,7 +62,10 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                         showFollowUps: true
                     }
                 ]);
-                speak(`성공적으로 ${Number(initialAmount).toLocaleString()}원의 결제가 완료되었습니다! 주방에 소중한 주문이 안전하게 전달되었습니다.`);
+                if (!hasSpokenWelcome.current) {
+                    speak(`성공적으로 ${Number(initialAmount).toLocaleString()}원의 결제가 완료되었습니다! 주방에 소중한 주문이 안전하게 전달되었습니다.`);
+                    hasSpokenWelcome.current = true;
+                }
             } else {
                 setMessages([
                     {
@@ -71,7 +75,10 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     }
                 ]);
-                speak(`반갑습니다! ${storeName}의 에이아이 스마트 비서입니다. 저와 편하게 대화하면서 주문을 진행해 보세요.`);
+                if (!hasSpokenWelcome.current) {
+                    speak(`반갑습니다! ${storeName}의 에이아이 스마트 비서입니다. 저와 편하게 대화하면서 주문을 진행해 보세요.`);
+                    hasSpokenWelcome.current = true;
+                }
             }
         }
     }, [storeName, messages.length, initialPaymentSuccess, initialAmount]);
