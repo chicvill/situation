@@ -192,7 +192,8 @@ def init_db_v2():
                 WHERE table_name = 'stores' AND column_name = 'id'
             )
         """)
-        is_production_stores = cur.fetchone()[0]
+        row = cur.fetchone()
+        is_production_stores = row[0] if row else False
 
         if is_production_stores:
             # 기존 프로덕션 테이블에 결제 기록 관리용 컬럼 추가
@@ -220,7 +221,8 @@ def init_db_v2():
         ]
         for s in initial_stores:
             cur.execute("SELECT COUNT(*) FROM stores WHERE id = %s", (s[0],))
-            if cur.fetchone()[0] == 0:
+            row_count = cur.fetchone()
+            if row_count and row_count[0] == 0:
                 cur.execute("""
                     INSERT INTO stores (id, name, ceo_name, signature_owner, monthly_fee, payment_status, payment_history, created_at)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
@@ -245,7 +247,8 @@ def init_db_v2():
                 # 추출된 매장 정보를 DB에 동기화
                 for s_id, s_name in pool_stores.items():
                     cur.execute("SELECT COUNT(*) FROM stores WHERE id = %s", (s_id,))
-                    if cur.fetchone()[0] == 0:
+                    row_sync = cur.fetchone()
+                    if row_sync and row_sync[0] == 0:
                         # 신규로 감지된 매장 추가 (예: 대장금 수라간 등)
                         cur.execute("""
                             INSERT INTO stores (id, name, ceo_name, signature_owner, monthly_fee, payment_status, payment_history, created_at)
