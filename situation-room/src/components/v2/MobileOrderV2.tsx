@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'; // Git Force Trigger: 2026-05-04 23:27
+import React, { useState, useEffect, useMemo } from 'react'; // Git Force Trigger: 2026-05-04 23:27
 import './MobileOrderV2.css';
 import type { BundleData } from '../../types';
 import { WS_BASE, API_BASE } from '../../config';
@@ -93,8 +93,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   const [showProgress, setShowProgress] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceToast, setVoiceToast] = useState<string | null>(null);
-  const [hasActiveSession, setHasActiveSession] = useState(false);
-  const [sessionId, setSessionId] = useState('');
   const [showPayModal, setShowPayModal] = useState(false);
   const [showParkingModal, setShowParkingModal] = useState(false);
   const [vehicleNumber, setVehicleNumber] = useState('');
