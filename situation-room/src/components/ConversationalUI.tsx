@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './ConversationalUI.css';
 import type { BundleData } from '../types';
 import { API_BASE } from '../config';
@@ -22,7 +22,6 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     const [orderStep, setOrderStep] = useState<string>('welcome'); // welcome, menu_selection, point_guide, cash_invoice_guide, payment_method_selection, paying, paid
     const [isPaying, setIsPaying] = useState<boolean>(false);
     const [isListening, setIsListening] = useState<boolean>(false);
-    const [recognizedText, setRecognizedText] = useState<string>('');
 
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -326,12 +325,10 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
 
         recognition.onstart = () => {
             setIsListening(true);
-            setRecognizedText('');
         };
 
         recognition.onresult = (e: any) => {
             const txt = e.results[0][0].transcript;
-            setRecognizedText(txt);
             handleSendMessage(txt);
         };
 
