@@ -37,6 +37,53 @@ interface Order {
   items: OrderItem[];
 }
 
+const getUpsellRecommendation = (mainItemName: string) => {
+  const cleanName = mainItemName.toLowerCase();
+  if (cleanName.includes('커피') || cleanName.includes('아메리카노') || cleanName.includes('에스프레소') || cleanName.includes('라떼')) {
+    return {
+      title: '🍰 부드러운 뉴욕 치즈 케이크',
+      desc: '진한 크림치즈의 풍미가 시원하고 고소한 아메리카노의 커피 맛을 극대화해 줍니다.',
+      price: 6500,
+      image: 'https://images.unsplash.com/photo-1524351199679-46cddf530c04?auto=format&fit=crop&q=80&w=200&h=200',
+      menuName: '치즈 케이크'
+    };
+  }
+  if (cleanName.includes('스테이크')) {
+    return {
+      title: '🍷 셰프 엄선 하우스 레드 와인',
+      desc: '육즙 가득한 소고기 스테이크의 풍미와 마블링의 기름진 고소함을 깊고 진하게 받쳐줍니다.',
+      price: 8000,
+      image: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=200&h=200',
+      menuName: '레드 와인'
+    };
+  }
+  if (cleanName.includes('파스타')) {
+    return {
+      title: '🥖 바삭한 마늘 브레드 & 에이드',
+      desc: '꾸덕하고 감칠맛 넘치는 파스타 소스에 찍어 먹으면 바삭하고 달콤함이 2배가 됩니다.',
+      price: 4500,
+      image: 'https://images.unsplash.com/photo-1573140247632-f8fd74997d5c?auto=format&fit=crop&q=80&w=200&h=200',
+      menuName: '마늘 브레드'
+    };
+  }
+  if (cleanName.includes('와인') || cleanName.includes('주류') || cleanName.includes('맥주')) {
+    return {
+      title: '🧀 럭셔리 모둠 치즈 플래터',
+      desc: '엄선된 4가지 고급 슬라이스 치즈와 고소한 크래커로 술자리를 더욱 세련되게 완성해 보세요.',
+      price: 15000,
+      image: 'https://images.unsplash.com/photo-1486427944299-d1955d23e34d?auto=format&fit=crop&q=80&w=200&h=200',
+      menuName: '모둠 치즈'
+    };
+  }
+  return {
+    title: '🍰 달콤한 초코 가나슈 조각 케이크',
+    desc: '오늘 식사의 마무리를 더욱 로맨틱하게 연출해 줄 진한 수제 초콜릿 풍미의 조각 디저트입니다.',
+    price: 6800,
+    image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=200&h=200',
+    menuName: '초코 케이크'
+  };
+};
+
 const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) => {
   // --- States ---
   const [cart, setCart] = useState<MenuItem[]>([]);
@@ -48,7 +95,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   const [voiceToast, setVoiceToast] = useState<string | null>(null);
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [sessionId, setSessionId] = useState('');
-  const [showCart, setShowCart] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
   const [showParkingModal, setShowParkingModal] = useState(false);
   const [vehicleNumber, setVehicleNumber] = useState('');
@@ -234,7 +280,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         setCart([]); // 장바구니 품목 완전히 초기화 (이중 결제 및 누적 결제 원천 방지)
         fetchMySession();
         setShowProgress(true); // 진행창 보여주기 (주문 진행 현황으로 이동)
-        setShowCart(false);    // 장바구니 닫기
       }
     };
 
@@ -244,7 +289,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
       setCart([]); // 장바구니 품목 완전히 초기화
       fetchMySession();
       setShowProgress(true);
-      setShowCart(false);
     }
 
     window.addEventListener('payment_finished', handleFinished);
@@ -606,97 +650,185 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     }
   }, [tableId, deviceId, storeId, cart, totalPrice, fetchMySession, generateAiStory]);
 
+  const handleAddUpsell = useCallback((rec: any) => {
+    // Find if this menu item exists in our loaded menus
+    const existingMenu = menus.find(m => m.name.includes(rec.menuName) || rec.menuName.includes(m.name));
+    const itemToAdd = existingMenu || {
+      name: rec.menuName,
+      price: rec.price,
+      icon: rec.image,
+      category: '추천',
+      description: rec.desc
+    };
+    
+    // Add to cart
+    setCart(prev => {
+      const existing = prev.find(c => c.name === itemToAdd.name);
+      if (existing) {
+        return prev.map(c => c.name === itemToAdd.name ? { ...c, qty: (c.qty || 0) + 1 } : c);
+      }
+      return [...prev, { ...itemToAdd, qty: 1 }];
+    });
+    
+    // Switch to menu view and show payment modal directly
+    setShowProgress(false);
+    setVoiceToast(`🍰 꿀조합 [${rec.menuName}]이 장바구니에 추가되었습니다! 바로 결제를 진행합니다.`);
+    setTimeout(() => {
+      setVoiceToast(null);
+      setShowPayModal(true);
+    }, 1200);
+  }, [menus]);
+
   // --- Render Functions ---
 
   const renderProgressScreen = () => {
     const latestOrder = myOrders.length > 0 ? myOrders[myOrders.length - 1] : null;
-    const status = latestOrder?.status || 'pending';
     const isPaid = latestOrder?.payment_status === 'paid' || latestOrder?.payment_status === 'prepaid';
     
-    // 고객이 직접 선택한 결제방식 기준으로 선/후결제 노출 정의
-    // method가 '카운터에서 결제'이거나 payment_status가 'unpaid'이면 후불 고객임
-    const isPostpaid = latestOrder?.payment_status === 'unpaid';
-
-    // 6단계 완전 통합형 프리미엄 타임라인 설계
-    const steps = [
-      { label: '좌석', icon: '🪑', active: true, disabled: false, pulse: false },
-      { label: '주문', icon: '📝', active: true, disabled: false, pulse: false },
-      { 
-        label: isPostpaid ? '선결제(제외)' : isPaid ? '선결제(완료)' : '선결제(대기)', 
-        icon: '💳', 
-        active: !isPostpaid && isPaid, 
-        pulse: !isPostpaid && !isPaid,
-        disabled: isPostpaid
-      },
-      { 
-        label: '조리', 
-        icon: '🔥', 
-        active: (isPostpaid && (status === 'cooking' || status === 'ready' || status === 'served')) || (!isPostpaid && isPaid && (status === 'cooking' || status === 'ready' || status === 'served')), 
-        pulse: (isPostpaid && status === 'cooking') || (!isPostpaid && isPaid && status === 'cooking'),
-        disabled: false
-      },
-      { 
-        label: '서빙', 
-        icon: '🚚', 
-        active: (isPostpaid && (status === 'ready' || status === 'served')) || (!isPostpaid && isPaid && (status === 'ready' || status === 'served')), 
-        pulse: (isPostpaid && status === 'ready') || (!isPostpaid && isPaid && status === 'ready'),
-        disabled: false
-      },
-      { 
-        label: !isPostpaid ? '후결제(제외)' : isPaid ? '후결제(완료)' : '후결제(대기)', 
-        icon: '💵', 
-        active: isPostpaid && isPaid, 
-        pulse: isPostpaid && !isPaid && status === 'served',
-        disabled: !isPostpaid
-      }
-    ];
+    const latestOrderName = latestOrder?.items && latestOrder.items.length > 0 ? latestOrder.items[0].name : '';
+    const recommendation = getUpsellRecommendation(latestOrderName);
 
     return (
       <div className="progress-inline-wrapper animate-fade-in" style={{ 
         width: '100%', 
-        padding: '10px 15px 120px', 
+        padding: '20px 0px 120px', 
         display: 'flex', 
         flexDirection: 'column', 
         alignItems: 'center',
-        gap: '20px'
+        position: 'relative'
       }}>
-        <div className="glass-panel animate-pop-in" style={{ 
-          width: '100%', maxWidth: '450px', padding: '25px', 
-          background: 'linear-gradient(135deg, #0f172a, #1e293b)', border: '1px solid rgba(249,115,22,0.3)',
-          borderRadius: '30px',
-          boxShadow: '0 15px 35px rgba(0,0,0,0.3)'
-        }}>
-          <h2 style={{ color: '#f97316', fontSize: '1.4rem', fontWeight: 900, marginBottom: '25px', textAlign: 'center' }}>주문 진행 현황</h2>
+        {/* SCROLLABLE MAIN CONTENT AREA */}
+        <div style={{ width: '100%', maxWidth: '450px', padding: '0 15px', boxSizing: 'border-box' }}>
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', padding: '0 10px', position: 'relative' }}>
-            <div style={{ position: 'absolute', top: '15px', left: '10%', right: '10%', height: '2px', background: 'rgba(255,255,255,0.1)', zIndex: 0 }}></div>
-            {steps.map((step, i) => (
-              <div key={i} style={{ textAlign: 'center', zIndex: 1, flex: 1 }}>
-                <div style={{ 
-                  width: '32px', height: '32px', borderRadius: '50%', 
-                  background: step.disabled ? 'rgba(255,255,255,0.02)' : step.active ? '#f97316' : '#270c40ff',
-                  border: step.disabled ? '1px dashed rgba(255,255,255,0.15)' : 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', margin: '0 auto 8px',
-                  boxShadow: step.pulse && !step.disabled ? '0 0 15px #f97316' : 'none',
-                  animation: step.pulse && !step.disabled ? 'pulse-light 2s infinite' : 'none',
-                  transition: 'all 0.5s',
-                  opacity: step.disabled ? 0.35 : 1
-                }}>
-                  {step.icon}
-                </div>
-                <div style={{ 
-                  fontSize: '9px', 
-                  color: step.disabled ? '#475569' : step.active ? 'white' : '#64748b', 
-                  fontWeight: step.active ? 800 : 400,
-                  textDecoration: step.disabled ? 'line-through' : 'none',
-                  transition: 'all 0.5s'
-                }}>
-                  {step.label}
-                </div>
+          {/* [2] 1,2,3차 차수별 실시간 누적 주문 내역 */}
+          <div style={{ 
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))', 
+            border: '1px solid rgba(255,255,255,0.06)', 
+            borderRadius: '24px', 
+            padding: '20px', 
+            marginBottom: '20px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.15)'
+          }}>
+            <h3 style={{ color: 'white', fontSize: '15px', margin: '0 0 15px 0', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              🧾 실시간 차수별 주문 내역
+            </h3>
+            {myOrders.length === 0 ? (
+              <p style={{ textAlign: 'center', fontSize: '12px', opacity: 0.5, color: '#94a3b8', margin: '10px 0' }}>주문 내역이 없습니다.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {myOrders.map((order, idx) => {
+                  const isPaid = order.payment_status === 'paid' || order.payment_status === 'prepaid';
+                  const borderColor = isPaid ? '#10b981' : '#f59e0b';
+                  return (
+                    <div key={idx} style={{ 
+                      background: 'rgba(255,255,255,0.01)', 
+                      borderLeft: `4px solid ${borderColor}`, 
+                      borderRadius: '12px', 
+                      padding: '12px',
+                      border: '1px solid rgba(255,255,255,0.03)',
+                      borderLeftWidth: '4px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 800, color: borderColor }}>
+                          #{order.order_seq}차 주문 {isPaid ? ' (결제완료)' : ' (미결제)'}
+                        </span>
+                        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
+                          {order.status === 'cooking' ? '🔥 조리중' : order.status === 'ready' ? '⚡ 조리완료' : '✅ 서빙완료'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {order.items.map((item: any, i: number) => (
+                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#cbd5e1' }}>
+                            <span>{item.name}</span>
+                            <span style={{ fontWeight: 600 }}>{item.quantity || item.qty}개 | {((item.price || 0) * (item.quantity || item.qty || 1)).toLocaleString()}원</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ textAlign: 'right', marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px', fontSize: '12px', fontWeight: 800, color: '#f97316' }}>
+                        금액: {order.total_price.toLocaleString()}원
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            )}
           </div>
 
+          {/* [3] 미식 안내 (음식 이야기) */}
+          <div className="glass-card" style={{ padding: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px', borderRadius: '24px' }}>
+            <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '10px' }}>{aiStoryContent.icon || '🍽️'}</div>
+            <h3 style={{ color: '#f97316', textAlign: 'center', margin: '0 0 10px 0', fontSize: '1.2rem', fontWeight: 800 }}>{aiStoryContent.title || '🍴 미식 가이드 상식'}</h3>
+            <p style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.6, textAlign: 'center', margin: 0 }}>
+              {aiStoryContent.body || '주문하신 명품 시그니처 메뉴가 주방에서 조리되는 동안 요리의 기원과 유래, 상식을 읽어보세요.'}
+            </p>
+          </div>
+
+          {/* [4] 매출 유도 꿀조합 추천 상품 슬라이더 */}
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(249,115,22,0.18), rgba(239,68,68,0.1))',
+            border: '1.5px solid rgba(249,115,22,0.4)',
+            borderRadius: '24px',
+            padding: '20px',
+            marginBottom: '20px',
+            boxShadow: '0 12px 28px rgba(249,115,22,0.12)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              position: 'absolute',
+              top: '10px',
+              right: '-25px',
+              background: '#f97316',
+              color: 'white',
+              fontSize: '8px',
+              fontWeight: 900,
+              padding: '4px 24px',
+              transform: 'rotate(45deg)',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              BEST COMBINATION
+            </div>
+            <h4 style={{ color: 'white', fontSize: '14px', margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800 }}>
+              🍯 맛을 2배 높이는 최고의 꿀조합 추천!
+            </h4>
+            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+              <img 
+                src={recommendation.image} 
+                alt={recommendation.title} 
+                style={{ width: '75px', height: '75px', borderRadius: '14px', objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)' }}
+              />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h5 style={{ color: '#f97316', margin: '0 0 3px 0', fontSize: '12.5px', fontWeight: 800 }}>{recommendation.title}</h5>
+                <p style={{ fontSize: '11px', color: '#cbd5e1', margin: '0 0 8px 0', lineHeight: 1.4 }}>{recommendation.desc}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 800, color: 'white' }}>{recommendation.price.toLocaleString()}원</span>
+                  <button 
+                    onClick={() => handleAddUpsell(recommendation)}
+                    style={{
+                      background: '#f97316',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      padding: '5px 12px',
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 10px rgba(249,115,22,0.3)',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                    onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    🛒 1초 추가 주문
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* [5] 결제 실패/대기 관련 안내 및 긴급 안내 */}
           {!isPaid && latestOrder?.payment_status === 'pending' && (
             <div style={{ 
               background: 'rgba(239, 68, 68, 0.1)', padding: '15px', borderRadius: '20px', 
@@ -707,7 +839,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
                 ⚠️ 결제가 아직 확인되지 않았습니다.<br/>
                 네트워크 지연이 발생할 수 있으니 잠시만 기다려 주세요.
               </p>
-              
               {showDelayedHelp && (
                 <div className="animate-fade-in" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed rgba(239, 68, 68, 0.2)' }}>
                   <p style={{ color: 'white', fontSize: '11px', fontWeight: 500, margin: '0 0 8px 0', textAlign: 'center' }}>
@@ -735,75 +866,18 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             </div>
           )}
 
-          <div className="glass-card" style={{ padding: '20px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '20px' }}>
-            <div style={{ fontSize: '2.5rem', textAlign: 'center', marginBottom: '10px' }}>{aiStoryContent.icon}</div>
-            <h3 style={{ color: '#f97316', textAlign: 'center', margin: '0 0 10px 0', fontSize: '1.2rem' }}>{aiStoryContent.title}</h3>
-            <p style={{ fontSize: '13px', color: '#cbd5e1', lineHeight: 1.6, textAlign: 'center', margin: 0 }}>
-              {aiStoryContent.body}
-            </p>
-          </div>
-
-          {/* 내 주문 내역 (1차, 2차, 3차 누적 표시) */}
-          <div style={{ 
-            background: 'rgba(255,255,255,0.02)', 
-            border: '1px solid rgba(255,255,255,0.05)', 
-            borderRadius: '24px', 
-            padding: '20px', 
-            marginBottom: '20px' 
-          }}>
-            <h3 style={{ color: 'white', fontSize: '15px', margin: '0 0 15px 0', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>🧾 내 주문 내역 (누적)</h3>
-            {myOrders.length === 0 ? (
-              <p style={{ textAlign: 'center', fontSize: '12px', opacity: 0.5, color: '#94a3b8', margin: '10px 0' }}>주문 내역이 없습니다.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {myOrders.map((order, idx) => {
-                  const isPaid = order.payment_status === 'paid' || order.payment_status === 'prepaid';
-                  const borderColor = isPaid ? '#10b981' : '#f59e0b';
-                  return (
-                    <div key={idx} style={{ 
-                      background: 'rgba(255,255,255,0.01)', 
-                      borderLeft: `4px solid ${borderColor}`, 
-                      borderRadius: '12px', 
-                      padding: '12px',
-                      border: '1px solid rgba(255,255,255,0.03)',
-                      borderLeftWidth: '4px'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '12px', fontWeight: 800, color: borderColor }}>
-                          {order.order_seq}차 주문 {isPaid ? ' (결제완료)' : ' (미결제)'}
-                        </span>
-                        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
-                          {order.status === 'cooking' ? '🔥 조리중' : order.status === 'ready' ? '⚡ 조리완료' : '✅ 서빙완료'}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {order.items.map((item: any, i: number) => (
-                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#cbd5e1' }}>
-                            <span>{item.name}</span>
-                            <span style={{ fontWeight: 600 }}>{item.quantity || item.qty}개 | {((item.price || 0) * (item.quantity || item.qty || 1)).toLocaleString()}원</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div style={{ textAlign: 'right', marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px', fontSize: '12px', fontWeight: 800, color: '#f97316' }}>
-                        금액: {order.total_price.toLocaleString()}원
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div style={{ background: 'rgba(249,115,22,0.1)', padding: '15px', borderRadius: '20px', border: '1px dashed rgba(249,115,22,0.4)', marginBottom: '25px' }}>
-            <h4 style={{ color: 'white', fontSize: '14px', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>🎙️ 말로 더 주문해 보세요!</h4>
-            <p style={{ fontSize: '12px', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 8px 0' }}>
-              마이크를 누르고 <strong>"콜라 하나 더"</strong> 또는 <strong>"물 좀 주세요"</strong>라고 말씀해 보세요.
+          {/* [6] 말로 더 주문하기 배너 */}
+          <div style={{ background: 'rgba(249,115,22,0.06)', padding: '15px', borderRadius: '20px', border: '1px dashed rgba(249,115,22,0.3)', marginBottom: '25px' }}>
+            <h4 style={{ color: 'white', fontSize: '13px', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800 }}>🎙️ 말로 더 주문해 보세요!</h4>
+            <p style={{ fontSize: '11.5px', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 8px 0' }}>
+              하단 오렌지색 마이크를 누르고 <strong>"콜라 하나 더"</strong> 또는 <strong>"물 좀 주세요"</strong>라고 말씀하시면 즉각 처리됩니다.
             </p>
             <p style={{ fontSize: '11px', color: '#f97316', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              💡 종료 후에는 언제든 QR 코드를 스캔해 추가 주문이 가능합니다.
+              💡 식사 종료 시에는 언제든 마이크를 대고 <strong>"정산해줘"</strong>라고 말씀하실 수도 있습니다.
             </p>
           </div>
 
+          {/* [7] 추가 주문 및 종료 행동 버튼 */}
           <div style={{ display: 'flex', gap: '12px' }}>
             <button onClick={() => setShowProgress(false)}
               style={{ 
@@ -857,65 +931,13 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
               🚪 종료
             </button>
           </div>
+
         </div>
       </div>
     );
   };
 
-
-  const renderCartView = () => (
-    <div className="cart-view animate-fade-in" style={{ padding: '20px 20px 180px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '25px' }}>
-        <button onClick={() => setShowCart(false)} style={{ background: 'none', border: 'none', color: 'var(--text-main)', fontSize: '1.2rem', cursor: 'pointer' }}>❮</button>
-        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>장바구니 확인</h2>
-      </div>
-
-      <div style={{ background: 'var(--surface)', borderRadius: '24px', padding: '20px', border: '1px solid var(--border)', marginBottom: '30px' }}>
-        {cart.map((item, idx) => (
-          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: idx === cart.length - 1 ? 0 : '20px', paddingBottom: idx === cart.length - 1 ? 0 : '20px', borderBottom: idx === cart.length - 1 ? 'none' : '1px solid var(--border)' }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 700, fontSize: '1.05rem', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
-              <div style={{ color: 'var(--accent)', fontWeight: 600 }}>{(item.price * (item.qty || 1)).toLocaleString()}원</div>
-            </div>
-            
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '15px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--primary-soft)', padding: '4px 8px', borderRadius: '8px' }}>
-                <button onClick={() => removeFromCart(item.name)} style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', border: '1px solid var(--border)', borderRadius: '4px', fontSize: '16px', fontWeight: 700, color: 'var(--text-muted)', cursor: 'pointer' }}>-</button>
-                <span style={{ fontWeight: 800, minWidth: '20px', textAlign: 'center' }}>{item.qty}</span>
-                <button onClick={() => addToCart(item)} style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', border: '1px solid var(--border)', borderRadius: '4px', fontSize: '16px', fontWeight: 700, color: 'var(--accent)', cursor: 'pointer' }}>+</button>
-              </div>
-              <button onClick={() => deleteFromCart(item.name)} style={{ width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white', border: '1px solid #ef4444', borderRadius: '4px', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}>✕</button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--surface)', padding: '20px', borderTop: '1px solid var(--border)', maxWidth: '500px', margin: '0 auto', zIndex: 100 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>총 주문금액</span>
-          <span style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--accent)' }}>{totalPrice.toLocaleString()}원</span>
-        </div>
-        
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button onClick={() => setShowCart(false)} style={{ flex: 1, padding: '16px', borderRadius: '16px', border: '1px solid var(--border)', background: 'white', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer' }}>
-            추가 주문
-          </button>
-          <button 
-            onClick={() => {
-              setShowCart(false);
-              setShowPayModal(true);
-            }} 
-            style={{ flex: 1.6, padding: '16px', borderRadius: '16px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', boxShadow: '0 8px 20px rgba(30, 41, 59, 0.2)' }}
-          >
-            결제
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   const renderContent = () => {
-    if (showCart) return renderCartView();
     if (showProgress) return renderProgressScreen();
     
     return (
@@ -980,127 +1002,20 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             <button className="inquiry-btn-large" onClick={() => alert('직원을 호출했습니다.')}>🔔 직원 문의</button>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mobile-v2-container unified-mode">
-      {voiceToast && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: '90%',
-          maxWidth: '400px',
-          background: 'rgba(15, 23, 42, 0.95)',
-          border: '1px solid rgba(249, 115, 22, 0.5)',
-          borderRadius: '16px',
-          padding: '12px 18px',
-          color: 'white',
-          fontSize: '13px',
-          fontWeight: 700,
-          zIndex: 15000,
-          textAlign: 'center',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(10px)',
-          animation: 'fadeInDown 0.3s'
-        }}>
-          {voiceToast}
-        </div>
-      )}
-
-      <header className="glass-card sticky-header" style={{ padding: '0', display: 'flex', flexDirection: 'column', zIndex: 1001 }}>
-        <div style={{ padding: '15px 20px 10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <button 
-                onClick={() => onNavigate ? onNavigate('home') : window.dispatchEvent(new CustomEvent('changeTab', { detail: 'home' }))}
-                style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: 'var(--text-main)', padding: 0 }}
-              >
-                ✕
-              </button>
-              <h1 style={{ fontSize: '18px', margin: 0, fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>
-                {storeName} <span style={{ color: '#f97316', marginLeft: '6px', fontSize: '15px' }}>[Table {tableNo}]</span>
-              </h1>
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
-              {new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}
-            </div>
-          </div>
-        </div>
-
-        <div className="category-scroll no-scrollbar" style={{ padding: '10px 20px 15px', background: 'transparent', borderTop: '1px solid var(--border)' }}>
-          {['전체', '추천', '커피', '쥬스', '주류', '음료', '기타', ...categories.filter(c => !['전체', '추천', '커피', '쥬스', '주류', '음료', '기타'].includes(c))].map(cat => (
-            <button key={cat} className={`category-pill ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>
-              {cat}
-            </button>
-          ))}
-        </div>
-      </header>
-
-      <main className="mobile-main" style={{ paddingBottom: '90px', overflowY: 'auto' }}>
-        {renderContent()}
-      </main>
-
-      <nav className="customer-bottom-nav" style={{ 
-        position: 'fixed', 
-        bottom: 0, 
-        left: '50%', 
-        transform: 'translateX(-50%)', 
-        width: '100%', 
-        maxWidth: '500px', 
-        height: '75px', 
-        background: 'rgba(15, 23, 42, 0.96)', 
-        backdropFilter: 'blur(15px)', 
-        borderTop: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: '24px 24px 0 0',
-        display: 'flex', 
-        justifyContent: 'space-around', 
-        alignItems: 'center', 
-        zIndex: 10000, 
-        padding: '10px 4px',
-        boxShadow: '0 -10px 30px rgba(0,0,0,0.3)',
-        boxSizing: 'border-box'
-      }}>
-        {/* Button 1: 셀프 주차 */}
-        <button 
-          onClick={() => setShowParkingModal(true)}
-          style={{
-            background: 'none', border: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1
-          }}
-        >
-          <span style={{ fontSize: '1.25rem' }}>🚗</span>
-          <span style={{ fontSize: '9px', color: '#94a3b8', fontWeight: 700 }}>셀프 주차</span>
-        </button>
-
-        {/* Button 2: 직원 호출 */}
-        <button 
-          onClick={() => requestStaffCall("직원호출")}
-          style={{
-            background: 'none', border: 'none', color: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1
-          }}
-        >
-          <span style={{ fontSize: '1.25rem' }}>🔔</span>
-          <span style={{ fontSize: '9px', color: '#f87171', fontWeight: 700 }}>직원 호출</span>
-        </button>
-
-        {/* Button 3: 추가 주문 */}
+              {/* Button 3: 추가 주문 */}
         <button 
           onClick={() => {
-            setShowCart(false);
             setShowProgress(false);
           }}
           style={{
             background: 'none', border: 'none', 
-            color: (!showCart && !showProgress) ? '#f97316' : 'white', 
+            color: !showProgress ? '#f97316' : 'white', 
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1,
             transition: 'all 0.2s'
           }}
         >
-          <span style={{ fontSize: '1.25rem', transform: (!showCart && !showProgress) ? 'scale(1.1)' : 'none', transition: 'all 0.2s' }}>➕</span>
-          <span style={{ fontSize: '9px', color: (!showCart && !showProgress) ? '#f97316' : '#94a3b8', fontWeight: 700 }}>추가 주문</span>
+          <span style={{ fontSize: '1.25rem', transform: !showProgress ? 'scale(1.1)' : 'none', transition: 'all 0.2s' }}>➕</span>
+          <span style={{ fontSize: '9px', color: !showProgress ? '#f97316' : '#94a3b8', fontWeight: 700 }}>추가 주문</span>
         </button>
 
         {/* Button 4: 음성 주문 */}
@@ -1133,7 +1048,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         {/* Button 5: 진행 확인 */}
         <button 
           onClick={() => {
-            setShowCart(false);
             setShowProgress(!showProgress);
           }}
           style={{
@@ -1150,19 +1064,23 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
         {/* Button 6: 장바구니 */}
         <button 
           onClick={() => {
-            setShowProgress(false);
-            setShowCart(!showCart);
+            if (cart.length === 0) {
+              setVoiceToast("🛒 장바구니가 비어 있습니다. 메뉴를 먼저 담아 주세요!");
+              setTimeout(() => setVoiceToast(null), 3000);
+              return;
+            }
+            setShowPayModal(true);
           }}
           style={{
             background: 'none', border: 'none', 
-            color: showCart ? '#f97316' : 'white', 
+            color: cart.length > 0 ? '#f97316' : 'white', 
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', cursor: 'pointer', flex: 1,
             position: 'relative',
             transition: 'all 0.2s'
           }}
         >
-          <span style={{ fontSize: '1.25rem', transform: showCart ? 'scale(1.1)' : 'none', transition: 'all 0.2s' }}>🛒</span>
-          <span style={{ fontSize: '9px', color: showCart ? '#f97316' : '#94a3b8', fontWeight: 700 }}>장바구니</span>
+          <span style={{ fontSize: '1.25rem', transform: cart.length > 0 ? 'scale(1.1)' : 'none', transition: 'all 0.2s' }}>🛒</span>
+          <span style={{ fontSize: '9px', color: cart.length > 0 ? '#f97316' : '#94a3b8', fontWeight: 700 }}>장바구니</span>
           {cart.reduce((sum, item) => sum + (item.qty || 0), 0) > 0 && (
             <span style={{
               position: 'absolute',
