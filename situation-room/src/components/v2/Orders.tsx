@@ -151,7 +151,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
     const ws = new WebSocket(wsUrl);
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (['STATUS_UPDATE', 'NEW_ORDER', 'SESSION_OPENED'].includes(data.type)) {
+      if (['STATUS_UPDATE', 'STATUS_UPDATED', 'NEW_ORDER', 'SESSION_OPENED', 'PAYMENT_CONFIRMED', 'PAYMENT_APPROVED', 'ORDER_UPDATED', 'KITCHEN_DONE'].includes(data.type)) {
         fetchMySession();
       } else if (data.type === 'SESSION_CLOSED') {
         window.location.reload();

@@ -80,7 +80,26 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                         const currentPrev = Array.isArray(prev) ? prev : [];
                         return currentPrev.map(b => b.id === data.bundleId ? { ...b, status: 'ready' } : b);
                     });
-                } else if (data.type === 'POOL_UPDATED' || data.type === 'CHECKIN_APPROVED') {
+                } else if (
+                    data.type === 'POOL_UPDATED' || 
+                    data.type === 'CHECKIN_APPROVED' ||
+                    data.type === 'NEW_ORDER' ||
+                    data.type === 'STATUS_UPDATED' ||
+                    data.type === 'STATUS_UPDATE' ||
+                    data.type === 'ORDER_UPDATED' ||
+                    data.type === 'KITCHEN_DONE' ||
+                    data.type === 'PAYMENT_CONFIRMED' ||
+                    data.type === 'PAYMENT_APPROVED' ||
+                    data.type === 'SESSION_CLOSED' ||
+                    data.type === 'PARTIAL_SETTLEMENT' ||
+                    data.type === 'STAFF_CALL' ||
+                    data.type === 'WAITING_REGISTERED' ||
+                    data.type === 'WAITING_STATUS_CHANGED' ||
+                    data.type === 'WAITING_UPDATED' ||
+                    data.type === 'RESERVATION_UPDATED' ||
+                    data.type === 'PARKING_APPLIED' ||
+                    data.type === 'POINTS_UPDATED'
+                ) {
                     if (!data.store_id || data.store_id === currentStoreId || currentStoreId === "Total" || currentStoreId === "") {
                         fetchInitialData();
                     }
