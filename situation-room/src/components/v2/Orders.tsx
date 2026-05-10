@@ -309,13 +309,42 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
     const latestOrder = myOrders.length > 0 ? myOrders[myOrders.length - 1] : null;
     const status = latestOrder?.status || 'pending';
     const isPaid = latestOrder?.payment_status === 'paid' || latestOrder?.payment_status === 'prepaid';
+    
+    // 고객이 직접 선택한 결제방식 기준으로 선/후결제 노출 정의
+    const isPostpaid = latestOrder?.payment_status === 'unpaid';
 
+    // 6단계 완전 통합형 프리미엄 타임라인 설계
     const steps = [
-      { label: '좌석', icon: '🪑', active: true },
-      { label: '주문', icon: '📝', active: true },
-      { label: '조리', icon: '🔥', active: status === 'cooking' || status === 'ready' || status === 'served' || isPaid, pulse: status === 'cooking' },
-      { label: '서빙', icon: '🚚', active: status === 'served' || isPaid, pulse: status === 'served' && !isPaid },
-      { label: '결제', icon: '✅', active: isPaid, pulse: isPaid }
+      { label: '좌석', icon: '🪑', active: true, disabled: false, pulse: false },
+      { label: '주문', icon: '📝', active: true, disabled: false, pulse: false },
+      { 
+        label: isPostpaid ? '선결제(제외)' : isPaid ? '선결제(완료)' : '선결제(대기)', 
+        icon: '💳', 
+        active: !isPostpaid && isPaid, 
+        pulse: !isPostpaid && !isPaid,
+        disabled: isPostpaid
+      },
+      { 
+        label: '조리', 
+        icon: '🔥', 
+        active: (isPostpaid && (status === 'cooking' || status === 'ready' || status === 'served')) || (!isPostpaid && isPaid && (status === 'cooking' || status === 'ready' || status === 'served')), 
+        pulse: (isPostpaid && status === 'cooking') || (!isPostpaid && isPaid && status === 'cooking'),
+        disabled: false
+      },
+      { 
+        label: '서빙', 
+        icon: '🚚', 
+        active: (isPostpaid && (status === 'ready' || status === 'served')) || (!isPostpaid && isPaid && (status === 'ready' || status === 'served')), 
+        pulse: (isPostpaid && status === 'ready') || (!isPostpaid && isPaid && status === 'ready'),
+        disabled: false
+      },
+      { 
+        label: !isPostpaid ? '후결제(제외)' : isPaid ? '후결제(완료)' : '후결제(대기)', 
+        icon: '💵', 
+        active: isPostpaid && isPaid, 
+        pulse: isPostpaid && !isPaid && status === 'served',
+        disabled: !isPostpaid
+      }
     ];
 
     return (
@@ -333,15 +362,25 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
               <div key={i} style={{ textAlign: 'center', zIndex: 1, flex: 1 }}>
                 <div style={{ 
                   width: '32px', height: '32px', borderRadius: '50%', 
-                  background: step.active ? '#f97316' : '#270c40ff',
+                  background: step.disabled ? 'rgba(255,255,255,0.02)' : step.active ? '#f97316' : '#270c40ff',
+                  border: step.disabled ? '1px dashed rgba(255,255,255,0.15)' : 'none',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', margin: '0 auto 8px',
-                  boxShadow: step.pulse ? '0 0 15px #f97316' : 'none',
-                  animation: step.pulse ? 'pulse-light 2s infinite' : 'none',
-                  transition: 'all 0.5s'
+                  boxShadow: step.pulse && !step.disabled ? '0 0 15px #f97316' : 'none',
+                  animation: step.pulse && !step.disabled ? 'pulse-light 2s infinite' : 'none',
+                  transition: 'all 0.5s',
+                  opacity: step.disabled ? 0.35 : 1
                 }}>
                   {step.icon}
                 </div>
-                <div style={{ fontSize: '10px', color: step.active ? 'white' : '#64748b', fontWeight: step.active ? 800 : 400 }}>{step.label}</div>
+                <div style={{ 
+                  fontSize: '9px', 
+                  color: step.disabled ? '#475569' : step.active ? 'white' : '#64748b', 
+                  fontWeight: step.active ? 800 : 400,
+                  textDecoration: step.disabled ? 'line-through' : 'none',
+                  transition: 'all 0.5s'
+                }}>
+                  {step.label}
+                </div>
               </div>
             ))}
           </div>

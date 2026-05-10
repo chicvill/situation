@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import { KitchenDisplay } from './components/KitchenDisplay';
+import { TOSS_CLIENT_KEY } from './config';
 import { AdminDashboard } from './components/AdminDashboard';
 import { MenuManager } from './components/MenuManager';
 import { DisplayBoard } from './components/DisplayBoard';
@@ -203,6 +204,39 @@ function App() {
     }
   }, [safeBundles]);
 
+  // 팝업 창으로부터 결제 완료 수신을 대기하는 글로벌 메시지 이벤트 리스너 (부모 창 상태 완전 보존)
+  useEffect(() => {
+    const handlePaymentMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'PAYMENT_FINISHED') {
+        const { orderId, amount, paymentKey, success } = event.data;
+        if (success) {
+          const targetBundle = safeBundles.find(b => b.order_code === orderId || b.id === orderId);
+          const items = targetBundle?.items.filter(i => i.name !== '결제수단' && i.name !== '테이블') || [];
+          
+          setReceiptData({
+            orderId,
+            totalPrice: amount,
+            paymentMethod: '카드',
+            items: items,
+            receiptUrl: paymentKey && (paymentKey.startsWith('tviva') || paymentKey.startsWith('test'))
+              ? undefined
+              : `https://dashboard.tosspayments.com/receipt/helper?paymentKey=${paymentKey}`
+          });
+
+          // 하위 UI 컴포넌트에 즉시 결제 완료 시그널 전파 (새로고침 없이 실시간 UI 전환!)
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('payment_finished', { detail: { orderId, success: true } }));
+          }, 500);
+        } else {
+          window.dispatchEvent(new CustomEvent('payment_finished', { detail: { orderId, success: false } }));
+        }
+      }
+    };
+
+    window.addEventListener('message', handlePaymentMessage);
+    return () => window.removeEventListener('message', handlePaymentMessage);
+  }, [safeBundles]);
+
 
   const navigateTo = (tab: MainTab) => {
     setActiveTab(tab);
@@ -257,6 +291,15 @@ function App() {
     };
     recognition.start();
   };
+
+  // 토스 결제용 팝업 창 처리 분기 (대화창의 세션/상태 유지를 위해 완전히 독립된 창으로 가동)
+  const queryParams = new URLSearchParams(window.location.search);
+  const isPayPopup = queryParams.get('mode') === 'pay_popup';
+  const isPopupSuccessOrFail = queryParams.get('is_popup') === 'true';
+
+  if (isPayPopup || isPopupSuccessOrFail) {
+    return <PaymentPopupHandler safeBundles={safeBundles} />;
+  }
 
   // 시스템 관리자(Admin)인 경우 매장 선택 및 관리 화면 노출
   if (user?.role === 'admin' && !selectedAdminStore) {
@@ -440,6 +483,207 @@ function App() {
           })}
         </nav>
       )}
+    </div>
+  );
+}
+
+// --- 토스 결제 및 승인 대행용 슬릭 팝업 핸들러 컴포넌트 ---
+function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('mode');
+  const isPopup = params.get('is_popup') === 'true';
+  const isSuccess = params.get('payment_success') === 'true';
+  const isFail = params.get('payment_fail') === 'true';
+  const orderId = params.get('orderId') || params.get('order_id') || '';
+  const amount = Number(params.get('amount') || 0);
+  const orderName = params.get('orderName') || '주문 결제';
+  const customerName = params.get('customerName') || '고객';
+  const method = params.get('method') || '카드';
+  const paymentKey = params.get('paymentKey') || '';
+
+  const [statusText, setStatusText] = useState('결제 시스템을 준비 중입니다...');
+  const [errorText, setErrorText] = useState<string | null>(null);
+
+  // 1. 결제 모듈 호출 (Popup Loader)
+  useEffect(() => {
+    if (mode === 'pay_popup') {
+      const initiateToss = async () => {
+        try {
+          setStatusText('토스 안전 결제 화면으로 이동 중입니다...');
+          
+          // 백엔드로부터 동적 Toss Client Key 조회
+          const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+          const configRes = await fetch(`${apiUrl}/api/config/toss-key`);
+          const configData = await configRes.json();
+          const clientKey = configData.clientKey || TOSS_CLIENT_KEY;
+
+          if (!(window as any).TossPayments) {
+            throw new Error('토스 결제 모듈이 로드되지 않았습니다. 잠시만 기다려 주세요.');
+          }
+
+          const toss = (window as any).TossPayments(clientKey);
+          const baseUrl = `${window.location.origin}${window.location.pathname}`;
+
+          // 팝업 내부의 최종 분기 주소 설정 (is_popup=true 포함하여 팝업 내부 유지)
+          const successUrl = `${baseUrl}?payment_success=true&is_popup=true&order_id=${orderId}&amount=${amount}`;
+          const failUrl = `${baseUrl}?payment_fail=true&is_popup=true&order_id=${orderId}`;
+
+          await toss.requestPayment(method, {
+            amount,
+            orderId,
+            orderName,
+            customerName,
+            successUrl,
+            failUrl
+          });
+        } catch (err: any) {
+          setErrorText(err.message || '결제 창 호출 과정에서 오류가 발생했습니다.');
+        }
+      };
+
+      if (!(window as any).TossPayments) {
+        const script = document.createElement('script');
+        script.src = 'https://js.tosspayments.com/v1/payment';
+        script.onload = () => initiateToss();
+        script.onerror = () => setErrorText('토스 라이브러리 스크립트 로드에 실패했습니다.');
+        document.head.appendChild(script);
+      } else {
+        initiateToss();
+      }
+    }
+  }, [mode]);
+
+  // 2. 결제 최종 승인 검증 (Backend Sync)
+  useEffect(() => {
+    if (isSuccess && isPopup && orderId) {
+      const confirmPayment = async () => {
+        try {
+          setStatusText('결제 승인을 완료하는 중입니다. 안전한 거래를 위해 창을 닫지 마세요...');
+          const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+          const res = await fetch(`${apiUrl}/api/payment/confirm`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paymentKey, orderId, amount })
+          });
+          const result = await res.json();
+          if (result.status === 'success') {
+            setStatusText('🎉 결제가 정상 완료되었습니다! 본 창은 곧 자동으로 닫힙니다.');
+            
+            // 부모 창에 성공 신호 전달 (포스트메시지 활용하여 대화창 즉각 업데이트!)
+            if (window.opener) {
+              window.opener.postMessage({
+                type: 'PAYMENT_FINISHED',
+                orderId,
+                amount,
+                paymentKey,
+                success: true
+              }, '*');
+            }
+            
+            setTimeout(() => {
+              window.close();
+            }, 1200);
+          } else {
+            throw new Error(result.message || '결제 검증 처리에 실패했습니다.');
+          }
+        } catch (err: any) {
+          setErrorText(err.message || '서버 승인 과정에서 에러가 발생했습니다.');
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'PAYMENT_FINISHED',
+              orderId,
+              success: false
+            }, '*');
+          }
+        }
+      };
+      confirmPayment();
+    }
+  }, [isSuccess, isPopup, orderId]);
+
+  // 3. 결제 실패/취소 팝업 자동 청소
+  useEffect(() => {
+    if (isFail && isPopup) {
+      setErrorText('결제가 취소되었거나 오류가 발생했습니다.');
+      if (window.opener) {
+        window.opener.postMessage({
+          type: 'PAYMENT_FINISHED',
+          orderId,
+          success: false
+        }, '*');
+      }
+      setTimeout(() => {
+        window.close();
+      }, 2500);
+    }
+  }, [isFail, isPopup]);
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100vh',
+      backgroundColor: '#0f172a',
+      color: '#f8fafc',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      padding: '24px',
+      textAlign: 'center'
+    }}>
+      <div style={{
+        backgroundColor: '#1e293b',
+        borderRadius: '24px',
+        padding: '40px 32px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+        border: '1px solid #334155',
+        maxWidth: '400px',
+        width: '100%'
+      }}>
+        <div style={{ fontSize: '48px', marginBottom: '24px' }}>
+          {errorText ? '❌' : isSuccess ? '✅' : '💳'}
+        </div>
+        <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>
+          {errorText ? '결제 실패' : '안전한 토스 결제'}
+        </h2>
+        <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: '1.6', marginBottom: '24px' }}>
+          {errorText || statusText}
+        </p>
+        {!errorText && !isSuccess && (
+          <div style={{
+            width: '32px',
+            height: '32px',
+            border: '3px solid #3b82f6',
+            borderTopColor: 'transparent',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto'
+          }} />
+        )}
+        {errorText && (
+          <button 
+            onClick={() => window.close()}
+            style={{
+              backgroundColor: '#ef4444',
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '12px 24px',
+              fontSize: '14px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              width: '100%'
+            }}
+          >
+            창 닫기
+          </button>
+        )}
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
     </div>
   );
 }

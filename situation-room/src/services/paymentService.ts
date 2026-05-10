@@ -46,43 +46,39 @@ export const PaymentService = {
     orderName: string;
     customerName: string;
   }) {
-    this.log("CP-03", "Initiating Toss Payment Window...");
+    this.log("CP-03", "Opening Center Popup for Toss Payment...");
     
     try {
       this.validateOptions(method, options);
 
-      if (!(window as any).TossPayments) {
-        this.log("CP-03-ERR", "Toss SDK NOT found in window");
-        throw new Error('토스 결제 모듈이 로드되지 않았습니다. 페이지를 새로고침 해주세요.');
-      }
-
-      const clientKey = await this.getActiveClientKey();
-      const toss = (window as any).TossPayments(clientKey);
       const tossMethod = method.includes('카드') ? '카드' : '계좌이체';
       const baseUrl = `${window.location.origin}${window.location.pathname}`;
 
-      // Preserve existing query params (like mode=customer, table=3, etc.)
-      const successParams = new URLSearchParams(window.location.search);
-      successParams.set('payment_success', 'true');
-      successParams.set('order_id', options.orderId);
-      successParams.set('amount', String(options.amount));
+      // Calculate perfect center coordinates for the sleek payment popup
+      const popupWidth = 540;
+      const popupHeight = 700;
+      const left = window.top ? (window.top.outerWidth - popupWidth) / 2 + window.top.screenX : (window.screen.width - popupWidth) / 2;
+      const top = window.top ? (window.top.outerHeight - popupHeight) / 2 + window.top.screenY : (window.screen.height - popupHeight) / 2;
 
-      const failParams = new URLSearchParams(window.location.search);
-      failParams.set('payment_fail', 'true');
-      failParams.set('order_id', options.orderId);
+      // Construct a special URL to handle the payment flow inside the isolated popup window
+      const popupUrl = `${baseUrl}?mode=pay_popup&orderId=${options.orderId}&amount=${options.amount}&orderName=${encodeURIComponent(options.orderName)}&customerName=${encodeURIComponent(options.customerName)}&method=${encodeURIComponent(tossMethod)}`;
 
-      this.log("CP-03", "Redirecting to Toss Gateway...", { method: tossMethod, orderId: options.orderId });
+      this.log("CP-03", "Launching Payment Popup Window...", { popupUrl });
 
-      return toss.requestPayment(tossMethod, {
-        amount: options.amount,
-        orderId: options.orderId,
-        orderName: options.orderName,
-        customerName: options.customerName,
-        successUrl: `${baseUrl}?${successParams.toString()}`,
-        failUrl: `${baseUrl}?${failParams.toString()}`,
-      });
+      const paymentPopup = window.open(
+        popupUrl,
+        'TossPaymentPopup',
+        `width=${popupWidth},height=${popupHeight},top=${top},left=${left},scrollbars=yes,resizable=yes`
+      );
+
+      if (!paymentPopup) {
+        throw new Error('팝업 차단이 활성화되어 있습니다. 브라우저 설정에서 팝업을 허용해 주세요.');
+      }
+
+      // Return a handle to the popup for any parent monitoring if needed
+      return paymentPopup;
     } catch (e: any) {
-      this.log("CP-03-ERR", "Payment initiation failed", e.message);
+      this.log("CP-03-ERR", "Payment popup initialization failed", e.message);
       throw e;
     }
   },
