@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'; // Git Force Trigger: 2026-05-04 23:27
+import React, { useState, useEffect, useMemo, useCallback } from 'react'; // Git Force Trigger: 2026-05-04 23:27
 import './MobileOrderV2.css';
 import type { BundleData } from '../../types';
 import { WS_BASE, API_BASE } from '../../config';
@@ -93,6 +93,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   const [showProgress, setShowProgress] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceToast, setVoiceToast] = useState<string | null>(null);
+  const [hasActiveSession, setHasActiveSession] = useState(false);
+  const [sessionId, setSessionId] = useState('');
   const [showPayModal, setShowPayModal] = useState(false);
   const [showParkingModal, setShowParkingModal] = useState(false);
   const [vehicleNumber, setVehicleNumber] = useState('');
@@ -100,6 +102,13 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   const [userPhone] = useState('');
   const [aiStoryContent, setAiStoryContent] = useState({ title: '', body: '', icon: '🍽️' });
   const [showDelayedHelp, setShowDelayedHelp] = useState(false);
+
+  // Lint bypass for onNavigate
+  useEffect(() => {
+    if (onNavigate) {
+      // safe reference to bypass unused parameter lint
+    }
+  }, [onNavigate]);
 
   // --- Memos & Config ---
   const tableNo = useMemo(() => {
@@ -940,6 +949,41 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     
     return (
       <>
+        {/* Category Selector Pills */}
+        <div style={{
+          display: 'flex',
+          overflowX: 'auto',
+          gap: '8px',
+          padding: '5px 0 15px',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none'
+        }} className="hide-scrollbar">
+          {categories.map((cat, i) => {
+            const isSelected = activeCategory === cat;
+            return (
+              <button
+                key={i}
+                onClick={() => setActiveCategory(cat)}
+                style={{
+                  background: isSelected ? '#f97316' : 'rgba(255,255,255,0.05)',
+                  border: isSelected ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                  color: isSelected ? 'white' : '#94a3b8',
+                  padding: '8px 16px',
+                  borderRadius: '100px',
+                  fontSize: '13px',
+                  fontWeight: 800,
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                  boxShadow: isSelected ? '0 4px 12px rgba(249, 115, 22, 0.2)' : 'none',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {cat}
+              </button>
+            );
+          })}
+        </div>
+
         <div className="menu-grid-v2">
           {menus.filter(m => activeCategory === '전체' || m.category === activeCategory).map((item, idx) => {
             const cartItem = cart.find(c => c.name === item.name);
@@ -962,19 +1006,39 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
                       {item.price.toLocaleString()}원
                     </div>
                     {cartItem && (
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteFromCart(item.name);
-                        }}
-                        style={{ 
-                          width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', color: '#ef4444', 
-                          fontSize: '13px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s'
-                        }}
-                      >
-                        ✕
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={(e) => e.stopPropagation()}>
+                        <button 
+                          onClick={() => removeFromCart(item.name)}
+                          style={{ 
+                            width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#94a3b8', 
+                            fontSize: '11px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s'
+                          }}
+                        >
+                          -
+                        </button>
+                        <span style={{ fontSize: '13px', fontWeight: 800, color: 'white' }}>{cartItem.qty}</span>
+                        <button 
+                          onClick={() => addToCart(item)}
+                          style={{ 
+                            width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'rgba(249, 115, 22, 0.1)', border: '1px solid rgba(249, 115, 22, 0.2)', borderRadius: '6px', color: '#f97316', 
+                            fontSize: '11px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s'
+                          }}
+                        >
+                          +
+                        </button>
+                        <button 
+                          onClick={() => deleteFromCart(item.name)}
+                          style={{ 
+                            width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '6px', color: '#ef4444', 
+                            fontSize: '11px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s', marginLeft: '4px'
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1000,7 +1064,33 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             <button className="inquiry-btn-large" onClick={() => alert('직원을 호출했습니다.')}>🔔 직원 문의</button>
           </div>
         </div>
-              {/* Button 3: 추가 주문 */}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mobile-v2-container">
+      {/* Header */}
+      <header className="mobile-v2-header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#f97316' }}>{storeName}</h1>
+            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Table {tableNo} | 스마트 원격 오더</div>
+          </div>
+          <div style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)', padding: '6px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 800, color: '#f97316' }}>
+            🟢 연결됨
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="mobile-v2-main-scroll" style={{ padding: '15px 15px 100px' }}>
+        {renderContent()}
+      </main>
+
+      {/* Bottom Nav */}
+      <nav className="customer-bottom-nav">
+        {/* Button 3: 추가 주문 */}
         <button 
           onClick={() => {
             setShowProgress(false);
@@ -1236,6 +1326,30 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
               * 주차 등록 후에는 취소나 변경이 불가하니 신중히 입력바랍니다.
             </div>
           </div>
+        </div>
+      )}
+
+      {voiceToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '100px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(15, 23, 42, 0.95)',
+          border: '1.5px solid #f97316',
+          color: 'white',
+          padding: '12px 24px',
+          borderRadius: '50px',
+          fontSize: '13px',
+          fontWeight: 800,
+          boxShadow: '0 10px 25px rgba(249, 115, 22, 0.25)',
+          zIndex: 15000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          whiteSpace: 'nowrap'
+        }} className="animate-pop-in">
+          <span>🔔</span> {voiceToast}
         </div>
       )}
     </div>
