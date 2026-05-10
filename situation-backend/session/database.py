@@ -427,6 +427,29 @@ def init_db_v2():
             except Exception as m_err:
                 print(f"⚠️ Failed to seed menu catalogs: {m_err}")
         
+        # 4. 사장님의 요청에 따른 모든 실시간 주문/세션/호출/대기 내역 완전 청소
+        try:
+            cur.execute("TRUNCATE TABLE table_orders CASCADE")
+            cur.execute("TRUNCATE TABLE table_sessions CASCADE")
+            cur.execute("TRUNCATE TABLE table_calls CASCADE")
+            cur.execute("TRUNCATE TABLE table_waitings CASCADE")
+            cur.execute("TRUNCATE TABLE table_reservations CASCADE")
+            cur.execute("TRUNCATE TABLE table_parkings CASCADE")
+            cur.execute("TRUNCATE TABLE customer_points CASCADE")
+            print("🧹 All orders, sessions, calls, waitings, and points cleared for fresh testing.")
+        except Exception as clear_err:
+            try:
+                cur.execute("DELETE FROM table_orders")
+                cur.execute("DELETE FROM table_sessions")
+                cur.execute("DELETE FROM table_calls")
+                cur.execute("DELETE FROM table_waitings")
+                cur.execute("DELETE FROM table_reservations")
+                cur.execute("DELETE FROM table_parkings")
+                cur.execute("DELETE FROM customer_points")
+                print("🧹 All orders, sessions, calls, waitings, and points deleted via DELETE fallbacks.")
+            except Exception as del_err:
+                print(f"⚠️ Failed to clear order history: {del_err}")
+        
         conn.commit()
         cur.close()
         conn.close()

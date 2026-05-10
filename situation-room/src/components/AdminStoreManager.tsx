@@ -87,6 +87,29 @@ export const AdminStoreManager = ({ onSelectStore, onLogout }: AdminStoreManager
       return;
     }
 
+    // Parse existing or set default history
+    let existingHistory: any[] = [];
+    if (editingStore) {
+      if (typeof editingStore.payment_history === 'string') {
+        try {
+          existingHistory = JSON.parse(editingStore.payment_history);
+        } catch {
+          existingHistory = [];
+        }
+      } else if (Array.isArray(editingStore.payment_history)) {
+        existingHistory = editingStore.payment_history;
+      }
+    } else {
+      // For a new store, create a clean default history matching the selected status
+      existingHistory = [
+        {
+          date: new Date().toISOString().slice(0, 10),
+          amount: formPaymentStatus === '정상' ? Number(formMonthlyFee) : 0,
+          status: formPaymentStatus === '정상' ? '완료' : (formPaymentStatus === '미납' ? '미납' : '연체')
+        }
+      ];
+    }
+
     const payload = {
       store_id: formStoreId,
       store_name: formStoreName,
@@ -94,7 +117,7 @@ export const AdminStoreManager = ({ onSelectStore, onLogout }: AdminStoreManager
       owner_id: formOwnerId,
       monthly_fee: Number(formMonthlyFee),
       payment_status: formPaymentStatus,
-      payment_history: editingStore ? (typeof editingStore.payment_history === 'string' ? JSON.parse(editingStore.payment_history) : editingStore.payment_history) : []
+      payment_history: existingHistory
     };
 
     try {
@@ -104,7 +127,6 @@ export const AdminStoreManager = ({ onSelectStore, onLogout }: AdminStoreManager
       
       const method = editingStore ? 'PUT' : 'POST';
 
-      // If adding new store, send complete model including store_id
       const bodyPayload = editingStore 
         ? {
             store_name: formStoreName,
@@ -161,197 +183,451 @@ export const AdminStoreManager = ({ onSelectStore, onLogout }: AdminStoreManager
     );
   }, [stores, searchQuery]);
 
+  // Dashboard Stats calculation
+  const stats = useMemo(() => {
+    const total = stores.length;
+    const paid = stores.filter(s => s.payment_status === '정상').length;
+    const unpaid = stores.filter(s => s.payment_status === '미납').length;
+    const overdue = stores.filter(s => s.payment_status === '연체').length;
+    const totalRevenue = stores
+      .filter(s => s.payment_status === '정상')
+      .reduce((sum, s) => sum + s.monthly_fee, 0);
+
+    return { total, paid, unpaid, overdue, totalRevenue };
+  }, [stores]);
+
+  // Helper to map store id or name to a beautiful emoji logo
+  const getStoreLogo = (id: string, name: string) => {
+    if (id.includes('korean') || name.includes('수라간') || name.includes('한식')) return '🍱';
+    if (id.includes('coffee') || name.includes('커피') || name.includes('카페')) return '☕';
+    if (id.includes('beef') || name.includes('한우') || name.includes('고기')) return '🥩';
+    if (id.includes('tofu') || name.includes('순두부') || name.includes('두부')) return '🥣';
+    if (id.includes('bibim') || name.includes('비빔밥') || name.includes('돌솥')) return '🍚';
+    return '🏢';
+  };
+
   return (
-    <div className="admin-stores-container animate-fade-in" style={{ padding: '40px 20px', background: 'var(--bg-main)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    <div className="admin-stores-container animate-fade-in" style={{ padding: '40px 20px', background: 'var(--bg-main)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: '"Pretendard", -apple-system, sans-serif' }}>
       <div style={{ width: '100%', maxWidth: '1200px' }}>
         
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
+        {/* Top Glow Accent Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '35px', flexWrap: 'wrap', gap: '20px', background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', padding: '30px 40px', borderRadius: '24px', boxShadow: '0 15px 30px rgba(15, 23, 42, 0.15)', border: '1px solid rgba(255,255,255,0.05)' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '2.5rem' }}>🏢</span>
-              <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--text-main)', margin: 0, letterSpacing: '-1px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))' }}>⚡</span>
+              <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#f8fafc', margin: 0, letterSpacing: '-1px', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
                 프랜차이즈 가맹점 본사 관리 시스템
               </h1>
             </div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: '5px 0 0 45px' }}>
-              가맹점의 정산 ID, 월 임대 정산금 납부 상태를 한눈에 통제하고 개별 매장 상황실 대시보드로 즉시 진입합니다.
+            <p style={{ color: '#94a3b8', fontSize: '0.98rem', margin: '8px 0 0 50px', fontWeight: 500 }}>
+              가맹점 정산 ID 및 월 납부금 상태를 통제하고 매장 개별 상황판으로 즉시 원격 진입합니다.
             </p>
           </div>
           
           <button 
             onClick={onLogout}
             style={{
-              padding: '12px 20px',
-              borderRadius: '12px',
-              background: 'rgba(239, 68, 68, 0.08)',
-              border: '1.5px solid rgba(239, 68, 68, 0.15)',
-              color: '#ef4444',
+              padding: '12px 24px',
+              borderRadius: '14px',
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1.5px solid rgba(239, 68, 68, 0.25)',
+              color: '#fca5a5',
               fontWeight: 800,
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              fontSize: '0.95rem',
+              transition: 'all 0.2s',
+              boxShadow: '0 4px 12px rgba(239, 68, 68, 0.1)'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = '#ef4444';
+              e.currentTarget.style.color = '#ffffff';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+              e.currentTarget.style.color = '#fca5a5';
             }}
           >
             🔓 시스템 로그아웃
           </button>
         </div>
 
+        {/* Stats Summary Widget Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '35px' }}>
+          
+          {/* Card 1: Total */}
+          <div style={{ background: '#ffffff', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+              🏢
+            </div>
+            <div>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', display: 'block' }}>전체 관리 가맹점</span>
+              <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0f172a' }}>{stats.total}개소</span>
+            </div>
+          </div>
+
+          {/* Card 2: Paid */}
+          <div style={{ background: '#ffffff', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+              🟢
+            </div>
+            <div>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', display: 'block' }}>정상 납부 매장</span>
+              <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#10b981' }}>{stats.paid}개소</span>
+            </div>
+          </div>
+
+          {/* Card 3: Unpaid & Overdue */}
+          <div style={{ background: '#ffffff', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+              🚨
+            </div>
+            <div>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', display: 'block' }}>미납 / 연체 관리</span>
+              <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ef4444' }}>{stats.unpaid + stats.overdue}개소</span>
+            </div>
+          </div>
+
+          {/* Card 4: Expected Revenue */}
+          <div style={{ background: '#ffffff', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+              🪙
+            </div>
+            <div>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', display: 'block' }}>당월 회수 가맹금</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#8b5cf6' }}>₩{stats.totalRevenue.toLocaleString()}</span>
+            </div>
+          </div>
+
+        </div>
+
         {/* Search & Actions Bar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '15px' }}>
-          <input
-            type="text"
-            placeholder="🔍 매장명, 점주명, ID로 신속 검색..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              padding: '14px 20px',
-              borderRadius: '14px',
-              border: '1px solid var(--border)',
-              background: 'var(--surface)',
-              color: 'var(--text-main)',
-              width: '350px',
-              maxWidth: '100%',
-              fontSize: '0.95rem',
-              boxShadow: 'var(--shadow-sm)',
-              outline: 'none'
-            }}
-          />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '15px' }}>
+          <div style={{ position: 'relative', width: '400px', maxWidth: '100%' }}>
+            <input
+              type="text"
+              placeholder="🔍 매장명, 점주명, ID로 신속 검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                padding: '16px 20px 16px 48px',
+                borderRadius: '16px',
+                border: '1.5px solid #cbd5e1',
+                background: '#ffffff',
+                color: '#1e293b',
+                width: '100%',
+                fontSize: '1rem',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                outline: 'none',
+                transition: 'all 0.2s',
+                fontWeight: 500
+              }}
+              onFocus={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
+              onBlur={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
+            />
+            <span style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.2rem', pointerEvents: 'none' }}></span>
+          </div>
 
           <button
             onClick={openAddModal}
             style={{
-              padding: '14px 24px',
-              borderRadius: '14px',
-              background: 'var(--primary)',
+              padding: '16px 28px',
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
               color: 'white',
               fontWeight: 800,
               border: 'none',
               cursor: 'pointer',
-              boxShadow: '0 8px 16px rgba(59, 130, 246, 0.25)',
-              transition: 'transform 0.2s, background 0.2s'
+              boxShadow: '0 10px 20px rgba(37, 99, 235, 0.2)',
+              transition: 'transform 0.2s, boxShadow 0.2s',
+              fontSize: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}
-            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
-            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 12px 24px rgba(37, 99, 235, 0.3)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 10px 20px rgba(37, 99, 235, 0.2)';
+            }}
           >
-            ➕ 신규 가맹점 등록
+            <span>➕</span> 신규 가맹점 등록
           </button>
         </div>
 
-        {/* Stores List */}
+        {/* Premium Card Grid View */}
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '100px 0' }}>
             <div className="spinner" style={{ margin: '0 auto 20px' }}></div>
-            <p style={{ color: 'var(--text-muted)' }}>가맹점 DB 정보를 실시간으로 조회하고 있습니다...</p>
+            <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>가맹점 DB 및 정산 데이터를 실시간으로 조회하고 있습니다...</p>
           </div>
         ) : filteredStores.length === 0 ? (
-          <div className="glass-card" style={{ padding: '80px 20px', textAlign: 'center', borderRadius: '20px', border: '1px solid var(--border)', background: 'var(--surface)' }}>
-            <span style={{ fontSize: '3rem', display: 'block', marginBottom: '15px' }}>🔍</span>
-            <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--text-main)' }}>매칭되는 가맹점 정보가 없습니다.</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '5px' }}>검색어를 변경하시거나 신규 매장을 생성해 주세요.</p>
+          <div style={{ padding: '80px 20px', textAlign: 'center', borderRadius: '24px', border: '1px solid #e2e8f0', background: '#ffffff', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
+            <span style={{ fontSize: '4rem', display: 'block', marginBottom: '15px' }}>🔍</span>
+            <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#1e293b', fontWeight: 800 }}>매칭되는 가맹점 정보가 없습니다.</h3>
+            <p style={{ color: '#64748b', fontSize: '0.95rem', marginTop: '8px' }}>검색어를 변경하시거나 신규 매장을 생성해 주세요.</p>
           </div>
         ) : (
-          <div className="glass-card" style={{ borderRadius: '20px', overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--surface)', boxShadow: 'var(--shadow-md)' }}>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '800px' }}>
-                <thead>
-                  <tr style={{ background: 'rgba(0,0,0,0.02)', borderBottom: '1px solid var(--border)' }}>
-                    <th style={{ padding: '18px 24px', fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>매장 ID</th>
-                    <th style={{ padding: '18px 24px', fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>가맹 매장명</th>
-                    <th style={{ padding: '18px 24px', fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>점주명 (ID)</th>
-                    <th style={{ padding: '18px 24px', fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>월 사용료</th>
-                    <th style={{ padding: '18px 24px', fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase' }}>납부 상태</th>
-                    <th style={{ padding: '18px 24px', fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'right' }}>관리 도구</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredStores.map(store => {
-                    const isPaid = store.payment_status === '정상';
-                    return (
-                      <tr key={store.store_id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }} className="table-row-hover">
-                        <td style={{ padding: '18px 24px', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                          <code>{store.store_id}</code>
-                        </td>
-                        <td style={{ padding: '18px 24px' }}>
-                          <span style={{ fontWeight: 800, color: 'var(--text-main)', fontSize: '1.1rem' }}>{store.store_name}</span>
-                        </td>
-                        <td style={{ padding: '18px 24px', color: 'var(--text-main)', fontWeight: 600, fontSize: '0.95rem' }}>
-                          {store.owner_name} <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 400 }}>({store.owner_id})</span>
-                        </td>
-                        <td style={{ padding: '18px 24px', fontWeight: 800, color: 'var(--text-main)', fontSize: '0.95rem' }}>
-                          ₩{store.monthly_fee.toLocaleString()}
-                        </td>
-                        <td style={{ padding: '18px 24px' }}>
-                          <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            padding: '4px 12px',
-                            borderRadius: '50px',
-                            background: isPaid ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                            color: isPaid ? '#10b981' : '#ef4444',
-                            fontWeight: 800,
-                            fontSize: '0.8rem',
-                          }}>
-                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPaid ? '#10b981' : '#ef4444', display: 'inline-block' }}></span>
-                            {store.payment_status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '18px 24px', textAlign: 'right' }}>
-                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                            <button
-                              onClick={() => onSelectStore(store.store_id, store.store_name)}
-                              style={{
-                                padding: '8px 16px',
-                                borderRadius: '10px',
-                                background: 'linear-gradient(135deg, var(--accent) 0%, #2563eb 100%)',
-                                color: 'white',
-                                fontWeight: 800,
-                                border: 'none',
-                                cursor: 'pointer',
-                                fontSize: '0.85rem',
-                                boxShadow: '0 4px 10px rgba(59, 130, 246, 0.15)'
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '28px' }}>
+            {filteredStores.map(store => {
+              const isPaid = store.payment_status === '정상';
+              const isUnpaid = store.payment_status === '미납';
+              const isOverdue = store.payment_status === '연체';
+              
+              // Safely parse payment history
+              let historyList: any[] = [];
+              if (store.payment_history) {
+                if (typeof store.payment_history === 'string') {
+                  try {
+                    historyList = JSON.parse(store.payment_history);
+                  } catch {
+                    historyList = [];
+                  }
+                } else if (Array.isArray(store.payment_history)) {
+                  historyList = store.payment_history;
+                }
+              }
+
+              // Color mapping based on status
+              const statusColors = {
+                bg: isPaid ? 'rgba(16, 185, 129, 0.08)' : (isUnpaid ? 'rgba(245, 158, 11, 0.08)' : 'rgba(239, 68, 68, 0.08)'),
+                text: isPaid ? '#10b981' : (isUnpaid ? '#f59e0b' : '#ef4444'),
+                glow: isPaid ? '#10b981' : (isUnpaid ? '#f59e0b' : '#ef4444'),
+                border: isPaid ? 'rgba(16, 185, 129, 0.15)' : (isUnpaid ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)')
+              };
+
+              return (
+                <div 
+                  key={store.store_id} 
+                  style={{ 
+                    background: '#ffffff', 
+                    borderRadius: '24px', 
+                    border: '1px solid #e2e8f0', 
+                    padding: '28px', 
+                    boxShadow: '0 8px 30px rgba(0,0,0,0.02)', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                  className="store-dashboard-card"
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-6px)';
+                    e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.06)';
+                    e.currentTarget.style.borderColor = '#cbd5e1';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.02)';
+                    e.currentTarget.style.borderColor = '#e2e8f0';
+                  }}
+                >
+                  
+                  {/* Card Status Indicator Top Left line */}
+                  <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '5px', background: statusColors.text }} />
+
+                  {/* Header: Logo, Name & ID */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', border: '1px solid #e2e8f0' }}>
+                        {getStoreLogo(store.store_id, store.store_name)}
+                      </div>
+                      <div>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>{store.store_name}</h2>
+                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600, display: 'block', marginTop: '2px' }}>
+                          ID: <code style={{ color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>{store.store_id}</code>
+                        </span>
+                      </div>
+                    </div>
+
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '6px 14px',
+                      borderRadius: '50px',
+                      background: statusColors.bg,
+                      color: statusColors.text,
+                      border: `1px solid ${statusColors.border}`,
+                      fontWeight: 800,
+                      fontSize: '0.82rem',
+                    }}>
+                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: statusColors.glow, display: 'inline-block' }} />
+                      {store.payment_status}
+                    </span>
+                  </div>
+
+                  {/* Divider */}
+                  <div style={{ height: '1px', background: '#f1f5f9', width: '100%', marginBottom: '18px' }} />
+
+                  {/* Metadata Body */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '22px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                      <span style={{ color: '#64748b', fontWeight: 500 }}>대표 점주</span>
+                      <span style={{ color: '#334155', fontWeight: 700 }}>
+                        {store.owner_name} <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 400 }}>({store.owner_id})</span>
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+                      <span style={{ color: '#64748b', fontWeight: 500 }}>월 정산 임대료</span>
+                      <span style={{ color: '#0f172a', fontWeight: 900 }}>₩{store.monthly_fee.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Monthly Payment History Sub-Panel */}
+                  <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '16px', border: '1px solid #f1f5f9', marginBottom: '24px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '12px' }}>
+                      📅 월별 수납 및 정산 이력 카드
+                    </span>
+                    
+                    {historyList.length === 0 ? (
+                      <div style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', padding: '15px 0', fontStyle: 'italic' }}>
+                        정산 수납 데이터 이력이 아직 없습니다.
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '130px', overflowY: 'auto', paddingRight: '4px' }}>
+                        {historyList.map((hist, idx) => {
+                          const hPaid = hist.status === '완료';
+                          const hUnpaid = hist.status === '미납';
+                          
+                          return (
+                            <div 
+                              key={idx} 
+                              style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                alignItems: 'center', 
+                                padding: '8px 12px', 
+                                background: '#ffffff', 
+                                borderRadius: '10px', 
+                                border: '1px solid #e2e8f0', 
+                                fontSize: '0.85rem' 
                               }}
                             >
-                              💻 상황실 진입
-                            </button>
-                            <button
-                              onClick={() => openEditModal(store)}
-                              style={{
-                                padding: '8px 12px',
-                                borderRadius: '10px',
-                                background: 'rgba(0,0,0,0.03)',
-                                border: '1px solid var(--border)',
-                                color: 'var(--text-main)',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                fontSize: '0.85rem'
-                              }}
-                            >
-                              ✏️ 편집
-                            </button>
-                            <button
-                              onClick={() => handleDelete(store.store_id, store.store_name)}
-                              style={{
-                                padding: '8px 12px',
-                                borderRadius: '10px',
-                                background: 'rgba(239, 68, 68, 0.03)',
-                                border: '1px solid rgba(239, 68, 68, 0.1)',
-                                color: '#ef4444',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                fontSize: '0.85rem'
-                              }}
-                            >
-                              ❌
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontWeight: 700, color: '#475569' }}>{hist.date.slice(0, 7)}</span>
+                                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>₩{hist.amount.toLocaleString()}</span>
+                              </div>
+                              <span style={{ 
+                                fontWeight: 800, 
+                                fontSize: '0.78rem',
+                                color: hPaid ? '#10b981' : (hUnpaid ? '#f59e0b' : '#ef4444'),
+                                background: hPaid ? 'rgba(16, 185, 129, 0.05)' : (hUnpaid ? 'rgba(245, 158, 11, 0.05)' : 'rgba(239, 68, 68, 0.05)'),
+                                padding: '2px 8px',
+                                borderRadius: '6px'
+                              }}>
+                                {hist.status === '완료' ? '완납' : (hist.status === '미납' ? '미납' : '연체')}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Primary Core Selection Button & Admin Tools Row */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: 'auto' }}>
+                    
+                    {/* 매장 선택 버튼 - 가장 강조된 프리미엄 액션 버튼 */}
+                    <button
+                      onClick={() => onSelectStore(store.store_id, store.store_name)}
+                      style={{
+                        width: '100%',
+                        padding: '14px',
+                        borderRadius: '14px',
+                        background: isPaid ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : (isUnpaid ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'),
+                        color: 'white',
+                        fontWeight: 900,
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.95rem',
+                        boxShadow: '0 6px 15px rgba(37, 99, 235, 0.15)',
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.filter = 'brightness(1.08)';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.filter = 'none';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      <span>💻</span> {store.store_name} 선택 (상황판 진입)
+                    </button>
+
+                    {/* Secondary Tools Header row */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <button
+                        onClick={() => openEditModal(store)}
+                        style={{
+                          padding: '10px',
+                          borderRadius: '12px',
+                          background: '#ffffff',
+                          border: '1.5px solid #cbd5e1',
+                          color: '#475569',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          fontSize: '0.85rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          transition: 'all 0.15s'
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.background = '#f8fafc';
+                          e.currentTarget.style.borderColor = '#94a3b8';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.background = '#ffffff';
+                          e.currentTarget.style.borderColor = '#cbd5e1';
+                        }}
+                      >
+                        ✏️ 정보 편집
+                      </button>
+                      <button
+                        onClick={() => handleDelete(store.store_id, store.store_name)}
+                        style={{
+                          padding: '10px',
+                          borderRadius: '12px',
+                          background: 'rgba(239, 68, 68, 0.02)',
+                          border: '1.5px solid rgba(239, 68, 68, 0.15)',
+                          color: '#ef4444',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          fontSize: '0.85rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '4px',
+                          transition: 'all 0.15s'
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.background = '#ef4444';
+                          e.currentTarget.style.color = '#ffffff';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.02)';
+                          e.currentTarget.style.color = '#ef4444';
+                        }}
+                      >
+                        🗑️ 매장 삭제
+                      </button>
+                    </div>
+
+                  </div>
+
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -360,23 +636,23 @@ export const AdminStoreManager = ({ onSelectStore, onLogout }: AdminStoreManager
       {isModalOpen && (
         <div style={{
           position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-          background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
+          background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(6px)',
           display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999
         }}>
           <div className="glass-card animate-scale-up" style={{
-            background: 'var(--surface)', padding: '30px', borderRadius: '24px',
-            width: '450px', maxWidth: '90%', border: '1px solid var(--border)',
-            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+            background: '#ffffff', padding: '35px', borderRadius: '28px',
+            width: '480px', maxWidth: '90%', border: '1px solid #e2e8f0',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.15)'
           }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-main)', marginTop: 0, marginBottom: '20px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
+            <h2 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#0f172a', marginTop: 0, marginBottom: '22px', borderBottom: '1.5px solid #f1f5f9', paddingBottom: '14px', letterSpacing: '-0.5px' }}>
               {editingStore ? '✏️ 가맹 정보 수정' : '➕ 신규 가맹점 정보 등록'}
             </h2>
 
             <form onSubmit={handleSave}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
                 
                 <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>가맹 매장 ID</label>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748b', display: 'block', marginBottom: '6px' }}>가맹 매장 ID</label>
                   <input
                     type="text"
                     value={formStoreId}
@@ -384,86 +660,87 @@ export const AdminStoreManager = ({ onSelectStore, onLogout }: AdminStoreManager
                     disabled={!!editingStore}
                     placeholder="예: store-1"
                     style={{
-                      width: '100%', padding: '12px', borderRadius: '10px',
-                      border: '1px solid var(--border)', background: formStoreId && editingStore ? '#f1f5f9' : 'var(--surface)',
-                      color: 'var(--text-main)', outline: 'none'
+                      width: '100%', padding: '14px', borderRadius: '12px',
+                      border: '1.5px solid #cbd5e1', background: formStoreId && editingStore ? '#f8fafc' : '#ffffff',
+                      color: '#1e293b', outline: 'none', fontSize: '0.95rem'
                     }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>가맹 매장명 (상호명)</label>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748b', display: 'block', marginBottom: '6px' }}>가맹 매장명 (상호명)</label>
                   <input
                     type="text"
                     value={formStoreName}
                     onChange={(e) => setFormStoreName(e.target.value)}
                     placeholder="예: 우정돌솥밥 역삼점"
                     style={{
-                      width: '100%', padding: '12px', borderRadius: '10px',
-                      border: '1px solid var(--border)', background: 'var(--surface)',
-                      color: 'var(--text-main)', outline: 'none'
+                      width: '100%', padding: '14px', borderRadius: '12px',
+                      border: '1.5px solid #cbd5e1', background: '#ffffff',
+                      color: '#1e293b', outline: 'none', fontSize: '0.95rem'
                     }}
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>점주명</label>
+                    <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748b', display: 'block', marginBottom: '6px' }}>점주명</label>
                     <input
                       type="text"
                       value={formOwnerName}
                       onChange={(e) => setFormOwnerName(e.target.value)}
                       placeholder="홍길동"
                       style={{
-                        width: '100%', padding: '12px', borderRadius: '10px',
-                        border: '1px solid var(--border)', background: 'var(--surface)',
-                        color: 'var(--text-main)', outline: 'none'
+                        width: '100%', padding: '14px', borderRadius: '12px',
+                        border: '1.5px solid #cbd5e1', background: '#ffffff',
+                        color: '#1e293b', outline: 'none', fontSize: '0.95rem'
                       }}
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>점주 ID</label>
+                    <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748b', display: 'block', marginBottom: '6px' }}>점주 ID</label>
                     <input
                       type="text"
                       value={formOwnerId}
                       onChange={(e) => setFormOwnerId(e.target.value)}
                       placeholder="owner-1"
                       style={{
-                        width: '100%', padding: '12px', borderRadius: '10px',
-                        border: '1px solid var(--border)', background: 'var(--surface)',
-                        color: 'var(--text-main)', outline: 'none'
+                        width: '100%', padding: '14px', borderRadius: '12px',
+                        border: '1.5px solid #cbd5e1', background: '#ffffff',
+                        color: '#1e293b', outline: 'none', fontSize: '0.95rem'
                       }}
                     />
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '12px' }}>
                   <div>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>월 사용 가맹금 (₩)</label>
+                    <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748b', display: 'block', marginBottom: '6px' }}>월 사용 가맹금 (₩)</label>
                     <input
                       type="number"
                       value={formMonthlyFee}
                       onChange={(e) => setFormMonthlyFee(Number(e.target.value))}
                       style={{
-                        width: '100%', padding: '12px', borderRadius: '10px',
-                        border: '1px solid var(--border)', background: 'var(--surface)',
-                        color: 'var(--text-main)', outline: 'none'
+                        width: '100%', padding: '14px', borderRadius: '12px',
+                        border: '1.5px solid #cbd5e1', background: '#ffffff',
+                        color: '#1e293b', outline: 'none', fontSize: '0.95rem', fontWeight: 700
                       }}
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>월 납부 상태</label>
+                    <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748b', display: 'block', marginBottom: '6px' }}>월 납부 상태</label>
                     <select
                       value={formPaymentStatus}
                       onChange={(e) => setFormPaymentStatus(e.target.value)}
                       style={{
-                        width: '100%', padding: '12px', borderRadius: '10px',
-                        border: '1px solid var(--border)', background: 'var(--surface)',
-                        color: 'var(--text-main)', outline: 'none', fontWeight: 700
+                        width: '100%', padding: '14px', borderRadius: '12px',
+                        border: '1.5px solid #cbd5e1', background: '#ffffff',
+                        color: '#1e293b', outline: 'none', fontSize: '0.95rem', fontWeight: 800
                       }}
                     >
                       <option value="정상">정상 (Paid)</option>
                       <option value="미납">미납 (Unpaid)</option>
+                      <option value="연체">연체 (Overdue)</option>
                     </select>
                   </div>
                 </div>
@@ -471,19 +748,20 @@ export const AdminStoreManager = ({ onSelectStore, onLogout }: AdminStoreManager
               </div>
 
               {formMessage && (
-                <div style={{ marginTop: '15px', color: formMessage.includes('❌') ? '#ef4444' : '#10b981', fontWeight: 700, fontSize: '0.85rem', textAlign: 'center' }}>
+                <div style={{ marginTop: '18px', color: formMessage.includes('❌') ? '#ef4444' : '#10b981', fontWeight: 800, fontSize: '0.88rem', textAlign: 'center' }}>
                   {formMessage}
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '25px', borderTop: '1px solid var(--border)', paddingTop: '15px' }}>
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '28px', borderTop: '1.5px solid #f1f5f9', paddingTop: '18px' }}>
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
                   style={{
-                    padding: '12px 18px', borderRadius: '10px',
-                    background: 'rgba(0,0,0,0.03)', border: '1px solid var(--border)',
-                    color: 'var(--text-main)', fontWeight: 700, cursor: 'pointer'
+                    padding: '12px 20px', borderRadius: '12px',
+                    background: '#f1f5f9', border: '1px solid #cbd5e1',
+                    color: '#475569', fontWeight: 700, cursor: 'pointer',
+                    fontSize: '0.95rem'
                   }}
                 >
                   취소
@@ -491,10 +769,11 @@ export const AdminStoreManager = ({ onSelectStore, onLogout }: AdminStoreManager
                 <button
                   type="submit"
                   style={{
-                    padding: '12px 24px', borderRadius: '10px',
-                    background: 'var(--primary)', color: 'white',
+                    padding: '12px 26px', borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)', color: 'white',
                     fontWeight: 800, border: 'none', cursor: 'pointer',
-                    boxShadow: '0 8px 16px rgba(59, 130, 246, 0.2)'
+                    boxShadow: '0 8px 16px rgba(59, 130, 246, 0.2)',
+                    fontSize: '0.95rem'
                   }}
                 >
                   {editingStore ? '저장 완료' : '등록 완료'}
