@@ -231,15 +231,17 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     const handleFinished = (e: any) => {
       const { success } = e.detail;
       if (success) {
+        setCart([]); // 장바구니 품목 완전히 초기화 (이중 결제 및 누적 결제 원천 방지)
         fetchMySession();
         setShowProgress(true); // 진행창 보여주기 (주문 진행 현황으로 이동)
-        setShowCart(false);    // 장바구니 초기화
+        setShowCart(false);    // 장바구니 닫기
       }
     };
 
     // Fail-safe: 마운트 시점에 URL에 결제 성공 파라미터가 있다면 즉시 진행창 노출
     const params = new URLSearchParams(window.location.search);
     if (params.get('payment_success') === 'true') {
+      setCart([]); // 장바구니 품목 완전히 초기화
       fetchMySession();
       setShowProgress(true);
       setShowCart(false);
