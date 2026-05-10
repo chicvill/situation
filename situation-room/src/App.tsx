@@ -188,12 +188,7 @@ function App() {
   const navigateTo = (tab: MainTab) => {
     setActiveTab(tab);
     setIsMenuOpen(false);
-    if (tab === 'parking') {
-      setIsParkingFlashing(false);
-    }
-    if (tab === 'points') {
-      setIsPointsFlashing(false);
-    }
+    resetFlash(tab);
   };
 
   const navItems = [
