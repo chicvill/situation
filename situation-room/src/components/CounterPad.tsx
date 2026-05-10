@@ -367,7 +367,10 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                         <div>
                                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>미결제 잔액 (후불)</div>
                                             <div style={{ fontSize: '1.4rem', fontWeight: '800', color: unpaidTotal > 0 ? '#ef4444' : '#10b981', whiteSpace: 'nowrap' }}>
-                                                {unpaidTotal > 0 ? `${unpaidTotal.toLocaleString()}원` : '선불 완납 완료 (0원)'}
+                                                {unpaidTotal > 0 ? `${unpaidTotal.toLocaleString()}원` : '선불 완납 완료'}
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                                                선납 : {(sessionTotal - unpaidTotal).toLocaleString()}원, 미납 : {unpaidTotal.toLocaleString()}원
                                             </div>
                                         </div>
                                     </div>

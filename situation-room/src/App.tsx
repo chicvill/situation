@@ -422,8 +422,17 @@ function App() {
               ☰
             </button>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ fontSize: '1.4rem', fontWeight: '900', color: 'var(--text-main)', letterSpacing: '-0.5px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap', maxWidth: 'calc(100% - 40px)', overflow: 'hidden' }}>
+            <div style={{ 
+              fontSize: storeName && storeName.length > 8 ? '1.15rem' : '1.4rem', 
+              fontWeight: '900', 
+              color: 'var(--text-main)', 
+              letterSpacing: '-0.5px',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '100%'
+            }} title={storeName}>
               {storeName || '우리식당'}
             </div>
             {user?.role === 'admin' && (
