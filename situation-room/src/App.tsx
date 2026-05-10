@@ -579,6 +579,7 @@ function App() {
 
 // --- 토스 결제 및 승인 대행용 슬릭 팝업 핸들러 컴포넌트 ---
 function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
+  const _unused = safeBundles;
   const params = new URLSearchParams(window.location.search);
   const mode = params.get('mode');
   const isPopup = params.get('is_popup') === 'true';
