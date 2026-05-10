@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, FormEvent } from 'react';
 import { API_BASE } from '../config';
 
 interface Store {
@@ -78,7 +78,7 @@ export const AdminStoreManager = ({ onSelectStore, onLogout }: AdminStoreManager
     setIsModalOpen(true);
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     setFormMessage('');
     
