@@ -183,50 +183,96 @@ def init_db_v2():
             )
         """)
         
-        # 12. 매장 관리용 테이블 (stores)
-        # 만약 기존에 stores 테이블이 있고 'id' 컬럼이 있는 경우 (실제 가맹점 운영 테이블)
-        # 새롭게 생성하지 않고 기존 테이블 구조를 마이그레이션 합니다.
+        # 12. 매장 관리용 테이블 (stores) - 테스트용 강제 초기화 및 5대 핵심 가맹점 시딩
+        # 사장님의 요청에 따라 가맹점 테이블을 완전히 초기화하고, 정교하게 디자인된 5개의 대표 테스트 매장 데이터를 삽입합니다.
+        cur.execute("DROP TABLE IF EXISTS stores")
+        
         cur.execute("""
-            SELECT EXISTS (
-                SELECT FROM information_schema.columns 
-                WHERE table_name = 'stores' AND column_name = 'id'
+            CREATE TABLE stores (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                ceo_name TEXT NOT NULL,
+                signature_owner TEXT NOT NULL,
+                monthly_fee INTEGER DEFAULT 0,
+                payment_status TEXT DEFAULT '정상',
+                payment_history JSONB DEFAULT '[]',
+                created_at TIMESTAMP DEFAULT NOW()
             )
         """)
-        row = cur.fetchone()
-        is_production_stores = row[0] if row else False
-
-        if is_production_stores:
-            # 기존 프로덕션 테이블에 결제 기록 관리용 컬럼 추가
-            cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS payment_history JSONB DEFAULT '[]'")
-        else:
-            # 신규 설치인 경우의 스키마 (프로덕션 규격에 맞춰 생성)
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS stores (
-                    id TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    ceo_name TEXT NOT NULL,
-                    signature_owner TEXT NOT NULL,
-                    monthly_fee INTEGER DEFAULT 0,
-                    payment_status TEXT DEFAULT '정상',
-                    payment_history JSONB DEFAULT '[]',
-                    created_at TIMESTAMP DEFAULT NOW()
-                )
-            """)
         
-        # 1. 초기 기본 가맹점 정보 삽입
+        # 5개의 입체적이고 완벽한 시나리오 테스트용 가맹점 데이터
         initial_stores = [
-            ("store-1", "우정돌솥밥", "홍길동", "owner-1", 50000, "정상", json.dumps([{"date": "2026-05-01", "amount": 50000, "status": "완료"}])),
-            ("store-2", "한옥초당순두부", "이순신", "owner-2", 60000, "미납", json.dumps([{"date": "2026-05-01", "amount": 0, "status": "미납"}])),
-            ("store-3", "대관령한우구이", "강감찬", "owner-3", 100000, "정상", json.dumps([{"date": "2026-05-01", "amount": 100000, "status": "완료"}]))
+            (
+                "store-korean", 
+                "대장금 수라간", 
+                "신사임당", 
+                "owner-korean", 
+                150000, 
+                "정상", 
+                json.dumps([
+                    {"date": "2026-03-01", "amount": 150000, "status": "완료"},
+                    {"date": "2026-04-01", "amount": 150000, "status": "완료"},
+                    {"date": "2026-05-01", "amount": 150000, "status": "완료"}
+                ])
+            ),
+            (
+                "store-coffee", 
+                "그레이스 하이테크 커피", 
+                "이지은", 
+                "owner-coffee", 
+                80000, 
+                "미납", 
+                json.dumps([
+                    {"date": "2026-03-01", "amount": 80000, "status": "완료"},
+                    {"date": "2026-04-01", "amount": 80000, "status": "완료"},
+                    {"date": "2026-05-01", "amount": 0, "status": "미납"}
+                ])
+            ),
+            (
+                "store-beef", 
+                "대관령 황금 한우", 
+                "강감찬", 
+                "owner-beef", 
+                250000, 
+                "정상", 
+                json.dumps([
+                    {"date": "2026-03-01", "amount": 250000, "status": "완료"},
+                    {"date": "2026-04-01", "amount": 250000, "status": "완료"},
+                    {"date": "2026-05-01", "amount": 250000, "status": "완료"}
+                ])
+            ),
+            (
+                "store-tofu", 
+                "한옥마을 수제 초당순두부", 
+                "이순신", 
+                "owner-tofu", 
+                120000, 
+                "연체", 
+                json.dumps([
+                    {"date": "2026-03-01", "amount": 120000, "status": "완료"},
+                    {"date": "2026-04-01", "amount": 0, "status": "연체"},
+                    {"date": "2026-05-01", "amount": 0, "status": "미납"}
+                ])
+            ),
+            (
+                "store-bibim", 
+                "우정 전주 돌솥비빔밥", 
+                "홍길동", 
+                "owner-bibim", 
+                100000, 
+                "정상", 
+                json.dumps([
+                    {"date": "2026-04-01", "amount": 100000, "status": "완료"},
+                    {"date": "2026-05-01", "amount": 100000, "status": "완료"}
+                ])
+            )
         ]
+        
         for s in initial_stores:
-            cur.execute("SELECT COUNT(*) FROM stores WHERE id = %s", (s[0],))
-            row_count = cur.fetchone()
-            if row_count and row_count[0] == 0:
-                cur.execute("""
-                    INSERT INTO stores (id, name, ceo_name, signature_owner, monthly_fee, payment_status, payment_history, created_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
-                """, s)
+            cur.execute("""
+                INSERT INTO stores (id, name, ceo_name, signature_owner, monthly_fee, payment_status, payment_history, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+            """, s)
 
         # 2. knowledge_pool.json 데이터에 포함된 매장들 자동 동기화 및 복구
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -272,6 +318,114 @@ def init_db_v2():
         cur.execute("CREATE INDEX IF NOT EXISTS idx_sessions_store_table ON table_sessions(store_id, table_id)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_situation_store ON situation_pool(store_id)")
         cur.execute("ALTER TABLE table_sessions ALTER COLUMN device_id DROP NOT NULL")
+        
+        # 3. 메뉴 정보 초기화 및 신규 5개 매장에 맞는 카탈로그 분류형 메뉴 일괄 시딩
+        if os.path.exists(pool_file):
+            try:
+                with open(pool_file, "r", encoding="utf-8") as f:
+                    pool_data = json.load(f)
+                
+                # 기존 "type": "Menus"인 데이터들 모두 제거
+                pool_data = [item for item in pool_data if item.get("type") != "Menus"]
+                
+                # 5개 매장의 고급 분류형 예제 메뉴들 정의
+                new_menus = [
+                    # 1) 대장금 수라간 (store-korean)
+                    {
+                        "id": "MENUS_store-korean",
+                        "type": "Menus",
+                        "title": "메뉴 정보",
+                        "store_id": "store-korean",
+                        "store": "대장금 수라간",
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "items": [
+                            {"name": "수라간 정식", "value": 25000, "icon": "🍱", "category": "식사류", "description": "궁중 요리의 진수를 맛볼 수 있는 정갈한 한 상 정식"},
+                            {"name": "떡갈비 구이", "value": 18000, "icon": "🥩", "category": "식사류", "description": "수제 가마솥 방식으로 부드럽게 구워낸 떡갈비"},
+                            {"name": "구절판", "value": 35000, "icon": "🎨", "category": "요리류", "description": "아홉 가지 밀전병 쌈 요리"},
+                            {"name": "신선로", "value": 45000, "icon": "🍲", "category": "요리류", "description": "화로에 보글보글 끓여 먹는 궁중 신선로 전골"},
+                            {"name": "감홍로 전통주", "value": 15000, "icon": "🍶", "category": "주류/음료", "description": "육당 최남선이 꼽은 조선 3대 명주 중 하나"},
+                            {"name": "수제 식혜", "value": 3000, "icon": "🥤", "category": "주류/음료", "description": "직접 엿기름을 발효시켜 빚어낸 전통 식혜"}
+                        ]
+                    },
+                    # 2) 그레이스 하이테크 커피 (store-coffee)
+                    {
+                        "id": "MENUS_store-coffee",
+                        "type": "Menus",
+                        "title": "메뉴 정보",
+                        "store_id": "store-coffee",
+                        "store": "그레이스 하이테크 커피",
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "items": [
+                            {"name": "스마트 아메리카노", "value": 4500, "icon": "☕", "category": "에스프레소", "description": "정밀 추출 기술로 내린 고소하고 깔끔한 원두커피"},
+                            {"name": "벨벳 카페 라떼", "value": 5000, "icon": "🥛", "category": "에스프레소", "description": "실크 같은 마이크로폼 우유와 진한 에스프레소의 조화"},
+                            {"name": "하이테크 아인슈페너", "value": 6500, "icon": "🍦", "category": "시그니처", "description": "차가운 더치커피 위에 얹은 달콤하고 묵직한 수제 크림"},
+                            {"name": "에메랄드 말차 라떼", "value": 6000, "icon": "🍵", "category": "시그니처", "description": "유기농 보성 말차의 풍미가 살아있는 시그니처 음료"},
+                            {"name": "메이플 수플레 팬케이크", "value": 12000, "icon": "🥞", "category": "디저트", "description": "입안에서 사르르 녹는 폭신폭신한 수플레 팬케이크"},
+                            {"name": "바스크 탄 치즈케이크", "value": 7000, "icon": "🍰", "category": "디저트", "description": "고온에서 그을려 깊은 스모키 향과 꾸덕함을 품은 치즈케이크"}
+                        ]
+                    },
+                    # 3) 대관령 황금 한우 (store-beef)
+                    {
+                        "id": "MENUS_store-beef",
+                        "type": "Menus",
+                        "title": "메뉴 정보",
+                        "store_id": "store-beef",
+                        "store": "대관령 황금 한우",
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "items": [
+                            {"name": "황금 한우 꽃등심", "value": 48000, "icon": "🥩", "category": "한우 구이", "description": "최상급 투플러스 마블링의 극강의 고소함을 담은 등심(150g)"},
+                            {"name": "황금 한우 안심", "value": 52000, "icon": "🥩", "category": "한우 구이", "description": "육질이 부드럽고 담백한 명품 안심 부위(150g)"},
+                            {"name": "전통 육회", "value": 28000, "icon": "🍳", "category": "한우 구이", "description": "참기름 and 마늘로 맛을 내 배와 함께 즐기는 신선한 생육회"},
+                            {"name": "차돌 된장찌개", "value": 8000, "icon": "🍲", "category": "식사류", "description": "고소한 한우 차돌박이가 듬뿍 들어가 국물이 깊은 찌개"},
+                            {"name": "평양 물냉면", "value": 9000, "icon": "🍜", "category": "식사류", "description": "순메밀 면발과 육향 가득한 육수로 완성한 정통 평양식 물냉면"},
+                            {"name": "지리산 참 복분자주", "value": 12000, "icon": "🍷", "category": "주류", "description": "대관령 소고기의 맛을 극대화해 주는 수제 복분자주"}
+                        ]
+                    },
+                    # 4) 한옥마을 수제 초당순두부 (store-tofu)
+                    {
+                        "id": "MENUS_store-tofu",
+                        "type": "Menus",
+                        "title": "메뉴 정보",
+                        "store_id": "store-tofu",
+                        "store": "한옥마을 수제 초당순두부",
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "items": [
+                            {"name": "초당 맑은 순두부", "value": 9000, "icon": "🥣", "category": "순두부류", "description": "국산 콩과 동해 바닷물로 빚어낸 고소하고 담백한 전통 순두부"},
+                            {"name": "매콤 짬뽕 순두부", "value": 10500, "icon": "🌶️", "category": "순두부류", "description": "불향 가득한 해물 육수에 몽글몽글한 순두부를 더한 해장 별미"},
+                            {"name": "걸쭉 들깨 순두부", "value": 10000, "icon": "🍲", "category": "순두부류", "description": "들깨가루를 듬뿍 넣어 씹을수록 깊고 고소한 순두부"},
+                            {"name": "수제 도토리묵무침", "value": 15000, "icon": "🥗", "category": "곁들임", "description": "직접 쑨 쌉싸름한 묵을 새콤달콤 매콤하게 버무린 별미"},
+                            {"name": "바삭 메밀전병", "value": 8000, "icon": "🌯", "category": "곁들임", "description": "메밀전 피에 칼칼한 속을 넣어 노릇노릇 부쳐낸 전병"},
+                            {"name": "가평 잣 막걸리", "value": 5000, "icon": "🍶", "category": "전통음료", "description": "잣의 고소한 향이 입안에 맴도는 부드러운 전통 탁주"}
+                        ]
+                    },
+                    # 5) 우정 전주 돌솥비빔밥 (store-bibim)
+                    {
+                        "id": "MENUS_store-bibim",
+                        "type": "Menus",
+                        "title": "메뉴 정보",
+                        "store_id": "store-bibim",
+                        "store": "우정 전주 돌솥비빔밥",
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "items": [
+                            {"name": "전통 전주 돌솥비빔밥", "value": 11000, "icon": "🍚", "category": "비빔밥", "description": "신선한 육회와 온갖 나물이 뜨거운 돌솥에서 지글지글 비벼지는 시그니처"},
+                            {"name": "치즈 제육 돌솥비빔밥", "value": 12000, "icon": "🧀", "category": "비빔밥", "description": "매콤하게 볶아낸 제육과 고소한 모짜렐라 치즈의 환상적인 퓨전 돌솥"},
+                            {"name": "톡톡 날치알 돌솥비빔밥", "value": 10000, "icon": "🥚", "category": "비빔밥", "description": "톡톡 터지는 날치알과 단무지, 김가루가 어우러진 대중적인 돌솥"},
+                            {"name": "노릇 해물파전", "value": 16000, "icon": "🥞", "category": "사이드", "description": "쪽파와 신선한 오징어, 새우를 가득 얹어 튀기듯 구운 해물파전"},
+                            {"name": "탄산 사이다", "value": 2000, "icon": "🥤", "category": "음료", "description": "시원하고 청량한 오리지널 칠성사이다"}
+                        ]
+                    }
+                ]
+                
+                # 새로운 메뉴들을 pool 앞쪽에 추가
+                pool_data = new_menus + pool_data
+                
+                # 저장
+                with open(pool_file, "w", encoding="utf-8") as f:
+                    json.dump(pool_data, f, ensure_ascii=False, indent=2)
+                
+                print("✅ 5대 매장의 카탈로그별 예제 메뉴가 성공적으로 일괄 리셋/시딩되었습니다.")
+            except Exception as m_err:
+                print(f"⚠️ Failed to seed menu catalogs: {m_err}")
         
         conn.commit()
         cur.close()
