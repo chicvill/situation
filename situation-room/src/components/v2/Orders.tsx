@@ -275,13 +275,23 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
           const tossPayments = (window as any).TossPayments('test_ck_D5b4Zne68wxL1Pn6k0m8rlzYWBn1');
           const tossMethod = method.includes('카드') ? '카드' : '계좌이체';
           
+          // Preserve existing query params (like mode=customer, table=3, etc.)
+          const successParams = new URLSearchParams(window.location.search);
+          successParams.set('payment_success', 'true');
+          successParams.set('order_id', orderId);
+          successParams.set('amount', String(totalPrice));
+
+          const failParams = new URLSearchParams(window.location.search);
+          failParams.set('payment_fail', 'true');
+          failParams.set('order_id', orderId);
+
           await tossPayments.requestPayment(tossMethod, {
             amount: totalPrice,
             orderId: orderId,
             orderName: `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,
             customerName: '손님',
-            successUrl: `${window.location.origin}${window.location.pathname}?payment_success=true&order_id=${orderId}&amount=${totalPrice}`,
-            failUrl: `${window.location.origin}${window.location.pathname}?payment_fail=true&order_id=${orderId}`,
+            successUrl: `${window.location.origin}${window.location.pathname}?${successParams.toString()}`,
+            failUrl: `${window.location.origin}${window.location.pathname}?${failParams.toString()}`,
           });
         }
       }

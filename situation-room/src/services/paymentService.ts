@@ -61,6 +61,16 @@ export const PaymentService = {
       const tossMethod = method.includes('카드') ? '카드' : '계좌이체';
       const baseUrl = `${window.location.origin}${window.location.pathname}`;
 
+      // Preserve existing query params (like mode=customer, table=3, etc.)
+      const successParams = new URLSearchParams(window.location.search);
+      successParams.set('payment_success', 'true');
+      successParams.set('order_id', options.orderId);
+      successParams.set('amount', String(options.amount));
+
+      const failParams = new URLSearchParams(window.location.search);
+      failParams.set('payment_fail', 'true');
+      failParams.set('order_id', options.orderId);
+
       this.log("CP-03", "Redirecting to Toss Gateway...", { method: tossMethod, orderId: options.orderId });
 
       return toss.requestPayment(tossMethod, {
@@ -68,8 +78,8 @@ export const PaymentService = {
         orderId: options.orderId,
         orderName: options.orderName,
         customerName: options.customerName,
-        successUrl: `${baseUrl}?payment_success=true&order_id=${options.orderId}&amount=${options.amount}`,
-        failUrl: `${baseUrl}?payment_fail=true&order_id=${options.orderId}`,
+        successUrl: `${baseUrl}?${successParams.toString()}`,
+        failUrl: `${baseUrl}?${failParams.toString()}`,
       });
     } catch (e: any) {
       this.log("CP-03-ERR", "Payment initiation failed", e.message);

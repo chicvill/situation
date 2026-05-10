@@ -66,7 +66,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 
         {/* Footer Actions */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {receiptUrl && (
+          {receiptUrl ? (
             <a 
               href={receiptUrl} 
               target="_blank" 
@@ -78,6 +78,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             >
               📄 전자 영수증 확인 (Toss)
             </a>
+          ) : (
+            <div style={{ 
+              background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', 
+              padding: '14px', fontSize: '0.8rem', color: '#64748b', textAlign: 'center',
+              lineHeight: 1.45, fontWeight: 500
+            }}>
+              💡 테스트(Sandbox) 결제 건은 토스 공식 전자의무영수증 발급이 생략됩니다.
+            </div>
           )}
           <button 
             onClick={() => window.print()}
