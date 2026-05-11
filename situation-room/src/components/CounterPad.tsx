@@ -318,7 +318,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                 gap: '20px',
                                 boxShadow: isPending ? '0 8px 30px rgba(245, 158, 11, 0.08)' : '0 4px 12px rgba(0,0,0,0.03)'
                             }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', borderBottom: '1px solid var(--border)', paddingBottom: '20px', gap: '15px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                                         <span style={{ fontSize: '1.6rem', fontWeight: '800', color: isPending ? 'var(--warning)' : 'var(--primary)' }}>
                                             TABLE {session.table_id}
@@ -358,25 +358,9 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                             </div>
                                         </div>
                                     )}
-
-                                    <div style={{ display: 'flex', gap: '40px', textAlign: 'left' }}>
-                                        <div>
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>총 이용 금액</div>
-                                            <div style={{ fontSize: '1.4rem', fontWeight: '700', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>{sessionTotal.toLocaleString()}원</div>
-                                        </div>
-                                        <div>
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '4px' }}>미결제 잔액 (후불)</div>
-                                            <div style={{ fontSize: '1.4rem', fontWeight: '800', color: unpaidTotal > 0 ? '#ef4444' : '#10b981', whiteSpace: 'nowrap' }}>
-                                                {unpaidTotal > 0 ? `${unpaidTotal.toLocaleString()}원` : '선불 완납 완료'}
-                                            </div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', fontWeight: '600', whiteSpace: 'nowrap' }}>
-                                                선납 : {(sessionTotal - unpaidTotal).toLocaleString()}원, 미납 : {unpaidTotal.toLocaleString()}원
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                     {session.orders.map((order: any) => (
                                         <div key={order.order_id} style={{ 
                                             background: 'var(--primary-soft)', 
@@ -462,6 +446,33 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                             </div>
                                         </div>
                                     ))}
+                                </div>
+
+                                <div style={{ 
+                                    display: 'flex', 
+                                    gap: '20px', 
+                                    background: 'var(--primary-soft)',
+                                    padding: '20px',
+                                    borderRadius: 'var(--radius-md)',
+                                    border: '1.5px solid var(--border)',
+                                    marginTop: '10px',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    flexWrap: 'wrap'
+                                }}>
+                                    <div style={{ textAlign: 'left' }}>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '600' }}>총 이용 금액</div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)' }}>{sessionTotal.toLocaleString()}원</div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '600' }}>미결제 잔액 (후불)</div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: '800', color: unpaidTotal > 0 ? '#ef4444' : '#10b981', whiteSpace: 'nowrap' }}>
+                                            {unpaidTotal > 0 ? `${unpaidTotal.toLocaleString()}원` : '선불 완납 완료'}
+                                        </div>
+                                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                                            선납 : {(sessionTotal - unpaidTotal).toLocaleString()}원 / 미납 : {unpaidTotal.toLocaleString()}원
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '15px', marginTop: '10px', justifyContent: 'flex-end', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
