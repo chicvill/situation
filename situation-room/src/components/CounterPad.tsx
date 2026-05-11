@@ -15,7 +15,14 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
     const [selectedOrderForPay, setSelectedOrderForPay] = useState<any | null>(null);
     const [pendingJoins, setPendingJoins] = useState<Record<string, any[]>>({});
 
-    const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+    const getApiUrl = () => {
+        const host = window.location.hostname;
+        const isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.');
+        if (isLocal) {
+            return `http://${host}:8000`;
+        }
+        return import.meta.env.VITE_API_URL || `http://${host}:8000`;
+    };
 
     const fetchSessions = async () => {
         try {
@@ -305,7 +312,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                             .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
                             .reduce((sum: number, o: any) => sum + o.total_price, 0);
                         const isPending = session.status === 'pending';
-                        const isAllPrepaid = session.orders.length > 0 && session.orders.every((o: any) => o.payment_status === 'prepaid' || o.payment_status === 'paid' || o.status === 'paid');
+
                         
                         return (
                             <div key={session.session_id} style={{ 
