@@ -311,6 +311,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                         const unpaidTotal = session.orders
                             .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
                             .reduce((sum: number, o: any) => sum + o.total_price, 0);
+                        const isAllPrepaid = unpaidTotal === 0;
                         const isPending = session.status === 'pending';
 
                         
