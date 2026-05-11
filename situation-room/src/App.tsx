@@ -413,7 +413,8 @@ function App() {
           gap: '12px',
           position: 'sticky',
           top: 0,
-          zIndex: 1000
+          zIndex: 1000,
+          height: 'auto'
       }}>
         {/* Line 1: Hamburger + Store Name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -480,7 +481,7 @@ function App() {
         </div>
       </header>
 
-      <main className="saas-main-full" style={{ paddingBottom: isCustomerMode ? '0' : '90px' }}>
+      <main className="saas-main-full" style={{ paddingTop: '10px', paddingBottom: isCustomerMode ? '0' : '90px' }}>
         <div className="view-content">
           {user ? renderContent() : <Login onLogin={handleLogin} bundles={bundles} />}
         </div>

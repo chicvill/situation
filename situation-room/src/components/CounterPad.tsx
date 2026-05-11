@@ -461,16 +461,23 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                     flexWrap: 'wrap'
                                 }}>
                                     <div style={{ textAlign: 'left' }}>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '600' }}>총 이용 금액</div>
-                                        <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)' }}>{sessionTotal.toLocaleString()}원</div>
-                                    </div>
-                                    <div style={{ textAlign: 'right' }}>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '600' }}>미결제 잔액 (후불)</div>
-                                        <div style={{ fontSize: '1.5rem', fontWeight: '800', color: unpaidTotal > 0 ? '#ef4444' : '#10b981', whiteSpace: 'nowrap' }}>
-                                            {unpaidTotal > 0 ? `${unpaidTotal.toLocaleString()}원` : '선불 완납 완료'}
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '600' }}>선결제 금액</div>
+                                        <div style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)' }}>
+                                            {(sessionTotal - unpaidTotal).toLocaleString()}원
                                         </div>
                                         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '4px', fontWeight: '600', whiteSpace: 'nowrap' }}>
-                                            선납 : {(sessionTotal - unpaidTotal).toLocaleString()}원 / 미납 : {unpaidTotal.toLocaleString()}원
+                                            총 이용 금액: {sessionTotal.toLocaleString()}원
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '600' }}>미결제 금액</div>
+                                        <div style={{ 
+                                            fontSize: '1.75rem', 
+                                            fontWeight: '900', 
+                                            color: unpaidTotal > 0 ? '#ef4444' : '#10b981', 
+                                            whiteSpace: 'nowrap'
+                                        }}>
+                                            {unpaidTotal > 0 ? `${unpaidTotal.toLocaleString()}원` : '결제 완료'}
                                         </div>
                                     </div>
                                 </div>
