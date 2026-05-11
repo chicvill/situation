@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { BundleData } from '../types';
-
-import { WS_BASE } from '../config';
-
+import { WS_BASE, API_BASE } from '../config';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 
 export const KitchenDisplay: React.FC = () => {
@@ -11,7 +9,7 @@ export const KitchenDisplay: React.FC = () => {
 
     const fetchKitchenOrders = async () => {
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const apiUrl = API_BASE;
             const res = await fetch(`${apiUrl}/api/kitchen/orders?store_id=${storeId || "Total"}`);
             const data = await res.json();
             setBundles(data); // data는 이미 필터링된 주문 리스트임
@@ -35,7 +33,7 @@ export const KitchenDisplay: React.FC = () => {
 
     const markAsDone = async (orderId: string) => {
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const apiUrl = API_BASE;
             const res = await fetch(`${apiUrl}/api/order/status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

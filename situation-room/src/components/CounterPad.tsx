@@ -346,6 +346,24 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                 승인 대기 중
                                             </span>
                                         )}
+                                        {session.orders.some((o: any) => o.status === 'ready') && (
+                                            <span style={{ 
+                                                width: 'fit-content',
+                                                background: 'linear-gradient(135deg, #10b981, #059669)', 
+                                                color: 'white', 
+                                                padding: '4px 12px', 
+                                                borderRadius: 'var(--radius-sm)', 
+                                                fontSize: '0.8rem', 
+                                                fontWeight: '700',
+                                                marginTop: '5px',
+                                                boxShadow: '0 0 10px rgba(16, 185, 129, 0.3)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '4px'
+                                            }}>
+                                                🍽️ 서빙 대기 중
+                                            </span>
+                                        )}
                                     </div>
                                     
                                     {/* 합류 요청 알림 (기존 위치 유지 또는 유사 레이아웃) */}
@@ -433,23 +451,45 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                     >
                                                         삭제
                                                     </button>
-                                                    <button 
-                                                        disabled={order.status === 'paid'}
-                                                        onClick={() => setSelectedOrderForPay(order)}
-                                                        style={{ 
-                                                            background: order.status === 'paid' ? 'var(--border)' : 'var(--accent)', 
-                                                            border: 'none', 
-                                                            color: order.status === 'paid' ? 'var(--text-muted)' : 'white', 
-                                                            padding: '6px 16px', 
-                                                            borderRadius: 'var(--radius-sm)', 
-                                                            fontSize: '0.8rem', 
-                                                            cursor: order.status === 'paid' ? 'default' : 'pointer',
-                                                            fontWeight: '600',
-                                                            whiteSpace: 'nowrap'
-                                                        }}
-                                                    >
-                                                        {order.status === 'paid' ? '결제완료' : '결제'}
-                                                    </button>
+                                                    {order.status === 'ready' ? (
+                                                        <button 
+                                                            onClick={() => handleStatusUpdate(order.order_id, 'served')}
+                                                            style={{ 
+                                                                background: 'linear-gradient(135deg, #10b981, #059669)', 
+                                                                border: 'none', 
+                                                                color: 'white', 
+                                                                padding: '6px 16px', 
+                                                                borderRadius: 'var(--radius-sm)', 
+                                                                fontSize: '0.8rem', 
+                                                                cursor: 'pointer',
+                                                                fontWeight: '700',
+                                                                whiteSpace: 'nowrap',
+                                                                boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)',
+                                                                transform: 'scale(1.05)',
+                                                                transition: 'all 0.2s'
+                                                            }}
+                                                        >
+                                                            🍽️ 서빙완료
+                                                        </button>
+                                                    ) : (
+                                                        <button 
+                                                            disabled={order.status === 'paid' || order.status === 'served'}
+                                                            onClick={() => setSelectedOrderForPay(order)}
+                                                            style={{ 
+                                                                background: (order.status === 'paid' || order.status === 'served') ? 'var(--border)' : 'var(--accent)', 
+                                                                border: 'none', 
+                                                                color: (order.status === 'paid' || order.status === 'served') ? 'var(--text-muted)' : 'white', 
+                                                                padding: '6px 16px', 
+                                                                borderRadius: 'var(--radius-sm)', 
+                                                                fontSize: '0.8rem', 
+                                                                cursor: (order.status === 'paid' || order.status === 'served') ? 'default' : 'pointer',
+                                                                fontWeight: '600',
+                                                                whiteSpace: 'nowrap'
+                                                             }}
+                                                         >
+                                                             {(order.status === 'paid' || order.status === 'served') ? '결제완료' : '결제'}
+                                                         </button>
+                                                     )}
                                                 </div>
                                             </div>
                                         </div>

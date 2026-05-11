@@ -16,6 +16,7 @@ from .database import (
     get_stores_db, add_store_db, update_store_db, delete_store_db
 )
 import ai_engine
+from psycopg2.extras import RealDictCursor  # type: ignore
 
 # --- Render Keep-Alive ---
 async def keep_alive_task():
@@ -189,14 +190,14 @@ async def get_stores():
 
 @app.get("/api/debug-db")
 async def debug_db_endpoint():
-    status = {}
+    status: Dict[str, Any] = {}
     try:
         db_url = os.getenv("DATABASE_URL")
         status["database_url_configured"] = bool(db_url)
         if db_url:
             status["database_url_masked"] = db_url.split("@")[-1] if "@" in db_url else "configured"
         
-        import psycopg2
+        import psycopg2  # type: ignore
         conn = psycopg2.connect(db_url)
         status["connection_test"] = "SUCCESS"
         
@@ -208,7 +209,8 @@ async def debug_db_endpoint():
                 WHERE table_name = 'stores'
             )
         """)
-        stores_table_exists = cur.fetchone()[0]
+        row = cur.fetchone()
+        stores_table_exists = row[0] if row else False
         status["stores_table_exists"] = stores_table_exists
         
         if stores_table_exists:
@@ -221,7 +223,8 @@ async def debug_db_endpoint():
             status["stores_columns"] = [{"column_name": r[0], "data_type": r[1]} for r in cur.fetchall()]
             
             cur.execute("SELECT COUNT(*) FROM stores")
-            status["stores_count"] = cur.fetchone()[0]
+            count_row = cur.fetchone()
+            status["stores_count"] = count_row[0] if count_row else 0
         else:
             status["stores_columns"] = []
             status["stores_count"] = 0
@@ -275,6 +278,12 @@ async def delete_store(store_id: str):
 @app.get("/api/pool")
 async def get_pool(store_id: Optional[str] = None):
     pool = load_pool()
+    
+    # DB의 활성 주문들을 실시간 번들로 조회하여 통합
+    from .database import get_all_active_orders_as_bundles
+    active_order_bundles = get_all_active_orders_as_bundles(store_id)
+    pool.extend(active_order_bundles)
+    
     if store_id and store_id != "Total":
         # store_id가 일치하거나 매장 정보가 없는(공용) 번들만 반환
         return [b for b in pool if b.get("store_id") == store_id or not b.get("store_id")]
@@ -309,6 +318,149 @@ async def process_situation(data: Dict):
     store_id = data.get("store_id")
     context = data.get("context", "")
     
+    # 0. 음성 명령어 가로채기 (조리 완료 및 서빙 완료 처리)
+    text_clean = text.replace(" ", "")
+    
+    # 조리 완료 처리 ("조리완료")
+    if "조리완료" in text_clean:
+        import re
+        table_match = re.search(r'\d+', text)
+        if table_match:
+            table_num = int(table_match.group())
+            normalized_table = f"T{table_num:02d}"
+            
+            # DB에서 해당 테이블의 'cooking' 상태인 주문 조회
+            conn = get_db_conn()
+            if conn:
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute("""
+                    SELECT * FROM table_orders 
+                    WHERE table_id = %s AND status = 'cooking'
+                    ORDER BY timestamp DESC
+                """, (normalized_table,))
+                orders = cur.fetchall()
+                
+                # 특정 메뉴가 언급되었는지 확인
+                target_order = None
+                if orders:
+                    # 언급된 메뉴 추출 (예: 짜장면, 짬뽕 등)
+                    for order in orders:
+                        items_list = []
+                        items_raw = order.get('items')
+                        if isinstance(items_raw, str):
+                            try: items_list = json.loads(items_raw)
+                            except: pass
+                        elif isinstance(items_raw, list):
+                            items_list = items_raw
+                        
+                        # 아이템 이름과 비교
+                        for item in items_list:
+                            item_name = item.get('name', '')
+                            if item_name in text:
+                                target_order = order
+                                break
+                        if target_order:
+                            break
+                    
+                    # 매칭된 메뉴가 없으면 가장 최근 cooking 주문 선택
+                    if not target_order:
+                        target_order = orders[0]
+                
+                if target_order:
+                    # 상태를 'ready'로 변경
+                    cur.execute("""
+                        UPDATE table_orders SET status = 'ready' 
+                        WHERE order_id = %s
+                    """, (target_order['order_id'],))
+                    conn.commit()
+                    
+                    # 브로드캐스트 전송
+                    msg = {
+                        "type": "STATUS_UPDATE", 
+                        "order_id": target_order['order_id'], 
+                        "status": "ready"
+                    }
+                    await manager.broadcast_to_kitchen(msg)
+                    
+                    cur.close()
+                    conn.close()
+                    
+                    # 상황 보고 로그용 새 번들 생성하여 풀에 기록
+                    new_bnd = {
+                        "id": f"BND-{uuid.uuid4().hex[:8].upper()}",
+                        "type": "Analysis",
+                        "title": "음성 조리 완료 보고",
+                        "answer": f"📢 {table_num}번 테이블의 음식이 조리 완료되었습니다. 전광판과 카운터에 서빙 안내가 전송되었습니다.",
+                        "store": store,
+                        "store_id": store_id,
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    pool = load_pool()
+                    pool.insert(0, new_bnd)
+                    save_pool(pool)
+                    await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": new_bnd["id"], "type": "Analysis"})
+                    
+                    return new_bnd
+                cur.close()
+                conn.close()
+                
+    # 서빙 완료 처리 ("서빙완료")
+    elif "서빙완료" in text_clean:
+        import re
+        table_match = re.search(r'\d+', text)
+        if table_match:
+            table_num = int(table_match.group())
+            normalized_table = f"T{table_num:02d}"
+            
+            # DB에서 해당 테이블의 'ready' 상태인 주문들을 'served'로 변경
+            conn = get_db_conn()
+            if conn:
+                cur = conn.cursor(cursor_factory=RealDictCursor)
+                cur.execute("""
+                    SELECT * FROM table_orders 
+                    WHERE table_id = %s AND status = 'ready'
+                """, (normalized_table,))
+                orders = cur.fetchall()
+                
+                if orders:
+                    for order in orders:
+                        cur.execute("""
+                            UPDATE table_orders SET status = 'served' 
+                            WHERE order_id = %s
+                        """, (order['order_id'],))
+                    conn.commit()
+                    
+                    # 브로드캐스트 전송
+                    for order in orders:
+                        msg = {
+                            "type": "STATUS_UPDATE", 
+                            "order_id": order['order_id'], 
+                            "status": "served"
+                        }
+                        await manager.broadcast_to_kitchen(msg)
+                    
+                    cur.close()
+                    conn.close()
+                    
+                    # 상황 보고 로그용 새 번들 생성하여 풀에 기록
+                    new_bnd = {
+                        "id": f"BND-{uuid.uuid4().hex[:8].upper()}",
+                        "type": "Analysis",
+                        "title": "음성 서빙 완료 보고",
+                        "answer": f"✅ {table_num}번 테이블 서빙이 완료되었습니다. 전광판 안내가 해제되고 카운터가 대기 상태로 전환되었습니다.",
+                        "store": store,
+                        "store_id": store_id,
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    }
+                    pool = load_pool()
+                    pool.insert(0, new_bnd)
+                    save_pool(pool)
+                    await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": new_bnd["id"], "type": "Analysis"})
+                    
+                    return new_bnd
+                cur.close()
+                conn.close()
+
     # 1. AI 엔진을 통한 텍스트 분석 및 구조화
     from ai_engine import parse_situation_text
     result = parse_situation_text(text, store, context)

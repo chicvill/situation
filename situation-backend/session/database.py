@@ -866,6 +866,60 @@ def get_kitchen_orders(store_id: Optional[str] = None):
         print(f"Get All Active Orders Error: {e}")
         return []
 
+def get_all_active_orders_as_bundles(store_id: Optional[str] = None):
+    conn = get_db_conn()
+    if not conn: return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # We want to fetch all active order statuses that represent cooking, ready, or served
+        query = "SELECT * FROM table_orders WHERE status IN ('cooking', 'ready', 'served')"
+        params = {}
+        if store_id and store_id != "Total":
+            query += " AND store_id = %(store_id)s"
+            params['store_id'] = store_id
+        
+        cur.execute(query, params)
+        orders = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        bundles = []
+        for order in orders:
+            items_raw = order.get('items')
+            items_list = []
+            if isinstance(items_raw, str):
+                try: items_list = json.loads(items_raw)
+                except: pass
+            elif isinstance(items_raw, list):
+                items_list = items_raw
+                
+            bundle_items = []
+            for item in items_list:
+                name = item.get('name', '알 수 없음')
+                qty = item.get('quantity') or item.get('qty') or 1
+                bundle_items.append({'name': name, 'value': str(qty)})
+                
+            timestamp_val = order.get('timestamp')
+            if isinstance(timestamp_val, datetime):
+                timestamp_str = timestamp_val.strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                timestamp_str = str(timestamp_val or '')
+                
+            bundles.append({
+                'id': order['order_id'],
+                'type': 'Orders',
+                'title': f"테이블 {order['table_id']} 주문",
+                'store_id': order['store_id'],
+                'status': order['status'],
+                'timestamp': timestamp_str,
+                'table': order['table_id'],
+                'items': bundle_items
+            })
+        return bundles
+    except Exception as e:
+        print(f"Get All Active Orders As Bundles Error: {e}")
+        return []
+
 def get_all_active_sessions(store_id: Optional[str] = None):
     conn = get_db_conn()
     if not conn: return []
