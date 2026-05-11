@@ -509,7 +509,10 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                             {isAllPrepaid ? (
                                                 <button 
                                                     onClick={async () => {
-                                                        if (window.confirm('모든 주문이 선불로 결제 완료되었습니다. 테이블 세션을 종료하고 비우시겠습니까?')) {
+                                                        const confirmMsg = session.orders.length > 0 
+                                                            ? '모든 주문의 결제가 완료되었습니다. 테이블 세션을 종료하고 초기화하시겠습니까?' 
+                                                            : '주문 내역이 없는 테이블입니다. 세션을 종료하고 초기화하시겠습니까?';
+                                                        if (window.confirm(confirmMsg)) {
                                                             try {
                                                                 const apiUrl = getApiUrl();
                                                                 const res = await fetch(`${apiUrl}/api/session/close`, {
@@ -518,7 +521,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                                     body: JSON.stringify({ session_id: session.session_id, force: true })
                                                                 });
                                                                 if (res.ok) {
-                                                                    alert('테이블 세션이 종료되고 비워졌습니다.');
+                                                                    alert('테이블이 초기화되었습니다.');
                                                                     fetchSessions();
                                                                 } else {
                                                                     alert('종료 처리 중 오류가 발생했습니다.');

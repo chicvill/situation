@@ -5,8 +5,8 @@
 const getApiBase = () => {
     const host = window.location.hostname;
     const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
-    // 로컬 환경(localhost/127.0.0.1)이면 .env 캐싱에 구애받지 않고 항상 8000 포트로 접속
-    if (host === 'localhost' || host === '127.0.0.1') {
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.');
+    if (isLocal) {
         return `${protocol}://${host}:8000`;
     }
     if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
@@ -16,8 +16,8 @@ const getApiBase = () => {
 const getWsBase = () => {
     const host = window.location.hostname;
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    // 로컬 환경(localhost/127.0.0.1)이면 .env 캐싱에 구애받지 않고 항상 8000 포트로 접속
-    if (host === 'localhost' || host === '127.0.0.1') {
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.');
+    if (isLocal) {
         return `${protocol}://${host}:8000`;
     }
     if (import.meta.env.VITE_WS_URL) return import.meta.env.VITE_WS_URL;
