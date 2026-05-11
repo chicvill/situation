@@ -84,7 +84,7 @@ const getUpsellRecommendation = (mainItemName: string) => {
   };
 };
 
-const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) => {
+const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialStoreName, onNavigate }) => {
   // --- States ---
   const [cart, setCart] = useState<MenuItem[]>([]);
   const [myOrders, setMyOrders] = useState<Order[]>([]);
@@ -111,6 +111,17 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
   }, [onNavigate]);
 
   // --- Memos & Config ---
+  // Resolve storeName from bundle if it's 'UnknownStore' or blank
+  const storeName = useMemo(() => {
+    if (initialStoreName && initialStoreName !== 'UnknownStore') {
+      return initialStoreName;
+    }
+    const safeBundles = Array.isArray(bundles) ? bundles : [];
+    const storeBundle = safeBundles.find(b => b.type === 'StoreConfig' && (b.store_id === storeId || !b.store_id));
+    const resolved = storeBundle?.items.find((i: any) => i.name === '상호명' || i.name === 'brand')?.value;
+    return resolved || initialStoreName || '우리식당';
+  }, [bundles, storeId, initialStoreName]);
+
   const tableNo = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('table') || '3';
@@ -284,15 +295,18 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
     const handleFinished = (e: any) => {
       const { success } = e.detail;
       if (success) {
+        localStorage.removeItem('payment_success_flag');
         setCart([]); // 장바구니 품목 완전히 초기화 (이중 결제 및 누적 결제 원천 방지)
         fetchMySession();
         setShowProgress(true); // 진행창 보여주기 (주문 진행 현황으로 이동)
       }
     };
 
-    // Fail-safe: 마운트 시점에 URL에 결제 성공 파라미터가 있다면 즉시 진행창 노출
+    // Fail-safe: 마운트 시점에 URL에 결제 성공 파라미터가 있거나 로컬스토리지 완료 플래그가 존재하면 즉시 진행창 노출
     const params = new URLSearchParams(window.location.search);
-    if (params.get('payment_success') === 'true') {
+    const hasSuccessFlag = localStorage.getItem('payment_success_flag') === 'true';
+    if (params.get('payment_success') === 'true' || hasSuccessFlag) {
+      localStorage.removeItem('payment_success_flag'); // 플래그 즉시 소비 및 제거
       setCart([]); // 장바구니 품목 완전히 초기화
       fetchMySession();
       setShowProgress(true);
@@ -488,11 +502,13 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
       const extractedKeywordMatch = originalWords.some(word => cleanName.includes(word));
       
       if (perfectMatch || menuContainsSpokenKeyword || extractedKeywordMatch) {
+        // Clean the matched menu name from the spoken text to avoid false-positive quantity matching (e.g. '두' in '순두부')
+        const qtyText = text.replace(nameOnly, '').replace(cleanName, '');
         let qty = 1;
-        if (text.includes('두') || text.includes('2') || text.includes('둘') || text.includes('이개') || text.includes('이 개')) qty = 2;
-        else if (text.includes('세') || text.includes('3') || text.includes('셋') || text.includes('삼개') || text.includes('삼 개')) qty = 3;
-        else if (text.includes('네') || text.includes('4') || text.includes('넷') || text.includes('사개') || text.includes('사 개')) qty = 4;
-        else if (text.includes('다섯') || text.includes('5')) qty = 5;
+        if (qtyText.includes('두') || qtyText.includes('2') || qtyText.includes('둘') || qtyText.includes('이개') || qtyText.includes('이 개') || qtyText.includes('두 개') || qtyText.includes('두개')) qty = 2;
+        else if (qtyText.includes('세') || qtyText.includes('3') || qtyText.includes('셋') || qtyText.includes('삼개') || qtyText.includes('삼 개') || qtyText.includes('세 개') || qtyText.includes('세개')) qty = 3;
+        else if (qtyText.includes('네') || qtyText.includes('4') || qtyText.includes('넷') || qtyText.includes('사개') || qtyText.includes('사 개') || qtyText.includes('네 개') || qtyText.includes('네개')) qty = 4;
+        else if (qtyText.includes('다섯') || qtyText.includes('5') || qtyText.includes('오개') || qtyText.includes('오 개')) qty = 5;
         
         setCart(prev => {
           const existing = prev.find(c => c.name === item.name);
@@ -875,12 +891,12 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
 
           {/* [6] 말로 더 주문하기 배너 */}
           <div style={{ background: 'rgba(249,115,22,0.06)', padding: '15px', borderRadius: '20px', border: '1px dashed rgba(249,115,22,0.3)', marginBottom: '25px' }}>
-            <h4 style={{ color: 'white', fontSize: '13px', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800 }}>🎙️ 말로 더 주문해 보세요!</h4>
-            <p style={{ fontSize: '11.5px', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 8px 0' }}>
-              하단 오렌지색 마이크를 누르고 <strong>"콜라 하나 더"</strong> 또는 <strong>"물 좀 주세요"</strong>라고 말씀하시면 즉각 처리됩니다.
+            <h4 style={{ color: '#ea580c', fontSize: '14px', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 800 }}>🎙️ 말로 더 주문해 보세요!</h4>
+            <p style={{ fontSize: '11.5px', color: '#475569', lineHeight: 1.5, margin: '0 0 8px 0', fontWeight: 500 }}>
+              하단 오렌지색 마이크를 누르고 <strong style={{ color: '#0f172a' }}>"콜라 하나 더"</strong> 또는 <strong style={{ color: '#0f172a' }}>"물 좀 주세요"</strong>라고 말씀하시면 즉각 처리됩니다.
             </p>
-            <p style={{ fontSize: '11px', color: '#f97316', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              💡 식사 종료 시에는 언제든 마이크를 대고 <strong>"정산해줘"</strong>라고 말씀하실 수도 있습니다.
+            <p style={{ fontSize: '11px', color: '#ea580c', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              💡 식사 종료 시에는 언제든 마이크를 대고 <strong style={{ color: '#c2410c' }}>"정산해줘"</strong>라고 말씀하실 수도 있습니다.
             </p>
           </div>
 
@@ -889,23 +905,24 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName, onNavigat
             <button onClick={() => setShowProgress(false)}
               style={{ 
                 flex: 1.3, 
-                background: 'rgba(255, 255, 255, 0.05)', 
-                border: '1px solid rgba(255, 255, 255, 0.15)', 
-                color: 'white', 
+                background: 'rgba(249, 115, 22, 0.08)', 
+                border: '1.5px solid rgba(249, 115, 22, 0.25)', 
+                color: '#f97316', 
                 padding: '16px', 
                 borderRadius: '15px', 
                 fontWeight: 800, 
                 fontSize: '0.95rem', 
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                boxShadow: '0 4px 12px rgba(249, 115, 22, 0.05)'
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.transform = 'scale(1.02)';
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                e.currentTarget.style.background = 'rgba(249, 115, 22, 0.12)';
               }}
               onMouseOut={(e) => {
                 e.currentTarget.style.transform = 'scale(1)';
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                e.currentTarget.style.background = 'rgba(249, 115, 22, 0.08)';
               }}
             >
               📋 메뉴판 보기 (추가 주문)

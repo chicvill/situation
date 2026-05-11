@@ -3,19 +3,20 @@ import React, { useState } from 'react';
 interface Props {
   bundles: any[];
   storeId?: string;
+  storeName?: string;
 }
 
-export const QRManager: React.FC<Props> = ({ bundles, storeId }) => {
+export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initialStoreName }) => {
     const [wifiSSID, setWifiSSID] = useState('MQnet_Wifi');
     const [wifiPass, setWifiPass] = useState('12345678');
     
     // 매장 정보 추출
     const safeBundles = Array.isArray(bundles) ? bundles : [];
-    const storeBundle = (storeId && safeBundles.find(b => b.type === 'StoreConfig' && b.id === storeId))
+    const storeBundle = (storeId && safeBundles.find(b => b.type === 'StoreConfig' && (b.store_id === storeId || b.id === storeId)))
         || safeBundles.find(b => b.type === 'StoreConfig');
     const safeItems = Array.isArray(storeBundle?.items) ? storeBundle!.items : [];
     const resolvedStoreId = storeBundle?.store_id || storeBundle?.id || '';
-    const storeName = safeItems.find((i: any) => i.name === '상호명' || i.name === 'brand')?.value || 'UnknownStore';
+    const storeName = safeItems.find((i: any) => i.name === '상호명' || i.name === 'brand')?.value || initialStoreName || '우리식당';
 
     const baseUrl = `https://situation.chicvill.store`;
 

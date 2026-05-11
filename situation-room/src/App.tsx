@@ -189,6 +189,7 @@ function App() {
           });
           const result = await res.json();
           if (result.status === 'success') {
+            localStorage.setItem('payment_success_flag', 'true');
             const targetBundle = safeBundles.find(b => b.order_code === orderId || b.id === orderId);
             const items = targetBundle?.items.filter(i => i.name !== '결제수단' && i.name !== '테이블') || [];
             
@@ -228,6 +229,7 @@ function App() {
       if (event.data && event.data.type === 'PAYMENT_FINISHED') {
         const { orderId, amount, paymentKey, success } = event.data;
         if (success) {
+          localStorage.setItem('payment_success_flag', 'true');
           const targetBundle = safeBundles.find(b => b.order_code === orderId || b.id === orderId);
           const items = targetBundle?.items.filter(i => i.name !== '결제수단' && i.name !== '테이블') || [];
           
@@ -342,7 +344,7 @@ function App() {
       case 'display': return <DisplayBoard bundles={bundles} />;
       case 'menu': return <MenuManager bundles={bundles} />;
       case 'settings': return <StoreManager bundles={bundles} onNavigate={navigateTo as any} />;
-      case 'qr': return <QRManager bundles={bundles} storeId={storeId} />;
+      case 'qr': return <QRManager bundles={bundles} storeId={storeId} storeName={storeName} />;
       case 'paper': return <PaperViewer />;
       case 'stats':
       case 'admin':
