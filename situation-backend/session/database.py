@@ -1077,37 +1077,63 @@ def save_call(call_data: dict):
         return False
 
 def get_active_calls(table_id: Optional[str] = None, store_id: Optional[str] = None):
-    conn = get_db_conn()
-    if not conn: return []
-    try:
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        if store_id and store_id != "Total":
-            if table_id:
-                cur.execute("""
-                    SELECT c.* FROM table_calls c
-                    JOIN table_sessions s ON c.session_id = s.session_id
-                    WHERE c.table_id = %(table_id)s AND c.status = 'pending' AND s.store_id = %(store_id)s
-                    ORDER BY c.timestamp ASC
-                """, {'table_id': table_id, 'store_id': store_id})
+    import time
+    max_retries = 3
+    for attempt in range(max_retries):
+        conn = get_db_conn()
+        if not conn: return []
+        try:
+            cur = conn.cursor(cursor_factory=RealDictCursor)
+            # JOIN 대신 서브쿼리 사용 → 락 순서 충돌(데드락) 방지
+            if store_id and store_id != "Total":
+                if table_id:
+                    cur.execute("""
+                        SELECT * FROM table_calls
+                        WHERE table_id = %(table_id)s
+                          AND status = 'pending'
+                          AND session_id IN (
+                              SELECT session_id FROM table_sessions
+                              WHERE store_id = %(store_id)s
+                          )
+                        ORDER BY timestamp ASC
+                    """, {'table_id': table_id, 'store_id': store_id})
+                else:
+                    cur.execute("""
+                        SELECT * FROM table_calls
+                        WHERE status = 'pending'
+                          AND session_id IN (
+                              SELECT session_id FROM table_sessions
+                              WHERE store_id = %(store_id)s
+                          )
+                        ORDER BY timestamp ASC
+                    """, {'store_id': store_id})
             else:
-                cur.execute("""
-                    SELECT c.* FROM table_calls c
-                    JOIN table_sessions s ON c.session_id = s.session_id
-                    WHERE c.status = 'pending' AND s.store_id = %(store_id)s
-                    ORDER BY c.timestamp ASC
-                """, {'store_id': store_id})
-        else:
-            if table_id:
-                cur.execute("SELECT * FROM table_calls WHERE table_id = %(table_id)s AND status = 'pending' ORDER BY timestamp ASC", {'table_id': table_id})
-            else:
-                cur.execute("SELECT * FROM table_calls WHERE status = 'pending' ORDER BY timestamp ASC")
-        results = cur.fetchall()
-        cur.close()
-        conn.close()
-        return results
-    except Exception as e:
-        print(f"Get Active Calls Error: {e}")
-        return []
+                if table_id:
+                    cur.execute(
+                        "SELECT * FROM table_calls WHERE table_id = %(table_id)s AND status = 'pending' ORDER BY timestamp ASC",
+                        {'table_id': table_id}
+                    )
+                else:
+                    cur.execute("SELECT * FROM table_calls WHERE status = 'pending' ORDER BY timestamp ASC")
+            results = cur.fetchall()
+            cur.close()
+            conn.close()
+            return results
+        except Exception as e:
+            try:
+                conn.rollback()
+                conn.close()
+            except Exception:
+                pass
+            err_msg = str(e)
+            if 'deadlock' in err_msg.lower() and attempt < max_retries - 1:
+                print(f"⚠️ Get Active Calls deadlock (attempt {attempt + 1}), retrying...")
+                time.sleep(0.1 * (attempt + 1))
+                continue
+            print(f"Get Active Calls Error: {e}")
+            return []
+    return []
+
 
 def update_call_status(call_id: str, status: str):
     conn = get_db_conn()
