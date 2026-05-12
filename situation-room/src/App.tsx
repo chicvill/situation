@@ -86,7 +86,7 @@ function App() {
 
   const [storeDetails, setStoreDetails] = useState<any>(null);
 
-  useEffect(() => {
+  const fetchStoreDetails = () => {
     if (storeId && user && user.role !== 'customer') {
       fetch(`${API_BASE}/api/stores`)
         .then(res => res.json())
@@ -95,11 +95,17 @@ function App() {
             const currentStore = data.find((s: any) => s.store_id === storeId);
             if (currentStore) {
               setStoreDetails(currentStore);
+            } else {
+              setStoreDetails(null);
             }
           }
         })
         .catch(err => console.error('Error fetching store details:', err));
     }
+  };
+
+  useEffect(() => {
+    fetchStoreDetails();
   }, [storeId, user]);
 
   useEffect(() => {
@@ -355,7 +361,7 @@ function App() {
       case 'counter': return <CounterPad storeId={storeId} />;
       case 'display': return <DisplayBoard bundles={bundles} />;
       case 'menu': return <MenuManager bundles={bundles} />;
-      case 'settings': return <StoreManager bundles={bundles} onNavigate={navigateTo as any} />;
+      case 'settings': return <StoreManager bundles={bundles} user={user} onNavigate={navigateTo as any} />;
       case 'qr': return <QRManager bundles={bundles} storeId={storeId} storeName={storeName} />;
       case 'paper': return <PaperViewer />;
       case 'stats':
@@ -366,6 +372,8 @@ function App() {
             user={user} 
             bundles={bundles} 
             storeName={storeName} 
+            storeDetails={storeDetails}
+            onReloadStoreDetails={fetchStoreDetails}
             onNavigate={navigateTo as any} 
             onProfileUpdated={(updatedUser) => {
               setUser(updatedUser);

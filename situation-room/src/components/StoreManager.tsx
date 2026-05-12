@@ -6,10 +6,11 @@ import { useStoreFilter } from '../hooks/useStoreFilter';
 
 interface StoreManagerProps {
   bundles: BundleData[];
+  user?: any;
   onNavigate: (mode: any, tab?: any) => void;
 }
 
-export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate }) => {
+export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNavigate }) => {
   const { storeId, storeName } = useStoreFilter();
   const [storeData, setStoreData] = useState<any>({
     brand: '', regNo: '', address: '', owner: '', bankName: '', accountNo: '', accountHolder: '', 
@@ -33,10 +34,53 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
         isVerified: storeBundle.status === 'approved',
         bundleId: storeBundle.id
       });
-    }
-  }, [bundles]);
+    } else {
+      // 신규 매장 등록 등으로 아직 매장 설정(StoreConfig) 번들이 데이터베이스에 없는 경우,
+      // 가입 대기/승인 정보(PersonalInfos) 중 현재 매장주(owner)의 입력 정보를 찾아 자동으로 가져옵니다. (중복 작성 방지!)
+      const ownerSignupBundle = bundles.find(b => 
+        b.type === 'PersonalInfos' && 
+        b.items.find((i: any) => i.name === '권한')?.value === 'owner' &&
+        (b.items.find((i: any) => i.name === '아이디')?.value === user?.id || b.store_id === storeId)
+      );
 
-    const handleSave = async (dataToSave?: any) => {
+      if (ownerSignupBundle) {
+        const rawRegNo = ownerSignupBundle.items.find((i: any) => i.name === '사업자번호')?.value || '';
+        const cleanRegNo = rawRegNo.replace(/[^0-9]/g, '');
+        const formattedRegNo = cleanRegNo.length === 10 
+          ? `${cleanRegNo.slice(0, 3)}-${cleanRegNo.slice(3, 5)}-${cleanRegNo.slice(5)}`
+          : rawRegNo;
+
+        setStoreData({
+          brand:    ownerSignupBundle.store || storeName || '',
+          regNo:    formattedRegNo,
+          address:  '',
+          owner:    ownerSignupBundle.items.find((i: any) => i.name === '이름')?.value || user?.name || '',
+          bankName: '',
+          accountNo: '',
+          accountHolder: ownerSignupBundle.store || '',
+          openDate: ownerSignupBundle.items.find((i: any) => i.name === '개업일자')?.value || '',
+          isVerified: true, // 관리자가 승인한 점주 가입건이므로 국세청 검증을 이미 마친 신뢰 상태로 자동 마킹합니다.
+          bundleId: `store-config-${storeId}`
+        });
+      } else {
+        // Fallback: 컨텍스트 기본정보 기반 연동
+        setStoreData({
+          brand: storeName || '',
+          regNo: '',
+          address: '',
+          owner: user?.name || '',
+          bankName: '',
+          accountNo: '',
+          accountHolder: '',
+          openDate: '',
+          isVerified: false,
+          bundleId: `store-config-${storeId}`
+        });
+      }
+    }
+  }, [bundles, storeId, storeName, user]);
+
+  const handleSave = async (dataToSave?: any) => {
     const activeData = dataToSave || storeData;
     const items = [
       { name: '상호명',     value: activeData.brand },
@@ -49,15 +93,21 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
       { name: '예금주',     value: activeData.accountHolder },
     ].filter(i => i.value);
 
-
-    const bundleId = activeData.bundleId || 'store-1';
+    const bundleId = activeData.bundleId || `store-config-${storeId}`;
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
       const response = await fetch(`${apiUrl}/api/bundle/${bundleId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, type: 'StoreConfig', title: '매장 정보', store: storeName, store_id: storeId }),
+        body: JSON.stringify({ 
+          items, 
+          type: 'StoreConfig', 
+          title: '매장 정보', 
+          store: storeName, 
+          store_id: storeId,
+          status: activeData.isVerified ? 'approved' : 'pending' // 국세청 검증 정보를 DB 번들 status에 동기화
+        }),
       });
       if (response.ok) {
         alert('✅ 매장 정보가 성공적으로 저장되었습니다.');

@@ -45,10 +45,10 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
     });
   }, [bundles]);
 
-  // 가입 승인 및 매장 등록 모달 자동 바인딩 핸들러
+  // 가입 승인 핸들러
   const handleApproveAndRegister = async (bundle: any) => {
     const ownerName = bundle.items.find((i: any) => i.name === '이름')?.value || '';
-    if (!window.confirm(`✨ ${ownerName} 사장님의 가입 신청을 승인하고 즉시 신규 매장 등록 절차로 연동하시겠습니까?`)) return;
+    if (!window.confirm(`✨ ${ownerName} 사장님의 가입 신청을 최종 승인하시겠습니까?\n승인 완료 후 해당 사장님이 본인의 계정으로 직접 본인의 매장(집)을 새로 등록 및 개설하게 됩니다.`)) return;
     
     setIsLoading(true);
     try {
@@ -64,23 +64,9 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
       if (!res.ok) {
         throw new Error('가입 승인 처리에 실패했습니다.');
       }
-
-      // 2. 가입한 점주의 상점 등록 필드 오토 바인딩
-      const ownerId = bundle.items.find((i: any) => i.name === '아이디')?.value || '';
       
-      setEditingStore(null);
-      // store_id는 store_id가 있으면 사용하고 없으면 store-아이디 형식으로 바인딩
-      setFormStoreId(bundle.store_id || `store-${ownerId || Date.now().toString().slice(-4)}`);
-      setFormStoreName(bundle.store || '');
-      setFormOwnerName(ownerName);
-      setFormOwnerId(ownerId);
-      setFormMonthlyFee(50000); // 디폴트 월회비
-      setFormPaymentStatus('정상');
-      setFormMessage('');
-      
-      // 3. 매장 등록 모달 열기
-      setIsModalOpen(true);
-      alert(`🎉 ${ownerName} 사장님 계정 승인이 완료되었습니다!\n\n현재 화면에 열린 '가맹 매장 등록' 서식에 매장정보가 자동으로 대입되어 기입되었습니다. 우측 하단의 [가맹점 저장] 버튼을 누르시면 매장 신규 생성이 완료됩니다.`);
+      alert(`🎉 ${ownerName} 사장님 가입 승인이 성공적으로 완료되었습니다!\n이제 해당 사장님이 로그인 시 본인만의 매장(집)을 직접 완공 및 가맹 세팅하실 수 있습니다.`);
+      fetchStores();
     } catch (err: any) {
       console.error(err);
       alert(`❌ 오류: ${err.message}`);

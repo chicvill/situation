@@ -4,6 +4,8 @@ interface WelcomeHubProps {
   user: any;
   bundles: any[];
   storeName: string;
+  storeDetails?: any;
+  onReloadStoreDetails?: () => void;
   onNavigate: (tab: any) => void;
   onProfileUpdated: (updatedUser: any) => void;
   onLogout: () => void;
@@ -20,6 +22,8 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
   user,
   bundles,
   storeName,
+  storeDetails,
+  onReloadStoreDetails,
   onNavigate,
   onProfileUpdated,
   onLogout
@@ -34,6 +38,15 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
   const [password, setPassword] = useState('');
   const [editedStoreName, setEditedStoreName] = useState('');
 
+  // Store Creation Form state (For Owner's "내 집 짓기" flow!)
+  const [newStoreId, setNewStoreId] = useState('');
+  const [newStoreName, setNewStoreName] = useState('');
+  const [newOwnerName, setNewOwnerName] = useState('');
+  const [newBizNo, setNewBizNo] = useState('');
+  const [newOpenDate, setNewOpenDate] = useState('');
+  const [isBuildingHouse, setIsBuildingHouse] = useState(false);
+  const [buildError, setBuildError] = useState('');
+
   // Find the user's corresponding PersonalInfos bundle
   const userBundle = bundles.find(
     (b) =>
@@ -46,10 +59,128 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
     if (showEditModal && userBundle) {
       const currentName = userBundle.items.find((i: any) => i.name === '이름')?.value || user.name || '';
       setName(currentName);
-      setPassword(''); // 보안 강화를 위해 비밀번호 입력창은 항상 비워둔 뒤 변경 시에만 가로챕니다.
+      setPassword(''); 
       setEditedStoreName(userBundle.store || storeName || '');
     }
   }, [showEditModal, userBundle, user, storeName]);
+
+  // Pre-populate "내 집 짓기" form using Owner's signup data
+  useEffect(() => {
+    if (user?.role === 'owner' && userBundle && !storeDetails) {
+      const pOwnerName = userBundle.items.find((i: any) => i.name === '이름')?.value || user.name || '';
+      const pBizNo = userBundle.items.find((i: any) => i.name === '사업자번호')?.value || '';
+      const pOpenDate = userBundle.items.find((i: any) => i.name === '개업일자')?.value || '';
+      
+      setNewStoreId(userBundle.store_id || `store-${user.id}`);
+      setNewStoreName(userBundle.store || '');
+      setNewOwnerName(pOwnerName);
+      setNewBizNo(pBizNo);
+      setNewOpenDate(pOpenDate);
+    }
+  }, [user, userBundle, storeDetails]);
+
+  const handleBuildHouse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBuildError('');
+    if (!newStoreId.trim() || !newStoreName.trim() || !newOwnerName.trim()) {
+      setBuildError('❌ 모든 필수 필드를 채워주세요.');
+      return;
+    }
+
+    setIsBuildingHouse(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      
+      // 1. PostgreSQL DB에 매장 등록 (POST /api/stores)
+      const storePayload = {
+        store_id: newStoreId,
+        store_name: newStoreName,
+        owner_name: newOwnerName,
+        owner_id: user.id,
+        monthly_fee: 50000,
+        payment_status: '정상',
+        payment_history: [
+          {
+            date: new Date().toISOString().slice(0, 10),
+            amount: 50000,
+            status: '완료'
+          }
+        ]
+      };
+
+      const storeRes = await fetch(`${apiUrl}/api/stores`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(storePayload)
+      });
+
+      if (!storeRes.ok) {
+        throw new Error('데이터베이스에 매장 등록을 실패했습니다.');
+      }
+
+      // 2. 가맹 매장 세팅(StoreConfig) 번들 생성 (PUT /api/bundle/store-config-{store_id})
+      const configPayload = {
+        id: `store-config-${newStoreId}`,
+        type: 'StoreConfig',
+        title: '매장 정보',
+        store: newStoreName,
+        store_id: newStoreId,
+        status: 'approved',
+        items: [
+          { name: '상호명', value: newStoreName },
+          { name: '사업자번호', value: newBizNo },
+          { name: '대표자', value: newOwnerName },
+          { name: '개업일자', value: newOpenDate }
+        ]
+      };
+
+      const configRes = await fetch(`${apiUrl}/api/bundle/${configPayload.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(configPayload)
+      });
+
+      if (!configRes.ok) {
+        throw new Error('매장 설정 번들 생성을 실패했습니다.');
+      }
+
+      // 3. 점주 회원가입 PersonalInfos 번들의 store 및 store_id도 최종 연동 업데이트
+      if (userBundle) {
+        const updatedBundle = {
+          ...userBundle,
+          store: newStoreName,
+          store_id: newStoreId
+        };
+        await fetch(`${apiUrl}/api/bundle/${userBundle.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatedBundle)
+        });
+      }
+
+      // 4. 로컬 스토리지에 새 가맹점 정보 세팅하여 전역 갱신
+      localStorage.setItem('mqnet_store_id', newStoreId);
+      localStorage.setItem('mqnet_store_name', newStoreName);
+      
+      // 사용자 정보에도 storeId 및 storeName 주입하여 로컬 세션 갱신
+      const updatedUser = { ...user, storeId: newStoreId, storeName: newStoreName };
+      onProfileUpdated(updatedUser);
+
+      // 세션 동기화 이벤트 송출
+      window.dispatchEvent(new Event('storage'));
+
+      alert(`🏠 축하합니다! '${newStoreName}' 매장(집)이 성공적으로 건설 및 정식 등록되었습니다.\n스마트 운영 센터로 입장합니다.`);
+      
+      // 부모의 패치 트리거
+      onReloadStoreDetails?.();
+    } catch (err: any) {
+      console.error(err);
+      setBuildError(`❌ 오류: ${err.message || '매장 생성 실패'}`);
+    } finally {
+      setIsBuildingHouse(false);
+    }
+  };
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userBundle) {
@@ -174,7 +305,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
 
   const handleApproveOwner = async (bundle: any) => {
     const ownerName = bundle.items.find((i: any) => i.name === '이름')?.value || '-';
-    if (!window.confirm(`✨ ${ownerName} 사장님의 가입 신청을 승인하고 매장 등록 페이지로 이동하시겠습니까?`)) return;
+    if (!window.confirm(`✨ ${ownerName} 사장님의 가입 신청을 최종 승인하시겠습니까?\n승인 완료 후 해당 사장님이 본인의 계정으로 직접 로그인하여 매장을 개설 및 설정하게 됩니다.`)) return;
 
     setIsProcessing(true);
     try {
@@ -190,8 +321,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
         throw new Error('점주 가입 승인 처리에 실패했습니다.');
       }
 
-      alert(`🎉 ${ownerName} 사장님 가입 승인이 완료되었습니다!\n신규 매장 생성을 완료하기 위해 매장 등록 화면으로 이동합니다.`);
-      onNavigate('admin'); // Navigate to the AdminStoreManager
+      alert(`🎉 ${ownerName} 사장님 가입 승인이 최종 완료되었습니다!\n이제 해당 사장님이 직접 로그인하여 매장(집)을 새로 등록 및 개설하실 수 있습니다.`);
     } catch (err: any) {
       console.error(err);
       alert(`❌ 오류: ${err.message}`);
@@ -307,17 +437,23 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
         </h3>
         <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', margin: '0 0 20px 0', lineHeight: '1.5' }}>
           {getGreetingMessage()}<br />
-          현재 접속 계정 권한은 <strong style={{ color: 'var(--text-main)' }}>[{getRoleBadge(user?.role)}]</strong> 이며, <strong style={{ color: 'var(--text-main)' }}>{storeName || '미지정'}</strong> 매장에 연결되어 있습니다.
+          {user?.role === 'owner' && !storeDetails ? (
+            <span>현재 접속 계정 권한은 <strong style={{ color: 'var(--text-main)' }}>[{getRoleBadge(user?.role)}]</strong> 이며, <strong style={{ color: 'var(--accent-orange)' }}>아직 대표님의 매장(집)이 개설 및 등록되지 않았습니다. 아래 개설 신청서를 작성하여 본인만의 매장을 정식으로 완공하세요!</strong></span>
+          ) : (
+            <span>현재 접속 계정 권한은 <strong style={{ color: 'var(--text-main)' }}>[{getRoleBadge(user?.role)}]</strong> 이며, <strong style={{ color: 'var(--text-main)' }}>{storeName || '미지정'}</strong> 매장에 연결되어 있습니다.</span>
+          )}
         </p>
 
         <div style={{ display: 'inline-flex', gap: '15px' }}>
-          <button 
-            onClick={() => onNavigate('guide')}
-            className="confirm-btn success-green"
-            style={{ padding: '10px 24px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '800' }}
-          >
-            🎙️ AI 비서와 대화하기
-          </button>
+          {!(user?.role === 'owner' && !storeDetails) && (
+            <button 
+              onClick={() => onNavigate('guide')}
+              className="confirm-btn success-green"
+              style={{ padding: '10px 24px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '800' }}
+            >
+              🎙️ AI 비서와 대화하기
+            </button>
+          )}
           <button 
             onClick={onLogout}
             className="del-btn"
@@ -328,8 +464,132 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
         </div>
       </div>
 
-      {/* 2.5 Pending Approvals Card (for Owner / Admin) */}
-      {((user?.role === 'owner' && pendingStaffList.length > 0) || (user?.role === 'admin' && pendingOwnerList.length > 0)) && (
+      {/* 2.2 NEW: Owner Store Creation ("내 집 짓기") Card */}
+      {user?.role === 'owner' && !storeDetails && (
+        <div 
+          className="glass-panel animate-fade-in"
+          style={{
+            background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.08), rgba(249, 115, 22, 0.02))',
+            border: '2px solid var(--accent-orange)',
+            borderRadius: '24px',
+            padding: '30px',
+            marginBottom: '35px',
+            boxShadow: '0 15px 35px rgba(249, 115, 22, 0.08)',
+            textAlign: 'left'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <span style={{ fontSize: '2rem' }}>🏠</span>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)' }}>내 매장 개설 및 등록 (내 집 짓기)</h3>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                회원가입 승인을 축하드립니다! 대표님의 매장 정보를 기입하여 가맹점을 정식으로 개설하세요.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleBuildHouse} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>가맹 상호명</label>
+                <input 
+                  type="text" 
+                  value={newStoreName}
+                  onChange={(e) => setNewStoreName(e.target.value)}
+                  placeholder="예: 시크빌"
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.92rem', fontWeight: 600 }}
+                  required
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>가맹점 고유 ID</label>
+                <input 
+                  type="text" 
+                  value={newStoreId}
+                  onChange={(e) => setNewStoreId(e.target.value)}
+                  placeholder="예: store-chicvill"
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.92rem', fontWeight: 600 }}
+                  required
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>대표자 성명</label>
+                <input 
+                  type="text" 
+                  value={newOwnerName}
+                  onChange={(e) => setNewOwnerName(e.target.value)}
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.92rem', fontWeight: 600 }}
+                  required
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>사업자등록번호</label>
+                <input 
+                  type="text" 
+                  value={newBizNo}
+                  onChange={(e) => setNewBizNo(e.target.value)}
+                  placeholder="숫자 10자리 입력"
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.92rem', fontWeight: 600 }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>개업 일자</label>
+              <input 
+                type="text" 
+                value={newOpenDate}
+                onChange={(e) => setNewOpenDate(e.target.value)}
+                placeholder="예: 20191216"
+                style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.92rem', fontWeight: 600 }}
+              />
+            </div>
+
+            {buildError && (
+              <div style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: 600, marginTop: '5px' }}>{buildError}</div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isBuildingHouse}
+              style={{
+                marginTop: '10px',
+                width: '100%',
+                padding: '14px',
+                background: 'linear-gradient(135deg, var(--accent-orange) 0%, #ea580c 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '14px',
+                fontSize: '1rem',
+                fontWeight: '900',
+                cursor: 'pointer',
+                boxShadow: '0 8px 20px rgba(249, 115, 22, 0.25)',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 12px 25px rgba(249, 115, 22, 0.35)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 8px 20px rgba(249, 115, 22, 0.25)';
+              }}
+            >
+              {isBuildingHouse ? '🏠 내 가맹점 열심히 짓는 중...' : '🏠 내 가맹점(집) 완공 및 등록 완료'}
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* 2.5 Pending Approvals Card (for Owner / Admin) - Hide if new owner is building store */}
+      {!(user?.role === 'owner' && !storeDetails) && ((user?.role === 'owner' && pendingStaffList.length > 0) || (user?.role === 'admin' && pendingOwnerList.length > 0)) && (
         <div 
           className="glass-panel animate-fade-in"
           style={{
@@ -455,7 +715,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
                     onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                     onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
                   >
-                    ✨ 즉시 승인 및 매장 등록
+                    ✨ 점주 가입 즉시 승인
                   </button>
                 </div>
               );
@@ -464,48 +724,50 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
         </div>
       )}
 
-      {/* 3. Quick Links Section */}
-      <div>
-        <h4 style={{ fontSize: '1.1rem', fontWeight: '800', margin: '0 0 20px 0', color: 'var(--text-main)' }}>
-          ⚡ 역할 맞춤형 원클릭 이동
-        </h4>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-          {getQuickLinks().map((link, idx) => (
-            <div 
-              key={idx}
-              onClick={() => onNavigate(link.tab)}
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                borderRadius: '16px',
-                padding: '16px 20px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '15px',
-                boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.borderColor = 'var(--accent-orange)';
-                e.currentTarget.style.boxShadow = '0 10px 25px rgba(249, 115, 22, 0.06)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.borderColor = 'var(--border)';
-                e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.02)';
-              }}
-            >
-              <span style={{ fontSize: '1.8rem' }}>{link.icon}</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-main)' }}>{link.label}</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{link.desc}</span>
+      {/* 3. Quick Links Section - Hide if new owner is building store */}
+      {!(user?.role === 'owner' && !storeDetails) && (
+        <div>
+          <h4 style={{ fontSize: '1.1rem', fontWeight: '800', margin: '0 0 20px 0', color: 'var(--text-main)' }}>
+            ⚡ 역할 맞춤형 원클릭 이동
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+            {getQuickLinks().map((link, idx) => (
+              <div 
+                key={idx}
+                onClick={() => onNavigate(link.tab)}
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '16px',
+                  padding: '16px 20px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '15px',
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.borderColor = 'var(--accent-orange)';
+                  e.currentTarget.style.boxShadow = '0 10px 25px rgba(249, 115, 22, 0.06)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                  e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.02)';
+                }}
+              >
+                <span style={{ fontSize: '1.8rem' }}>{link.icon}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-main)' }}>{link.label}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{link.desc}</span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* 4. Beautiful Glassmorphism Edit Profile Modal */}
       {showEditModal && (

@@ -189,7 +189,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
             const signupBundle = {
                 id: `USER-${Date.now()}`,
                 type: 'PersonalInfos',
-                title: `${name}님 가입 신청`,
+                title: role === 'owner' ? `${name}님 가입 완료 (점주)` : `${name}님 가입 신청`,
                 items: [
                     { name: '이름', value: name },
                     { name: '아이디', value: id },
@@ -198,7 +198,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                     { name: '사업자번호', value: regNo },
                     { name: '개업일자', value: openDate }
                 ],
-                status: 'pending',
+                status: role === 'owner' ? 'approved' : 'pending',
                 timestamp: new Date().toLocaleString(),
                 store: storeName || '미지정',
                 store_id: finalStoreId
@@ -211,7 +211,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
             });
 
             if (response.ok) {
-                alert('✅ 회원가입 신청이 완료되었습니다.\n승인 후 이용 가능합니다.');
+                if (role === 'owner') {
+                    alert('🎉 회원가입이 완료되었습니다!\n바로 로그인하여 나만의 매장을 개설(내 집 짓기)하세요.');
+                } else {
+                    alert('✅ 사원 가입 신청이 완료되었습니다.\n점주님의 최종 승인 후 대시보드 로그인이 가능합니다.');
+                }
                 setIsSignup(false);
                 setPw('');
             } else {
