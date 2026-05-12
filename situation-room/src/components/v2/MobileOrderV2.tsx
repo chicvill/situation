@@ -1111,17 +1111,26 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
       {/* Bottom Nav */}
       <nav className="customer-bottom-nav">
-        {/* 1. 진행상황 */}
-        <button 
-          onClick={() => setShowProgress(prev => !prev)}
-          className={showProgress ? 'active' : ''}
+        {/* 1. 직원호출 */}
+        <button
+          onClick={() => requestStaffCall('직원호출')}
         >
-          <span className="nav-icon">📋</span>
-          <span className="nav-label">진행상황</span>
+          <span className="nav-icon">🔔</span>
+          <span className="nav-label">직원호출</span>
         </button>
 
-        {/* 2. 음성주문 */}
-        <button 
+        {/* 2. 주차확인 */}
+        <button
+          onClick={() => setShowParkingModal(true)}
+          className={parkingApplied ? 'active' : ''}
+        >
+          <span className="nav-icon">🚗</span>
+          <span className="nav-label">주차확인</span>
+          {parkingApplied && <span className="nav-badge">✓</span>}
+        </button>
+
+        {/* 3. 음성주문 (중앙 마이크) */}
+        <button
           onClick={toggleVoiceOrdering}
           className={`voice-nav-btn ${isListening ? 'listening' : ''}`}
         >
@@ -1131,27 +1140,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           <span className="nav-label">음성주문</span>
         </button>
 
-        {/* 3. 장바구니 */}
-        <button 
-          onClick={() => {
-            if (cart.length === 0) {
-              setVoiceToast("🛒 장바구니가 비어 있습니다. 메뉴를 먼저 담아 주세요!");
-              setTimeout(() => setVoiceToast(null), 3000);
-              return;
-            }
-            setShowPayModal(true);
-          }}
-          className={cart.length > 0 ? 'active' : ''}
-        >
-          <span className="nav-icon">🛒</span>
-          <span className="nav-label">장바구니</span>
-          {cart.reduce((sum, item) => sum + (item.qty || 0), 0) > 0 && (
-            <span className="nav-badge">
-              {cart.reduce((sum, item) => sum + (item.qty || 0), 0)}
-            </span>
-          )}
-        </button>
-
         {/* 4. 주문금액 */}
         <div className="nav-amount-box">
           <span className="nav-amount-label">주문금액</span>
@@ -1159,7 +1147,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
         </div>
 
         {/* 5. 바로결제 */}
-        <button 
+        <button
           onClick={() => {
             if (cart.length === 0) {
               setVoiceToast("🛒 장바구니가 비어 있습니다. 메뉴를 먼저 담아 주세요!");
@@ -1173,6 +1161,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           <span className="nav-label" style={{ color: '#059669', fontWeight: 800 }}>바로결제</span>
         </button>
       </nav>
+
 
       {isOrdering && <div className="loading-overlay"><div className="spinner"></div><h3>주문 전송 중...</h3></div>}
       
