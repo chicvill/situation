@@ -18,7 +18,9 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     <div className="receipt-modal-overlay animate-fade-in" style={{ 
       zIndex: 5000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
       background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', 
-      alignItems: 'center', justifyContent: 'center', padding: '20px' 
+      alignItems: 'flex-start', justifyContent: 'center',
+      overflowY: 'auto',
+      padding: '20px 20px 100px 20px'
     }}>
       <div className="receipt-paper animate-pop-in" style={{ 
         width: '100%', maxWidth: '380px', background: 'white', borderRadius: '4px', 

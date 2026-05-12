@@ -190,8 +190,10 @@ function App() {
           const result = await res.json();
           if (result.status === 'success') {
             localStorage.setItem('payment_success_flag', 'true');
-            const targetBundle = safeBundles.find(b => b.order_code === orderId || b.id === orderId);
-            const items = targetBundle?.items.filter(i => i.name !== '결제수단' && i.name !== '테이블') || [];
+            // localStorage에 미리 저장한 장바구니 items를 복원 (bundle 타이밍 문제 방지)
+            const savedItems = localStorage.getItem('receipt_items_' + orderId);
+            const items = savedItems ? JSON.parse(savedItems) : [];
+            localStorage.removeItem('receipt_items_' + orderId);
             
           setReceiptData({
               orderId,
@@ -230,8 +232,10 @@ function App() {
         const { orderId, amount, paymentKey, success } = event.data;
         if (success) {
           localStorage.setItem('payment_success_flag', 'true');
-          const targetBundle = safeBundles.find(b => b.order_code === orderId || b.id === orderId);
-          const items = targetBundle?.items.filter(i => i.name !== '결제수단' && i.name !== '테이블') || [];
+          // localStorage에 미리 저장한 장바구니 items를 복원
+          const savedItems = localStorage.getItem('receipt_items_' + orderId);
+          const items = savedItems ? JSON.parse(savedItems) : [];
+          localStorage.removeItem('receipt_items_' + orderId);
           
           setReceiptData({
             orderId,

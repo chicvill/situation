@@ -658,6 +658,10 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       } else {
         // [CP-03] 토스 결제 호출 (Service 모듈로 위임)
         PaymentService.log("CP-02", "Electronic Payment Flow - Handoff to PaymentService");
+        // 결제 완료 후 영수증에 표시할 장바구니 items를 localStorage에 미리 저장
+        localStorage.setItem('receipt_items_' + orderId, JSON.stringify(
+          currentCart.map(c => ({ name: c.name, value: String(c.qty || 1) + '개' }))
+        ));
         await PaymentService.requestTossPayment(method, {
           amount: finalAmount,
           orderId: orderId,

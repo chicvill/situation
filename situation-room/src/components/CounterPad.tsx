@@ -473,21 +473,36 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                         </button>
                                                     ) : (
                                                         <button 
-                                                            disabled={order.status === 'paid' || order.status === 'served'}
+                                                            disabled={
+                                                                order.status === 'paid' || 
+                                                                order.status === 'served' ||
+                                                                order.payment_status === 'prepaid' ||
+                                                                order.payment_status === 'paid'
+                                                            }
                                                             onClick={() => setSelectedOrderForPay(order)}
                                                             style={{ 
-                                                                background: (order.status === 'paid' || order.status === 'served') ? 'var(--border)' : 'var(--accent)', 
+                                                                background: (order.status === 'paid' || order.status === 'served' || order.payment_status === 'prepaid' || order.payment_status === 'paid')
+                                                                    ? 'var(--border)' 
+                                                                    : 'var(--accent)', 
                                                                 border: 'none', 
-                                                                color: (order.status === 'paid' || order.status === 'served') ? 'var(--text-muted)' : 'white', 
+                                                                color: (order.status === 'paid' || order.status === 'served' || order.payment_status === 'prepaid' || order.payment_status === 'paid')
+                                                                    ? 'var(--text-muted)' 
+                                                                    : 'white', 
                                                                 padding: '6px 16px', 
                                                                 borderRadius: 'var(--radius-sm)', 
                                                                 fontSize: '0.8rem', 
-                                                                cursor: (order.status === 'paid' || order.status === 'served') ? 'default' : 'pointer',
+                                                                cursor: (order.status === 'paid' || order.status === 'served' || order.payment_status === 'prepaid' || order.payment_status === 'paid')
+                                                                    ? 'default' 
+                                                                    : 'pointer',
                                                                 fontWeight: '600',
                                                                 whiteSpace: 'nowrap'
                                                              }}
                                                          >
-                                                             {(order.status === 'paid' || order.status === 'served') ? '결제완료' : '결제'}
+                                                             {(order.payment_status === 'prepaid') 
+                                                                ? '선불완료' 
+                                                                : (order.status === 'paid' || order.payment_status === 'paid') 
+                                                                    ? '결제완료' 
+                                                                    : '결제'}
                                                          </button>
                                                      )}
                                                 </div>
