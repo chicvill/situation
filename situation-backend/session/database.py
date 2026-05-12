@@ -377,6 +377,7 @@ def init_db_v2():
             
             cur.execute("ALTER TABLE table_orders ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'unpaid'")
             cur.execute("ALTER TABLE table_orders ADD COLUMN IF NOT EXISTS payment_method TEXT")
+            cur.execute("ALTER TABLE table_orders ADD COLUMN IF NOT EXISTS payment_key TEXT")  # 환불용 토스 결제키
         except Exception as e:
             print(f"⚠️ DB Migration Warning: {e}")
             

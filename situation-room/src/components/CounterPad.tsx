@@ -41,11 +41,18 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
     };
 
     useEffect(() => {
+        // 1. 초기 로드
         fetchSessions();
+
+        // 2. WebSocket 실시간 갱신
         const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            if (['NEW_ORDER', 'STATUS_UPDATE', 'SESSION_CLOSED', 'PAYMENT_CONFIRMED'].includes(data.type)) {
+            // 주문 취소·수정·결제 등 금액에 영향을 주는 모든 이벤트에서 재조회
+            if ([
+                'NEW_ORDER', 'STATUS_UPDATE', 'ORDER_UPDATED',
+                'SESSION_CLOSED', 'PAYMENT_CONFIRMED', 'PARTIAL_SETTLEMENT'
+            ].includes(data.type)) {
                 fetchSessions();
             }
             if (data.type === 'JOIN_REQUEST') {
@@ -61,8 +68,25 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                 });
             }
         };
-        return () => ws.close();
+
+        // 3. 탭 포커스 복귀 시 즉시 재조회 (다른 탭에서 변경 후 돌아온 경우 대비)
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                fetchSessions();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        // 4. 30초 주기 폴링 (네트워크 단절 등 WebSocket 누락 방지)
+        const pollInterval = setInterval(fetchSessions, 30000);
+
+        return () => {
+            ws.close();
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            clearInterval(pollInterval);
+        };
     }, [storeId]);
+
 
     const handleStatusUpdate = async (orderId: string, status: string) => {
         try {
@@ -137,10 +161,9 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
             const res = await fetch(`${apiUrl}/api/order/status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order_id: orderId, status: 'paid' }) // paid로 변경하여 결제 완료 처리
+                body: JSON.stringify({ order_id: orderId, status: 'paid' })
             });
             if (res.ok) {
-                // alert 제거하여 흐름 끊김 방지
                 setSelectedOrderForPay(null);
                 fetchSessions();
             } else {
@@ -150,6 +173,44 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
         } catch (e) {
             console.error('Partial Payment Error:', e);
             throw e;
+        }
+    };
+
+    // 선불 주문 취소 + 환불 처리
+    const handleCancelWithRefund = async (order: any) => {
+        const isPrepaid = order.payment_status === 'paid' || order.payment_status === 'prepaid';
+        const confirmMsg = isPrepaid
+            ? `#${order.order_seq}차 주문(${order.total_price.toLocaleString()}원)은 선불 결제된 주문입니다.\n취소 시 토스 환불 처리를 시도합니다.\n계속하시겠습니까?`
+            : `#${order.order_seq}차 주문을 취소하시겠습니까?\n취소 후에는 되돌릴 수 없습니다.`;
+
+        if (!window.confirm(confirmMsg)) return;
+
+        try {
+            const apiUrl = getApiUrl();
+            if (isPrepaid) {
+                // 선불: 환불 API 호출
+                const res = await fetch(`${apiUrl}/api/payment/cancel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_id: order.order_id, cancel_reason: '카운터 취소' })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    alert(`✅ ${data.message}`);
+                } else if (data.status === 'manual_required') {
+                    alert(`⚠️ 자동 환불 불가\n${data.message}\n\n토스 대시보드에서 수동 처리해주세요:\n${data.dashboard_url || ''}`);
+                } else {
+                    // 취소는 됐지만 환불키 없음
+                    alert('주문이 취소되었습니다. (결제키 없음 - 후불 처리)');
+                }
+            } else {
+                // 후불: 상태만 cancelled로
+                await handleStatusUpdate(order.order_id, 'cancelled');
+            }
+            fetchSessions();
+        } catch (e: any) {
+            console.error('Cancel/Refund Error:', e);
+            alert(`취소 처리 중 오류가 발생했습니다: ${e.message}`);
         }
     };
 
@@ -307,8 +368,9 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                     </div>
                 ) : (
                     Array.isArray(sessions) && sessions.map((session) => {
-                        const sessionTotal = session.orders.reduce((sum: number, o: any) => sum + o.total_price, 0);
-                        const unpaidTotal = session.orders
+                        const activeOrders = session.orders.filter((o: any) => o.status !== 'cancelled');
+                        const sessionTotal = activeOrders.reduce((sum: number, o: any) => sum + o.total_price, 0);
+                        const unpaidTotal = activeOrders
                             .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
                             .reduce((sum: number, o: any) => sum + o.total_price, 0);
                         const isAllPrepaid = unpaidTotal === 0;
@@ -387,7 +449,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                    {session.orders.map((order: any) => (
+                                    {session.orders.filter((order: any) => order.status !== 'cancelled').map((order: any) => (
                                         <div key={order.order_id} style={{ 
                                             background: 'var(--primary-soft)', 
                                             borderRadius: 'var(--radius-md)', 
@@ -409,32 +471,46 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                 {order.items.map((item: any, i: number) => (
                                                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                                         <span>{item.name}</span>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--border)' }}>
-                                                            <button 
-                                                                onClick={() => {
-                                                                    const newItems = [...order.items];
-                                                                    newItems[i] = { ...item, quantity: Math.max(0, (item.quantity || item.qty || 0) - 1) };
-                                                                    handleUpdateOrderItem(order.order_id, newItems);
-                                                                }}
-                                                                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontWeight: '700' }}
-                                                            >-</button>
-                                                            <span style={{ fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{item.quantity || item.qty}</span>
-                                                            <button 
-                                                                onClick={() => {
-                                                                    const newItems = [...order.items];
-                                                                    newItems[i] = { ...item, quantity: (item.quantity || item.qty || 0) + 1 };
-                                                                    handleUpdateOrderItem(order.order_id, newItems);
-                                                                }}
-                                                                style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontWeight: '700' }}
-                                                            >+</button>
-                                                            <button 
-                                                                onClick={() => {
-                                                                    const newItems = order.items.filter((_: any, idx: number) => idx !== i);
-                                                                    handleUpdateOrderItem(order.order_id, newItems);
-                                                                }}
-                                                                style={{ marginLeft: '4px', background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '12px' }}
-                                                            >✕</button>
-                                                        </div>
+                                                        {(order.payment_status === 'prepaid' || order.payment_status === 'paid') ? (
+                                                            <div style={{ 
+                                                                fontSize: '0.8rem', 
+                                                                color: 'var(--text-muted)', 
+                                                                background: 'rgba(16, 185, 129, 0.08)', 
+                                                                padding: '4px 10px', 
+                                                                borderRadius: '6px', 
+                                                                fontWeight: '600',
+                                                                border: '1px solid rgba(16, 185, 129, 0.2)'
+                                                            }}>
+                                                                {item.quantity || item.qty}개 (수정불가)
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--border)' }}>
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        const newItems = [...order.items];
+                                                                        newItems[i] = { ...item, quantity: Math.max(0, (item.quantity || item.qty || 0) - 1) };
+                                                                        handleUpdateOrderItem(order.order_id, newItems);
+                                                                    }}
+                                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontWeight: '700' }}
+                                                                >-</button>
+                                                                <span style={{ fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{item.quantity || item.qty}</span>
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        const newItems = [...order.items];
+                                                                        newItems[i] = { ...item, quantity: (item.quantity || item.qty || 0) + 1 };
+                                                                        handleUpdateOrderItem(order.order_id, newItems);
+                                                                    }}
+                                                                    style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontWeight: '700' }}
+                                                                >+</button>
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        const newItems = order.items.filter((_: any, idx: number) => idx !== i);
+                                                                        handleUpdateOrderItem(order.order_id, newItems);
+                                                                    }}
+                                                                    style={{ marginLeft: '4px', background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '12px' }}
+                                                                >✕</button>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -442,11 +518,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                 <span style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--accent)', whiteSpace: 'nowrap' }}>{order.total_price.toLocaleString()}원</span>
                                                 <div style={{ display: 'flex', gap: '10px' }}>
                                                     <button 
-                                                        onClick={() => {
-                                                            if (true) {
-                                                                 handleStatusUpdate(order.order_id, 'cancelled');
-                                                            }
-                                                        }}
+                                                        onClick={() => handleCancelWithRefund(order)}
                                                         style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--danger)', padding: '6px 12px', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '500' }}
                                                     >
                                                         삭제
