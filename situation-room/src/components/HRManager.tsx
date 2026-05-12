@@ -613,7 +613,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <span style={{ color: 'var(--text-muted)' }}>계약 시급:</span>
-                                <strong>{parseInt(payrollModal.wage).toLocaleString()}원</strong>
+                                <strong>{Math.floor(Number(payrollModal.wage) || 0).toLocaleString()}원</strong>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <span style={{ color: 'var(--text-muted)' }}>당월 누적근무시간:</span>
@@ -624,19 +624,19 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
 
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                 <span style={{ color: 'var(--text-muted)' }}>기본 근로 소득:</span>
-                                <span>{parseInt(payrollModal.wage * payrollModal.hours).toLocaleString()}원</span>
+                                <span>{Math.floor((Number(payrollModal.wage) || 0) * (Number(payrollModal.hours) || 0)).toLocaleString()}원</span>
                             </div>
 
                             {parseFloat(payrollModal.hours) >= 60 && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981' }}>
                                     <span>주휴수당 가산 (상용):</span>
-                                    <span>+{parseInt((payrollModal.hours / 40.0) * 8.0 * payrollModal.wage).toLocaleString()}원</span>
+                                    <span>+{Math.floor(((Number(payrollModal.hours) || 0) / 40.0) * 8.0 * (Number(payrollModal.wage) || 0)).toLocaleString()}원</span>
                                 </div>
                             )}
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444' }}>
                                 <span>원천세 징수 (3.3%):</span>
-                                <span>-{parseInt(payrollModal.cumulativeWage * 0.033).toLocaleString()}원</span>
+                                <span>-{Math.floor((Number(payrollModal.cumulativeWage) || 0) * 0.033).toLocaleString()}원</span>
                             </div>
 
                             <hr style={{ border: 'none', borderTop: '1.5px dashed rgba(255,255,255,0.15)', margin: '10px 0' }} />
@@ -645,18 +645,18 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: 'bold' }}>
                                 <span style={{ color: 'var(--accent-orange)' }}>실수령 누적금액:</span>
                                 <span style={{ color: 'var(--accent-orange)' }}>
-                                    {parseInt(payrollModal.cumulativeWage * 0.967).toLocaleString()}원
+                                    {Math.floor((Number(payrollModal.cumulativeWage) || 0) * 0.967).toLocaleString()}원
                                 </span>
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginTop: '6px' }}>
                                 <span style={{ color: 'var(--text-muted)' }}>이미 지불된 금액:</span>
-                                <span style={{ color: '#10b981' }}>{parseInt(payrollModal.paidWage).toLocaleString()}원</span>
+                                <span style={{ color: '#10b981' }}>{Math.floor(Number(payrollModal.paidWage) || 0).toLocaleString()}원</span>
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: '700' }}>
                                 <span style={{ color: 'var(--text-muted)' }}>당월 미지급 잔액:</span>
-                                <span style={{ color: 'var(--accent-orange)' }}>{parseInt(payrollModal.unpaidWage).toLocaleString()}원</span>
+                                <span style={{ color: 'var(--accent-orange)' }}>{Math.floor(Number(payrollModal.unpaidWage) || 0).toLocaleString()}원</span>
                             </div>
                         </div>
 
