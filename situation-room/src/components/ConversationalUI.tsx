@@ -29,12 +29,23 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     // Speak helper for text-to-speech
     const speak = (text: string) => {
         if (!window.speechSynthesis) return;
+        // 다음 상황으로 빠르게 넘어가면 이전 음성을 즉각 중단(cancel)하여 설명 싱크 지연 해결!
+        window.speechSynthesis.cancel();
         const speechText = text.replace(/\[GOTO:(\w+)\]/g, '').trim();
         const utterance = new SpeechSynthesisUtterance(speechText);
         utterance.lang = 'ko-KR';
         utterance.rate = 1.05;
         window.speechSynthesis.speak(utterance);
     };
+
+    // 컴포넌트 이탈(일반 판형 전환 등 화면 전환) 시 흘러나오던 AI 음성을 즉시 안전 중단
+    useEffect(() => {
+        return () => {
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
+        };
+    }, []);
 
     // Extract menus from bundles dynamically using the ultra-robust defensive matching strategy
     const menus = (() => {
