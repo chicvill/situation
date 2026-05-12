@@ -6,6 +6,31 @@ interface Props {
   user?: any;
 }
 
+// 여러 매장에 공통적으로 완벽하게 대응하는 표준 매뉴얼 예제 템플릿
+const COMMON_MANUAL_TEMPLATE = `### [우리 매장 운영 절대 규칙]
+
+### ⏰ 영업 시간 및 쉬는 시간
+- 영업시간: 오전 11:30 ~ 오후 22:00
+- 브레이크타임: 오후 15:00 ~ 17:00 (오후 14:30 라스트오더)
+- 정기휴무: 매주 화요일은 쉽니다.
+
+### 📶 고객 편의 정보
+- 매장 와이파이: MQnet_Wifi (비밀번호: 12345678)
+- 화장실 위치: 주방 오른쪽 통로 건물 전용 복도 (비밀번호: *1234#)
+- 주차 지원: 결제 시 직원에게 차량번호를 말씀해주시면 지하주차장 1시간 무료 정산을 등록해 드립니다.
+
+### 👥 서비스 말투 가이드라인
+- 고객 응대 시 항상 정중하고 신뢰감 넘치는 표준 존댓말을 구사해 주세요.
+- 비서 역할을 할 때는 "저희 식당을 방문해 주셔서 진심으로 감사드립니다."로 친절하게 문장을 시작하세요.
+
+### 📅 단체 예약 및 결제
+- 8인 이상의 단체 손님은 당일 대화식 주문보다는 사전 전화 예약으로 접수하도록 안내해 주세요.
+- 모든 포인트는 결제금액의 0.1%가 적립되며, 1,000 포인트부터 현금처럼 사용 가능합니다.
+
+### ⚠️ 비상 및 기타 대응 수칙
+- 와이파이가 작동하지 않는 비상 상황 시에는 공유기를 끈 뒤 10초 후에 재부팅하도록 사장님께 보고하세요.
+- 손님이 물을 쏟거나 요청 사항이 있을 시 즉시 벨 호출 알림을 확인하고 신속히 이동해 대응합니다.`;
+
 export const StoreManualEditor = ({ storeId, user }: Props) => {
   const [manual, setManual] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -40,6 +65,16 @@ export const StoreManualEditor = ({ storeId, user }: Props) => {
     }
   };
 
+  // 공통 템플릿 불러오기 기능
+  const loadTemplate = () => {
+    if (window.confirm("주의: 현재 작성 중인 내용이 지워지고 '공통 표준 매뉴얼 예제'로 덮어씌워집니다. 불러오시겠습니까?")) {
+      setManual(COMMON_MANUAL_TEMPLATE);
+      setIsEditing(true); // 편의상 바로 수정할 수 있게 편집 모드로 전환
+      setMessage("📋 표준 공통 예제 템플릿이 로드되었습니다. 수정 후 'AI에게 학습시키기'를 꼭 눌러주세요!");
+      setTimeout(() => setMessage(""), 5000);
+    }
+  };
+
   // 관리자 권한 여부 확인 (admin, owner, manager)
   const hasEditPermission = user?.role === 'admin' || user?.role === 'owner' || user?.role === 'manager';
 
@@ -50,11 +85,26 @@ export const StoreManualEditor = ({ storeId, user }: Props) => {
         <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text-muted)' }}>
           <div style={{ fontSize: '3rem', marginBottom: '15px' }}>📖</div>
           <h3 style={{ margin: '0 0 10px 0', color: 'var(--text-main)' }}>매장 매뉴얼이 비어 있습니다</h3>
-          <p style={{ fontSize: '0.9rem', maxWidth: '400px', margin: '0 auto', lineHeight: '1.6' }}>
-            {hasEditPermission 
-              ? "상단의 [✏️ 매뉴얼 수정] 버튼을 클릭하여 매장의 절대 규칙을 직접 입력해 주세요!" 
-              : "등록된 매뉴얼이 없습니다. 매장 관리자에게 등록을 요청해 주세요."}
+          <p style={{ fontSize: '0.9rem', maxWidth: '450px', margin: '0 auto 20px auto', lineHeight: '1.6' }}>
+            매뉴얼을 새로 작성하거나, 다수의 매장에서 실제 공통으로 쓰이는 표준 예제를 불러와 자유롭게 편집 및 수정 테스트를 해볼 수 있습니다.
           </p>
+          {hasEditPermission && (
+            <button 
+              onClick={loadTemplate}
+              style={{
+                padding: '12px 24px',
+                borderRadius: '10px',
+                background: 'var(--primary-soft)',
+                color: 'var(--primary)',
+                border: '1.5px dashed var(--primary)',
+                fontWeight: '700',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              📋 표준 공통 예제 템플릿 불러오기
+            </button>
+          )}
         </div>
       );
     }
@@ -63,12 +113,12 @@ export const StoreManualEditor = ({ storeId, user }: Props) => {
       <div className="manual-booklet-paper" style={{
         background: '#fff',
         color: '#1e293b',
-        padding: '30px 40px',
+        padding: '35px 40px',
         borderRadius: '16px',
         boxShadow: '0 10px 30px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02)',
         border: '1px solid #e2e8f0',
         lineHeight: '1.8',
-        fontSize: '1.05rem',
+        fontSize: '1.02rem',
         fontFamily: "'Inter', sans-serif",
         textAlign: 'left'
       }}>
@@ -129,26 +179,48 @@ export const StoreManualEditor = ({ storeId, user }: Props) => {
           </p>
         </div>
         
-        {/* 관리자 권한이 있는 경우에만 수정하기 버튼 노출 */}
-        {hasEditPermission && (
-          <button 
-            onClick={() => setIsEditing(!isEditing)}
-            style={{
-              padding: '8px 18px',
-              borderRadius: '8px',
-              background: isEditing ? 'var(--surface)' : 'var(--primary)',
-              color: isEditing ? 'var(--text-main)' : 'white',
-              border: isEditing ? '1px solid var(--border)' : 'none',
-              fontWeight: '700',
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-              boxShadow: '0 4px 10px rgba(0,0,0,0.05)'
-            }}
-          >
-            {isEditing ? "📄 매뉴얼 보기" : "✏️ 매뉴얼 수정"}
-          </button>
-        )}
+        {/* 우측 관리용 보조 버튼 묶음 */}
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {hasEditPermission && (
+            <button 
+              onClick={loadTemplate}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '8px',
+                background: 'transparent',
+                color: 'var(--text-muted)',
+                border: '1px dashed var(--border)',
+                fontWeight: '600',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              title="공통 예제로 덮어쓰기"
+            >
+              📋 예제 불러오기
+            </button>
+          )}
+
+          {hasEditPermission && (
+            <button 
+              onClick={() => setIsEditing(!isEditing)}
+              style={{
+                padding: '8px 18px',
+                borderRadius: '8px',
+                background: isEditing ? 'var(--surface)' : 'var(--primary)',
+                color: isEditing ? 'var(--text-main)' : 'white',
+                border: isEditing ? '1px solid var(--border)' : 'none',
+                fontWeight: '700',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.05)'
+              }}
+            >
+              {isEditing ? "📄 매뉴얼 보기" : "✏️ 매뉴얼 수정"}
+            </button>
+          )}
+        </div>
       </div>
 
       {message && (
@@ -157,11 +229,11 @@ export const StoreManualEditor = ({ storeId, user }: Props) => {
           padding: '12px', 
           borderRadius: '8px', 
           textAlign: 'center', 
-          background: message.includes('✅') ? '#ecfdf5' : '#fef2f2',
-          color: message.includes('✅') ? '#059669' : '#dc2626',
+          background: message.includes('✅') || message.includes('📋') ? '#ecfdf5' : '#fef2f2',
+          color: message.includes('✅') || message.includes('📋') ? '#059669' : '#dc2626',
           fontWeight: '600',
           fontSize: '0.9rem',
-          border: `1px solid ${message.includes('✅') ? '#a7f3d0' : '#fecaca'}`
+          border: `1px solid ${message.includes('✅') || message.includes('📋') ? '#a7f3d0' : '#fecaca'}`
         }}>
           {message}
         </div>
@@ -183,18 +255,30 @@ export const StoreManualEditor = ({ storeId, user }: Props) => {
                 fontFamily: 'inherit', boxSizing: 'border-box'
               }}
             />
-            <button 
-              onClick={handleSave}
-              disabled={isSaving}
-              style={{
-                marginTop: '15px', width: '100%', padding: '15px', borderRadius: '12px',
-                background: 'var(--accent)', color: 'white', fontWeight: '800',
-                fontSize: '1rem', border: 'none', cursor: 'pointer', opacity: isSaving ? 0.7 : 1,
-                boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)'
-              }}
-            >
-              {isSaving ? "매장 규칙 반영 중..." : "💾 AI에게 학습시키기"}
-            </button>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+              <button 
+                onClick={() => setIsEditing(false)}
+                style={{
+                  flex: 0.4, padding: '15px', borderRadius: '12px',
+                  background: 'var(--surface)', color: 'var(--text-main)', fontWeight: '700',
+                  fontSize: '0.95rem', border: '1px solid var(--border)', cursor: 'pointer'
+                }}
+              >
+                취소
+              </button>
+              <button 
+                onClick={handleSave}
+                disabled={isSaving}
+                style={{
+                  flex: 1, padding: '15px', borderRadius: '12px',
+                  background: 'var(--accent)', color: 'white', fontWeight: '800',
+                  fontSize: '1rem', border: 'none', cursor: 'pointer', opacity: isSaving ? 0.7 : 1,
+                  boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)'
+                }}
+              >
+                {isSaving ? "매장 규칙 반영 중..." : "💾 AI에게 학습시키기"}
+              </button>
+            </div>
           </div>
 
           <div style={{ flex: 0.7, minWidth: '250px', background: 'var(--primary-soft)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border)' }}>

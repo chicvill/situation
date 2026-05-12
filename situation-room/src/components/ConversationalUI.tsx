@@ -23,8 +23,54 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     const [isPaying, setIsPaying] = useState<boolean>(false);
     const [isListening, setIsListening] = useState<boolean>(false);
 
+    const [hasSession, setHasSession] = useState<boolean>(false);
+    const [isCheckingSession, setIsCheckingSession] = useState<boolean>(true);
+    const wasApproved = useRef<boolean>(false);
+
     const scrollRef = useRef<HTMLDivElement>(null);
     const hasSpokenWelcome = useRef(false);
+
+    const tableId = `T${tableNo.padStart(2, '0')}`;
+
+    // 카운터의 실시간 좌석 배정 및 이용 승인 여부 동적 조회
+    const checkSession = async () => {
+        try {
+            const res = await fetch(`${API_BASE}/api/session/${tableId}?store_id=${storeId}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.session && data.session.status === 'active') {
+                    setHasSession(true);
+                } else {
+                    setHasSession(false);
+                }
+            } else {
+                setHasSession(false);
+            }
+        } catch (e) {
+            console.error("Session check failed in ConversationalUI:", e);
+            setHasSession(false);
+        } finally {
+            setIsCheckingSession(false);
+        }
+    };
+
+    useEffect(() => {
+        checkSession();
+        const interval = setInterval(checkSession, 3000); // 3초 주기 실시간 연동
+        return () => clearInterval(interval);
+    }, [tableId, storeId]);
+
+    // 좌석 배정 승인이 카운터에서 이뤄지는 순간 환영 오디오를 들려줌
+    useEffect(() => {
+        if (hasSession && !wasApproved.current) {
+            wasApproved.current = true;
+            if (messages.length > 0 || hasSpokenWelcome.current) {
+                speak("반갑습니다! 자리가 배정되어 대화식 주문창이 정상 활성화되었습니다. 마이크 단추나 키패드로 편하게 주문해 보세요.");
+            }
+        } else if (!hasSession) {
+            wasApproved.current = false;
+        }
+    }, [hasSession, messages.length]);
 
     // Speak helper for text-to-speech
     const speak = (text: string) => {
@@ -399,6 +445,129 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
 
         recognition.start();
     };
+
+    if (isCheckingSession) {
+        return (
+            <div className="conversational-ui-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white', height: '100vh', fontFamily: 'Inter, sans-serif' }}>
+                <div style={{ textAlign: 'center' }}>
+                    <div className="premium-loader" style={{ fontSize: '3rem', animation: 'spin 2s linear infinite', marginBottom: '15px' }}>⏳</div>
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>시스템 상태를 정밀 체크 중입니다...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // 장난 주문 방지를 위해 카운터 좌석 승인이 나지 않은 미배정 테이블일 때 대기 차단막 노출
+    // 단, 결제 성공 완료 화면은 세션 만료 후에도 고객이 정상 확인해야 하므로 예외 처리 적용!
+    if (!hasSession && !initialPaymentSuccess) {
+        return (
+            <div className="conversational-ui-container" style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                background: '#0f172a', 
+                color: 'white', 
+                height: '100vh', 
+                fontFamily: 'Inter, sans-serif',
+                padding: '20px',
+                boxSizing: 'border-box'
+            }}>
+                <div style={{ 
+                    background: 'rgba(30, 41, 59, 0.7)',
+                    backdropFilter: 'blur(16px)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    padding: '40px 30px', 
+                    borderRadius: '24px', 
+                    maxWidth: '420px', 
+                    width: '100%', 
+                    textAlign: 'center',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+                    animation: 'fadeIn 0.5s ease-out'
+                }}>
+                    <div className="seat-pulse-circle" style={{
+                        width: '80px',
+                        height: '80px',
+                        borderRadius: '50%',
+                        background: 'rgba(234, 179, 8, 0.15)',
+                        border: '2px solid #eab308',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '2rem',
+                        margin: '0 auto 25px auto',
+                        animation: 'pulse 2s infinite'
+                    }}>
+                        🪑
+                    </div>
+                    
+                    <div style={{
+                        background: 'rgba(234, 179, 8, 0.1)',
+                        color: '#facc15',
+                        padding: '4px 16px',
+                        borderRadius: '50px',
+                        fontSize: '0.8rem',
+                        fontWeight: '800',
+                        display: 'inline-block',
+                        marginBottom: '15px',
+                        letterSpacing: '1px',
+                        border: '1px solid rgba(234, 179, 8, 0.2)'
+                    }}>
+                        Table {tableNo}
+                    </div>
+
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: '900', margin: '0 0 12px 0', color: '#f8fafc' }}>
+                        좌석 배정 대기 중 ⏳
+                    </h2>
+                    
+                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: '1.7', margin: '0 0 30px 0', wordBreak: 'keep-all' }}>
+                        장난 주문을 방지하고 질서 있는 매장 운영을 위해 <strong style={{ color: '#facc15' }}>카운터의 좌석 승인</strong>이 필요합니다.<br/><br/>
+                        카운터 직원에게 테이블 배정을 정식 요청해 주시면 이 화면이 **자동으로 활성화**되어 AI 비서와 대화형 주문을 진행할 수 있습니다.
+                    </p>
+
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        fontSize: '0.8rem',
+                        color: '#10b981',
+                        fontWeight: '700',
+                        background: 'rgba(16, 185, 129, 0.08)',
+                        padding: '8px 16px',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(16, 185, 129, 0.15)'
+                    }}>
+                        <span className="live-dot" style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: '#10b981',
+                            display: 'inline-block',
+                            animation: 'pulseGreen 1.5s infinite'
+                        }}></span>
+                        카운터 실시간 연동 대기 중...
+                    </div>
+                </div>
+
+                <style>{`
+                    @keyframes pulse {
+                        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
+                        70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(234, 179, 8, 0); }
+                        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+                    }
+                    @keyframes pulseGreen {
+                        0% { opacity: 0.3; }
+                        50% { opacity: 1; }
+                        100% { opacity: 0.3; }
+                    }
+                    @keyframes fadeIn {
+                        from { opacity: 0; transform: translateY(15px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                `}</style>
+            </div>
+        );
+    }
 
     return (
         <div className="conversational-ui-container full-width-mode">
