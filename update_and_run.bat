@@ -11,6 +11,10 @@ echo [1/3] Pulling latest changes from GitHub (main)...
 git pull origin main
 
 echo.
+echo [1.5/3] Building Frontend Production Bundle (dist)...
+cd situation-room && call npm run build && cd ..
+
+echo.
 echo [2/3] Cleaning up old processes...
 taskkill /F /IM python.exe /T 2>nul
 taskkill /F /IM node.exe /T 2>nul
