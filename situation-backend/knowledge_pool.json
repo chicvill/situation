@@ -2072,5 +2072,46 @@
     "timestamp": "2026. 5. 12. 오후 8:23:17",
     "store": "시크빌",
     "store_id": "store-chicvill"
+  },
+  {
+    "items": [
+      {
+        "name": "상호명",
+        "value": "시크빌"
+      },
+      {
+        "name": "사업자번호",
+        "value": "5871301146"
+      },
+      {
+        "name": "주소",
+        "value": "인천 서구 옻우물로26번길 1"
+      },
+      {
+        "name": "대표자",
+        "value": "김종심"
+      },
+      {
+        "name": "개업일자",
+        "value": "20191216"
+      },
+      {
+        "name": "은행명",
+        "value": "농협"
+      },
+      {
+        "name": "계좌번호",
+        "value": "13002752081538"
+      },
+      {
+        "name": "예금주",
+        "value": "민흥식"
+      }
+    ],
+    "type": "StoreConfig",
+    "title": "매장 정보",
+    "store": "시크빌",
+    "store_id": "store-chicvill",
+    "status": "approved"
   }
 ]
