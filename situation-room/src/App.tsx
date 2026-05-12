@@ -22,6 +22,7 @@ import { ParkingManager } from './components/ParkingManager';
 import { PointsManager } from './components/PointsManager';
 import MobileOrderV2 from './components/v2/MobileOrderV2';
 import { AdminStoreManager } from './components/AdminStoreManager';
+import { WelcomeHub } from './components/WelcomeHub';
 import { useSituation } from './hooks/useSituation';
 import { useStoreFilter } from './hooks/useStoreFilter';
 import { useStoreSync } from './hooks/useStoreSync';
@@ -74,7 +75,7 @@ function App() {
     }
     if (u.role !== 'customer') {
       localStorage.setItem('mqnet_user', JSON.stringify(u));
-      setActiveTab('counter');
+      setActiveTab('home');
     }
   };
 
@@ -132,7 +133,7 @@ function App() {
         const u = JSON.parse(savedUser);
         setUser(u);
         if (u.role !== 'customer') {
-          setActiveTab('counter');
+          setActiveTab('home');
         }
       } catch (e) {
         localStorage.removeItem('mqnet_user');
@@ -358,8 +359,21 @@ function App() {
       case 'qr': return <QRManager bundles={bundles} storeId={storeId} storeName={storeName} />;
       case 'paper': return <PaperViewer />;
       case 'stats':
-      case 'admin':
-      case 'home': return <AdminDashboard bundles={bundles} storeDetails={storeDetails} />;
+      case 'admin': return <AdminDashboard bundles={bundles} storeDetails={storeDetails} />;
+      case 'home': 
+        return (
+          <WelcomeHub 
+            user={user} 
+            bundles={bundles} 
+            storeName={storeName} 
+            onNavigate={navigateTo as any} 
+            onProfileUpdated={(updatedUser) => {
+              setUser(updatedUser);
+              localStorage.setItem('mqnet_user', JSON.stringify(updatedUser));
+            }}
+            onLogout={handleLogout}
+          />
+        );
       case 'call': return <CallManager storeId={storeId} />;
       case 'inventory': return <LogicInventory />;
       case 'manual': return <StoreManualEditor storeId={storeId} user={user} />;
@@ -477,10 +491,17 @@ function App() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {!isCustomerMode && user && (
             <div style={{ 
-              background: '#e2e8f0', color: 'var(--text-main)', padding: '4px 12px', 
-              borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' 
+              background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(249, 115, 22, 0.05))',
+              color: 'var(--accent-orange)', 
+              border: '1px solid rgba(249, 115, 22, 0.2)',
+              padding: '4px 12px', 
+              borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' 
             }}>
-              관리자
+              👤 {user.name} ({
+                user.role === 'admin' ? '최고관리자' :
+                user.role === 'owner' ? '점주' :
+                user.role === 'manager' ? '점장' : '점원'
+              })
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
