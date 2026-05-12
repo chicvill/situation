@@ -229,9 +229,14 @@ def init_db_v2():
                 check_out_time TEXT,
                 work_minutes INTEGER,
                 status TEXT DEFAULT 'working',
-                tardy BOOLEAN DEFAULT FALSE
+                tardy BOOLEAN DEFAULT FALSE,
+                paid BOOLEAN DEFAULT FALSE
             )
         """)
+        try:
+            cur.execute("ALTER TABLE table_attendance_logs ADD COLUMN IF NOT EXISTS paid BOOLEAN DEFAULT FALSE")
+        except Exception:
+            pass
 
         # 11. 스태프 스케줄 테이블 (table_staff_schedules)
         cur.execute("""
@@ -1582,3 +1587,141 @@ def delete_store_db(store_id: str):
     except Exception as e:
         print(f"Delete Store DB Error: {e}")
         return False
+
+# ---  가상 번들 어댑터 (PostgreSQL 직원 & 근태 -> React virtual bundles) ---
+def get_all_staff_as_bundles(store_id: Optional[str] = None):
+    conn = get_db_conn()
+    if not conn: return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        if store_id and store_id != "Total":
+            cur.execute("SELECT * FROM table_staff_accounts WHERE store_id = %(store_id)s", {'store_id': store_id})
+        else:
+            cur.execute("SELECT * FROM table_staff_accounts")
+        staffs = cur.fetchall()
+        
+        bundles = []
+        for staff in staffs:
+            staff_id = staff['staff_id']
+            # Fetch schedules
+            cur.execute("SELECT * FROM table_staff_schedules WHERE staff_id = %(staff_id)s", {'staff_id': staff_id})
+            schedules = cur.fetchall()
+            
+            # Fetch attendance logs
+            cur.execute("SELECT * FROM table_attendance_logs WHERE staff_id = %(staff_id)s", {'staff_id': staff_id})
+            logs = cur.fetchall()
+            
+            total_minutes = sum(log['work_minutes'] or 0 for log in logs)
+            total_hours = total_minutes / 60.0
+            hourly_wage = staff['hourly_wage']
+            
+            # Base wage
+            base_wage = int(total_hours * hourly_wage)
+            
+            # Weekly Holiday Allowance
+            weekly_holiday_allowance = 0
+            if total_hours >= 60.0:
+                weekly_holiday_allowance = int((total_hours / 40.0) * 8.0 * hourly_wage)
+                
+            # Distribute Paid and Unpaid
+            paid_wage = 0
+            unpaid_wage = 0
+            for log in logs:
+                log_mins = log['work_minutes'] or 0
+                log_wage = int((log_mins / 60.0) * hourly_wage)
+                if log.get('paid'):
+                    paid_wage += log_wage
+                else:
+                    unpaid_wage += log_wage
+                    
+            # Handle holiday allowance in paid/unpaid
+            if weekly_holiday_allowance > 0:
+                has_unpaid_logs = any(not log.get('paid') for log in logs)
+                if has_unpaid_logs:
+                    unpaid_wage += weekly_holiday_allowance
+                else:
+                    paid_wage += weekly_holiday_allowance
+            
+            contract_period = staff['contract_period']
+            if isinstance(contract_period, str):
+                try: contract_period = json.loads(contract_period)
+                except: contract_period = {}
+                
+            items = [
+                {"name": "이름", "value": staff['name']},
+                {"name": "아이디", "value": staff_id},
+                {"name": "직책", "value": "점장" if staff['role'] == "manager" else "점원"},
+                {"name": "시급", "value": str(hourly_wage)},
+                {"name": "상태", "value": staff['status']},
+                {"name": "누적시간", "value": f"{total_hours:.1f}"},
+                {"name": "누적임금", "value": str(base_wage + weekly_holiday_allowance)},
+                {"name": "지불된임금", "value": str(paid_wage)},
+                {"name": "미지급임금", "value": str(unpaid_wage)},
+                {"name": "계약정보", "value": json.dumps(contract_period)},
+                {"name": "스케줄", "value": json.dumps(schedules)}
+            ]
+            
+            bundles.append({
+                "id": f"EMP-{staff_id}",
+                "type": "Employee",
+                "title": f"{staff['name']} 사원 정보",
+                "store_id": staff['store_id'],
+                "status": staff['status'],
+                "timestamp": datetime.now().isoformat(),
+                "items": items
+            })
+        cur.close()
+        conn.close()
+        return bundles
+    except Exception as e:
+        print(f"Get All Staff As Bundles Error: {e}")
+        return []
+
+def get_all_attendance_as_bundles(store_id: Optional[str] = None):
+    conn = get_db_conn()
+    if not conn: return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        query = """
+            SELECT l.*, s.name as staff_name FROM table_attendance_logs l
+            JOIN table_staff_accounts s ON l.staff_id = s.staff_id
+        """
+        params = {}
+        if store_id and store_id != "Total":
+            query += " WHERE l.store_id = %(store_id)s"
+            params['store_id'] = store_id
+        query += " ORDER BY l.check_in_time DESC LIMIT 100"
+        
+        cur.execute(query, params)
+        logs = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        bundles = []
+        for log in logs:
+            action_type = "퇴근" if log['check_out_time'] else "출근"
+            tardy_str = " (지각)" if log['tardy'] else ""
+            paid_str = " (지급완료)" if log.get('paid') else " (미지급)"
+            title = f"근태 기록: {log['staff_name']}님 {action_type} 완료{tardy_str}{paid_str}"
+            timestamp = log['check_out_time'] or log['check_in_time'] or ''
+            
+            bundles.append({
+                "id": f"ATT-{log['log_id']}",
+                "type": "Attendance",
+                "title": title,
+                "store_id": log['store_id'],
+                "status": log['status'],
+                "timestamp": timestamp,
+                "items": [
+                    {"name": "직원명", "value": log['staff_name']},
+                    {"name": "아이디", "value": log['staff_id']},
+                    {"name": "상태", "value": log['status']},
+                    {"name": "지각여부", "value": "지각" if log['tardy'] else "정상"},
+                    {"name": "근무분수", "value": str(log['work_minutes'] or 0)},
+                    {"name": "정산상태", "value": "지급" if log.get('paid') else "미지급"}
+                ]
+            })
+        return bundles
+    except Exception as e:
+        print(f"Get All Attendance As Bundles Error: {e}")
+        return []

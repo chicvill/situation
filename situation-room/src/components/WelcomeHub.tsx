@@ -9,6 +9,13 @@ interface WelcomeHubProps {
   onLogout: () => void;
 }
 
+const hashPassword = async (password: string): Promise<string> => {
+  const msgUint8 = new TextEncoder().encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
 export const WelcomeHub: React.FC<WelcomeHubProps> = ({
   user,
   bundles,
@@ -37,9 +44,8 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
   useEffect(() => {
     if (showEditModal && userBundle) {
       const currentName = userBundle.items.find((i: any) => i.name === '이름')?.value || user.name || '';
-      const currentPassword = userBundle.items.find((i: any) => i.name === '비밀번호')?.value || '';
       setName(currentName);
-      setPassword(currentPassword);
+      setPassword(''); // 보안 강화를 위해 비밀번호 입력창은 항상 비워둔 뒤 변경 시에만 가로챕니다.
       setEditedStoreName(userBundle.store || storeName || '');
     }
   }, [showEditModal, userBundle, user, storeName]);
@@ -61,10 +67,13 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
     try {
       const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
       
+      const currentHashedPw = userBundle.items.find((i: any) => i.name === '비밀번호')?.value || '';
+      const finalHashedPw = password.trim() ? await hashPassword(password) : currentHashedPw;
+
       // Update items inside PersonalInfos bundle
       const updatedItems = userBundle.items.map((item: any) => {
         if (item.name === '이름') return { ...item, value: name };
-        if (item.name === '비밀번호') return { ...item, value: password };
+        if (item.name === '비밀번호') return { ...item, value: finalHashedPw };
         return item;
       });
 
@@ -383,10 +392,10 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>비밀번호</label>
                 <input 
-                  type="text" 
+                  type="password" 
                   value={password} 
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="새로운 비밀번호를 입력해 주세요"
+                  placeholder="기존 비밀번호 유지 (변경할 때만 입력)"
                   style={{
                     width: '100%',
                     padding: '12px',

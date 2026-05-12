@@ -280,9 +280,15 @@ async def get_pool(store_id: Optional[str] = None):
     pool = load_pool()
     
     # DB의 활성 주문들을 실시간 번들로 조회하여 통합
-    from .database import get_all_active_orders_as_bundles
+    from .database import get_all_active_orders_as_bundles, get_all_staff_as_bundles, get_all_attendance_as_bundles
     active_order_bundles = get_all_active_orders_as_bundles(store_id)
     pool.extend(active_order_bundles)
+    
+    # DB의 직원 및 근태 기록을 가상 번들로 변환 후 통합
+    staff_bundles = get_all_staff_as_bundles(store_id)
+    attendance_bundles = get_all_attendance_as_bundles(store_id)
+    pool.extend(staff_bundles)
+    pool.extend(attendance_bundles)
     
     if store_id and store_id != "Total":
         # store_id가 일치하거나 매장 정보가 없는(공용) 번들만 반환
@@ -1398,11 +1404,11 @@ async def staff_check_in(data: Dict):
         
     diff_minutes = (now - sched_time).total_seconds() / 60.0
     
-    # 가드 분배
-    if diff_minutes < -10.0:
-        raise HTTPException(status_code=400, detail=f"출근 스케줄 시작 10분 전부터만 출근 등록이 가능합니다. (출근예정: {sched_start_str})")
-    elif diff_minutes > 10.0:
-        raise HTTPException(status_code=400, detail=f"출근 허용 시간(10분)을 초과했습니다. 점주 수동 승인을 받으세요. (출근예정: {sched_start_str})")
+    # 가드 분배 (전후 5분 수립)
+    if diff_minutes < -5.0:
+        raise HTTPException(status_code=400, detail=f"출근 스케줄 시작 5분 전부터만 출근 등록이 가능합니다. (출근예정: {sched_start_str})")
+    elif diff_minutes > 5.0:
+        raise HTTPException(status_code=400, detail=f"출근 허용 시간(5분)을 초과했습니다. 점주 수동 승인을 받으세요. (출근예정: {sched_start_str})")
         
     tardy = diff_minutes >= 1.0 # 1분 넘게 늦었으면 지각 처리
     
@@ -1453,10 +1459,11 @@ async def staff_check_out(data: Dict):
             
         diff_minutes = (now - sched_time).total_seconds() / 60.0
         
-        if diff_minutes < -10.0:
-            raise HTTPException(status_code=400, detail=f"퇴근 스케줄 종료 10분 전부터만 퇴근 등록이 가능합니다. (퇴근예정: {sched_end_str})")
-        elif diff_minutes > 10.0:
-            raise HTTPException(status_code=400, detail=f"퇴근 허용 시간(10분)을 초과했습니다. 점주 수동 연장 승인을 받으세요. (퇴근예정: {sched_end_str})")
+        # 전후 5분 수립
+        if diff_minutes < -5.0:
+            raise HTTPException(status_code=400, detail=f"퇴근 스케줄 종료 5분 전부터만 퇴근 등록이 가능합니다. (퇴근예정: {sched_end_str})")
+        elif diff_minutes > 5.0:
+            raise HTTPException(status_code=400, detail=f"퇴근 허용 시간(5분)을 초과했습니다. 점주 수동 연장 승인을 받으세요. (퇴근예정: {sched_end_str})")
             
     # 근무시간 계산
     check_in_dt = datetime.fromisoformat(active_log['check_in_time'])
@@ -1512,6 +1519,24 @@ async def get_staff_payroll(staff_id: str, month: Optional[str] = None):
         "net_payroll": net_payroll,
         "attendance_logs": logs
     }
+
+@app.post("/api/attendance/pay/{staff_id}")
+async def pay_staff_endpoint(staff_id: str):
+    from .database import get_db_conn
+    conn = get_db_conn()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE table_attendance_logs SET paid = TRUE WHERE staff_id = %s", (staff_id,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        # Broadcast refresh
+        await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "bundle_id": f"EMP-{staff_id}"})
+        return {"status": "success", "message": f"Successfully paid all logs for staff {staff_id}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.websocket("/ws/kitchen")
 async def ws_kitchen(websocket: WebSocket):

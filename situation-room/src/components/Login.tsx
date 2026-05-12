@@ -6,6 +6,13 @@ interface LoginProps {
     bundles: any[];
 }
 
+const hashPassword = async (password: string): Promise<string> => {
+    const msgUint8 = new TextEncoder().encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
 export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
     const [id, setId] = useState('');
     const [pw, setPw] = useState('');
@@ -56,16 +63,19 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
         return Array.from(storesMap.entries()).map(([name, id]) => ({ name, id }));
     }, [bundles]);
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         
+        const hashedPw = await hashPassword(pw);
+        
         // 지식 풀에서 사용자 정보 검색 (PersonalInfos 타입)
-        const userBundle = bundles.find(b => 
-            b.type === 'PersonalInfos' && 
-            b.items.find((i: any) => i.name === '아이디')?.value === id &&
-            b.items.find((i: any) => i.name === '비밀번호')?.value === pw
-        );
+        const userBundle = bundles.find(b => {
+            if (b.type !== 'PersonalInfos') return false;
+            const bId = b.items.find((i: any) => i.name === '아이디')?.value;
+            const bPw = b.items.find((i: any) => i.name === '비밀번호')?.value;
+            return bId === id && (bPw === hashedPw || bPw === pw);
+        });
 
         if (userBundle) {
             const status = userBundle.status || 'pending';
@@ -174,6 +184,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                 finalStoreId = matchedStore ? matchedStore.id : '';
             }
 
+            const hashedSignupPw = await hashPassword(pw);
+
             const signupBundle = {
                 id: `USER-${Date.now()}`,
                 type: 'PersonalInfos',
@@ -181,7 +193,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                 items: [
                     { name: '이름', value: name },
                     { name: '아이디', value: id },
-                    { name: '비밀번호', value: pw },
+                    { name: '비밀번호', value: hashedSignupPw },
                     { name: '권한', value: role },
                     { name: '사업자번호', value: regNo },
                     { name: '개업일자', value: openDate }
