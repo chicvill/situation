@@ -719,6 +719,9 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                                 <button onClick={() => handleSelectPaymentMethod('토스페이')} style={{ flex: 1, minWidth: '110px', padding: '10px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                                     🔵 토스페이 결제
                                 </button>
+                                <button onClick={() => handleSelectPaymentMethod('카카오페이')} style={{ flex: 1, minWidth: '110px', padding: '10px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#eab308', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                    🟡 카카오페이 결제
+                                </button>
                                 <button onClick={() => triggerStaffCallFlow('카운터 현금결제')} style={{ flex: 1, minWidth: '110px', padding: '10px', background: '#f1f5f9', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                                     🏦 카운터 현금
                                 </button>
@@ -867,6 +870,9 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                             </button>
                             <button onClick={() => handleSelectPaymentMethod('토스페이')} className="suggestion-chip special" style={{ border: '1px solid #3b82f6', background: '#eff6ff', color: '#1e40af', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
                                 🔵 토스페이 결제
+                            </button>
+                            <button onClick={() => handleSelectPaymentMethod('카카오페이')} className="suggestion-chip special" style={{ border: '1px solid #facc15', background: '#fef9c3', color: '#854d0e', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
+                                🟡 카카오페이 결제
                             </button>
                             <button onClick={() => triggerStaffCallFlow('카운터 현금결제')} className="suggestion-chip" style={{ border: '1px solid #cbd5e1', background: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
                                 🏦 카운터 현금 결제
