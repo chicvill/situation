@@ -117,6 +117,12 @@ function App() {
       setActiveTab('guide');
       setUser(guest);
       return;
+    } else if (mode === 'manual') {
+      // 매뉴얼 QR 스캔 시 관리자 로그인을 거치지 않고 프리패스로 읽기전용/직원매뉴얼로 진입할 수 있게 가상 직원 역할 부여!
+      const staffGuest = { id: 'staff_guest', name: '직원', role: 'staff' };
+      setUser(staffGuest);
+      setActiveTab('manual');
+      return;
     } 
 
     // 2. 저장된 세션 복구 (영구 로그인)
@@ -356,7 +362,7 @@ function App() {
       case 'home': return <AdminDashboard bundles={bundles} storeDetails={storeDetails} />;
       case 'call': return <CallManager storeId={storeId} />;
       case 'inventory': return <LogicInventory />;
-      case 'manual': return <StoreManualEditor storeId={storeId} />;
+      case 'manual': return <StoreManualEditor storeId={storeId} user={user} />;
       case 'hr': return <HRManager bundles={bundles} user={user} storeDetails={storeDetails} />;
       case 'waiting': return <WaitingManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'waiting', sId, sName)} />;
       case 'reserve': return <ReservationManager bundles={bundles} />;
@@ -394,7 +400,7 @@ function App() {
             <button onClick={() => setIsMenuOpen(false)}>×</button>
           </div>
           <nav className="drawer-nav">
-            <button onClick={() => navigateTo('manual')}>📜 AI 전용 매뉴얼 설정</button>
+            <button onClick={() => navigateTo('manual')}>📜 매장 운영 매뉴얼</button>
             <button onClick={() => navigateTo('settings')}>⚙️ 매장 설정</button>
             <button onClick={() => navigateTo('menu')}>📔 메뉴 설정</button>
             <button onClick={() => navigateTo('hr')}>👥 직원관리 (직원 등록, 근태관리 등)</button>

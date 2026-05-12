@@ -46,7 +46,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
         {
             title: "📚 사용자 매뉴얼",
             label: "MU",
-            data: `${baseUrl}/?mode=admin&tab=manual&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
+            data: `${baseUrl}/?mode=manual&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
         },
         {
             title: "💳 자리에서 결제",
@@ -64,11 +64,17 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
             <style>
                 {`
                 @media print {
+                    @page {
+                        size: A4 portrait;
+                        margin: 8mm !important;
+                    }
                     body {
                         background: white !important;
                         color: black !important;
                         margin: 0 !important;
                         padding: 0 !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
                     }
                     .no-print {
                         display: none !important;
@@ -77,22 +83,27 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                         padding: 0 !important;
                         border: none !important;
                         background: white !important;
+                        width: 100% !important;
+                        max-width: 194mm !important; /* A4 가로폭 수납 보장 */
+                        max-height: 281mm !important; /* A4 세로높이 수납 보장 */
+                        margin: 0 auto !important;
+                        overflow: hidden !important; /* 초과 분량 2페이지 침범 금지 */
+                        box-sizing: border-box !important;
                     }
                     ${printMode === 'single' ? `
                     /* A4 용지 딱 1장 안에 전체 17개 타이트하게 밀착 배치 규칙 */
                     .qr-grid {
                         display: grid !important;
                         grid-template-columns: repeat(6, 1fr) !important;
-                        gap: 10px !important;
+                        gap: 8px !important;
                         width: 100% !important;
-                        max-height: 100vh !important;
                         box-sizing: border-box !important;
                     }
                     .qr-card-v2 {
                         break-inside: avoid !important;
                         border: 1.5px dashed #94a3b8 !important; /* 깔끔한 가위 오려내기 점선 */
                         border-radius: 8px !important;
-                        padding: 8px !important;
+                        padding: 6px !important;
                         background: white !important;
                         box-shadow: none !important;
                         display: flex !important;
@@ -100,6 +111,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                         align-items: center !important;
                         justify-content: space-between !important;
                         box-sizing: border-box !important;
+                        height: 85mm !important; /* 정확히 3줄 세로높이(255mm) 맞춤으로 오버플로우 방지 */
                     }
                     .qr-title-v2 {
                         font-size: 0.75rem !important;
@@ -108,11 +120,11 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                         margin: 0 0 4px 0 !important;
                     }
                     .qr-image-wrapper-v2 {
-                        width: 85px !important;
-                        height: 85px !important;
+                        width: 75px !important;
+                        height: 75px !important;
                         border: 1px solid #cbd5e1 !important;
                         border-radius: 6px !important;
-                        padding: 3px !important;
+                        padding: 2px !important;
                         background: white !important;
                     }
                     .qr-badge-v2 {
@@ -157,7 +169,6 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                         border-radius: 20px !important;
                         padding: 15px !important;
                         background: white !important;
-                        box-shadow: none !important;
                     }
                     .qr-badge-v2 {
                         font-size: 1.6rem !important;

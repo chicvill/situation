@@ -1139,18 +1139,6 @@ td {
         padding: 0 !important;
         background: white !important;
     }
-    .qr-grid {
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 15px !important;
-    }
-    .qr-card-v2 {
-        break-inside: avoid;
-        border: 1px solid #eee !important;
-        box-shadow: none !important;
-    }
-    .qr-print-layout {
-        padding: 0 !important;
-    }
 }
 
 .qr-inputs {
