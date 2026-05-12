@@ -50,9 +50,12 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
       setEditedStoreName(userBundle.store || storeName || '');
     }
   }, [showEditModal, userBundle, user, storeName]);
-
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!userBundle) {
+      setError('가입 신청 정보(PersonalInfos)를 데이터베이스에서 찾을 수 없습니다.');
+      return;
+    }
     if (!name.trim()) {
       setError('이름을 입력해 주세요.');
       return;
@@ -67,7 +70,6 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-      
       const currentHashedPw = userBundle.items.find((i: any) => i.name === '비밀번호')?.value || '';
       const finalHashedPw = password.trim() ? await hashPassword(password) : currentHashedPw;
 
