@@ -1098,8 +1098,31 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
             <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#f97316' }}>{storeName}</h1>
             <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Table {tableNo} | 스마트 원격 오더</div>
           </div>
-          <div style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)', padding: '6px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 800, color: '#f97316' }}>
-            🟢 연결됨
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {onNavigate && (
+              <button 
+                onClick={() => onNavigate('guide')}
+                style={{
+                  background: 'linear-gradient(135deg, #fef08a, #fde047)',
+                  border: '1px solid #facc15',
+                  padding: '6px 12px',
+                  borderRadius: '12px',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  color: '#1e293b',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}
+              >
+                🤖 AI 비서 호출
+              </button>
+            )}
+            <div style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)', padding: '6px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 800, color: '#f97316' }}>
+              🟢 연결됨
+            </div>
           </div>
         </div>
       </header>

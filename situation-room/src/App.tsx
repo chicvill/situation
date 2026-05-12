@@ -113,7 +113,8 @@ function App() {
     // 1. URL 모드 체크 (고객 주문 및 고객 대기 등록 등)
     if (mode === 'customer' || mode === 'waiting') {
       const guest = { id: 'guest', name: '손님', role: 'customer' };
-      setActiveTab(mode === 'waiting' ? 'guide' : 'orderV2');
+      // 고객이 스캔해서 들어왔을 때 키오스크의 무서움과 피로감을 덜어줄 AI 비서 대화식 창('guide')으로 즉시 다이렉트 랜딩 처리!
+      setActiveTab('guide');
       setUser(guest);
       return;
     } 
