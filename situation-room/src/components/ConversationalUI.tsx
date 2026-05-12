@@ -116,6 +116,15 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         }
     }, [messages, cart, orderStep, isPaying]);
 
+    const handleCloseWindow = () => {
+        addAiMessage(`이용해 주셔서 진심으로 감사합니다. 😊\n곧 스마트 브라우저 대화창이 종료됩니다. 즐거운 하루 되세요! 안녕히 가세요!`);
+        setTimeout(() => {
+            window.close();
+            // 브라우저의 일반 탭 보안(스크립트로 열지 않은 창은 자바스크립트로 직접 닫을 수 없음)을 고려한 안전 안내 장치
+            alert("식사가 안전하게 종료되었습니다. 이제 스마트폰 브라우저 창을 닫으셔도 좋습니다! 🚪👋");
+        }, 1500);
+    };
+
     // Send generic user input
     const handleSendMessage = async (text: string) => {
         if (!text.trim()) return;
@@ -129,6 +138,10 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         setMessages(prev => [...prev, userMsg]);
 
         // Intercept trigger keywords for conversational flow
+        if (text.includes('종료') || text.includes('닫기') || text.includes('나갈래') || text.includes('종료할래')) {
+            handleCloseWindow();
+            return;
+        }
         if (text.includes('주문') || text.includes('메뉴') || text.toLowerCase() === 'start') {
             startOrderingFlow();
             return;
@@ -588,20 +601,23 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                             </div>
                         )}
 
-                        {/* Follow up Action buttons (Always accessible on completed orders) */}
-                        {msg.showFollowUps && (
-                            <div style={{ display: 'flex', gap: '6px', marginTop: '12px', flexWrap: 'wrap' }}>
-                                <button onClick={startOrderingFlow} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: 800, color: '#eab308', cursor: 'pointer' }}>
-                                    ➕ 추가 주문하기
-                                </button>
-                                <button onClick={() => triggerStaffCallFlow('직원호출')} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: 800, color: '#ef4444', cursor: 'pointer' }}>
-                                    🔔 직원 호출 벨
-                                </button>
-                                <button onClick={triggerParkingFlow} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: 800, color: '#2563eb', cursor: 'pointer' }}>
-                                    🚗 주차 무료 인증
-                                </button>
-                            </div>
-                        )}
+                         {/* Follow up Action buttons (Always accessible on completed orders) */}
+                         {msg.showFollowUps && (
+                             <div style={{ display: 'flex', gap: '6px', marginTop: '12px', flexWrap: 'wrap' }}>
+                                 <button onClick={startOrderingFlow} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: 800, color: '#eab308', cursor: 'pointer' }}>
+                                     ➕ 추가 주문하기
+                                 </button>
+                                 <button onClick={() => triggerStaffCallFlow('직원호출')} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: 800, color: '#ef4444', cursor: 'pointer' }}>
+                                     🔔 직원 호출 벨
+                                 </button>
+                                 <button onClick={triggerParkingFlow} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: 800, color: '#2563eb', cursor: 'pointer' }}>
+                                     🚗 주차 무료 인증
+                                 </button>
+                                 <button onClick={handleCloseWindow} style={{ flex: 1, padding: '8px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: 800, color: '#475569', cursor: 'pointer' }}>
+                                     🚪 대화 종료 (닫기)
+                                 </button>
+                             </div>
+                         )}
 
                         <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '6px', textAlign: msg.sender === 'user' ? 'right' : 'left' }}>
                             {msg.timestamp}
@@ -623,6 +639,9 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                             </button>
                             <button onClick={triggerParkingFlow} className="suggestion-chip" style={{ border: '1px solid #93c5fd', background: '#dbeafe', fontWeight: 800, color: '#1e40af', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
                                 🚗 주차 할인 등록
+                            </button>
+                            <button onClick={handleCloseWindow} className="suggestion-chip" style={{ border: '1px solid #cbd5e1', background: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
+                                🚪 대화 종료
                             </button>
                         </>
                     )}
@@ -684,6 +703,9 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                             </button>
                             <button onClick={triggerParkingFlow} className="suggestion-chip" style={{ border: '1px solid #cbd5e1', background: 'white', color: '#1e40af', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
                                 🚗 주차 등록 갱신
+                            </button>
+                            <button onClick={handleCloseWindow} className="suggestion-chip" style={{ border: '1px solid #cbd5e1', background: '#f1f5f9', color: '#ef4444', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>
+                                🚪 대화 종료
                             </button>
                         </>
                     )}
