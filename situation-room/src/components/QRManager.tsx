@@ -9,7 +9,7 @@ interface Props {
 export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initialStoreName }) => {
     const [wifiSSID, setWifiSSID] = useState('MQnet_Wifi');
     const [wifiPass, setWifiPass] = useState('12345678');
-    const [printMode, setPrintMode] = useState<'a4' | 'grid'>('a4'); // 'a4' (1장 가득) 또는 'grid' (모아찍기)
+    const [printMode, setPrintMode] = useState<'single' | 'a4' | 'grid'>('single'); // 디폴트는 'single' (A4 한 장에 전체 배치)
     
     // 매장 정보 추출
     const safeBundles = Array.isArray(bundles) ? bundles : [];
@@ -28,8 +28,8 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
             data: `WIFI:S:${wifiSSID};T:WPA;P:${wifiPass};;`,
             fields: (
                 <div className="qr-inputs no-print" style={{ marginTop: '10px' }}>
-                    <input type="text" value={wifiSSID} onChange={(e) => setWifiSSID(e.target.value)} placeholder="SSID" style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', marginRight: '5px', fontSize: '12px' }} />
-                    <input type="text" value={wifiPass} onChange={(e) => setWifiPass(e.target.value)} placeholder="비밀번호" style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px' }} />
+                    <input type="text" value={wifiSSID} onChange={(e) => setWifiSSID(e.target.value)} placeholder="SSID" style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', marginRight: '5px', fontSize: '12px', width: '80px' }} />
+                    <input type="text" value={wifiPass} onChange={(e) => setWifiPass(e.target.value)} placeholder="비밀번호" style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px', width: '80px' }} />
                 </div>
             )
         },
@@ -55,8 +55,8 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
         }
     ];
 
-    // 인쇄 시 깨짐 방지를 위해 A4 모드일 때는 500x500 고해상도, 그리드 모드일 때는 250x250 해상도로 자동 고품질화!
-    const getQRUri = (data: string) => `https://api.qrserver.com/v1/create-qr-code/?size=${printMode === 'a4' ? '500x500' : '250x250'}&data=${encodeURIComponent(data)}`;
+    // 인쇄 시 깨짐 방지를 위해 해상도 동적 설정 (모아찍기는 200x200, 낱장 A4는 500x500)
+    const getQRUri = (data: string) => `https://api.qrserver.com/v1/create-qr-code/?size=${printMode === 'a4' ? '500x500' : '200x200'}&data=${encodeURIComponent(data)}`;
 
     return (
         <div className="qr-manager-container animate-fade-in" style={{ padding: '20px' }}>
@@ -67,11 +67,65 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                     body {
                         background: white !important;
                         color: black !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
                     }
                     .no-print {
                         display: none !important;
                     }
-                    ${printMode === 'a4' ? `
+                    .qr-print-layout {
+                        padding: 0 !important;
+                        border: none !important;
+                        background: white !important;
+                    }
+                    ${printMode === 'single' ? `
+                    /* A4 용지 딱 1장 안에 전체 17개 타이트하게 밀착 배치 규칙 */
+                    .qr-grid {
+                        display: grid !important;
+                        grid-template-columns: repeat(6, 1fr) !important;
+                        gap: 10px !important;
+                        width: 100% !important;
+                        max-height: 100vh !important;
+                        box-sizing: border-box !important;
+                    }
+                    .qr-card-v2 {
+                        break-inside: avoid !important;
+                        border: 1.5px dashed #94a3b8 !important; /* 깔끔한 가위 오려내기 점선 */
+                        border-radius: 8px !important;
+                        padding: 8px !important;
+                        background: white !important;
+                        box-shadow: none !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        align-items: center !important;
+                        justify-content: space-between !important;
+                        box-sizing: border-box !important;
+                    }
+                    .qr-title-v2 {
+                        font-size: 0.75rem !important;
+                        font-weight: 800 !important;
+                        color: #0f172a !important;
+                        margin: 0 0 4px 0 !important;
+                    }
+                    .qr-image-wrapper-v2 {
+                        width: 85px !important;
+                        height: 85px !important;
+                        border: 1px solid #cbd5e1 !important;
+                        border-radius: 6px !important;
+                        padding: 3px !important;
+                        background: white !important;
+                    }
+                    .qr-badge-v2 {
+                        font-size: 0.65rem !important;
+                        padding: 2px 8px !important;
+                        margin-top: 4px !important;
+                        border-radius: 4px !important;
+                        font-weight: 800 !important;
+                    }
+                    .qr-url-text {
+                        display: none !important; /* 공간 절약을 위해 URL 텍스트 숨김 */
+                    }
+                    ` : printMode === 'a4' ? `
                     /* A4 용지 1장 가득 채우는 개별 페이지 출력 규칙 */
                     .qr-grid {
                         display: block !important;
@@ -122,7 +176,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                         font-family: monospace !important;
                     }
                     ` : `
-                    /* 모아찍기 컴팩트 스티커 규칙 (한 장에 여러 개 인쇄) */
+                    /* 모아찍기 컴팩트 스티커 규칙 (3열 그리드) */
                     .qr-grid {
                         display: grid !important;
                         grid-template-columns: repeat(3, 1fr) !important;
@@ -147,6 +201,21 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                     {/* 인쇄 스타일 셀렉터 */}
                     <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                         <button 
+                            onClick={() => setPrintMode('single')} 
+                            style={{ 
+                                padding: '8px 16px', 
+                                borderRadius: '8px', 
+                                border: printMode === 'single' ? '2px solid var(--accent-orange)' : '1px solid var(--border)', 
+                                background: printMode === 'single' ? '#f9731615' : 'white', 
+                                color: printMode === 'single' ? 'var(--accent-orange)' : 'var(--text-main)',
+                                fontWeight: '800', 
+                                fontSize: '0.85rem',
+                                cursor: 'pointer' 
+                            }}
+                        >
+                            📄 A4 1장에 전체 모아찍기 (기본값)
+                        </button>
+                        <button 
                             onClick={() => setPrintMode('a4')} 
                             style={{ 
                                 padding: '8px 16px', 
@@ -159,7 +228,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                                 cursor: 'pointer' 
                             }}
                         >
-                            📄 A4 1장씩 가득 인쇄 (권장)
+                            📐 A4 1장에 1개씩 크게 인쇄
                         </button>
                         <button 
                             onClick={() => setPrintMode('grid')} 
@@ -185,27 +254,49 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
             </header>
 
             <div className="qr-print-layout" style={{ background: 'white', padding: '25px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                <div className="qr-grid" style={{ display: 'grid', gridTemplateColumns: printMode === 'a4' ? 'repeat(auto-fill, minmax(280px, 1fr))' : 'repeat(3, 1fr)', gap: '25px' }}>
+                <div className="qr-grid" style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: printMode === 'single' ? 'repeat(6, 1fr)' : printMode === 'a4' ? 'repeat(auto-fill, minmax(280px, 1fr))' : 'repeat(3, 1fr)', 
+                    gap: printMode === 'single' ? '12px' : '25px' 
+                }}>
                     {qrItems.map((item, idx) => (
-                        <div key={idx} className="qr-card-v2" style={{ border: '1px solid #f1f5f9', background: '#fafafa', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                            <h3 className="qr-title-v2" style={{ margin: '0 0 15px 0', fontSize: '1.15rem', fontWeight: '900', color: '#1e293b' }}>{item.title}</h3>
-                            <div className="qr-image-wrapper-v2" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px', width: '160px', height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div key={idx} className="qr-card-v2" style={{ 
+                            border: printMode === 'single' ? '1.5px dashed #cbd5e1' : '1px solid #f1f5f9', 
+                            background: '#fafafa', 
+                            borderRadius: '12px', 
+                            padding: printMode === 'single' ? '10px' : '20px', 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            alignItems: 'center', 
+                            textAlign: 'center' 
+                        }}>
+                            <h3 className="qr-title-v2" style={{ margin: '0 0 10px 0', fontSize: printMode === 'single' ? '0.85rem' : '1.15rem', fontWeight: '900', color: '#1e293b' }}>{item.title}</h3>
+                            <div className="qr-image-wrapper-v2" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: printMode === 'single' ? '4px' : '10px', width: printMode === 'single' ? '90px' : '160px', height: printMode === 'single' ? '90px' : '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <img src={getQRUri(item.data)} alt="QR Code" style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }} />
                             </div>
-                            <div className="qr-badge-v2" style={{ background: '#0f172a', color: 'white', borderRadius: '50px', padding: '4px 15px', fontSize: '0.85rem', fontWeight: '900', marginTop: '15px', letterSpacing: '0.5px' }}>{item.label}</div>
-                            <div className="qr-url-text" style={{ fontSize: '0.7rem', color: '#64748b', wordBreak: 'break-all', marginTop: '12px', fontFamily: 'monospace', maxWidth: '200px' }}>{item.data}</div>
+                            <div className="qr-badge-v2" style={{ background: '#0f172a', color: 'white', borderRadius: '50px', padding: printMode === 'single' ? '2px 8px' : '4px 15px', fontSize: printMode === 'single' ? '0.65rem' : '0.85rem', fontWeight: '900', marginTop: printMode === 'single' ? '8px' : '15px', letterSpacing: '0.5px' }}>{item.label}</div>
+                            {printMode !== 'single' && <div className="qr-url-text" style={{ fontSize: '0.7rem', color: '#64748b', wordBreak: 'break-all', marginTop: '12px', fontFamily: 'monospace', maxWidth: '200px' }}>{item.data}</div>}
                             {item.fields}
                         </div>
                     ))}
                     
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(num => (
-                        <div key={num} className="qr-card-v2" style={{ border: '1px solid #f1f5f9', background: '#fafafa', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-                            <h3 className="qr-title-v2" style={{ margin: '0 0 15px 0', fontSize: '1.15rem', fontWeight: '900', color: '#1e293b' }}>Table {num}</h3>
-                            <div className="qr-image-wrapper-v2" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px', width: '160px', height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div key={num} className="qr-card-v2" style={{ 
+                            border: printMode === 'single' ? '1.5px dashed #cbd5e1' : '1px solid #f1f5f9', 
+                            background: '#fafafa', 
+                            borderRadius: '12px', 
+                            padding: printMode === 'single' ? '10px' : '20px', 
+                            display: 'flex', 
+                            flexDirection: 'column', 
+                            alignItems: 'center', 
+                            textAlign: 'center' 
+                        }}>
+                            <h3 className="qr-title-v2" style={{ margin: '0 0 10px 0', fontSize: printMode === 'single' ? '0.85rem' : '1.15rem', fontWeight: '900', color: '#1e293b' }}>Table {num}</h3>
+                            <div className="qr-image-wrapper-v2" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: printMode === 'single' ? '4px' : '10px', width: printMode === 'single' ? '90px' : '160px', height: printMode === 'single' ? '90px' : '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <img src={getQRUri(`${baseUrl}/?mode=customer&table=${num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`)} alt={`Table ${num} QR`} style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }} />
                             </div>
-                            <div className="qr-badge-v2" style={{ background: 'var(--accent-orange)', color: 'white', borderRadius: '50px', padding: '4px 15px', fontSize: '0.85rem', fontWeight: '900', marginTop: '15px', letterSpacing: '0.5px' }}>{`T${num}`}</div>
-                            <div className="qr-url-text" style={{ fontSize: '0.7rem', color: '#64748b', wordBreak: 'break-all', marginTop: '12px', fontFamily: 'monospace', maxWidth: '200px' }}>{`${baseUrl}/?mode=customer&table=${num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`}</div>
+                            <div className="qr-badge-v2" style={{ background: 'var(--accent-orange)', color: 'white', borderRadius: '50px', padding: printMode === 'single' ? '2px 8px' : '4px 15px', fontSize: printMode === 'single' ? '0.65rem' : '0.85rem', fontWeight: '900', marginTop: printMode === 'single' ? '8px' : '15px', letterSpacing: '0.5px' }}>{`T${num}`}</div>
+                            {printMode !== 'single' && <div className="qr-url-text" style={{ fontSize: '0.7rem', color: '#64748b', wordBreak: 'break-all', marginTop: '12px', fontFamily: 'monospace', maxWidth: '200px' }}>{`${baseUrl}/?mode=customer&table=${num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`}</div>}
                         </div>
                     ))}
                 </div>
