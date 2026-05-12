@@ -26,6 +26,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
 }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
 
   // Editable fields
@@ -111,6 +112,89 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
       setError(err.message || '서버 통신 오류가 발생했습니다.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Filter pending staff/managers for this store (for owner role)
+  const pendingStaffList = React.useMemo(() => {
+    if (user?.role !== 'owner') return [];
+    return bundles.filter(b => {
+      if (b.type !== 'PersonalInfos' || b.status === 'approved') return false;
+      // Filter for managers and staff of the owner's store
+      if (b.store_id !== user.storeId) return false;
+      const role = b.items.find((i: any) => i.name === '권한')?.value;
+      return role === 'manager' || role === 'staff';
+    });
+  }, [bundles, user]);
+
+  // Filter pending owners (for admin role)
+  const pendingOwnerList = React.useMemo(() => {
+    if (user?.role !== 'admin') return [];
+    return bundles.filter(b => {
+      if (b.type !== 'PersonalInfos' || b.status === 'approved') return false;
+      const role = b.items.find((i: any) => i.name === '권한')?.value;
+      return role === 'owner';
+    });
+  }, [bundles, user]);
+
+  const handleApproveStaff = async (bundle: any) => {
+    const staffName = bundle.items.find((i: any) => i.name === '이름')?.value || '-';
+    if (!window.confirm(`✨ ${staffName} 사원의 가입 신청을 승인하시겠습니까?`)) return;
+
+    setIsProcessing(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      
+      // Update the PersonalInfos bundle status to approved
+      const response = await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...bundle,
+          status: 'approved',
+          store: user.storeName || bundle.store,
+          store_id: user.storeId || bundle.store_id
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('가입 승인 처리에 실패했습니다.');
+      }
+
+      alert(`🎉 ${staffName} 사원의 가입 승인이 완료되었습니다!\n이제 해당 사원은 본인 계정으로 출퇴근 및 근무 관리가 가능합니다.`);
+    } catch (err: any) {
+      console.error(err);
+      alert(`❌ 오류: ${err.message || '가입 승인 중 통신 실패'}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleApproveOwner = async (bundle: any) => {
+    const ownerName = bundle.items.find((i: any) => i.name === '이름')?.value || '-';
+    if (!window.confirm(`✨ ${ownerName} 사장님의 가입 신청을 승인하고 매장 등록 페이지로 이동하시겠습니까?`)) return;
+
+    setIsProcessing(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      
+      const response = await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...bundle, status: 'approved' }),
+      });
+
+      if (!response.ok) {
+        throw new Error('점주 가입 승인 처리에 실패했습니다.');
+      }
+
+      alert(`🎉 ${ownerName} 사장님 가입 승인이 완료되었습니다!\n신규 매장 생성을 완료하기 위해 매장 등록 화면으로 이동합니다.`);
+      onNavigate('admin'); // Navigate to the AdminStoreManager
+    } catch (err: any) {
+      console.error(err);
+      alert(`❌ 오류: ${err.message}`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -241,6 +325,142 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
           </button>
         </div>
       </div>
+
+      {/* 2.5 Pending Approvals Card (for Owner / Admin) */}
+      {((user?.role === 'owner' && pendingStaffList.length > 0) || (user?.role === 'admin' && pendingOwnerList.length > 0)) && (
+        <div 
+          className="glass-panel animate-fade-in"
+          style={{
+            background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(249, 115, 22, 0.04))',
+            border: '2px solid var(--accent-orange)',
+            borderRadius: '24px',
+            padding: '24px',
+            marginBottom: '35px',
+            boxShadow: '0 12px 30px rgba(249, 115, 22, 0.1)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          {/* Subtle glow/sparkle animation background element */}
+          <div style={{ position: 'absolute', top: '-50px', right: '-50px', width: '150px', height: '150px', borderRadius: '50%', background: 'rgba(249, 115, 22, 0.15)', filter: 'blur(30px)', pointerEvents: 'none' }}></div>
+          
+          <h4 style={{ fontSize: '1.15rem', fontWeight: '900', margin: '0 0 16px 0', color: 'var(--accent-orange)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>⚠️</span> 신규 회원 가입 승인 대기중
+          </h4>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {user?.role === 'owner' && pendingStaffList.map(b => {
+              const name = b.items.find((i: any) => i.name === '이름')?.value || '-';
+              const requestedRole = b.items.find((i: any) => i.name === '권한')?.value === 'manager' ? '점장' : '점원';
+              const signupId = b.items.find((i: any) => i.name === '아이디')?.value || '-';
+              
+              return (
+                <div 
+                  key={b.id}
+                  style={{
+                    background: 'rgba(0,0,0,0.15)',
+                    padding: '16px 20px',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    border: '1px solid rgba(249, 115, 22, 0.15)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{ textAlign: 'left' }}>
+                    <strong style={{ fontSize: '1.05rem', color: 'var(--text-main)' }}>{name}님 가입 신청</strong>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', gap: '10px' }}>
+                      <span>희망직책: <strong style={{ color: 'var(--accent-orange)' }}>{requestedRole}</strong></span>
+                      <span>•</span>
+                      <span>아이디: <strong style={{ color: 'var(--text-main)' }}>{signupId}</strong></span>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => handleApproveStaff(b)}
+                    disabled={isProcessing}
+                    style={{
+                      background: 'var(--success)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '10px',
+                      padding: '8px 18px',
+                      fontSize: '0.85rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                    onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    ✨ 즉시 승인
+                  </button>
+                </div>
+              );
+            })}
+
+            {user?.role === 'admin' && pendingOwnerList.map(b => {
+              const name = b.items.find((i: any) => i.name === '이름')?.value || '-';
+              const signupId = b.items.find((i: any) => i.name === '아이디')?.value || '-';
+              const businessNo = b.items.find((i: any) => i.name === '사업자번호')?.value || '-';
+              
+              return (
+                <div 
+                  key={b.id}
+                  style={{
+                    background: 'rgba(0,0,0,0.15)',
+                    padding: '16px 20px',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    border: '1px solid rgba(249, 115, 22, 0.15)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <div style={{ textAlign: 'left' }}>
+                    <strong style={{ fontSize: '1.05rem', color: 'var(--text-main)' }}>{name}님 가입 신청 (점주)</strong>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', gap: '10px' }}>
+                      <span>아이디: <strong style={{ color: 'var(--text-main)' }}>{signupId}</strong></span>
+                      <span>•</span>
+                      <span>사업자번호: <strong style={{ color: 'var(--text-main)' }}>{businessNo}</strong></span>
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={() => handleApproveOwner(b)}
+                    disabled={isProcessing}
+                    style={{
+                      background: 'var(--success)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '10px',
+                      padding: '8px 18px',
+                      fontSize: '0.85rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                    onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    ✨ 즉시 승인 및 매장 등록
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 3. Quick Links Section */}
       <div>

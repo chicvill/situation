@@ -333,7 +333,6 @@ function App() {
     return <PaymentPopupHandler safeBundles={safeBundles} />;
   }
 
-  // 시스템 관리자(Admin)인 경우 매장 선택 및 관리 화면 노출
   if (user?.role === 'admin' && !selectedAdminStore) {
     return (
       <AdminStoreManager 
@@ -343,6 +342,7 @@ function App() {
           setActiveTab('counter');
         }}
         onLogout={handleLogout}
+        bundles={bundles}
       />
     );
   }

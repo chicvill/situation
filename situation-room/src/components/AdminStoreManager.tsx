@@ -15,9 +15,10 @@ interface Store {
 interface AdminStoreManagerProps {
   onSelectStore: (storeId: string, storeName: string) => void;
   onLogout: () => void;
+  bundles?: any[];
 }
 
-export const AdminStoreManager = ({ onSelectStore, onLogout }: AdminStoreManagerProps) => {
+export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: AdminStoreManagerProps) => {
   const [stores, setStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,6 +35,59 @@ export const AdminStoreManager = ({ onSelectStore, onLogout }: AdminStoreManager
   const [formMonthlyFee, setFormMonthlyFee] = useState(50000);
   const [formPaymentStatus, setFormPaymentStatus] = useState('정상');
   const [formMessage, setFormMessage] = useState('');
+
+  // 가입 대기 점주 목록 필터링
+  const pendingOwners = useMemo(() => {
+    return bundles.filter(b => {
+      if (b.type !== 'PersonalInfos' || b.status === 'approved') return false;
+      const role = b.items.find((i: any) => i.name === '권한')?.value;
+      return role === 'owner';
+    });
+  }, [bundles]);
+
+  // 가입 승인 및 매장 등록 모달 자동 바인딩 핸들러
+  const handleApproveAndRegister = async (bundle: any) => {
+    const ownerName = bundle.items.find((i: any) => i.name === '이름')?.value || '';
+    if (!window.confirm(`✨ ${ownerName} 사장님의 가입 신청을 승인하고 즉시 신규 매장 등록 절차로 연동하시겠습니까?`)) return;
+    
+    setIsLoading(true);
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      
+      // 1. 점주 승인 (PUT /api/bundle/{id} with status: 'approved')
+      const res = await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...bundle, status: 'approved' }),
+      });
+      
+      if (!res.ok) {
+        throw new Error('가입 승인 처리에 실패했습니다.');
+      }
+
+      // 2. 가입한 점주의 상점 등록 필드 오토 바인딩
+      const ownerId = bundle.items.find((i: any) => i.name === '아이디')?.value || '';
+      
+      setEditingStore(null);
+      // store_id는 store_id가 있으면 사용하고 없으면 store-아이디 형식으로 바인딩
+      setFormStoreId(bundle.store_id || `store-${ownerId || Date.now().toString().slice(-4)}`);
+      setFormStoreName(bundle.store || '');
+      setFormOwnerName(ownerName);
+      setFormOwnerId(ownerId);
+      setFormMonthlyFee(50000); // 디폴트 월회비
+      setFormPaymentStatus('정상');
+      setFormMessage('');
+      
+      // 3. 매장 등록 모달 열기
+      setIsModalOpen(true);
+      alert(`🎉 ${ownerName} 사장님 계정 승인이 완료되었습니다!\n\n현재 화면에 열린 '가맹 매장 등록' 서식에 매장정보가 자동으로 대입되어 기입되었습니다. 우측 하단의 [가맹점 저장] 버튼을 누르시면 매장 신규 생성이 완료됩니다.`);
+    } catch (err: any) {
+      console.error(err);
+      alert(`❌ 오류: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const fetchStores = async () => {
     setIsLoading(true);
@@ -299,6 +353,109 @@ export const AdminStoreManager = ({ onSelectStore, onLogout }: AdminStoreManager
           </div>
 
         </div>
+
+        {/* Pending Approvals Section */}
+        {pendingOwners.length > 0 && (
+          <div className="glass-panel" style={{
+            background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(249, 115, 22, 0.03) 100%)',
+            border: '1.5px solid rgba(249, 115, 22, 0.25)',
+            borderRadius: '24px',
+            padding: '28px 32px',
+            marginBottom: '35px',
+            boxShadow: '0 12px 30px rgba(249, 115, 22, 0.05)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+              <span style={{ fontSize: '1.8rem' }}>🏢</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-orange)' }}>
+                  신규 점주 가입 신청 승인 대기 ({pendingOwners.length}건)
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: '#64748b', fontWeight: 500 }}>
+                  승인 시 계정이 활성화되며 즉시 신규 매장(가맹점) 등록 절차로 자동 연결됩니다.
+                </p>
+              </div>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
+              {pendingOwners.map(b => {
+                const name = b.items.find((i: any) => i.name === '이름')?.value || '-';
+                const id = b.items.find((i: any) => i.name === '아이디')?.value || '-';
+                const bizNo = b.items.find((i: any) => i.name === '사업자번호')?.value || '-';
+                const openDate = b.items.find((i: any) => i.name === '개업일자')?.value || '-';
+                const storeName = b.store || '-';
+                
+                return (
+                  <div key={b.id} style={{ 
+                    background: '#ffffff', 
+                    padding: '20px', 
+                    borderRadius: '18px', 
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.02)', 
+                    border: '1px solid rgba(249, 115, 22, 0.12)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '15px'
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <span style={{ background: 'rgba(249, 115, 22, 0.1)', color: 'var(--accent-orange)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800 }}>
+                          신청 매장: {storeName}
+                        </span>
+                        <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600 }}>{b.timestamp || '방금 전'}</span>
+                      </div>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div style={{ fontSize: '0.92rem', color: '#334155', fontWeight: 500 }}>
+                          <span style={{ color: '#94a3b8', width: '90px', display: 'inline-block' }}>👤 대표자명</span>
+                          <strong style={{ color: '#0f172a', fontSize: '1rem' }}>{name}</strong> <span style={{ color: '#64748b', fontSize: '0.85rem' }}>({id})</span>
+                        </div>
+                        <div style={{ fontSize: '0.9rem', color: '#334155', fontWeight: 500 }}>
+                          <span style={{ color: '#94a3b8', width: '90px', display: 'inline-block' }}>🔢 사업자번호</span>
+                          <code style={{ color: '#0f172a', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '0.82rem', fontWeight: 'bold' }}>{bizNo}</code>
+                        </div>
+                        <div style={{ fontSize: '0.9rem', color: '#334155', fontWeight: 500 }}>
+                          <span style={{ color: '#94a3b8', width: '90px', display: 'inline-block' }}>📅 개업일자</span>
+                          <span style={{ color: '#334155' }}>{openDate}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      onClick={() => handleApproveAndRegister(b)}
+                      style={{ 
+                        width: '100%',
+                        padding: '12px',
+                        background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '12px',
+                        fontSize: '0.9rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 6px 15px rgba(249, 115, 22, 0.3)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.2)';
+                      }}
+                    >
+                      ✨ 가입 승인 및 매장 등록 시작
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Search & Actions Bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '15px' }}>

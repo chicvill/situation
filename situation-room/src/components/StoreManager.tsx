@@ -88,7 +88,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, onNavigate 
       }
 
       const encodedKey = encodeURIComponent(SERVICE_KEY);
-      const response = await fetch(`https://api.odcloud.kr/api/nts-prompts/v1/validate?serviceKey=${encodedKey}`, {
+      const response = await fetch(`https://api.odcloud.kr/api/nts-businessman/v1/validate?serviceKey=${encodedKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

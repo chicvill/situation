@@ -18,6 +18,8 @@ from .database import (
 import ai_engine
 from psycopg2.extras import RealDictCursor  # type: ignore
 
+
+
 # --- Render Keep-Alive ---
 async def keep_alive_task():
     """Render 서버가 잠들지 않도록 10분마다 DB 작업 및 셀프 핑을 수행합니다."""
@@ -53,6 +55,21 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Start render keepalive task
     asyncio.create_task(keep_alive_task())
+    
+    # 사업자 번호 및 매장명 중복 충돌 방지를 위한 시크앤프레시, 시크빌 매장 사전 일괄 삭제
+    try:
+        conn = get_db_conn()
+        if conn:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM stores WHERE name IN ('시크앤프레시', '시크빌')")
+            deleted_rows = cur.rowcount
+            conn.commit()
+            cur.close()
+            conn.close()
+            print(f"🧹 [Startup Cleanup] Deleted {deleted_rows} duplicate stores ('시크앤프레시', '시크빌') from PostgreSQL database.")
+    except Exception as e:
+        print(f"⚠️ [Startup Cleanup] Failed to cleanup duplicate stores: {e}")
+        
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -291,8 +308,11 @@ async def get_pool(store_id: Optional[str] = None):
     pool.extend(attendance_bundles)
     
     if store_id and store_id != "Total":
-        # store_id가 일치하거나 매장 정보가 없는(공용) 번들만 반환
-        return [b for b in pool if b.get("store_id") == store_id or not b.get("store_id")]
+        # store_id가 일치하거나 매장 정보가 없는(공용) 번들, 또는 회원가입 신청서(PersonalInfos)만 반환
+        return [
+            b for b in pool 
+            if b.get("store_id") == store_id or not b.get("store_id") or b.get("type") == "PersonalInfos"
+        ]
     return pool
 
 @app.put("/api/bundle/{bundle_id}")
