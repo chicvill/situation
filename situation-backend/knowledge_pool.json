@@ -1985,5 +1985,40 @@
     "table": null,
     "Package": "매장",
     "payment": null
+  },
+  {
+    "id": "USER-1778574563984",
+    "type": "PersonalInfos",
+    "title": "점원01님 가입 신청",
+    "items": [
+      {
+        "name": "이름",
+        "value": "점원01"
+      },
+      {
+        "name": "아이디",
+        "value": "worker01"
+      },
+      {
+        "name": "비밀번호",
+        "value": "1212"
+      },
+      {
+        "name": "권한",
+        "value": "staff"
+      },
+      {
+        "name": "사업자번호",
+        "value": ""
+      },
+      {
+        "name": "개업일자",
+        "value": ""
+      }
+    ],
+    "status": "pending",
+    "timestamp": "2026. 5. 12. 오후 5:29:23",
+    "store": "미도리",
+    "store_id": ""
   }
 ]

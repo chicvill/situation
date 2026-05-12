@@ -24,6 +24,38 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
     const [isVerified, setIsVerified] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
 
+    // 지식 풀(bundles) 및 플랫폼 기본 제공 9대 프랜차이즈 매장 통합 추출 (현재 사용중인 모든 매장명 기본제공)
+    const availableStores = React.useMemo(() => {
+        const storesMap = new Map<string, string>(); // storeName -> storeId
+        
+        // 1. 플랫폼 고유의 9대 가맹점 기본 탑재
+        storesMap.set('대장금 수라간', 'store-korean');
+        storesMap.set('그레이스 하이테크 커피', 'store-coffee');
+        storesMap.set('대관령 황금 한우', 'store-beef');
+        storesMap.set('한옥마을 수제 초당순두부', 'store-tofu');
+        storesMap.set('우정 전주 돌솥비빔밥', 'store-bibim');
+        storesMap.set('취홍루', 'store-chinese');
+        storesMap.set('미도리 스시', 'store-japanese');
+        storesMap.set('시크앤프레시', 'store-1');
+        storesMap.set('라 벨라 이탈리아', 'store-western');
+
+        // 2. StoreConfig 번들에서 동적 수집된 데이터 병합 (가장 최신 데이터 덮어쓰기)
+        bundles.forEach(b => {
+            if (b.type === 'StoreConfig' && b.store && b.store !== 'Total' && b.store_id) {
+                storesMap.set(b.store, b.store_id);
+            }
+        });
+        
+        // 3. 기타 가용 정보에서도 추가 수집
+        bundles.forEach(b => {
+            if (b.store && b.store !== 'Total' && b.store_id) {
+                storesMap.set(b.store, b.store_id);
+            }
+        });
+
+        return Array.from(storesMap.entries()).map(([name, id]) => ({ name, id }));
+    }, [bundles]);
+
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -133,6 +165,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                 return;
             }
 
+            // 선택된 매장의 store_id 정밀 연동 및 대입 (점장/직원 회원가입 매칭)
+            let finalStoreId = '';
+            if (role === 'owner') {
+                finalStoreId = `store-${id}`;
+            } else {
+                const matchedStore = availableStores.find(st => st.name === storeName);
+                finalStoreId = matchedStore ? matchedStore.id : '';
+            }
+
             const signupBundle = {
                 id: `USER-${Date.now()}`,
                 type: 'PersonalInfos',
@@ -148,7 +189,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                 status: 'pending',
                 timestamp: new Date().toLocaleString(),
                 store: storeName || '미지정',
-                store_id: role === 'owner' ? `store-${id}` : '' // 점주는 자신의 ID 기반 매장 ID 가짐
+                store_id: finalStoreId
             };
 
             const response = await fetch(`${apiUrl}/api/bundle/${signupBundle.id}`, {
@@ -231,13 +272,31 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                             </div>
                             <div className="input-group">
                                 <label>{role === 'owner' ? '신규 매장명' : '소속 매장명'}</label>
-                                <input 
-                                    type="text" 
-                                    value={storeName} 
-                                    onChange={(e) => setStoreName(e.target.value)} 
-                                    placeholder="매장 이름을 입력하세요"
-                                    required 
-                                />
+                                {role === 'owner' ? (
+                                    <input 
+                                        type="text" 
+                                        value={storeName} 
+                                        onChange={(e) => setStoreName(e.target.value)} 
+                                        placeholder="매장 이름을 직접 입력하세요"
+                                        required 
+                                    />
+                                ) : (
+                                    <select
+                                        className="role-select"
+                                        value={storeName}
+                                        onChange={(e) => {
+                                            setStoreName(e.target.value);
+                                        }}
+                                        required
+                                    >
+                                        <option value="">-- 소속 매장을 선택하세요 --</option>
+                                        {availableStores.map((st, idx) => (
+                                            <option key={idx} value={st.name}>
+                                                {st.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
                             </div>
 
                             {role === 'owner' && (
