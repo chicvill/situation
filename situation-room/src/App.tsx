@@ -89,7 +89,13 @@ function App() {
     }
     if (u.role !== 'customer') {
       localStorage.setItem('mqnet_user', JSON.stringify(u));
-      setActiveTab('home');
+      const params = new URLSearchParams(window.location.search);
+      const mode = params.get('mode');
+      if (mode === 'kitchen' || mode === 'counter' || mode === 'hr' || mode === 'qr') {
+        setActiveTab(mode as MainTab);
+      } else {
+        setActiveTab('home');
+      }
     }
   };
 
@@ -148,7 +154,12 @@ function App() {
         const u = JSON.parse(savedUser);
         setUser(u);
         if (u.role !== 'customer') {
-          setActiveTab('home');
+          // URL 파라미터로 명시적인 목적지(mode)가 있다면 home 대신 해당 탭 유지
+          if (mode === 'kitchen' || mode === 'counter' || mode === 'hr' || mode === 'qr') {
+            // 아래의 mode 체크 로직에서 처리하도록 둠
+          } else {
+            setActiveTab('home');
+          }
         }
       } catch (e) {
         localStorage.removeItem('mqnet_user');
@@ -159,6 +170,8 @@ function App() {
       setActiveTab('kitchen');
     } else if (mode === 'counter') {
       setActiveTab('counter');
+    } else if (mode === 'hr') {
+      setActiveTab('hr');
     }
   }, []);
 
