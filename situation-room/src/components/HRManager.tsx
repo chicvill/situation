@@ -451,17 +451,61 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                     </div>
                     
                     <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <style>
+                            {`
+                            @media (max-width: 768px) {
+                                .mobile-responsive-table, .mobile-responsive-table tbody, .mobile-responsive-table tr, .mobile-responsive-table td {
+                                    display: block !important;
+                                    width: 100% !important;
+                                    box-sizing: border-box !important;
+                                }
+                                .mobile-responsive-table thead {
+                                    display: none !important; /* 모바일에서는 표 헤더 숨김 */
+                                }
+                                .mobile-responsive-table tr {
+                                    margin-bottom: 20px !important;
+                                    border: 1px solid var(--border) !important;
+                                    border-radius: 16px !important;
+                                    padding: 12px !important;
+                                    background: var(--surface) !important;
+                                    box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
+                                }
+                                .mobile-responsive-table td {
+                                    display: flex !important;
+                                    justify-content: space-between !important;
+                                    align-items: center !important;
+                                    text-align: right !important;
+                                    padding: 10px 5px !important;
+                                    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+                                    white-space: nowrap !important;
+                                }
+                                .mobile-responsive-table td:last-child {
+                                    border-bottom: none !important;
+                                    flex-direction: column !important;
+                                    align-items: flex-end !important;
+                                    gap: 10px !important;
+                                }
+                                .mobile-responsive-table td::before {
+                                    content: attr(data-label) !important;
+                                    font-weight: 800 !important;
+                                    color: var(--text-muted) !important;
+                                    text-align: left !important;
+                                    margin-right: 15px !important;
+                                }
+                            }
+                            `}
+                        </style>
+                        <table className="mobile-responsive-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
                                 <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                    <th style={{ padding: '14px 10px' }}>사원명</th>
-                                    <th style={{ padding: '14px 10px' }}>직책</th>
-                                    <th style={{ padding: '14px 10px' }}>계약 시급</th>
-                                    <th style={{ padding: '14px 10px' }}>누적 시간</th>
-                                    <th style={{ padding: '14px 10px' }}>총 누적임금</th>
-                                    <th style={{ padding: '14px 10px' }}>지불된 임금</th>
-                                    <th style={{ padding: '14px 10px', color: 'var(--accent-orange)' }}>미지급 임금</th>
-                                    <th style={{ padding: '14px 10px', textAlign: 'right' }}>급여 정산 및 관리</th>
+                                    <th style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>사원명(연락처)</th>
+                                    <th style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>직책</th>
+                                    <th style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>계약 시급</th>
+                                    <th style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>누적 시간</th>
+                                    <th style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>총 누적임금</th>
+                                    <th style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>지불된 임금</th>
+                                    <th style={{ padding: '14px 10px', color: 'var(--accent-orange)', whiteSpace: 'nowrap' }}>미지급 임금</th>
+                                    <th style={{ padding: '14px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>급여 정산 및 관리</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -492,41 +536,46 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                                                 schedule: JSON.parse(scheduleStr)
                                             })}
                                         >
-                                            <td style={{ padding: '16px 10px', fontWeight: '700' }}>
-                                                👤 {name}
-                                                {selectedEmployee?.id === id && <span style={{ color: 'var(--accent-orange)', marginLeft: '6px', fontSize: '0.75rem' }}>● 선택됨</span>}
+                                            <td data-label="사원명(연락처)" style={{ padding: '16px 10px', fontWeight: '800', fontSize: '1.05rem', color: 'var(--text-main)' }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    <div>
+                                                        👤 {name}
+                                                        {selectedEmployee?.id === id && <span style={{ color: 'var(--accent-orange)', marginLeft: '6px', fontSize: '0.75rem' }}>● 선택됨</span>}
+                                                    </div>
+                                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>📞 {id}</span>
+                                                </div>
                                             </td>
-                                            <td style={{ padding: '16px 10px' }}>
-                                                <span className={`role-badge ${role === '점장' ? 'owner-gold' : 'staff-blue'}`} style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: '6px' }}>
+                                            <td data-label="직책" style={{ padding: '16px 10px' }}>
+                                                <span className={`role-badge ${role === '점장' ? 'owner-gold' : 'staff-blue'}`} style={{ fontSize: '0.8rem', padding: '4px 10px', borderRadius: '8px' }}>
                                                     {role}
                                                 </span>
                                             </td>
-                                            <td style={{ padding: '16px 10px', fontWeight: '600' }}>
+                                            <td data-label="계약 시급" style={{ padding: '16px 10px', fontWeight: '700', color: 'var(--text-main)' }}>
                                                 {editingWage?.id === e.id ? (
                                                     <input 
                                                         autoFocus
                                                         defaultValue={wage} 
                                                         onBlur={(ev) => handleUpdateWage(e, ev.target.value)}
                                                         onKeyDown={(ev) => ev.key === 'Enter' && handleUpdateWage(e, (ev.target as any).value)}
-                                                        style={{ width: '80px', background: '#000', color: '#fff', border: '1px solid var(--accent-orange)', padding: '4px' }}
+                                                        style={{ width: '80px', background: 'var(--surface)', color: 'var(--text-main)', border: '2px solid var(--accent-orange)', padding: '6px', borderRadius: '6px' }}
                                                     />
                                                 ) : (
-                                                    <span onClick={(ev) => { ev.stopPropagation(); user.role === 'owner' && setEditingWage({ id: e.id, wage }); }} style={{ borderBottom: '1px dashed var(--accent-orange)' }}>
+                                                    <span onClick={(ev) => { ev.stopPropagation(); user.role === 'owner' && setEditingWage({ id: e.id, wage }); }} style={{ borderBottom: '2px dashed var(--accent-orange)', cursor: 'pointer' }}>
                                                         {parseInt(wage).toLocaleString()}원
                                                     </span>
                                                 )}
                                             </td>
-                                            <td style={{ padding: '16px 10px', opacity: 0.8 }}>{hours}시간</td>
-                                            <td style={{ padding: '16px 10px', fontWeight: '600' }}>{parseInt(cumulativeWage).toLocaleString()}원</td>
-                                            <td style={{ padding: '16px 10px', color: '#10b981', fontWeight: '600' }}>{parseInt(paidWage).toLocaleString()}원</td>
-                                            <td style={{ padding: '16px 10px', color: 'var(--accent-orange)', fontWeight: '700' }}>
+                                            <td data-label="누적 시간" style={{ padding: '16px 10px', opacity: 0.8, color: 'var(--text-main)' }}>{hours}시간</td>
+                                            <td data-label="총 누적임금" style={{ padding: '16px 10px', fontWeight: '700', color: 'var(--text-main)' }}>{parseInt(cumulativeWage).toLocaleString()}원</td>
+                                            <td data-label="지불된 임금" style={{ padding: '16px 10px', color: '#10b981', fontWeight: '800' }}>{parseInt(paidWage).toLocaleString()}원</td>
+                                            <td data-label="미지급 임금" style={{ padding: '16px 10px', color: 'var(--accent-orange)', fontWeight: '900', fontSize: '1.05rem' }}>
                                                 {parseInt(unpaidWage).toLocaleString()}원
                                             </td>
-                                            <td style={{ padding: '16px 10px', textAlign: 'right' }} onClick={(ev) => ev.stopPropagation()}>
-                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                            <td data-label="관리 옵션" style={{ padding: '16px 10px', textAlign: 'right' }} onClick={(ev) => ev.stopPropagation()}>
+                                                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                                                     <button 
                                                         onClick={() => setPayrollModal({ id, name, role, wage, hours, cumulativeWage, paidWage, unpaidWage })}
-                                                        style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text-main)', border: '1px solid var(--border)', borderRadius: '8px', padding: '6px 12px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
+                                                        style={{ background: 'var(--surface)', color: 'var(--text-main)', border: '1.5px solid var(--border)', borderRadius: '10px', padding: '8px 14px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}
                                                     >
                                                         📄 명세서 확인
                                                     </button>
@@ -534,13 +583,13 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                                                         <button 
                                                             onClick={() => handlePaySalary(id, name)}
                                                             className="confirm-btn success-green"
-                                                            style={{ fontSize: '0.75rem', padding: '6px 12px', borderRadius: '8px' }}
+                                                            style={{ fontSize: '0.8rem', padding: '8px 14px', borderRadius: '10px', fontWeight: '800' }}
                                                         >
                                                             💸 급여 지급
                                                         </button>
                                                     )}
                                                     {user.role === 'owner' && (
-                                                        <button onClick={() => handleResignEmployee(e)} className="del-btn" style={{ fontSize: '0.75rem', padding: '6px 12px', borderRadius: '8px' }}>퇴사</button>
+                                                        <button onClick={() => handleResignEmployee(e)} className="del-btn" style={{ fontSize: '0.8rem', padding: '8px 14px', borderRadius: '10px', fontWeight: '800' }}>퇴사</button>
                                                     )}
                                                 </div>
                                             </td>
