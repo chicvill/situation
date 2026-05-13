@@ -42,7 +42,14 @@ function App() {
     return (localStorage.getItem('situation_active_tab') as MainTab) || 'guide';
   });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [recognizedText, setRecognizedText] = useState("");
   const [isListening, setIsListening] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // 🌟 활성 대시보드 탭이 변경될 때마다 브라우저 로컬 저장소에 기억하여 F5 새로고침 시 화면을 복원합니다.
   useEffect(() => {
