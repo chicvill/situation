@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import { KitchenDisplay } from './components/KitchenDisplay';
+import { TOSS_CLIENT_KEY, API_BASE } from './config';
 import { AdminDashboard } from './components/AdminDashboard';
 import { MenuManager } from './components/MenuManager';
 import { DisplayBoard } from './components/DisplayBoard';
