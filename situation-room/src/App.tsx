@@ -37,7 +37,10 @@ function App() {
   const { flashingTabs, resetFlash } = useStoreSync(storeId);
 
   const [user, setUser] = useState<any>(null);
-  const [selectedAdminStore, setSelectedAdminStore] = useState<string | null>(null);
+  const [selectedAdminStore, setSelectedAdminStore] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('storeId') || null;
+  });
   const [activeTab, setActiveTab] = useState<MainTab>(() => {
     return (localStorage.getItem('situation_active_tab') as MainTab) || 'guide';
   });
