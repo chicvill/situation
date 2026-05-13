@@ -64,7 +64,8 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
         }
     })();
 
-    const baseUrl = window.location.origin;
+    // 폰으로 스캔 테스트를 위해 로컬 환경(localhost)에서도 무조건 실제 프로덕션 도메인을 가리키도록 고정합니다.
+    const baseUrl = `https://situation.chicvill.store`;
 
     const qrItems = [
         {
