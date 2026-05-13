@@ -101,8 +101,8 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
     ];
 
     // 인쇄 시 깨짐 방지를 위해 해상도 동적 설정 (모아찍기는 200x200, 낱장 A4는 500x500)
-    // 🌟 100% 신뢰성과 초고속 로딩을 위해 구글 글로벌 CDN 기반의 Google Charts QR API로 이전 적용합니다.
-    const getQRUri = (data: string) => `https://chart.googleapis.com/chart?cht=qr&chs=${printMode === 'a4' ? '500x500' : '200x200'}&chl=${encodeURIComponent(data)}`;
+    // 구글 차트 API의 서비스 종료(접속 불가) 문제로 인해, 더 빠르고 안정적인 QR Server API로 교체 적용합니다.
+    const getQRUri = (data: string) => `https://api.qrserver.com/v1/create-qr-code/?size=${printMode === 'a4' ? '500x500' : '200x200'}&data=${encodeURIComponent(data)}`;
 
     return (
         <div className="qr-manager-container animate-fade-in" style={{ padding: '20px' }}>
