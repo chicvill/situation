@@ -992,6 +992,9 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                                                         >
                                                             🏠 내 매장 최종 개설 및 완공하기
                                                         </button>
+                                                    </div>
+                                                )}
+
                                                 {/* Step 7 Form: Menu Registration */}
                                                 {msg.formType === 'menu-registration' && currentStep === 7 && (
                                                     <div style={{ padding: '15px 0' }}>
