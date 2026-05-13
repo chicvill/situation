@@ -165,6 +165,8 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                 setIsScanningQr(false);
             }
         }, 1200);
+    };
+
     const handleRegisterStaff = async (e: React.FormEvent) => {
         e.preventDefault();
         const cleanPhone = regPhone.replace(/[^0-9]/g, '').trim();
