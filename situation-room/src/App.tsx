@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import { KitchenDisplay } from './components/KitchenDisplay';
-import { TOSS_CLIENT_KEY, API_BASE } from './config';
+import { API_BASE } from './config';
 import { AdminDashboard } from './components/AdminDashboard';
 import { MenuManager } from './components/MenuManager';
 import { DisplayBoard } from './components/DisplayBoard';
@@ -42,7 +42,6 @@ function App() {
     return (localStorage.getItem('situation_active_tab') as MainTab) || 'guide';
   });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [isListening, setIsListening] = useState(false);
 
   // 🌟 활성 대시보드 탭이 변경될 때마다 브라우저 로컬 저장소에 기억하여 F5 새로고침 시 화면을 복원합니다.
@@ -115,11 +114,6 @@ function App() {
   useEffect(() => {
     fetchStoreDetails();
   }, [storeId, user]);
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
