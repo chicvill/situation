@@ -76,6 +76,58 @@ app = FastAPI(lifespan=lifespan)
 
 # DB 초기화
 init_db_v2()
+
+# --- DB Debug / Sync Script ---
+def force_seed_chicvill():
+    import psycopg2
+    import json
+    db_url = os.getenv("DATABASE_URL")
+    log_content = []
+    log_content.append(f"=== DB Debug/Sync Start: {datetime.now().isoformat()} ===")
+    try:
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor()
+        
+        # 1. Check existing stores
+        cur.execute("SELECT id, name FROM stores")
+        stores = cur.fetchall()
+        log_content.append(f"Current stores in DB: {stores}")
+        
+        # 2. Check if store-chicvill is in DB
+        cur.execute("SELECT COUNT(*) FROM stores WHERE id = 'store-chicvill'")
+        count_chicvill = cur.fetchone()[0]
+        log_content.append(f"store-chicvill count: {count_chicvill}")
+        
+        if count_chicvill == 0:
+            # Force insert store-chicvill
+            cur.execute("""
+                INSERT INTO stores (id, name, ceo_name, signature_owner, monthly_fee, payment_status, payment_history, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+            """, ("store-chicvill", "시크빌", "미지정 점주", "owner-store-chicvill", 50000, "정상", json.dumps([])))
+            conn.commit()
+            log_content.append("Successfully force-seeded 'store-chicvill' into database!")
+        
+        # 3. Double-check again
+        cur.execute("SELECT id, name FROM stores")
+        stores_after = cur.fetchall()
+        log_content.append(f"Stores in DB after sync: {stores_after}")
+        
+        cur.close()
+        conn.close()
+    except Exception as e:
+        log_content.append(f"ERROR: {e}")
+        
+    # Write to output.txt in workspace root
+    try:
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        out_file = os.path.join(base_dir, "output.txt")
+        with open(out_file, "w", encoding="utf-8") as f:
+            f.write("\n".join(log_content))
+    except Exception as fe:
+        print(f"Failed to write log file: {fe}")
+
+force_seed_chicvill()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

@@ -1139,16 +1139,6 @@ td {
         padding: 0 !important;
         background: white !important;
     }
-    /* Reset mobile container restrictions to allow full width on A4 print layouts */
-    .saas-container.mobile-full-mode {
-        max-width: none !important;
-        width: 100% !important;
-        overflow: visible !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
 }
 
 .qr-inputs {

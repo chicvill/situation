@@ -131,77 +131,24 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         })).filter((m: any) => m.name);
     })();
 
-    // --- 1. 결제 완료 글로벌 이벤트 수신 및 동기화 (이슈 3) ---
-    useEffect(() => {
-        const handleFinished = (e: any) => {
-            const { success } = e.detail;
-            if (success) {
-                setOrderStep('paid');
-                setMessages([
-                    {
-                        id: 1,
-                        sender: 'ai',
-                        text: `🎉 성공적으로 ${Number(initialAmount).toLocaleString()}원의 결제가 완료되었습니다!\n주방에 즉시 소중한 주문이 안전하게 전달되었습니다. 🍲🔥\n\n💡 주문하신 메뉴의 특별한 특징을 소개해 드릴게요:\n- 저희 매장의 시그니처 찌개류는 30년 비법 천연 발효 육수로 조리하여 유산균이 풍부하고 속을 매우 편안하게 해주는 효과가 있습니다.\n- 원두 커피류는 당일 로스팅한 스페셜티 생두만 사용하여 고소하고 깊은 아로마를 자랑합니다.`,
-                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        showFollowUps: true
-                    }
-                ]);
-                speak(`성공적으로 ${Number(initialAmount).toLocaleString()}원의 결제가 완료되었습니다! 주방에 소중한 주문이 안전하게 전달되었습니다.`);
-                hasSpokenWelcome.current = true;
-            } else {
-                setOrderStep('welcome');
-                setMessages([
-                    {
-                        id: 1,
-                        sender: 'ai',
-                        text: `❌ 결제 확인 및 승인 처리 중 에러가 발생했습니다. 카운터 직원에게 문의해 주세요.`,
-                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        showFollowUps: false
-                    }
-                ]);
-            }
-        };
-
-        window.addEventListener('payment_finished', handleFinished);
-        return () => window.removeEventListener('payment_finished', handleFinished);
-    }, [initialAmount]);
-
-    // --- 2. 결제 완료 이벤트 대기 시간 초과 시 Fail-safe 복원 타이머 ---
-    useEffect(() => {
-        if (initialPaymentSuccess && orderStep === 'paying' && !hasSpokenWelcome.current) {
-            const timer = setTimeout(() => {
-                setOrderStep('paid');
-                setMessages([
-                    {
-                        id: 1,
-                        sender: 'ai',
-                        text: `🎉 성공적으로 ${Number(initialAmount).toLocaleString()}원의 결제가 완료되었습니다!\n주방에 즉시 소중한 주문이 안전하게 전달되었습니다. 🍲🔥\n\n💡 주문하신 메뉴의 특별한 특징을 소개해 드릴게요:\n- 저희 매장의 시그니처 찌개류는 30년 비법 천연 발효 육수로 조리하여 유산균이 풍부하고 속을 매우 편안하게 해주는 효과가 있습니다.\n- 원두 커피류는 당일 로스팅한 스페셜티 생두만 사용하여 고소하고 깊은 아로마를 자랑합니다.`,
-                        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        showFollowUps: true
-                    }
-                ]);
-                speak(`성공적으로 ${Number(initialAmount).toLocaleString()}원의 결제가 완료되었습니다! 주방에 소중한 주문이 안전하게 전달되었습니다.`);
-                hasSpokenWelcome.current = true;
-            }, 3500); // 3.5초 대기 후 강제 수신 처리
-            return () => clearTimeout(timer);
-        }
-    }, [initialPaymentSuccess, orderStep, initialAmount]);
-
     // Initial Welcome Message or Post-Payment Restoration Dialog
     useEffect(() => {
         if (messages.length === 0) {
             if (initialPaymentSuccess) {
-                // 최초 진입 시 즉시 소리가 나지 않게 묵음 상태로 로딩 메시지만 출력 (이슈 3)
-                setOrderStep('paying');
+                setOrderStep('paid');
                 setMessages([
                     {
                         id: 1,
                         sender: 'ai',
-                        text: `🔄 결제 승인을 확인 중입니다...\n\n주방으로 안전하게 주문 패킷을 전송 완료한 뒤 고품격 미식 가이드를 재생합니다. 잠시만 대기해 주세요.`,
+                        text: `🎉 성공적으로 ${Number(initialAmount).toLocaleString()}원의 결제가 완료되었습니다!\n주방에 즉시 소중한 주문이 안전하게 전달되었습니다. 🍲🔥\n\n💡 주문하신 메뉴의 특별한 특징을 소개해 드릴게요:\n- 저희 매장의 시그니처 찌개류는 30년 비법 천연 발효 육수로 조리하여 유산균이 풍부하고 속을 매우 편안하게 해주는 효과가 있습니다.\n- 원두 커피류는 당일 로스팅한 스페셜티 생두만 사용하여 고소하고 깊은 아로마를 자랑합니다.`,
                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                        showFollowUps: false
+                        showFollowUps: true
                     }
                 ]);
+                if (!hasSpokenWelcome.current) {
+                    speak(`성공적으로 ${Number(initialAmount).toLocaleString()}원의 결제가 완료되었습니다! 주방에 소중한 주문이 안전하게 전달되었습니다.`);
+                    hasSpokenWelcome.current = true;
+                }
             } else {
                 setMessages([
                     {
