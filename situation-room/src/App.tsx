@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import { KitchenDisplay } from './components/KitchenDisplay';
-import { API_BASE } from './config';
+import { API_BASE, TOSS_CLIENT_KEY } from './config';
 import { AdminDashboard } from './components/AdminDashboard';
 import { MenuManager } from './components/MenuManager';
 import { DisplayBoard } from './components/DisplayBoard';
