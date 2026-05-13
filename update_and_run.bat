@@ -15,14 +15,15 @@ echo [1.5/3] Building Frontend Production Bundle (dist)...
 cd situation-room && call npm run build && cd ..
 
 echo.
-echo [2/3] Cleaning up old processes...
+echo [2/3] Cleaning up old processes and freeing port 8001...
 taskkill /F /IM python.exe /T 2>nul
 taskkill /F /IM node.exe /T 2>nul
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8001 ^| findstr LISTENING') do taskkill /F /PID %%a 2>nul
 echo.
 
 echo [3/3] Starting Backend and Frontend Servers...
-start "SITUATION-BACKEND" cmd /c "cd situation-backend && ..\venv\Scripts\python.exe -m uvicorn session.main:app --reload --host 0.0.0.0 --port 8000"
-start "SITUATION-FRONTEND" cmd /c "cd situation-room && npm run dev"
+start "SITUATION-BACKEND" cmd /k "cd situation-backend && ..\venv\Scripts\python.exe -m uvicorn session.main:app --reload --host 0.0.0.0 --port 8001"
+start "SITUATION-FRONTEND" cmd /k "cd situation-room && npm run dev"
 
 echo.
 echo ------------------------------------------------------
