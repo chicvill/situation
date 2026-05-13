@@ -5,7 +5,7 @@
     "title": "메뉴 정보",
     "store_id": "store-korean",
     "store": "대장금 수라간",
-    "timestamp": "2026-05-13 20:08:57",
+    "timestamp": "2026-05-13 22:58:57",
     "items": [
       {
         "name": "수라간 정식",
@@ -57,7 +57,7 @@
     "title": "메뉴 정보",
     "store_id": "store-coffee",
     "store": "그레이스 하이테크 커피",
-    "timestamp": "2026-05-13 20:08:57",
+    "timestamp": "2026-05-13 22:58:57",
     "items": [
       {
         "name": "스마트 아메리카노",
@@ -109,7 +109,7 @@
     "title": "메뉴 정보",
     "store_id": "store-beef",
     "store": "대관령 황금 한우",
-    "timestamp": "2026-05-13 20:08:57",
+    "timestamp": "2026-05-13 22:58:57",
     "items": [
       {
         "name": "황금 한우 꽃등심",
@@ -161,7 +161,7 @@
     "title": "메뉴 정보",
     "store_id": "store-tofu",
     "store": "한옥마을 수제 초당순두부",
-    "timestamp": "2026-05-13 20:08:57",
+    "timestamp": "2026-05-13 22:58:57",
     "items": [
       {
         "name": "초당 맑은 순두부",
@@ -213,7 +213,7 @@
     "title": "메뉴 정보",
     "store_id": "store-bibim",
     "store": "우정 전주 돌솥비빔밥",
-    "timestamp": "2026-05-13 20:08:57",
+    "timestamp": "2026-05-13 22:58:57",
     "items": [
       {
         "name": "전통 전주 돌솥비빔밥",
@@ -258,7 +258,7 @@
     "title": "메뉴 정보",
     "store_id": "store-chinese",
     "store": "취홍루",
-    "timestamp": "2026-05-13 20:08:57",
+    "timestamp": "2026-05-13 22:58:58",
     "items": [
       {
         "name": "수제 손짜장면",
@@ -324,7 +324,7 @@
     "title": "메뉴 정보",
     "store_id": "store-1",
     "store": "시크앤프레시",
-    "timestamp": "2026-05-13 20:08:57",
+    "timestamp": "2026-05-13 22:58:58",
     "items": [
       {
         "name": "프리미엄 모듬 바베큐 플레이트",
@@ -376,7 +376,7 @@
     "title": "메뉴 정보",
     "store_id": "store-chicvill",
     "store": "시크빌",
-    "timestamp": "2026-05-13 20:08:57",
+    "timestamp": "2026-05-13 22:58:58",
     "items": [
       {
         "name": "시그니처 아메리카노",
@@ -428,7 +428,7 @@
     "title": "메뉴 정보",
     "store_id": "store-japanese",
     "store": "미도리 스시",
-    "timestamp": "2026-05-13 20:08:57",
+    "timestamp": "2026-05-13 22:58:58",
     "items": [
       {
         "name": "프리미엄 모듬 바베큐 플레이트",
@@ -475,12 +475,64 @@
     ]
   },
   {
+    "id": "MENUS_store-chicvill02",
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store_id": "store-chicvill02",
+    "store": "시크빌",
+    "timestamp": "2026-05-13 22:58:58",
+    "items": [
+      {
+        "name": "시그니처 아메리카노",
+        "value": 4500,
+        "icon": "☕",
+        "category": "커피",
+        "description": "과테말라 프리미엄 원두로 깊고 바디감 넘치는 오리지널 블랙"
+      },
+      {
+        "name": "벨벳 카페 라떼",
+        "value": 5000,
+        "icon": "🥛",
+        "category": "커피",
+        "description": "실크처럼 부드러운 스팀밀크와 진한 에스프레소의 아늑한 한 잔"
+      },
+      {
+        "name": "에스프레소 마끼아또",
+        "value": 4000,
+        "icon": "☕",
+        "category": "커피",
+        "description": "진한 에스프레소 위에 살포시 얹은 고소한 우유 거품"
+      },
+      {
+        "name": "제주 청귤 에이드",
+        "value": 6000,
+        "icon": "🍹",
+        "category": "음료",
+        "description": "새콤달콤한 청귤 청에 톡 쏘는 탄산수를 블렌딩한 시즌 청량음료"
+      },
+      {
+        "name": "메이플 크로플 & 아이스크림",
+        "value": 6500,
+        "icon": "🧇",
+        "category": "디저트",
+        "description": "버터향 가득한 생지를 구워 젤라또 아이스크림과 메이플 시럽을 토핑"
+      },
+      {
+        "name": "바스크 치즈케이크",
+        "value": 7000,
+        "icon": "🍰",
+        "category": "디저트",
+        "description": "고온에서 그을려 구워내 스모키한 향과 진한 크림치즈의 텍스처"
+      }
+    ]
+  },
+  {
     "id": "MENUS_store-western",
     "type": "Menus",
     "title": "메뉴 정보",
     "store_id": "store-western",
     "store": "라 벨라 이탈리아",
-    "timestamp": "2026-05-13 20:08:57",
+    "timestamp": "2026-05-13 22:58:58",
     "items": [
       {
         "name": "프리미엄 모듬 바베큐 플레이트",
@@ -2115,12 +2167,6 @@
     "status": "approved"
   },
   {
-    "id": "store-config-store-chicvill02",
-    "type": "StoreConfig",
-    "title": "매장 정보",
-    "store": "시크빌",
-    "store_id": "store-chicvill02",
-    "status": "approved",
     "items": [
       {
         "name": "상호명",
@@ -2131,6 +2177,10 @@
         "value": "5871301146"
       },
       {
+        "name": "주소",
+        "value": "인천 서구 석남동 507-34"
+      },
+      {
         "name": "대표자",
         "value": "김종심"
       },
@@ -2139,18 +2189,23 @@
         "value": "20191216"
       },
       {
-        "name": "정산계좌",
-        "value": "농협은행 13002752081538"
+        "name": "은행명",
+        "value": "농협"
       },
       {
-        "name": "연락처",
-        "value": "01082817377"
+        "name": "계좌번호",
+        "value": "13002752081538"
       },
       {
-        "name": "테이블설정",
-        "value": "1번: 4인석, 2번: 2인석, 3번: 4인석, 4번: 4인석, 5번: 2인석, 6번: 6인석"
+        "name": "예금주",
+        "value": "민흥식"
       }
-    ]
+    ],
+    "type": "StoreConfig",
+    "title": "매장 정보",
+    "store": "시크빌",
+    "store_id": "store-chicvill02",
+    "status": "approved"
   },
   {
     "id": "USER-1778674850931",
@@ -2188,63 +2243,6 @@
     ],
     "status": "approved",
     "timestamp": "2026. 5. 13. 오후 9:20:50",
-    "store": "시크빌",
-    "store_id": "store-chicvill02"
-  },
-  {
-    "items": [
-      {
-        "name": "☕ 시크 아메리카노",
-        "value": "4500",
-        "icon": "🍴",
-        "category": "커피",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "🥛 크림 바닐라 라떼",
-        "value": "5500",
-        "icon": "🍴",
-        "category": "커피",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "🍊 수제 자몽 에이드",
-        "value": "6000",
-        "icon": "🍴",
-        "category": "쥬스",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "🍕 클래식 마르게리타 피자",
-        "value": "16500",
-        "icon": "🍴",
-        "category": "피자",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "🍤 매콤 감바스 알 아히요",
-        "value": "18000",
-        "icon": "🍴",
-        "category": "피자",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "🥗 리코타 생과일 샐러드",
-        "value": "13000",
-        "icon": "🍴",
-        "category": "샐러드",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "🍰 꾸덕 뉴욕 치즈케이크",
-        "value": "6500",
-        "icon": "🍴",
-        "category": "케익",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      }
-    ],
-    "type": "Menus",
-    "title": "메뉴 정보",
     "store": "시크빌",
     "store_id": "store-chicvill02"
   }

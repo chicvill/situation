@@ -12,7 +12,7 @@ interface Message {
     sender: 'ai' | 'user';
     text: string;
     timestamp: string;
-    formType?: 'name' | 'auth' | 'phone' | 'business' | 'bank' | 'summary' | 'qr-center';
+    formType?: 'name' | 'auth' | 'phone' | 'business' | 'bank' | 'summary' | 'menu-registration' | 'staff-registration' | 'qr-center';
 }
 
 const hashPassword = async (password: string): Promise<string> => {
@@ -49,8 +49,36 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
     const [bankName, setBankName] = useState(() => localStorage.getItem('mqonboard_bank_name') || '신한은행');
     const [accountNo, setAccountNo] = useState(() => localStorage.getItem('mqonboard_account_no') || '');
 
+    // Menu registration states
+    const [menuItems, setMenuItems] = useState<{name: string; value: string; icon: string; category: string; description: string;}[]>(() => {
+        const saved = localStorage.getItem('mqonboard_menu_items');
+        return saved ? JSON.parse(saved) : [
+            { name: '명품 한우 숯불구이', value: '35000', icon: '🥩', category: '식사', description: '최고급 1++ 등급 한우를 참숯으로 부드럽게 구워낸 명품 시그니처 구이' },
+            { name: '시골 순두부찌개', value: '9000', icon: '🍲', category: '식사', description: '매일 아침 직접 만든 순두부와 신선한 바지락으로 국물 맛을 낸 얼큰 찌개' },
+            { name: '프리미엄 콜드브루 커피', value: '4500', icon: '☕', category: '음료', description: '스페셜티 에티오피아 원두를 18시간 동안 저온 추출한 고소한 아로마' }
+        ];
+    });
+
+    // Staff registration states
+    const [regName, setRegName] = useState(() => localStorage.getItem('mqonboard_reg_name') || '');
+    const [regPhone, setRegPhone] = useState(() => localStorage.getItem('mqonboard_reg_phone') || '');
+    const [regRole, setRegRole] = useState(() => localStorage.getItem('mqonboard_reg_role') || 'staff');
+    const [regWage, setRegWage] = useState(() => localStorage.getItem('mqonboard_reg_wage') || '10500');
+    const [regSchedules, setRegSchedules] = useState<Record<number, { active: boolean; start: string; end: string }>>(() => {
+        const saved = localStorage.getItem('mqonboard_reg_schedules');
+        return saved ? JSON.parse(saved) : {
+            0: { active: false, start: '09:00', end: '18:00' },
+            1: { active: true, start: '09:00', end: '18:00' },
+            2: { active: true, start: '09:00', end: '18:00' },
+            3: { active: true, start: '09:00', end: '18:00' },
+            4: { active: true, start: '09:00', end: '18:00' },
+            5: { active: true, start: '09:00', end: '18:00' },
+            6: { active: false, start: '09:00', end: '18:00' },
+        };
+    });
+
     // Flow Steps
-    // 0: Init, 1: Name, 2: Auth, 3: Phone, 4: Business, 5: Bank, 6: Summary/Build, 7: QR/Ops Center
+    // 0: Init, 1: Name, 2: Auth, 3: Phone, 4: Business, 5: Bank, 6: Summary/Build, 7: Menu-Reg, 8: Staff-Reg, 9: QR/Ops Center
     const [currentStep, setCurrentStep] = useState(() => {
         const saved = localStorage.getItem('mqonboard_current_step');
         return saved ? parseInt(saved, 10) : 0;
@@ -83,7 +111,15 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
         localStorage.setItem('mqonboard_current_step', String(currentStep));
         localStorage.setItem('mqonboard_is_biz_verified', String(isBizVerified));
         localStorage.setItem('mqonboard_is_id_checked', String(isIdChecked));
-    }, [messages, showChat, ownerName, ownerId, ownerPw, phoneNo, storeName, storeId, bizNo, openDate, bankName, accountNo, currentStep, isBizVerified, isIdChecked]);
+        
+        // New onboarding persistent caches
+        localStorage.setItem('mqonboard_menu_items', JSON.stringify(menuItems));
+        localStorage.setItem('mqonboard_reg_name', regName);
+        localStorage.setItem('mqonboard_reg_phone', regPhone);
+        localStorage.setItem('mqonboard_reg_role', regRole);
+        localStorage.setItem('mqonboard_reg_wage', regWage);
+        localStorage.setItem('mqonboard_reg_schedules', JSON.stringify(regSchedules));
+    }, [messages, showChat, ownerName, ownerId, ownerPw, phoneNo, storeName, storeId, bizNo, openDate, bankName, accountNo, currentStep, isBizVerified, isIdChecked, menuItems, regName, regPhone, regRole, regWage, regSchedules]);
 
     // TTS Voice synthesis helper
     const speakText = (text: string) => {
@@ -515,18 +551,18 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
 
             if (!userRes.ok) throw new Error('Owner credentials bundle registration failed');
 
-            // Success Transition to QR Center and Operations Guide!
+            // Success Transition to Step 7: Menu Onboarding!
             setIsTyping(false);
-            const successMsg = `🎉 축하합니다, 대표님! '${storeName}' 매장 가맹 개설 및 정식 입주 등록이 무결하게 성공했습니다!\n\n이제 가장 중요한 **매장 실시간 운영 가이드**와 목적에 맞게 인쇄하여 바로 영업에 사용하실 수 있는 **[6대 만능 스마트 QR 코드 인쇄 및 부착 센터]**를 가동하겠습니다! \n\n이 활용 방법을 숙지하시면 점장 및 일반 직원 교육도 1분 만에 끝마치실 수 있습니다! 👍`;
+            const menuOnboardMsg = `🎉 축하합니다, 대표님! '${storeName}' 매장 가맹 개설 및 등록이 정상적으로 완공되었습니다!\n\n두 번째 스마트 단계로 우리 가게의 대표 먹거리들을 담은 **[디지털 메뉴판 구축]**을 신속히 진행해 볼까요? 🍳\n\n원격 AI 대화식으로 손쉽게 추가/삭제할 수 있는 메뉴 교정 패널을 가동했습니다. 가장 인기 있는 기본 메뉴들로 예시를 구성해 두었으니, 원하는 시그니처 상차림으로 알맞게 수정하신 뒤 하단의 '메뉴판 등록 완료' 버튼을 클릭해 주세요!`;
             
             setMessages(prev => [...prev, {
-                id: `ai-success`,
+                id: `ai-step7`,
                 sender: 'ai',
-                text: successMsg,
+                text: menuOnboardMsg,
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                formType: 'qr-center'
+                formType: 'menu-registration'
             }]);
-            speakText(successMsg);
+            speakText(menuOnboardMsg);
             setCurrentStep(7);
 
         } catch (err: any) {
@@ -535,6 +571,141 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
         }
     };
 
+    const handleMenuSubmit = async () => {
+        if (menuItems.length === 0) {
+            alert("⚠️ 최소 하나의 대표 메뉴가 존재해야 디지털 메뉴판 구성이 완료됩니다.");
+            return;
+        }
+
+        setIsTyping(true);
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const idToUse = `MENUS_ONBOARD_${Date.now()}`;
+            
+            const menuPayload = {
+                items: menuItems.map(item => ({
+                    name: item.name,
+                    value: item.value,
+                    icon: item.icon,
+                    category: item.category,
+                    description: item.description
+                })),
+                type: 'Menus',
+                title: '메뉴 정보',
+                store: storeName,
+                store_id: storeId
+            };
+
+            const response = await fetch(`${apiUrl}/api/bundle/${idToUse}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(menuPayload)
+            });
+
+            if (!response.ok) throw new Error('Failed to save menu bundle');
+
+            // Success Transition to Step 8: Staff Onboarding!
+            setIsTyping(false);
+            const userMsg: Message = {
+                id: `user-menus-${Date.now()}`,
+                sender: 'user',
+                text: `📋 대표 메뉴판 등록 완료: ${menuItems.map(m => m.name).join(', ')} 등 총 ${menuItems.length}종 등록 완료`,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            setMessages(prev => [...prev, userMsg]);
+            
+            setIsTyping(true);
+            setTimeout(() => {
+                setIsTyping(false);
+                const staffOnboardMsg = `🍳 정말 멋진 상차림이네요! 등록하신 메뉴 데이터가 매장 주방 모니터 및 스마트 장바구니로 3초 만에 실시간 기입되었습니다.\n\n세 번째 핵심 스마트 단계로 우리 매장을 함께 이끌어갈 **[첫 번째 직원(점원) 직접 채용]**을 진행하겠습니다! 👥\n\n직원의 실명, 아이디로 사용될 연락처, 계약 시급, 그리고 요일별 근무 일정을 아래 안전 카드에서 기입해 주세요. 등록 즉시 별도의 대기 없이 임시 비밀번호 '1212'로 로그인 및 기용이 승인 처리됩니다!`;
+                
+                setMessages(prev => [...prev, {
+                    id: `ai-step8`,
+                    sender: 'ai',
+                    text: staffOnboardMsg,
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    formType: 'staff-registration'
+                }]);
+                speakText(staffOnboardMsg);
+                setCurrentStep(8);
+            }, 1000);
+
+        } catch (err: any) {
+            setIsTyping(false);
+            alert(`❌ 메뉴 등록 오류: ${err.message}`);
+        }
+    };
+
+    const handleStaffSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const cleanPhone = regPhone.replace(/[^0-9]/g, '').trim();
+        if (!regName.trim() || !cleanPhone) {
+            alert('⚠️ 사원명과 휴대폰 번호(ID)를 정확히 입력해 주세요.');
+            return;
+        }
+
+        setIsTyping(true);
+        try {
+            const schedulesList = Object.entries(regSchedules)
+                .filter(([_, val]) => val.active)
+                .map(([day, val]) => ({
+                    day_of_week: parseInt(day),
+                    start_time: val.start,
+                    end_time: val.end
+                }));
+
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const response = await fetch(`${apiUrl}/api/staff/direct-register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    store_id: storeId,
+                    store_name: storeName,
+                    name: regName.trim(),
+                    phone: cleanPhone,
+                    role: regRole,
+                    hourly_wage: parseInt(regWage.replace(/[^0-9]/g, '') || '10500'),
+                    temporary_password: '1212',
+                    schedules: schedulesList
+                })
+            });
+
+            if (!response.ok) {
+                const errResult = await response.json();
+                throw new Error(errResult.detail || '직원 등록 실패');
+            }
+
+            // Success Transition to Step 9: QR Code Printing Center!
+            setIsTyping(false);
+            const userMsg: Message = {
+                id: `user-staff-${Date.now()}`,
+                sender: 'user',
+                text: `👤 사원 등록 완료: ${regName} (${regRole === 'manager' ? '점장' : '점원'}), 시급: ${parseInt(regWage).toLocaleString()}원`,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            setMessages(prev => [...prev, userMsg]);
+
+            setIsTyping(true);
+            setTimeout(() => {
+                setIsTyping(false);
+                const finalQrMsg = `👥 완벽합니다, 대표님! ${regName} 사원의 채용 및 출퇴근 스케줄 연동이 무결하게 성사되어 급여 정산 장부에 즉시 반영되었습니다.\n\n🎉 이로써 회원가입 ➔ 매장 개설 ➔ 메뉴 구성 ➔ 직원 직접 채용까지 모든 온보딩 과정을 단 하나의 대화식 흐름으로 완전 정복하셨습니다!\n\n이제 홀 이나 주방, 카운터에 부착해 바로 실제 영업과 스태프 출퇴근에 활용하실 수 있는 **[6대 만능 스마트 QR 코드 인쇄 마스터 센터]**를 최종 가동합니다! 목적에 맞게 인쇄해 편리하게 영업에 활용해 보세요! 👍`;
+                
+                setMessages(prev => [...prev, {
+                    id: `ai-step9`,
+                    sender: 'ai',
+                    text: finalQrMsg,
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    formType: 'qr-center'
+                }]);
+                speakText(finalQrMsg);
+                setCurrentStep(9);
+            }, 1000);
+
+        } catch (err: any) {
+            setIsTyping(false);
+            alert(`❌ 직원 등록 오류: ${err.message}`);
+        }
+    };
     // Auto-mute on component unmount
     useEffect(() => {
         return () => {
@@ -821,10 +992,228 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                                                         >
                                                             🏠 내 매장 최종 개설 및 완공하기
                                                         </button>
+                                                {/* Step 7 Form: Menu Registration */}
+                                                {msg.formType === 'menu-registration' && currentStep === 7 && (
+                                                    <div style={{ padding: '15px 0' }}>
+                                                        <h4 style={{ margin: '0 0 15px 0', fontSize: '1.05rem', color: '#10b981', fontWeight: 800 }}>🍳 대표 메뉴판 직접 구성 및 가격 교정</h4>
+                                                        
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', maxHeight: '350px', overflowY: 'auto', paddingRight: '5px' }}>
+                                                            {menuItems.map((menu, idx) => (
+                                                                <div key={idx} style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '12px', padding: '12px 15px' }}>
+                                                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
+                                                                        <span style={{ fontSize: '1.4rem' }}>{menu.icon}</span>
+                                                                        <input 
+                                                                            type="text" 
+                                                                            value={menu.name} 
+                                                                            onChange={(e) => {
+                                                                                const newMenus = [...menuItems];
+                                                                                newMenus[idx].name = e.target.value;
+                                                                                setMenuItems(newMenus);
+                                                                            }}
+                                                                            placeholder="메뉴명"
+                                                                            style={{ flex: 1.5, padding: '8px 10px', borderRadius: '8px', background: '#000', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.85rem' }}
+                                                                        />
+                                                                        <input 
+                                                                            type="text" 
+                                                                            value={menu.value} 
+                                                                            onChange={(e) => {
+                                                                                const newMenus = [...menuItems];
+                                                                                newMenus[idx].value = e.target.value.replace(/[^0-9]/g, '');
+                                                                                setMenuItems(newMenus);
+                                                                            }}
+                                                                            placeholder="가격"
+                                                                            style={{ flex: 0.8, padding: '8px 10px', borderRadius: '8px', background: '#000', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'right' }}
+                                                                        />
+                                                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>원</span>
+                                                                        <button 
+                                                                            type="button" 
+                                                                            onClick={() => {
+                                                                                setMenuItems(menuItems.filter((_, i) => i !== idx));
+                                                                            }}
+                                                                            style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '1.1rem', cursor: 'pointer', padding: '5px' }}
+                                                                            title="삭제"
+                                                                        >
+                                                                            🗑️
+                                                                        </button>
+                                                                    </div>
+                                                                    
+                                                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                                                        <select 
+                                                                            value={menu.category} 
+                                                                            onChange={(e) => {
+                                                                                const newMenus = [...menuItems];
+                                                                                newMenus[idx].category = e.target.value;
+                                                                                setMenuItems(newMenus);
+                                                                            }}
+                                                                            style={{ padding: '6px 10px', borderRadius: '6px', background: '#000', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.75rem' }}
+                                                                        >
+                                                                            <option value="식사">식사</option>
+                                                                            <option value="주메뉴">주메뉴</option>
+                                                                            <option value="주류">주류</option>
+                                                                            <option value="음료">음료</option>
+                                                                            <option value="사이드">사이드</option>
+                                                                        </select>
+                                                                        
+                                                                        <input 
+                                                                            type="text" 
+                                                                            value={menu.description} 
+                                                                            onChange={(e) => {
+                                                                                const newMenus = [...menuItems];
+                                                                                newMenus[idx].description = e.target.value;
+                                                                                setMenuItems(newMenus);
+                                                                            }}
+                                                                            placeholder="상세 설명 (예: 참숯으로 조리해 깊은 아로마...)"
+                                                                            style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', background: '#000', border: '1px solid rgba(255,255,255,0.1)', color: '#bbb', fontSize: '0.75rem' }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        
+                                                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => {
+                                                                    const icons = ['🍲', '🥩', '🍗', '🍺', '☕', '🍛', '🍱', '🍤', '🍕', '🍔'];
+                                                                    const randomIcon = icons[Math.floor(Math.random() * icons.length)];
+                                                                    setMenuItems([
+                                                                        ...menuItems, 
+                                                                        { name: '신규 인기 메뉴', value: '10000', icon: randomIcon, category: '식사', description: '매장에서 정성껏 준비한 당일 한정 수제 메뉴' }
+                                                                    ]);
+                                                                }}
+                                                                className="form-action-btn"
+                                                                style={{ background: '#334155', fontSize: '0.82rem', padding: '10px 15px' }}
+                                                            >
+                                                                ➕ 새 메뉴 추가
+                                                            </button>
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={handleMenuSubmit}
+                                                                className="form-action-btn success-green"
+                                                                style={{ fontSize: '0.85rem', padding: '10px 24px', fontWeight: 'bold' }}
+                                                            >
+                                                                🍳 메뉴판 지식 전송 및 등록 완료 ➔
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 )}
 
-                                                {/* Step 7 View: The Operations & QR Printing Center */}
+                                                {/* Step 8 Form: Staff Onboarding */}
+                                                {msg.formType === 'staff-registration' && currentStep === 8 && (
+                                                    <form onSubmit={handleStaffSubmit} style={{ padding: '15px 0' }}>
+                                                        <h4 style={{ margin: '0 0 15px 0', fontSize: '1.05rem', color: 'var(--accent-orange)', fontWeight: 800 }}>👥 스태프 신규 채용 및 근무 스케줄 일괄 매핑</h4>
+                                                        
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
+                                                            <div className="form-row">
+                                                                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>직원 성함</label>
+                                                                <input 
+                                                                    type="text" 
+                                                                    value={regName} 
+                                                                    onChange={(e) => setRegName(e.target.value)} 
+                                                                    placeholder="예: 홍길동"
+                                                                    required 
+                                                                    style={{ padding: '10px', borderRadius: '8px', background: '#000', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.85rem' }}
+                                                                />
+                                                            </div>
+                                                            <div className="form-row">
+                                                                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>아이디 (휴대폰 번호)</label>
+                                                                <input 
+                                                                    type="text" 
+                                                                    value={regPhone} 
+                                                                    onChange={(e) => setRegPhone(e.target.value.replace(/[^0-9]/g, ''))} 
+                                                                    placeholder="예: 01012345678"
+                                                                    required 
+                                                                    style={{ padding: '10px', borderRadius: '8px', background: '#000', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.85rem' }}
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+                                                            <div className="form-row">
+                                                                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>근무 직책</label>
+                                                                <select 
+                                                                    value={regRole} 
+                                                                    onChange={(e) => setRegRole(e.target.value)}
+                                                                    style={{ padding: '10px', borderRadius: '8px', background: '#000', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.85rem' }}
+                                                                >
+                                                                    <option value="staff">점원 (Staff)</option>
+                                                                    <option value="manager">점장 (Manager)</option>
+                                                                </select>
+                                                            </div>
+                                                            <div className="form-row">
+                                                                <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>계약 기본 시급 (원)</label>
+                                                                <input 
+                                                                    type="text" 
+                                                                    value={regWage} 
+                                                                    onChange={(e) => setRegWage(e.target.value.replace(/[^0-9]/g, ''))} 
+                                                                    placeholder="예: 10500"
+                                                                    required 
+                                                                    style={{ padding: '10px', borderRadius: '8px', background: '#000', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.85rem', fontWeight: 'bold' }}
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Weekly schedules checkboxes */}
+                                                        <div style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)', padding: '15px', borderRadius: '12px', marginBottom: '20px' }}>
+                                                            <h5 style={{ margin: '0 0 10px 0', fontSize: '0.85rem', fontWeight: 'bold', color: '#fff' }}>📅 요일별 정기 근무 시간 지정</h5>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '5px' }}>
+                                                                {['일', '월', '화', '수', '목', '금', '토'].map((dayName, idx) => {
+                                                                    const daySched = regSchedules[idx] || { active: false, start: '09:00', end: '18:00' };
+                                                                    return (
+                                                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 10px', background: daySched.active ? 'rgba(234, 88, 12, 0.05)' : 'transparent', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.02)' }}>
+                                                                            <input 
+                                                                                type="checkbox" 
+                                                                                checked={daySched.active} 
+                                                                                onChange={(e) => setRegSchedules({
+                                                                                    ...regSchedules,
+                                                                                    [idx]: { ...daySched, active: e.target.checked }
+                                                                                })}
+                                                                                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--accent-orange)' }}
+                                                                            />
+                                                                            <span style={{ fontSize: '0.8rem', fontWeight: 'bold', width: '45px' }}>{dayName}요일</span>
+                                                                            
+                                                                            {daySched.active ? (
+                                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                                    <input 
+                                                                                        type="time" 
+                                                                                        value={daySched.start} 
+                                                                                        onChange={(e) => setRegSchedules({
+                                                                                            ...regSchedules,
+                                                                                            [idx]: { ...daySched, start: e.target.value }
+                                                                                        })}
+                                                                                        style={{ padding: '4px 6px', borderRadius: '4px', background: '#000', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.75rem' }}
+                                                                                    />
+                                                                                    <span style={{ fontSize: '0.75rem', opacity: 0.5 }}>~</span>
+                                                                                    <input 
+                                                                                        type="time" 
+                                                                                        value={daySched.end} 
+                                                                                        onChange={(e) => setRegSchedules({
+                                                                                            ...regSchedules,
+                                                                                            [idx]: { ...daySched, end: e.target.value }
+                                                                                        })}
+                                                                                        style={{ padding: '4px 6px', borderRadius: '4px', background: '#000', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.75rem' }}
+                                                                                    />
+                                                                                </div>
+                                                                            ) : (
+                                                                                <span style={{ fontSize: '0.75rem', opacity: 0.35 }}>휴무</span>
+                                                                            )}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+
+                                                        <button 
+                                                            type="submit" 
+                                                            className="form-action-btn premium-orange"
+                                                            style={{ width: '100%', fontSize: '0.9rem', padding: '12px', fontWeight: 'bold' }}
+                                                        >
+                                                            👥 사원 근로 요건 즉시 승인 및 채용 완료 ➔
+                                                        </button>
+                                                    </form>
+                                                )}
+
+                                                {/* Step 9 View: The Operations & QR Printing Center */}
                                                 {msg.formType === 'qr-center' && (
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                                                         

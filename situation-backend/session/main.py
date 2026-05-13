@@ -1340,6 +1340,104 @@ async def get_points_list_endpoint(store_id: Optional[str] = None):
     return get_points_list_db(store_id)
 
 # --- 👥 9. 통합 매장 직원 및 근로 관리 (Staff & Labor Management) Endpoints ---
+@app.post("/api/staff/direct-register")
+async def direct_register_staff(data: Dict):
+    store_id = data.get("store_id") or "default_store"
+    store_name = data.get("store_name") or "미지정"
+    name = data.get("name")
+    phone = data.get("phone") # This is the staff_id / phone number
+    role = data.get("role") or "staff"
+    hourly_wage = int(data.get("hourly_wage") or 10500)
+    temporary_password = data.get("temporary_password") or "1212"
+    schedules = data.get("schedules") or [] # List of {day_of_week: int, start_time: str, end_time: str}
+    
+    if not name or not phone:
+        raise HTTPException(status_code=400, detail="이름과 휴대폰 번호(ID)는 필수 항목입니다.")
+        
+    # 1. PersonalInfos 번들 생성/업데이트 (로그인 정보용)
+    import hashlib
+    hashed_pw = hashlib.sha256(temporary_password.encode()).hexdigest()
+    
+    signup_bundle = {
+        "id": f"USER-{phone}",
+        "type": "PersonalInfos",
+        "title": f"{name}님 등록 완료 (직원)",
+        "items": [
+            { "name": "이름", "value": name },
+            { "name": "아이디", "value": phone },
+            { "name": "비밀번호", "value": hashed_pw },
+            { "name": "권한", "value": role }
+        ],
+        "status": "approved", # Pre-approved by owner!
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "store": store_name,
+        "store_id": store_id
+    }
+    
+    # 지식 풀에 저장
+    pool = load_pool()
+    found_bundle = False
+    for i, b in enumerate(pool):
+        if b.get("type") == "PersonalInfos" and any(item.get("name") == "아이디" and item.get("value") == phone for item in b.get("items", [])):
+            pool[i] = signup_bundle
+            found_bundle = True
+            break
+    if not found_bundle:
+        pool.append(signup_bundle)
+        
+    if not save_pool(pool):
+        raise HTTPException(status_code=500, detail="로그인 지식 풀 업데이트 실패")
+        
+    # 2. table_staff_accounts에 직원 저장
+    staff_data = {
+        "staff_id": phone,
+        "store_id": store_id,
+        "name": name,
+        "role": role,
+        "hourly_wage": hourly_wage,
+        "status": "approved", # Pre-approved!
+        "contract_period": {
+            "start": datetime.now().strftime("%Y-%m-%d"),
+            "end": "2029-12-31"
+        }
+    }
+    
+    from .database import save_staff, save_schedule
+    if not save_staff(staff_data):
+        raise HTTPException(status_code=500, detail="PostgreSQL 직원 계정 저장 실패")
+        
+    # 3. 기존의 스케줄이 있다면 먼저 DB에서 삭제하기
+    try:
+        conn = get_db_conn()
+        cur = conn.cursor()
+        cur.execute("DELETE FROM table_staff_schedules WHERE staff_id = %s AND store_id = %s", (phone, store_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"Failed to clear old schedules: {e}")
+        
+    # 4. 요일별 스케줄 개별 저장
+    for s in schedules:
+        sched_id = f"SCHED-{uuid.uuid4().hex[:6].upper()}"
+        sched_data = {
+            "schedule_id": sched_id,
+            "staff_id": phone,
+            "store_id": store_id,
+            "day_of_week": int(s["day_of_week"]),
+            "start_time": s["start_time"],
+            "end_time": s["end_time"]
+        }
+        save_schedule(sched_data)
+        
+    # 실시간 알림 브로드캐스트
+    await manager.broadcast_to_kitchen({
+        "type": "POOL_UPDATED",
+        "bundle_id": f"EMP-{phone}"
+    })
+    
+    return {"status": "success", "staff_id": phone}
+
 @app.post("/api/staff/register")
 async def register_staff(data: Dict):
     staff_id = f"STF-{uuid.uuid4().hex[:4].upper()}"

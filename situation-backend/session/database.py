@@ -243,11 +243,16 @@ def init_db_v2():
             CREATE TABLE IF NOT EXISTS table_staff_schedules (
                 schedule_id TEXT PRIMARY KEY,
                 staff_id TEXT NOT NULL,
+                store_id TEXT NOT NULL DEFAULT 'default_store',
                 day_of_week INTEGER NOT NULL,
                 start_time TEXT NOT NULL,
                 end_time TEXT NOT NULL
             )
         """)
+        try:
+            cur.execute("ALTER TABLE table_staff_schedules ADD COLUMN IF NOT EXISTS store_id TEXT NOT NULL DEFAULT 'default_store'")
+        except Exception:
+            pass
         
         # 12. 매장 관리용 테이블 (stores) - 테스트용 안전 연동 및 5대 핵심 가맹점 시딩
         # 기존 운영 중인 테이블 및 외래키 종속성을 해치지 않기 위해 DROP/CASCADE 없이 IF NOT EXISTS로 안전하게 생성합니다.
@@ -1267,6 +1272,9 @@ def save_staff(staff_data: dict):
             INSERT INTO table_staff_accounts (staff_id, store_id, name, role, hourly_wage, status, contract_period)
             VALUES (%(staff_id)s, %(store_id)s, %(name)s, %(role)s, %(hourly_wage)s, %(status)s, %(contract_period)s)
             ON CONFLICT (staff_id) DO UPDATE SET
+                store_id = EXCLUDED.store_id,
+                name = EXCLUDED.name,
+                role = EXCLUDED.role,
                 status = EXCLUDED.status,
                 hourly_wage = EXCLUDED.hourly_wage,
                 contract_period = EXCLUDED.contract_period
@@ -1342,9 +1350,10 @@ def save_schedule(sched_data: dict):
     try:
         cur = conn.cursor()
         query = """
-            INSERT INTO table_staff_schedules (schedule_id, staff_id, day_of_week, start_time, end_time)
-            VALUES (%(schedule_id)s, %(staff_id)s, %(day_of_week)s, %(start_time)s, %(end_time)s)
+            INSERT INTO table_staff_schedules (schedule_id, staff_id, store_id, day_of_week, start_time, end_time)
+            VALUES (%(schedule_id)s, %(staff_id)s, %(store_id)s, %(day_of_week)s, %(start_time)s, %(end_time)s)
             ON CONFLICT (schedule_id) DO UPDATE SET
+                store_id = EXCLUDED.store_id,
                 day_of_week = EXCLUDED.day_of_week,
                 start_time = EXCLUDED.start_time,
                 end_time = EXCLUDED.end_time
@@ -1352,6 +1361,7 @@ def save_schedule(sched_data: dict):
         cur.execute(query, {
             'schedule_id': sched_data['schedule_id'],
             'staff_id': sched_data['staff_id'],
+            'store_id': sched_data.get('store_id', 'default_store'),
             'day_of_week': sched_data['day_of_week'],
             'start_time': sched_data['start_time'],
             'end_time': sched_data['end_time']
@@ -1364,12 +1374,19 @@ def save_schedule(sched_data: dict):
         print(f"Save Schedule Error: {e}")
         return False
 
-def get_staff_schedules(staff_id: str):
+def get_staff_schedules(staff_id: str, store_id: Optional[str] = None):
     conn = get_db_conn()
     if not conn: return []
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM table_staff_schedules WHERE staff_id = %(staff_id)s ORDER BY day_of_week ASC", {'staff_id': staff_id})
+        if store_id and store_id != "Total":
+            cur.execute("""
+                SELECT * FROM table_staff_schedules 
+                WHERE staff_id = %(staff_id)s AND store_id = %(store_id)s 
+                ORDER BY day_of_week ASC
+            """, {'staff_id': staff_id, 'store_id': store_id})
+        else:
+            cur.execute("SELECT * FROM table_staff_schedules WHERE staff_id = %(staff_id)s ORDER BY day_of_week ASC", {'staff_id': staff_id})
         rows = cur.fetchall()
         cur.close()
         conn.close()
@@ -1604,11 +1621,11 @@ def get_all_staff_as_bundles(store_id: Optional[str] = None):
         for staff in staffs:
             staff_id = staff['staff_id']
             # Fetch schedules
-            cur.execute("SELECT * FROM table_staff_schedules WHERE staff_id = %(staff_id)s", {'staff_id': staff_id})
+            cur.execute("SELECT * FROM table_staff_schedules WHERE staff_id = %(staff_id)s AND store_id = %(store_id)s", {'staff_id': staff_id, 'store_id': staff['store_id']})
             schedules = cur.fetchall()
             
             # Fetch attendance logs
-            cur.execute("SELECT * FROM table_attendance_logs WHERE staff_id = %(staff_id)s", {'staff_id': staff_id})
+            cur.execute("SELECT * FROM table_attendance_logs WHERE staff_id = %(staff_id)s AND store_id = %(store_id)s", {'staff_id': staff_id, 'store_id': staff['store_id']})
             logs = cur.fetchall()
             
             total_minutes = sum(log['work_minutes'] or 0 for log in logs)

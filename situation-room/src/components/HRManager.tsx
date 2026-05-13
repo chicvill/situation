@@ -16,6 +16,23 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
     const [isScanningQr, setIsScanningQr] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
 
+    // 신규 사원 직접 등록 폼 활성화 및 입력 상태들
+    const [showRegisterForm, setShowRegisterForm] = useState(false);
+    const [regName, setRegName] = useState('');
+    const [regPhone, setRegPhone] = useState('');
+    const [regRole, setRegRole] = useState('staff');
+    const [regWage, setRegWage] = useState('10500');
+    const [regTempPw, setRegTempPw] = useState('1212');
+    const [regSchedules, setRegSchedules] = useState<{ [key: number]: { active: boolean, start: string, end: string } }>({
+        0: { active: false, start: '09:00', end: '18:00' }, // 월
+        1: { active: false, start: '09:00', end: '18:00' }, // 화
+        2: { active: false, start: '09:00', end: '18:00' }, // 수
+        3: { active: false, start: '09:00', end: '18:00' }, // 목
+        4: { active: false, start: '09:00', end: '18:00' }, // 금
+        5: { active: false, start: '09:00', end: '18:00' }, // 토
+        6: { active: false, start: '09:00', end: '18:00' }, // 일
+    });
+
     // Live clock for QR terminal
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -148,6 +165,68 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                 setIsScanningQr(false);
             }
         }, 1200);
+    const handleRegisterStaff = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const cleanPhone = regPhone.replace(/[^0-9]/g, '').trim();
+        if (!regName.trim() || !cleanPhone) {
+            alert('⚠️ 사원명과 휴대폰 번호(ID)를 정확히 입력해 주세요.');
+            return;
+        }
+
+        setIsProcessing(true);
+        try {
+            const schedulesList = Object.entries(regSchedules)
+                .filter(([_, val]) => val.active)
+                .map(([day, val]) => ({
+                    day_of_week: parseInt(day),
+                    start_time: val.start,
+                    end_time: val.end
+                }));
+
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const response = await fetch(`${apiUrl}/api/staff/direct-register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    store_id: storeId === 'Total' ? 'store-korean' : storeId,
+                    store_name: storeName || '시크빌',
+                    name: regName.trim(),
+                    phone: cleanPhone,
+                    role: regRole,
+                    hourly_wage: parseInt(regWage.replace(/[^0-9]/g, '') || '10500'),
+                    temporary_password: regTempPw.trim(),
+                    schedules: schedulesList
+                })
+            });
+
+            if (response.ok) {
+                alert(`🎉 [직원 즉시 등록 완료]\n\n사원 ${regName}님이 성공적으로 등록되었습니다!\n임시 비밀번호는 "${regTempPw}" 입니다.`);
+                setRegName('');
+                setRegPhone('');
+                setRegRole('staff');
+                setRegWage('10500');
+                setRegTempPw('1212');
+                setRegSchedules({
+                    0: { active: false, start: '09:00', end: '18:00' },
+                    1: { active: false, start: '09:00', end: '18:00' },
+                    2: { active: false, start: '09:00', end: '18:00' },
+                    3: { active: false, start: '09:00', end: '18:00' },
+                    4: { active: false, start: '09:00', end: '18:00' },
+                    5: { active: false, start: '09:00', end: '18:00' },
+                    6: { active: false, start: '09:00', end: '18:00' },
+                });
+                setShowRegisterForm(false);
+                // Trigger a page refresh
+                window.location.reload();
+            } else {
+                const errResult = await response.json();
+                alert(`❌ 등록 실패: ${errResult.detail || '서버 오류'}`);
+            }
+        } catch (err: any) {
+            alert(`❌ 서버 연동 에러: ${err.message}`);
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     return (
@@ -158,6 +237,15 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                     <p>{user.role === 'owner' ? '매장 스케줄·급여·QR출퇴근 통합 관리' : '실시간 나의 근무 및 근태 로그'}</p>
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
+                    {(user.role === 'owner' || user.role === 'admin') && (
+                        <button 
+                            onClick={() => setShowRegisterForm(!showRegisterForm)}
+                            className="confirm-btn success-green" 
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', fontWeight: 'bold', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.2)' }}
+                        >
+                            ➕ {showRegisterForm ? '등록 폼 닫기' : '사원 직접 채용/등록'}
+                        </button>
+                    )}
                     <button 
                         onClick={() => setQrScannerOpen(true)}
                         className="confirm-btn premium-orange" 
@@ -197,6 +285,137 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                         </div>
                     </div>
                     ✕
+                </div>
+            )}
+
+            {showRegisterForm && (
+                <div className="glass-panel animate-fade-in" style={{ padding: '24px', borderRadius: '20px', border: '1.5px solid #10b981', marginBottom: '25px', background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.05), rgba(0,0,0,0.2))' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
+                        <h4 style={{ margin: 0, fontSize: '1.2rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            ➕ 신규 직원 채용 및 근무 요건 즉시 등록
+                        </h4>
+                        <button onClick={() => setShowRegisterForm(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '1.1rem', cursor: 'pointer' }}>✕</button>
+                    </div>
+
+                    <form onSubmit={handleRegisterStaff}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+                            <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>사원명 (실명)</label>
+                                <input 
+                                    type="text" 
+                                    value={regName} 
+                                    onChange={(ev) => setRegName(ev.target.value)} 
+                                    placeholder="이름 입력" 
+                                    style={{ padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white' }}
+                                    required 
+                                />
+                            </div>
+                            <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>아이디 (휴대폰 번호)</label>
+                                <input 
+                                    type="text" 
+                                    value={regPhone} 
+                                    onChange={(ev) => setRegPhone(ev.target.value)} 
+                                    placeholder="예: 01012345678" 
+                                    style={{ padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white' }}
+                                    required 
+                                />
+                            </div>
+                            <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>임시 비밀번호</label>
+                                <input 
+                                    type="text" 
+                                    value={regTempPw} 
+                                    onChange={(ev) => setRegTempPw(ev.target.value)} 
+                                    placeholder="임시 암호 (기본 1212)" 
+                                    style={{ padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white' }}
+                                    required 
+                                />
+                            </div>
+                            <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>근무 직책</label>
+                                <select 
+                                    value={regRole} 
+                                    onChange={(ev) => setRegRole(ev.target.value)} 
+                                    style={{ padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white' }}
+                                >
+                                    <option value="staff">점원 (Staff)</option>
+                                    <option value="manager">점장 (Manager)</option>
+                                </select>
+                            </div>
+                            <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>계약 시급 (원)</label>
+                                <input 
+                                    type="text" 
+                                    value={regWage} 
+                                    onChange={(ev) => setRegWage(ev.target.value.replace(/[^0-9]/g, ''))} 
+                                    placeholder="시급 입력 (예: 10500)" 
+                                    style={{ padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white', fontWeight: 'bold' }}
+                                    required 
+                                />
+                            </div>
+                        </div>
+
+                        {/* 요일별 근로 시간 스케줄 */}
+                        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.04)', marginBottom: '24px' }}>
+                            <h5 style={{ margin: '0 0 15px 0', fontSize: '0.95rem', fontWeight: 800 }}>📅 요일별 근무일정 일괄 지정</h5>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {["월", "화", "수", "목", "금", "토", "일"].map((dayName, idx) => {
+                                    const daySched = regSchedules[idx];
+                                    return (
+                                        <div key={dayName} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '15px', padding: '10px 15px', background: daySched.active ? 'rgba(16, 185, 129, 0.04)' : 'rgba(255,255,255,0.01)', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100px' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={daySched.active} 
+                                                    onChange={(ev) => setRegSchedules({
+                                                        ...regSchedules,
+                                                        [idx]: { ...daySched, active: ev.target.checked }
+                                                    })}
+                                                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#10b981' }}
+                                                />
+                                                <span style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{dayName}요일</span>
+                                            </div>
+                                            
+                                            {daySched.active ? (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <input 
+                                                        type="time" 
+                                                        value={daySched.start} 
+                                                        onChange={(ev) => setRegSchedules({
+                                                            ...regSchedules,
+                                                            [idx]: { ...daySched, start: ev.target.value }
+                                                        })}
+                                                        style={{ padding: '6px 10px', borderRadius: '6px', background: '#000', border: '1px solid var(--border)', color: '#fff' }}
+                                                    />
+                                                    <span style={{ opacity: 0.6 }}>~</span>
+                                                    <input 
+                                                        type="time" 
+                                                        value={daySched.end} 
+                                                        onChange={(ev) => setRegSchedules({
+                                                            ...regSchedules,
+                                                            [idx]: { ...daySched, end: ev.target.value }
+                                                        })}
+                                                        style={{ padding: '6px 10px', borderRadius: '6px', background: '#000', border: '1px solid var(--border)', color: '#fff' }}
+                                                    />
+                                                    <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 'bold' }}>출퇴근 가드레일 전후 5분 수식 활성</span>
+                                                </div>
+                                            ) : (
+                                                <span style={{ opacity: 0.4, fontSize: '0.85rem' }}>휴무</span>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                            <button type="button" onClick={() => setShowRegisterForm(false)} className="del-btn" style={{ padding: '12px 24px', borderRadius: '10px' }}>취소</button>
+                            <button type="submit" className="confirm-btn success-green" style={{ padding: '12px 30px', borderRadius: '10px', fontWeight: 'bold' }} disabled={isProcessing}>
+                                {isProcessing ? '처리 중...' : '등록 완료 (계약 개시)'}
+                            </button>
+                        </div>
+                    </form>
                 </div>
             )}
 
