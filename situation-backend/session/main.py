@@ -56,19 +56,19 @@ async def lifespan(app: FastAPI):
     # Startup: Start render keepalive task
     asyncio.create_task(keep_alive_task())
     
-    # 사업자 번호 및 매장명 중복 충돌 방지를 위한 시크앤프레시, 시크빌 매장 사전 일괄 삭제
-    try:
-        conn = get_db_conn()
-        if conn:
-            cur = conn.cursor()
-            cur.execute("DELETE FROM stores WHERE name IN ('시크앤프레시', '시크빌')")
-            deleted_rows = cur.rowcount
-            conn.commit()
-            cur.close()
-            conn.close()
-            print(f"🧹 [Startup Cleanup] Deleted {deleted_rows} duplicate stores ('시크앤프레시', '시크빌') from PostgreSQL database.")
-    except Exception as e:
-        print(f"⚠️ [Startup Cleanup] Failed to cleanup duplicate stores: {e}")
+    # 사업자 번호 및 매장명 중복 충돌 방지를 위한 시크앤프레시, 시크빌 매장 사전 일괄 삭제 (테스트를 위해 비활성화)
+    # try:
+    #     conn = get_db_conn()
+    #     if conn:
+    #         cur = conn.cursor()
+    #         cur.execute("DELETE FROM stores WHERE name IN ('시크앤프레시', '시크빌')")
+    #         deleted_rows = cur.rowcount
+    #         conn.commit()
+    #         cur.close()
+    #         conn.close()
+    #         print(f"🧹 [Startup Cleanup] Deleted {deleted_rows} duplicate stores ('시크앤프레시', '시크빌') from PostgreSQL database.")
+    # except Exception as e:
+    #     print(f"⚠️ [Startup Cleanup] Failed to cleanup duplicate stores: {e}")
         
     yield
 
