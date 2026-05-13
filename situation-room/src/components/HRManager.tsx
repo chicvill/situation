@@ -5,6 +5,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
     const { storeId, storeName } = useStoreFilter();
     const [isProcessing, setIsProcessing] = useState(false);
     const [editingWage, setEditingWage] = useState<{ id: string, wage: string } | null>(null);
+    const [editingPhone, setEditingPhone] = useState<{ id: string, phone: string } | null>(null);
     const [showBanner, setShowBanner] = useState(true);
 
     // Selected states
@@ -69,6 +70,31 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
             });
             setEditingWage(null);
             alert('✅ 시급 정보가 업데이트되었습니다.');
+        } catch (err) { console.error(err); } finally { setIsProcessing(false); }
+    };
+
+    const handleUpdatePhone = async (bundle: any, newPhone: string) => {
+        if (!newPhone) return setEditingPhone(null);
+        setIsProcessing(true);
+        try {
+            const cleanPhone = newPhone.replace(/[^0-9-]/g, '').trim();
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const updatedItems = bundle.items.map((i: any) => 
+                i.name === '아이디' ? { ...i, value: cleanPhone } : i
+            );
+            // 만약 아이디 항목이 없었다면 추가
+            if (!updatedItems.find((i: any) => i.name === '아이디')) {
+                updatedItems.push({ name: '아이디', value: cleanPhone });
+            }
+            await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...bundle, items: updatedItems, store: storeName, store_id: storeId }),
+            });
+            setEditingPhone(null);
+            alert('✅ 연락처(ID) 정보가 업데이트되었습니다. 이제 해당 사원은 새 번호로 로그인할 수 있습니다.');
+            // (권장) 변경 후 리스트 새로고침을 위해 페이지를 리로드하거나 데이터를 다시 받아올 수 있습니다.
+            window.location.reload(); 
         } catch (err) { console.error(err); } finally { setIsProcessing(false); }
     };
 
@@ -542,7 +568,22 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                                                         👤 {name}
                                                         {selectedEmployee?.id === id && <span style={{ color: 'var(--accent-orange)', marginLeft: '6px', fontSize: '0.75rem' }}>● 선택됨</span>}
                                                     </div>
-                                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>📞 {id}</span>
+                                                    {editingPhone?.id === e.id ? (
+                                                        <input 
+                                                            autoFocus
+                                                            defaultValue={id} 
+                                                            onBlur={(ev) => handleUpdatePhone(e, ev.target.value)}
+                                                            onKeyDown={(ev) => ev.key === 'Enter' && handleUpdatePhone(e, (ev.target as any).value)}
+                                                            style={{ width: '130px', background: 'var(--surface)', color: 'var(--text-main)', border: '2px solid var(--accent-orange)', padding: '4px', borderRadius: '6px', fontSize: '0.85rem' }}
+                                                        />
+                                                    ) : (
+                                                        <span 
+                                                            onClick={(ev) => { ev.stopPropagation(); (user.role === 'owner' || user.role === 'admin') && setEditingPhone({ id: e.id, phone: id }); }} 
+                                                            style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', cursor: (user.role === 'owner' || user.role === 'admin') ? 'pointer' : 'default', borderBottom: (user.role === 'owner' || user.role === 'admin') ? '1px dashed var(--accent-orange)' : 'none' }}
+                                                        >
+                                                            📞 {id}
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td data-label="직책" style={{ padding: '16px 10px' }}>
@@ -560,7 +601,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                                                         style={{ width: '80px', background: 'var(--surface)', color: 'var(--text-main)', border: '2px solid var(--accent-orange)', padding: '6px', borderRadius: '6px' }}
                                                     />
                                                 ) : (
-                                                    <span onClick={(ev) => { ev.stopPropagation(); user.role === 'owner' && setEditingWage({ id: e.id, wage }); }} style={{ borderBottom: '2px dashed var(--accent-orange)', cursor: 'pointer' }}>
+                                                    <span onClick={(ev) => { ev.stopPropagation(); (user.role === 'owner' || user.role === 'admin') && setEditingWage({ id: e.id, wage }); }} style={{ borderBottom: '2px dashed var(--accent-orange)', cursor: (user.role === 'owner' || user.role === 'admin') ? 'pointer' : 'default' }}>
                                                         {parseInt(wage).toLocaleString()}원
                                                     </span>
                                                 )}
