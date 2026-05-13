@@ -2245,5 +2245,59 @@
     "timestamp": "2026. 5. 13. 오후 9:20:50",
     "store": "시크빌",
     "store_id": "store-chicvill02"
+  },
+  {
+    "id": "USER-01011114444",
+    "type": "PersonalInfos",
+    "title": "일잘해님 등록 완료 (직원)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "일잘해"
+      },
+      {
+        "name": "아이디",
+        "value": "01011114444"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "staff"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-14 06:48:41",
+    "store": "시크빌",
+    "store_id": "store-chicvill02"
+  },
+  {
+    "id": "USER-01044445555",
+    "type": "PersonalInfos",
+    "title": "더잘해님 등록 완료 (직원)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "더잘해"
+      },
+      {
+        "name": "아이디",
+        "value": "01044445555"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "manager"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-14 06:50:00",
+    "store": "시크빌",
+    "store_id": "store-chicvill02"
   }
 ]
