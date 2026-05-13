@@ -3,7 +3,7 @@ set BASE_DIR=%~dp0
 cd /d %BASE_DIR%
 
 echo ======================================================
-echo  SITUATION PRO - GitHub Update & Run
+echo  SITUATION PRO - GitHub Update and Run
 echo ======================================================
 echo.
 
