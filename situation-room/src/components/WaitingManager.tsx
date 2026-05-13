@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { BundleData } from '../types';
 
 import { useStoreFilter } from '../hooks/useStoreFilter';
@@ -10,7 +10,17 @@ interface WaitingManagerProps {
 
 export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendMessage }) => {
     const { storeId, storeName } = useStoreFilter();
+    const [toast, setToast] = useState<{ message: string; show: boolean }>({ message: '', show: false });
     
+    // 알림 피드백 토스트 호출 유틸
+    const showToast = (message: string) => {
+        setToast({ message, show: true });
+        // 3초 후 토스트 제거
+        setTimeout(() => {
+            setToast(prev => ({ ...prev, show: false }));
+        }, 3000);
+    };
+
     // 대기 번들 중 진짜 활성화된(취소/완료되지 않은) 목록만 필터링 (역사적 사건 로그 제외)
     const waitingList = bundles.filter(b => {
         if (b.type !== 'Waiting') return false;
@@ -43,6 +53,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
     const handleCall = (waitingNo: string) => {
         const cleanNo = waitingNo.startsWith('대기 ') ? waitingNo : `대기 ${waitingNo}`;
         onSendMessage(`${cleanNo} 손님 호출`, storeId, storeName);
+        showToast(`📱 [알림톡 발송] ${cleanNo} 고객님께 순번 안내 톡을 전송했습니다.`);
     };
 
     const handleEnter = async (bundle: BundleData, waitingNo: string) => {
@@ -55,8 +66,10 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
                 body: JSON.stringify({ ...bundle, status: 'finished', store: storeName, store_id: storeId }),
             });
             onSendMessage(`${cleanNo} 입장 완료`, storeId, storeName);
+            showToast(`📱 [알림톡 발송] ${cleanNo} 고객님께 입장 알림을 전송했습니다.`);
         } catch (err) {
             console.error("Failed to enter waiting:", err);
+            showToast(`❌ 통신 에러로 알림 전송에 실패했습니다.`);
         }
     };
 
@@ -70,13 +83,52 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
                 body: JSON.stringify({ ...bundle, status: 'canceled', store: storeName, store_id: storeId }),
             });
             onSendMessage(`${cleanNo} 취소`, storeId, storeName);
+            showToast(`📱 [알림톡 발송] ${cleanNo} 고객님의 대기 등록 취소 알림을 전송했습니다.`);
         } catch (err) {
             console.error("Failed to cancel waiting:", err);
+            showToast(`❌ 통신 에러로 취소 처리에 실패했습니다.`);
         }
     };
 
     return (
-        <div className="admin-page animate-fade-in" style={{ padding: '15px' }}>
+        <div className="admin-page animate-fade-in" style={{ padding: '15px', position: 'relative' }}>
+            {/* 토스트 슬라이드업 바운스 CSS 주입 */}
+            <style dangerouslySetInnerHTML={{__html: `
+                @keyframes slideUpBounce9 {
+                    0% { transform: translate(-50%, 30px); opacity: 0; }
+                    80% { transform: translate(-50%, -5px); opacity: 0.9; }
+                    100% { transform: translate(-50%, 0); opacity: 1; }
+                }
+            `}} />
+
+            {/* 프리미엄 글래스모피즘 알림 피드백 토스트창 */}
+            {toast.show && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '80px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 20000,
+                    background: 'rgba(31, 41, 55, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)',
+                    color: '#f3f4f6',
+                    padding: '12px 22px',
+                    borderRadius: '12px',
+                    fontSize: '0.85rem',
+                    fontWeight: '800',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    whiteSpace: 'nowrap',
+                    animation: 'slideUpBounce9 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards'
+                }}>
+                    <span style={{ fontSize: '1.1rem' }}>📱</span>
+                    <span>{toast.message}</span>
+                </div>
+            )}
+
             <header className="page-header-mobile" style={{ marginBottom: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--text-main)', margin: 0 }}>🛎️ 실시간 대기 명단</h2>

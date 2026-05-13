@@ -116,21 +116,35 @@ function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const mode = params.get('mode');
+    const urlStoreId = params.get('storeId') || params.get('store_id') || 'default_store';
+    const urlStoreName = params.get('store') || params.get('store_name') || params.get('storeName') || '우리식당';
     
     // 1. URL 모드 체크 (고객 주문 및 고객 대기 등록 등)
-    if (mode === 'customer' || mode === 'waiting') {
-      const guest = { id: 'guest', name: '손님', role: 'customer' };
-      // 고객이 스캔해서 들어왔을 때 키오스크의 무서움과 피로감을 덜어줄 AI 비서 대화식 창('guide')으로 즉시 다이렉트 랜딩 처리!
+    if (mode === 'customer') {
+      const guest = { id: 'guest', name: '손님', role: 'customer', storeId: urlStoreId, storeName: urlStoreName };
+      // 고객이 스캔해서 들어왔을 때 즉시 모바일 최적화 메뉴 주문창('orderV2')으로 다이렉트 랜딩 처리! (이슈 7)
+      setActiveTab('orderV2');
+      setUser(guest);
+      return;
+    } else if (mode === 'waiting') {
+      const guest = { id: 'guest', name: '손님', role: 'customer', storeId: urlStoreId, storeName: urlStoreName };
+      // 고객 대기 스캔 시 가이드 비서창('guide')으로 랜딩
       setActiveTab('guide');
       setUser(guest);
       return;
     } else if (mode === 'manual') {
-      // 매뉴얼 QR 스캔 시 관리자 로그인을 거치지 않고 프리패스로 읽기전용/직원매뉴얼로 진입할 수 있게 가상 직원 역할 부여!
-      const staffGuest = { id: 'staff_guest', name: '직원', role: 'staff' };
+      // 매뉴얼 QR 스캔 시 관리자 로그인을 거치지 않고 프리패스로 직원매뉴얼로 진입할 수 있게 가상 직원 역할 부여!
+      const staffGuest = { id: 'staff_guest', name: '직원', role: 'staff', storeId: urlStoreId, storeName: urlStoreName };
       setUser(staffGuest);
       setActiveTab('manual');
       return;
-    } 
+    } else if (mode === 'hr') {
+      // 직원 출퇴근 QR 스캔 시 관리자 로그인 없이 즉시 출퇴근 관리 단말기 화면으로 프리패스 진입! (이슈 6)
+      const staffGuest = { id: 'staff_guest', name: '직원', role: 'staff', storeId: urlStoreId, storeName: urlStoreName };
+      setUser(staffGuest);
+      setActiveTab('hr');
+      return;
+    }
 
     // 2. 저장된 세션 복구 (영구 로그인)
     const savedUser = localStorage.getItem('mqnet_user');
@@ -277,6 +291,13 @@ function App() {
 
 
   const navigateTo = (tab: MainTab) => {
+    // 고객 모드 보안 가드 적용: 비서창('guide')과 주문창('orderV2') 외 접근 불가 조치 (이슈 1)
+    if (isCustomerMode) {
+      if (tab !== 'guide' && tab !== 'orderV2') {
+        console.warn(`[보안 경고] 고객의 제한 구역 접근 시도가 차단되었습니다: ${tab}`);
+        return;
+      }
+    }
     setActiveTab(tab);
     setIsMenuOpen(false);
     resetFlash(tab);
@@ -498,18 +519,45 @@ function App() {
         {/* Line 2: Manager + Date/Time */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {!isCustomerMode && user && (
-            <div style={{ 
-              background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(249, 115, 22, 0.05))',
-              color: 'var(--accent-orange)', 
-              border: '1px solid rgba(249, 115, 22, 0.2)',
-              padding: '4px 12px', 
-              borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' 
-            }}>
-              👤 {user.name} ({
-                user.role === 'admin' ? '최고관리자' :
-                user.role === 'owner' ? '점주' :
-                user.role === 'manager' ? '점장' : '점원'
-              })
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ 
+                background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(249, 115, 22, 0.05))',
+                color: 'var(--accent-orange)', 
+                border: '1px solid rgba(249, 115, 22, 0.2)',
+                padding: '4px 12px', 
+                borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' 
+              }}>
+                👤 {user.name} ({
+                  user.role === 'admin' ? '최고관리자' :
+                  user.role === 'owner' ? '점주' :
+                  user.role === 'manager' ? '점장' : '점원'
+                })
+              </div>
+              <button 
+                onClick={handleLogout}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  color: '#ef4444',
+                  padding: '4px 10px',
+                  borderRadius: '6px',
+                  fontSize: '0.75rem',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                }}
+              >
+                🔓 로그아웃
+              </button>
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -532,21 +580,45 @@ function App() {
       {!isCustomerMode && user && activeTab !== 'order' && activeTab !== 'orderV2' && (
         <nav className="bottom-nav-bar-9" style={{ display: 'flex', overflowX: 'auto', gap: '5px', padding: '10px 15px', background: 'var(--surface)', borderTop: '1px solid var(--border)', justifyContent: 'space-between', alignItems: 'center' }}>
           {navItems.map((item, idx) => {
-            const shouldBlink = 
-              (item.tab === 'call' && flashingTabs.call && activeTab !== 'call') ||
-              (item.tab === 'waiting' && flashingTabs.waiting && activeTab !== 'waiting') ||
-              (item.tab === 'reserve' && flashingTabs.reserve && activeTab !== 'reserve') ||
-              (item.tab === 'parking' && flashingTabs.parking && activeTab !== 'parking') ||
-              (item.tab === 'points' && flashingTabs.points && activeTab !== 'points');
+            const count = 
+              item.tab === 'call' ? flashingTabs.call :
+              item.tab === 'waiting' ? flashingTabs.waiting :
+              item.tab === 'reserve' ? flashingTabs.reserve :
+              item.tab === 'parking' ? flashingTabs.parking :
+              item.tab === 'points' ? flashingTabs.points : 0;
 
             return (
               <div 
                 key={idx} 
-                className={`nav-item-9 ${item.special ? 'mic-special-centered' : ''} ${activeTab === item.tab ? 'active' : ''} ${shouldBlink ? 'blink-call-bell' : ''}`} 
+                className={`nav-item-9 ${item.special ? 'mic-special-centered' : ''} ${activeTab === item.tab ? 'active' : ''}`} 
                 onClick={() => item.special ? startVoiceRecognition() : navigateTo(item.tab as MainTab)} 
-                style={{ minWidth: item.special ? '70px' : '50px', textAlign: 'center' }}
+                style={{ minWidth: item.special ? '70px' : '50px', textAlign: 'center', position: 'relative' }}
               >
-                <div className="nav-icon" style={{ fontSize: item.special ? '1.8rem' : '1.2rem' }}>{item.icon}</div>
+                <div className="nav-icon" style={{ fontSize: item.special ? '1.8rem' : '1.2rem', position: 'relative' }}>
+                  {item.icon}
+                  {count > 0 && activeTab !== item.tab && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '-6px',
+                      right: '-6px',
+                      background: '#ef4444',
+                      color: 'white',
+                      borderRadius: '50%',
+                      minWidth: '16px',
+                      height: '16px',
+                      fontSize: '0.65rem',
+                      fontWeight: '800',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '2px',
+                      boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)',
+                      border: '1.5px solid var(--surface)'
+                    }}>
+                      {count}
+                    </span>
+                  )}
+                </div>
                 <div className="nav-label" style={{ fontSize: '0.65rem', marginTop: '4px', whiteSpace: 'nowrap' }}>{item.label}</div>
               </div>
             );

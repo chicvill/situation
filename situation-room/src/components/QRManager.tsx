@@ -64,7 +64,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
         }
     })();
 
-    const baseUrl = `https://situation.chicvill.store`;
+    const baseUrl = window.location.origin;
 
     const qrItems = [
         {
