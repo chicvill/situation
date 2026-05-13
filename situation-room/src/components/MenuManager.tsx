@@ -7,9 +7,10 @@ import { useStoreFilter } from '../hooks/useStoreFilter';
 interface MenuManagerProps {
     bundles: BundleData[];
     onUpdate?: (updatedItems: any[]) => void;
+    onNavigate?: (tab: string) => void;
 }
 
-export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) => {
+export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate, onNavigate }) => {
     const { storeId, storeName } = useStoreFilter();
     const [menuItems, setMenuItems] = useState<any[]>([]);
     const [bundleId, setBundleId] = useState<string | null>(null);
@@ -126,6 +127,7 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate }) =
             if (response.ok) {
                 alert("✅ 메뉴 정보가 성공적으로 저장되었습니다.");
                 if (onUpdate) onUpdate(menuItems);
+                if (onNavigate) onNavigate('home');
             } else {
                 throw new Error('저장 실패');
             }

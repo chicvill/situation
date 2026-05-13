@@ -38,11 +38,20 @@ function App() {
 
   const [user, setUser] = useState<any>(null);
   const [selectedAdminStore, setSelectedAdminStore] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<MainTab>('guide');
+  const [activeTab, setActiveTab] = useState<MainTab>(() => {
+    return (localStorage.getItem('situation_active_tab') as MainTab) || 'guide';
+  });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [recognizedText, setRecognizedText] = useState("");
   const [isListening, setIsListening] = useState(false);
+
+  // 🌟 활성 대시보드 탭이 변경될 때마다 브라우저 로컬 저장소에 기억하여 F5 새로고침 시 화면을 복원합니다.
+  useEffect(() => {
+    if (activeTab) {
+      localStorage.setItem('situation_active_tab', activeTab);
+    }
+  }, [activeTab]);
 
   const [receiptData, setReceiptData] = useState<{
     orderId: string;
@@ -360,7 +369,7 @@ function App() {
       case 'kitchen': return <KitchenDisplay />;
       case 'counter': return <CounterPad storeId={storeId} />;
       case 'display': return <DisplayBoard bundles={bundles} />;
-      case 'menu': return <MenuManager bundles={bundles} />;
+      case 'menu': return <MenuManager bundles={bundles} onNavigate={navigateTo as any} />;
       case 'settings': return <StoreManager bundles={bundles} user={user} onNavigate={navigateTo as any} />;
       case 'qr': return <QRManager bundles={bundles} storeId={storeId} storeName={storeName} />;
       case 'paper': return <PaperViewer />;

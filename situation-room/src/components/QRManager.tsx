@@ -101,7 +101,8 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
     ];
 
     // 인쇄 시 깨짐 방지를 위해 해상도 동적 설정 (모아찍기는 200x200, 낱장 A4는 500x500)
-    const getQRUri = (data: string) => `https://api.qrserver.com/v1/create-qr-code/?size=${printMode === 'a4' ? '500x500' : '200x200'}&data=${encodeURIComponent(data)}`;
+    // 🌟 100% 신뢰성과 초고속 로딩을 위해 구글 글로벌 CDN 기반의 Google Charts QR API로 이전 적용합니다.
+    const getQRUri = (data: string) => `https://chart.googleapis.com/chart?cht=qr&chs=${printMode === 'a4' ? '500x500' : '200x200'}&chl=${encodeURIComponent(data)}`;
 
     return (
         <div className="qr-manager-container animate-fade-in" style={{ padding: '20px' }}>
@@ -113,28 +114,47 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                         size: A4 portrait;
                         margin: 8mm !important;
                     }
-                    body {
-                        background: white !important;
-                        color: black !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        -webkit-print-color-adjust: exact !important;
-                        print-color-adjust: exact !important;
-                    }
-                    .no-print {
+                    
+                    /* ⚠️ 브라우저 이미지 그리기 누락 버그 방지를 위해 visibility: hidden 대신 안전한 display: none 선택자를 사용합니다. */
+                    .sidebar, 
+                    .premium-top-bar, 
+                    .page-header, 
+                    .no-print, 
+                    button, 
+                    header {
                         display: none !important;
                     }
+                    
+                    /* 부모 컨테이너들을 테두리/여백 없는 전체화면 백지로 전환 */
+                    body, html, #root, .app-container, .saas-main, .main-content, .qr-manager-container {
+                        background: white !important;
+                        background-color: white !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        overflow: visible !important;
+                        display: block !important;
+                    }
+                    
+                    /* QR 출력 레이아웃이 A4 용지를 완벽하게 가득 채우도록 규격 설정 */
                     .qr-print-layout {
+                        display: block !important;
+                        width: 100% !important;
+                        max-width: 194mm !important;
+                        margin: 0 auto !important;
                         padding: 0 !important;
                         border: none !important;
                         background: white !important;
-                        width: 100% !important;
-                        max-width: 194mm !important; /* A4 가로폭 수납 보장 */
-                        max-height: 281mm !important; /* A4 세로높이 수납 보장 */
-                        margin: 0 auto !important;
-                        overflow: hidden !important; /* 초과 분량 2페이지 침범 금지 */
                         box-sizing: border-box !important;
                     }
+                    
+                    .no-print {
+                        display: none !important;
+                    }
+                    
                     ${printMode === 'single' ? `
                     /* A4 용지 딱 1장 안에 전체 17개 타이트하게 밀착 배치 규칙 */
                     .qr-grid {
