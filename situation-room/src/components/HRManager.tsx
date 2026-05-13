@@ -178,7 +178,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         setIsProcessing(true);
         try {
             const schedulesList = Object.entries(regSchedules)
-                .filter(([_, val]) => val.active)
+                .filter(([_key, val]) => val.active)
                 .map(([day, val]) => ({
                     day_of_week: parseInt(day),
                     start_time: val.start,
