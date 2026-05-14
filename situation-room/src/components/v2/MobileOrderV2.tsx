@@ -174,15 +174,57 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
         const nameClean = String(item.name || '').replace(/[\uD83C-\uDBFF\uDC00-\uDFFF]+/, '').trim();
         
         // --- Image Selection Logic ---
-        let photoUrl = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&q=80&w=200&h=200"; // Default
+        const IMG = (id: string) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&q=80&w=400&h=400`;
+        let photoUrl = IMG('1546069901-ba9599a7e63c'); // Default: food bowl
         if (item.icon && (item.icon.startsWith('http://') || item.icon.startsWith('https://'))) {
             photoUrl = item.icon;
-        } else if (nameClean.includes('에스프레소')) photoUrl = "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?auto=format&fit=crop&q=80&w=200&h=200";
-        else if (nameClean.includes('아메리카노')) photoUrl = "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&q=80&w=200&h=200";
-        else if (nameClean.includes('스테이크')) photoUrl = "https://images.unsplash.com/photo-1546241072-48010ad2862c?auto=format&fit=crop&q=80&w=200&h=200";
-        else if (nameClean.includes('파스타')) photoUrl = "https://images.unsplash.com/photo-1473093226795-af9932fe5856?auto=format&fit=crop&q=80&w=200&h=200";
-        else if (nameClean.includes('와인')) photoUrl = "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=200&h=200";
-        else if (nameClean.includes('커피')) photoUrl = "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=200&h=200";
+        }
+        // ── 커피·음료 ──────────────────────────────
+        else if (nameClean.includes('에스프레소'))   photoUrl = IMG('1510591509098-f4fdc6d0ff04');
+        else if (nameClean.includes('아메리카노'))   photoUrl = IMG('1509042239860-f550ce710b93');
+        else if (nameClean.includes('아인슈페너'))   photoUrl = IMG('1572442388796-11668a67e53d');
+        else if (nameClean.includes('말차'))         photoUrl = IMG('1534787238-c61dcf8af7d2');
+        else if (nameClean.includes('라떼') || nameClean.includes('커피')) photoUrl = IMG('1495474472287-4d71bcdd2085');
+        // ── 디저트·베이커리 ────────────────────────
+        else if (nameClean.includes('치즈케이크'))   photoUrl = IMG('1524351199679-46cddf530c04');
+        else if (nameClean.includes('케이크'))       photoUrl = IMG('1578985545062-69928b1d9587');
+        else if (nameClean.includes('수플레') || nameClean.includes('팬케이크')) photoUrl = IMG('1567620905732-2d1ec7ab7445');
+        else if (nameClean.includes('크로플') || nameClean.includes('와플')) photoUrl = IMG('1567620905732-2d1ec7ab7445');
+        else if (nameClean.includes('마늘브레드') || nameClean.includes('빵')) photoUrl = IMG('1573140247632-f8fd74997d5c');
+        // ── 한우·고기 ──────────────────────────────
+        else if (nameClean.includes('꽃등심') || nameClean.includes('등심') || nameClean.includes('안심') || nameClean.includes('한우')) photoUrl = IMG('1546241072-48010ad2862c');
+        else if (nameClean.includes('육회'))         photoUrl = IMG('1504674900247-0877df9cc836');
+        else if (nameClean.includes('갈비') || nameClean.includes('떡갈비')) photoUrl = IMG('1529193591184-b1d58069ecdd');
+        else if (nameClean.includes('삼겹살') || nameClean.includes('바베큐')) photoUrl = IMG('1529193591184-b1d58069ecdd');
+        else if (nameClean.includes('스테이크'))     photoUrl = IMG('1546241072-48010ad2862c');
+        else if (nameClean.includes('제육볶음') || nameClean.includes('닭갈비')) photoUrl = IMG('1598103442097-8b74394b95c8');
+        else if (nameClean.includes('치킨') || nameClean.includes('후라이드')) photoUrl = IMG('1562802378-063ec186a863');
+        // ── 국·찌개·탕 ────────────────────────────
+        else if (nameClean.includes('순두부') || nameClean.includes('두부')) photoUrl = IMG('1547592180-85f173990554');
+        else if (nameClean.includes('된장') || nameClean.includes('김치찌개') || nameClean.includes('찌개')) photoUrl = IMG('1547592180-85f173990554');
+        else if (nameClean.includes('신선로') || nameClean.includes('전골')) photoUrl = IMG('1569415593-f39428873e6b');
+        else if (nameClean.includes('갈비탕') || nameClean.includes('탕')) photoUrl = IMG('1547592180-85f173990554');
+        // ── 밥·면류 ────────────────────────────────
+        else if (nameClean.includes('비빔밥') || nameClean.includes('돌솥')) photoUrl = IMG('1553163147-622ab57be1c7');
+        else if (nameClean.includes('짜장'))         photoUrl = IMG('1512058456905-6ca9af2de0e3');
+        else if (nameClean.includes('짬뽕'))         photoUrl = IMG('1569718212165-3a8278d5f624');
+        else if (nameClean.includes('냉면'))         photoUrl = IMG('1555126634-323283e090fa');
+        else if (nameClean.includes('파스타'))       photoUrl = IMG('1473093226795-af9932fe5856');
+        else if (nameClean.includes('쌀국수') || nameClean.includes('국수')) photoUrl = IMG('1569718212165-3a8278d5f624');
+        else if (nameClean.includes('정식') || nameClean.includes('백반') || nameClean.includes('수라간')) photoUrl = IMG('1611532736597-de2d4265fba3');
+        // ── 분식·사이드 ────────────────────────────
+        else if (nameClean.includes('탕수육'))       photoUrl = IMG('1551782450-17144efb9c50');
+        else if (nameClean.includes('파전') || nameClean.includes('전병') || nameClean.includes('해물파전')) photoUrl = IMG('1568901346375-23c9450c58cd');
+        else if (nameClean.includes('잡채'))         photoUrl = IMG('1534482421-64566f976cfa');
+        else if (nameClean.includes('만두'))         photoUrl = IMG('1563245372-f21724e3856d');
+        else if (nameClean.includes('새우') || nameClean.includes('해물') || nameClean.includes('골뱅이')) photoUrl = IMG('1559847844-5315695dadae');
+        else if (nameClean.includes('묵') || nameClean.includes('도토리')) photoUrl = IMG('1547592180-85f173990554');
+        // ── 주류·음료 ──────────────────────────────
+        else if (nameClean.includes('와인') || nameClean.includes('복분자주')) photoUrl = IMG('1510812431401-41d2bd2722f3');
+        else if (nameClean.includes('맥주') || nameClean.includes('생맥주')) photoUrl = IMG('1535958636474-b021ee887b13');
+        else if (nameClean.includes('소주'))         photoUrl = IMG('1571091718767-18b5b1457add');
+        else if (nameClean.includes('막걸리') || nameClean.includes('전통주') || nameClean.includes('고량주') || nameClean.includes('식혜')) photoUrl = IMG('1621503510889-f4becea1b66e');
+        else if (nameClean.includes('사이다') || nameClean.includes('콜라') || nameClean.includes('음료') || nameClean.includes('에이드')) photoUrl = IMG('1520390138845-fd2d229dd553');
 
         return {
             name: nameClean,
@@ -970,6 +1012,13 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     
     return (
       <>
+        {/* 가로 스크롤 안내 */}
+        <div className="scroll-hint-bar">
+          <span className="scroll-hint-arrow">👈</span>
+          <span>카테고리를 좌우로 밀어 메뉴를 탐색하세요</span>
+          <span className="scroll-hint-arrow" style={{ animationDelay: '0.7s' }}>👉</span>
+        </div>
+
         {/* Category Selector Pills */}
         <div style={{
           display: 'flex',
@@ -1011,7 +1060,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
             return (
               <div key={idx} className="menu-card-v2" onClick={() => addToCart(item)}>
                 <div className="menu-image-container">
-                  <img src={item.icon} alt={item.name} />
+                  <img src={item.icon} alt={item.name} onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=400&h=400'; }} />
                   <span className="menu-category-tag">{item.category}</span>
                   {cartItem && (
                     <span className="add-quick-btn">
