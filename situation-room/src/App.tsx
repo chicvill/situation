@@ -142,11 +142,11 @@ function App() {
       setActiveTab('guide');
       setUser(guest);
       return;
-    } else if (mode === 'manual') {
-      // 매뉴얼 QR 스캔 시 관리자 로그인을 거치지 않고 프리패스로 읽기전용/직원매뉴얼로 진입할 수 있게 가상 직원 역할 부여!
+    } else if (mode === 'manual' || (mode === 'hr' && params.get('action') === 'checkin')) {
+      // 매뉴얼 QR 스캔 또는 출퇴근 QR 스캔 시 관리자 로그인을 거치지 않고 프리패스로 가상 직원 역할 부여!
       const staffGuest = { id: 'staff_guest', name: '직원', role: 'staff' };
       setUser(staffGuest);
-      setActiveTab('manual');
+      setActiveTab(mode === 'manual' ? 'manual' : 'hr');
       return;
     } 
 

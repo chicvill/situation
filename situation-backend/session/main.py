@@ -1574,11 +1574,13 @@ async def staff_check_in(data: Dict):
         
     diff_minutes = (now - sched_time).total_seconds() / 60.0
     
+    force = data.get("force", False)
     # 가드 분배 (전후 5분 수립)
-    if diff_minutes < -5.0:
-        raise HTTPException(status_code=400, detail=f"출근 스케줄 시작 5분 전부터만 출근 등록이 가능합니다. (출근예정: {sched_start_str})")
-    elif diff_minutes > 5.0:
-        raise HTTPException(status_code=400, detail=f"출근 허용 시간(5분)을 초과했습니다. 점주 수동 승인을 받으세요. (출근예정: {sched_start_str})")
+    if not force:
+        if diff_minutes < -5.0:
+            raise HTTPException(status_code=400, detail=f"출근 스케줄 시작 5분 전부터만 출근 등록이 가능합니다. (출근예정: {sched_start_str})")
+        elif diff_minutes > 5.0:
+            raise HTTPException(status_code=400, detail=f"출근 허용 시간(5분)을 초과했습니다. 점주 수동 승인을 받으세요. (출근예정: {sched_start_str})")
         
     tardy = diff_minutes >= 1.0 # 1분 넘게 늦었으면 지각 처리
     
@@ -1629,11 +1631,13 @@ async def staff_check_out(data: Dict):
             
         diff_minutes = (now - sched_time).total_seconds() / 60.0
         
+        force = data.get("force", False)
         # 전후 5분 수립
-        if diff_minutes < -5.0:
-            raise HTTPException(status_code=400, detail=f"퇴근 스케줄 종료 5분 전부터만 퇴근 등록이 가능합니다. (퇴근예정: {sched_end_str})")
-        elif diff_minutes > 5.0:
-            raise HTTPException(status_code=400, detail=f"퇴근 허용 시간(5분)을 초과했습니다. 점주 수동 연장 승인을 받으세요. (퇴근예정: {sched_end_str})")
+        if not force:
+            if diff_minutes < -5.0:
+                raise HTTPException(status_code=400, detail=f"퇴근 스케줄 종료 5분 전부터만 퇴근 등록이 가능합니다. (퇴근예정: {sched_end_str})")
+            elif diff_minutes > 5.0:
+                raise HTTPException(status_code=400, detail=f"퇴근 허용 시간(5분)을 초과했습니다. 점주 수동 연장 승인을 받으세요. (퇴근예정: {sched_end_str})")
             
     # 근무시간 계산
     check_in_dt = datetime.fromisoformat(active_log['check_in_time'])

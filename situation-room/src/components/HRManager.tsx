@@ -3,10 +3,13 @@ import { useStoreFilter } from '../hooks/useStoreFilter';
 
 export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any }> = ({ bundles, user, storeDetails }) => {
     const { storeId, storeName } = useStoreFilter();
+    const params = new URLSearchParams(window.location.search);
+    const isCheckinMode = params.get('mode') === 'hr' && params.get('action') === 'checkin';
     const [isProcessing, setIsProcessing] = useState(false);
     const [editingWage, setEditingWage] = useState<{ id: string, wage: string } | null>(null);
     const [editingPhone, setEditingPhone] = useState<{ id: string, phone: string } | null>(null);
     const [showBanner, setShowBanner] = useState(true);
+    const [kioskPhone, setKioskPhone] = useState('');
 
     // Selected states
     const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
@@ -149,6 +152,48 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         }
     };
 
+    // 강제 출퇴근 처리 (점주 예외 권한)
+    const handleForceAttendance = async (ev: React.MouseEvent, emp: any, actionType: 'check-in' | 'check-out') => {
+        ev.stopPropagation();
+        const actionText = actionType === 'check-in' ? '출근' : '퇴근';
+        const empName = emp.items.find((i: any) => i.name === '이름')?.value || '-';
+        
+        if (!window.confirm(`⚠️ 점주 예외 권한으로 ${empName} 사원의 ${actionText}을(를) 강제 기록하시겠습니까?\n이 작업은 5분 스케줄 제한을 무시하고 즉시 처리됩니다.`)) return;
+
+        setIsProcessing(true);
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const endpoint = actionType === 'check-in' ? '/api/staff/check-in' : '/api/staff/check-out';
+            
+            const response = await fetch(`${apiUrl}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    staff_id: emp.id,
+                    store_id: storeId === 'Total' ? 'store-korean' : storeId,
+                    force: true
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                alert(`🚨 강제 기록 에러!\n\n${result.detail}`);
+            } else {
+                if (actionType === 'check-in') {
+                    alert(`🏃 예외 출근 완료!\n\n${empName}님, 점주 승인으로 강제 출근 기록되었습니다.`);
+                } else {
+                    alert(`🏠 예외 퇴근 완료!\n\n${empName}님, 점주 승인으로 강제 퇴근 기록되었습니다.`);
+                }
+                window.location.reload();
+            }
+        } catch (err: any) {
+            alert(`❌ 서버 연동 에러: ${err.message}`);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     // QR 스캔 기반 출퇴근 처리
     const handleQrAttendance = async () => {
         if (!selectedStaffForQr) {
@@ -256,6 +301,108 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
             setIsProcessing(false);
         }
     };
+
+    const handleKioskSubmit = async (actionType: 'check-in' | 'check-out') => {
+        const cleanPhone = kioskPhone.replace(/[^0-9]/g, '');
+        if (!cleanPhone) return alert('전화번호를 정확히 입력해 주세요.');
+
+        const emp = employees.find(e => {
+            const phone = e.items.find((i: any) => i.name === '아이디')?.value;
+            return phone && phone.replace(/[^0-9]/g, '') === cleanPhone;
+        });
+
+        if (!emp) return alert('🚨 등록되지 않은 전화번호(ID)입니다.');
+
+        setIsScanningQr(true);
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const endpoint = actionType === 'check-in' ? '/api/staff/check-in' : '/api/staff/check-out';
+            
+            const response = await fetch(`${apiUrl}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    staff_id: emp.id,
+                    store_id: storeId === 'Total' ? 'store-korean' : storeId
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                alert(`🚨 출퇴근 시간 제한 에러!\n\n${result.detail || '5분 범위에 근로 스케줄이 없습니다.'}`);
+            } else {
+                const empName = emp.items.find((i: any) => i.name === '이름')?.value || '-';
+                if (actionType === 'check-in') {
+                    alert(`🏃 출근 완료!\n\n${empName}님, ${result.tardy ? '⚠️ 지각 출근입니다!' : '✨ 정상 출근 처리되었습니다.'}\n기록 시각: ${new Date(result.check_in_time).toLocaleTimeString()}`);
+                } else {
+                    alert(`🏠 퇴근 완료!\n\n${empName}님, 정상 퇴근 처리되었습니다.\n기록 시각: ${new Date(result.check_out_time).toLocaleTimeString()}`);
+                }
+                setKioskPhone('');
+            }
+        } catch (err: any) {
+            alert(`❌ 서버 연동 에러: ${err.message}`);
+        } finally {
+            setIsScanningQr(false);
+        }
+    };
+
+    if (isCheckinMode) {
+        return (
+            <div className="admin-page animate-fade-in" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', padding: '20px' }}>
+                <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '40px 30px', borderRadius: '24px', border: '1.5px solid rgba(249, 115, 22, 0.3)', textAlign: 'center' }}>
+                    <div style={{ marginBottom: '30px' }}>
+                        <span style={{ fontSize: '3.5rem' }}>⏰</span>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '15px', color: 'var(--text-main)' }}>출퇴근 기록 단말기</h2>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '8px' }}>
+                            본인의 전화번호(ID)를 입력하고<br/>원하는 버튼을 눌러주세요.
+                        </p>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <input 
+                            type="tel"
+                            placeholder="전화번호 (예: 01012345678)"
+                            value={kioskPhone}
+                            onChange={(e) => setKioskPhone(e.target.value)}
+                            style={{
+                                width: '100%', padding: '16px', borderRadius: '12px',
+                                background: 'rgba(255,255,255,0.05)', border: '1.5px solid var(--border)',
+                                color: '#fff', fontSize: '1.1rem', textAlign: 'center', letterSpacing: '2px', outline: 'none'
+                            }}
+                            autoFocus
+                        />
+
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button 
+                                onClick={() => handleKioskSubmit('check-in')}
+                                disabled={isScanningQr}
+                                style={{
+                                    flex: 1, padding: '16px', borderRadius: '12px', fontWeight: 'bold', fontSize: '1rem',
+                                    background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1.5px solid #10b981',
+                                    cursor: isScanningQr ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
+                                }}
+                            >
+                                🏃 출 근
+                            </button>
+                            <button 
+                                onClick={() => handleKioskSubmit('check-out')}
+                                disabled={isScanningQr}
+                                style={{
+                                    flex: 1, padding: '16px', borderRadius: '12px', fontWeight: 'bold', fontSize: '1rem',
+                                    background: 'rgba(249, 115, 22, 0.15)', color: 'var(--accent-orange)', border: '1.5px solid var(--accent-orange)',
+                                    cursor: isScanningQr ? 'not-allowed' : 'pointer', transition: 'all 0.2s'
+                                }}
+                            >
+                                🏠 퇴 근
+                            </button>
+                        </div>
+                    </div>
+                    {isScanningQr && <p style={{ marginTop: '20px', fontSize: '0.85rem', color: 'var(--accent-orange)' }}>인증 처리 중입니다...</p>}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="admin-page animate-fade-in" style={{ paddingBottom: '60px' }}>
@@ -620,6 +767,22 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                                                     >
                                                         📄 명세서 확인
                                                     </button>
+                                                    {(user.role === 'owner' || user.role === 'admin') && (
+                                                        <>
+                                                            <button 
+                                                                onClick={(ev) => handleForceAttendance(ev, e, 'check-in')}
+                                                                style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid #10b981', borderRadius: '10px', padding: '8px 12px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer' }}
+                                                            >
+                                                                🏃출근
+                                                            </button>
+                                                            <button 
+                                                                onClick={(ev) => handleForceAttendance(ev, e, 'check-out')}
+                                                                style={{ background: 'rgba(249, 115, 22, 0.1)', color: 'var(--accent-orange)', border: '1px solid var(--accent-orange)', borderRadius: '10px', padding: '8px 12px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer' }}
+                                                            >
+                                                                🏠퇴근
+                                                            </button>
+                                                        </>
+                                                    )}
                                                     {user.role === 'owner' && parseInt(unpaidWage) > 0 && (
                                                         <button 
                                                             onClick={() => handlePaySalary(id, name)}
