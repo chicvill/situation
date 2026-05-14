@@ -1,4 +1,4 @@
-import psycopg2
+import psycopg2  # type: ignore
 import os
 import json
 from dotenv import load_dotenv, find_dotenv
@@ -21,8 +21,8 @@ try:
     cur = conn.cursor()
     
     # 1. Check if store-chicvill exists
-    cur.execute("SELECT COUNT(*) FROM stores WHERE id = 'store-chicvill'")
-    has_chicvill = cur.fetchone()[0] > 0
+    cur.execute("SELECT 1 FROM stores WHERE id = 'store-chicvill' LIMIT 1")
+    has_chicvill = cur.fetchone() is not None
     
     if not has_chicvill:
         print("🌱 Seeding '시크빌' (store-chicvill)...")
@@ -36,8 +36,8 @@ try:
         print("ℹ️ '시크빌' already exists in the stores table.")
 
     # 2. Check if store-1 (시크앤프레시) exists
-    cur.execute("SELECT COUNT(*) FROM stores WHERE id = 'store-1'")
-    has_store1 = cur.fetchone()[0] > 0
+    cur.execute("SELECT 1 FROM stores WHERE id = 'store-1' LIMIT 1")
+    has_store1 = cur.fetchone() is not None
     
     if not has_store1:
         print("🌱 Seeding '시크앤프레시' (store-1)...")
