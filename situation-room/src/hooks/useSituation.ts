@@ -7,6 +7,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
     const [bundles, setBundles] = useState<BundleData[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const socketRef = useRef<WebSocket | null>(null);
+    const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const storeIdRef = useRef(storeId);
     useEffect(() => { storeIdRef.current = storeId; }, [storeId]);
@@ -15,7 +16,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
         try {
             const queryParams = new URLSearchParams();
             if (storeId && storeId !== "Total") queryParams.append('store_id', storeId);
-            
+
             const url = queryParams.toString() ? `${API_BASE}/api/pool?${queryParams.toString()}` : `${API_BASE}/api/pool`;
             const response = await fetch(url);
             const data = await response.json();
@@ -31,6 +32,14 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
         }
     }, [storeId]);
 
+    // 300ms 디바운스: 연속 이벤트가 쏟아져도 1회만 fetch
+    const debouncedFetch = useCallback(() => {
+        if (fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current);
+        fetchDebounceRef.current = setTimeout(() => {
+            fetchInitialData();
+        }, 300);
+    }, [fetchInitialData]);
+
     // Initial Data Fetch
     useEffect(() => {
         fetchInitialData();
@@ -39,22 +48,23 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
     // WebSocket Connection
     useEffect(() => {
         let socket: WebSocket | null = null;
-        
+
         const connectWS = () => {
             socket = new WebSocket(`${WS_BASE}/ws/kitchen`);
             socketRef.current = socket;
-            
+
             socket.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 const currentStoreId = storeIdRef.current;
-                
-                // Handle Bundle Updates
+
+                const storeMatches = !data.store_id || data.store_id === currentStoreId || currentStoreId === "Total" || currentStoreId === "";
+
+                // Handle Bundle Updates (full bundle payload → 로컬 상태 직접 갱신, fetch 불필요)
                 const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins'];
                 if (data.id && bundleTypes.includes(data.type)) {
                     if (currentStoreId !== "Total" && currentStoreId !== "" && data.store_id && data.store_id !== currentStoreId) {
-                        return; 
+                        return;
                     }
-
                     setBundles(prev => {
                         const currentPrev = Array.isArray(prev) ? prev : [];
                         const index = currentPrev.findIndex(b => b.id === data.id);
@@ -65,9 +75,10 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                         }
                         return [data, ...currentPrev];
                     });
+                    return;
                 }
 
-                // Internal App Events
+                // 상태 변경 — 로컬 상태 직접 갱신
                 if (data.type === 'STATUS_UPDATED') {
                     setBundles(prev => {
                         const currentPrev = Array.isArray(prev) ? prev : [];
@@ -75,34 +86,30 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                             data.ids?.includes(b.id) ? { ...b, status: data.status } : b
                         );
                     });
-                } else if (data.type === 'KITCHEN_DONE') {
+                    return;
+                }
+
+                if (data.type === 'STATUS_UPDATE') {
+                    setBundles(prev => {
+                        const currentPrev = Array.isArray(prev) ? prev : [];
+                        return currentPrev.map(b =>
+                            b.id === data.order_id ? { ...b, status: data.status } : b
+                        );
+                    });
+                    return;
+                }
+
+                if (data.type === 'KITCHEN_DONE') {
                     setBundles(prev => {
                         const currentPrev = Array.isArray(prev) ? prev : [];
                         return currentPrev.map(b => b.id === data.bundleId ? { ...b, status: 'ready' } : b);
                     });
-                } else if (
-                    data.type === 'POOL_UPDATED' || 
-                    data.type === 'CHECKIN_APPROVED' ||
-                    data.type === 'NEW_ORDER' ||
-                    data.type === 'STATUS_UPDATED' ||
-                    data.type === 'STATUS_UPDATE' ||
-                    data.type === 'ORDER_UPDATED' ||
-                    data.type === 'KITCHEN_DONE' ||
-                    data.type === 'PAYMENT_CONFIRMED' ||
-                    data.type === 'PAYMENT_APPROVED' ||
-                    data.type === 'SESSION_CLOSED' ||
-                    data.type === 'PARTIAL_SETTLEMENT' ||
-                    data.type === 'STAFF_CALL' ||
-                    data.type === 'WAITING_REGISTERED' ||
-                    data.type === 'WAITING_STATUS_CHANGED' ||
-                    data.type === 'WAITING_UPDATED' ||
-                    data.type === 'RESERVATION_UPDATED' ||
-                    data.type === 'PARKING_APPLIED' ||
-                    data.type === 'POINTS_UPDATED'
-                ) {
-                    if (!data.store_id || data.store_id === currentStoreId || currentStoreId === "Total" || currentStoreId === "") {
-                        fetchInitialData();
-                    }
+                    return;
+                }
+
+                // 그 외 — 전체 refetch (디바운스 적용)
+                if (storeMatches) {
+                    debouncedFetch();
                 }
             };
 
@@ -113,8 +120,11 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
         };
 
         connectWS();
-        return () => { if (socket) socket.close(); };
-    }, [fetchInitialData]);
+        return () => {
+            if (fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current);
+            if (socket) socket.close();
+        };
+    }, [debouncedFetch]);
 
     // API Situation Handler
     const handleSendMessage = useCallback(async (text: string, targetId?: string, context?: string, overrideStoreId?: string, overrideStoreName?: string) => {

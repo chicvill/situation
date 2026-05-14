@@ -1,22 +1,32 @@
 import os
 import json
+import asyncio
 from fastapi import WebSocket
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 POOL_FILE = os.path.join(os.path.dirname(__file__), "..", "knowledge_pool.json")
 
+_pool_cache: Optional[list] = None
 
-def load_pool():
+
+def load_pool() -> list:
+    global _pool_cache
+    if _pool_cache is not None:
+        return _pool_cache
     if os.path.exists(POOL_FILE):
         try:
             with open(POOL_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except:
-            return []
-    return []
+                _pool_cache = json.load(f)
+                return _pool_cache
+        except Exception:
+            pass
+    _pool_cache = []
+    return _pool_cache
 
 
-def save_pool(pool):
+def save_pool(pool: list) -> bool:
+    global _pool_cache
+    _pool_cache = pool  # 캐시 즉시 갱신
     try:
         with open(POOL_FILE, "w", encoding="utf-8") as f:
             json.dump(pool, f, ensure_ascii=False, indent=2)
@@ -24,6 +34,13 @@ def save_pool(pool):
     except Exception as e:
         print(f"Save Pool Error: {e}")
         return False
+
+
+async def _safe_send(ws: WebSocket, message: dict):
+    try:
+        await ws.send_json(message)
+    except Exception:
+        pass
 
 
 class ConnectionManager:
@@ -51,19 +68,19 @@ class ConnectionManager:
                     self.active_connections[client_id].remove(websocket)
 
     async def broadcast_to_kitchen(self, message: dict):
-        for connection in self.kitchen_connections:
-            try:
-                await connection.send_json(message)
-            except:
-                pass
+        if not self.kitchen_connections:
+            return
+        await asyncio.gather(
+            *[_safe_send(ws, message) for ws in self.kitchen_connections]
+        )
 
     async def send_to_table(self, table_id: str, message: dict):
-        if table_id in self.active_connections:
-            for connection in self.active_connections[table_id]:
-                try:
-                    await connection.send_json(message)
-                except:
-                    pass
+        conns = self.active_connections.get(table_id)
+        if not conns:
+            return
+        await asyncio.gather(
+            *[_safe_send(ws, message) for ws in conns]
+        )
 
 
 manager = ConnectionManager()

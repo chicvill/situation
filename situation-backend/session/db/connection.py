@@ -1,4 +1,5 @@
 import psycopg2  # type: ignore
+from psycopg2 import pool as pg_pool  # type: ignore
 from psycopg2.extras import RealDictCursor  # type: ignore
 import os
 import json
@@ -8,6 +9,14 @@ from dotenv import load_dotenv, find_dotenv
 # .env 파일 로드 (상위 디렉토리 포함 자동 탐색)
 load_dotenv(find_dotenv())
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+_connection_pool: pg_pool.ThreadedConnectionPool = None
+
+def _get_pool() -> pg_pool.ThreadedConnectionPool:
+    global _connection_pool
+    if _connection_pool is None or _connection_pool.closed:
+        _connection_pool = pg_pool.ThreadedConnectionPool(2, 10, dsn=DATABASE_URL)
+    return _connection_pool
 
 class SafeConnectionWrapper:
     def __init__(self, conn):
@@ -70,12 +79,36 @@ class SafeCursorWrapper:
     def __del__(self):
         self.close()
 
+class PooledConnectionWrapper(SafeConnectionWrapper):
+    """풀에서 가져온 연결 — close() 시 풀에 반환."""
+    def __init__(self, conn, pool: pg_pool.ThreadedConnectionPool):
+        super().__init__(conn)
+        self._pool = pool
+
+    def close(self):
+        if not self._closed:
+            try:
+                if not self._conn.closed:
+                    self._conn.rollback()
+                self._pool.putconn(self._conn)
+            except Exception:
+                try:
+                    self._conn.close()
+                except Exception:
+                    pass
+            self._closed = True
+
+    def __del__(self):
+        self.close()
+
+
 def get_db_conn():
     if not DATABASE_URL:
         raise Exception("DATABASE_URL environment variable is missing!")
     try:
-        conn = psycopg2.connect(DATABASE_URL)
-        return SafeConnectionWrapper(conn)
+        raw = _get_pool().getconn()
+        raw.autocommit = False
+        return PooledConnectionWrapper(raw, _get_pool())
     except Exception as e:
         print(f"❌ DB Connection Error: {e}")
         raise e
