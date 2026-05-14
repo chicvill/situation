@@ -4,12 +4,14 @@ import type { BundleData } from '../../types';
 import { WS_BASE, API_BASE } from '../../config';
 import { PaymentModal } from '../PaymentModal';
 import { PaymentService } from '../../services/paymentService';
+import { ConversationalUI } from '../ConversationalUI';
 
 interface Props {
   bundles: BundleData[];
   storeId: string;
   storeName: string;
   onNavigate?: (tab: any) => void;
+  isCustomerMode?: boolean;
 }
 
 interface MenuItem {
@@ -84,7 +86,10 @@ const getUpsellRecommendation = (mainItemName: string) => {
   };
 };
 
-const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialStoreName, onNavigate }) => {
+const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialStoreName, onNavigate, isCustomerMode = false }) => {
+  // AI 비서 ↔ 판형 메뉴 토글 (고객 QR 접속 시 AI 모드로 시작)
+  const [viewMode, setViewMode] = useState<'ai' | 'menu'>(isCustomerMode ? 'ai' : 'menu');
+
   // --- States ---
   const [cart, setCart] = useState<MenuItem[]>([]);
   const [myOrders, setMyOrders] = useState<Order[]>([]);
@@ -1138,6 +1143,31 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     );
   }
 
+  // AI 비서 모드: ConversationalUI를 내부에 임베드
+  if (viewMode === 'ai') {
+    return (
+      <div className="mobile-v2-container">
+        {/* AI ↔ 판형 토글 배너 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '8px 16px', background: '#1e293b', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <button
+            onClick={() => setViewMode('menu')}
+            style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.35)', color: '#f97316', padding: '5px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+          >
+            📋 메뉴 판형으로 보기
+          </button>
+        </div>
+        <ConversationalUI
+          bundles={bundles}
+          storeName={storeName}
+          onNavigate={(tab) => {
+            if (tab === 'orderV2') setViewMode('menu');
+            else onNavigate?.(tab);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="mobile-v2-container">
       {/* Header */}
@@ -1148,27 +1178,25 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
             <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>Table {tableNo} | 스마트 원격 오더</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {onNavigate && (
-              <button 
-                onClick={() => onNavigate('guide')}
-                style={{
-                  background: 'linear-gradient(135deg, #fef08a, #fde047)',
-                  border: '1px solid #facc15',
-                  padding: '6px 12px',
-                  borderRadius: '12px',
-                  fontSize: '11px',
-                  fontWeight: 800,
-                  color: '#1e293b',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-                }}
-              >
-                🤖 AI 비서 호출
-              </button>
-            )}
+            <button
+              onClick={() => setViewMode('ai')}
+              style={{
+                background: 'linear-gradient(135deg, #fef08a, #fde047)',
+                border: '1px solid #facc15',
+                padding: '6px 12px',
+                borderRadius: '12px',
+                fontSize: '11px',
+                fontWeight: 800,
+                color: '#1e293b',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+              }}
+            >
+              🤖 AI 비서
+            </button>
             <div style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.2)', padding: '6px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: 800, color: '#f97316' }}>
               🟢 연결됨
             </div>

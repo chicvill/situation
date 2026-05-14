@@ -141,8 +141,8 @@ function App() {
     // 1. URL 모드 체크 (고객 주문 및 고객 대기 등록 등)
     if (mode === 'customer' || mode === 'waiting') {
       const guest = { id: 'guest', name: '손님', role: 'customer' };
-      // 고객이 스캔해서 들어왔을 때 키오스크의 무서움과 피로감을 덜어줄 AI 비서 대화식 창('guide')으로 즉시 다이렉트 랜딩 처리!
-      setActiveTab('guide');
+      // QR 스캔 시 MobileOrderV2(orderV2)로 직접 진입, 내부에서 AI 비서 모드로 시작 (PC와 동일한 통합 화면)
+      setActiveTab('orderV2');
       setUser(guest);
       return;
     } else if (mode === 'manual' || (mode === 'hr' && params.get('action') === 'checkin')) {
@@ -384,7 +384,7 @@ function App() {
   const renderContent = () => {
     switch (activeTab) {
       case 'guide': return <ConversationalUI bundles={bundles} storeName={storeName} onNavigate={navigateTo as any} />;
-      case 'orderV2': return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} />;
+      case 'orderV2': return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} isCustomerMode={isCustomerMode} />;
       case 'kitchen': return <KitchenDisplay />;
       case 'counter': return <CounterPad storeId={storeId} />;
       case 'display': return <DisplayBoard bundles={bundles} />;
