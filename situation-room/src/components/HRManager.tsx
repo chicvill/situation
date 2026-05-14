@@ -169,7 +169,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    staff_id: emp.id,
+                    staff_id: emp.items.find((i: any) => i.name === '아이디')?.value || emp.id,
                     store_id: storeId === 'Total' ? 'store-korean' : storeId,
                     force: true
                 })
@@ -322,7 +322,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    staff_id: emp.id,
+                    staff_id: emp.items.find((i: any) => i.name === '아이디')?.value || emp.id,
                     store_id: storeId === 'Total' ? 'store-korean' : storeId
                 })
             });
@@ -349,7 +349,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
 
     if (isCheckinMode) {
         return (
-            <div className="admin-page animate-fade-in" style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0a', padding: '20px' }}>
+            <div className="admin-page animate-fade-in" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)', padding: '20px' }}>
                 <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '40px 30px', borderRadius: '24px', border: '1.5px solid rgba(249, 115, 22, 0.3)', textAlign: 'center' }}>
                     <div style={{ marginBottom: '30px' }}>
                         <span style={{ fontSize: '3.5rem' }}>⏰</span>
@@ -367,8 +367,8 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                             onChange={(e) => setKioskPhone(e.target.value)}
                             style={{
                                 width: '100%', padding: '16px', borderRadius: '12px',
-                                background: 'rgba(255,255,255,0.05)', border: '1.5px solid var(--border)',
-                                color: '#fff', fontSize: '1.1rem', textAlign: 'center', letterSpacing: '2px', outline: 'none'
+                                background: 'var(--background)', border: '1.5px solid var(--border)',
+                                color: 'var(--text-main)', fontSize: '1.1rem', textAlign: 'center', letterSpacing: '2px', outline: 'none'
                             }}
                             autoFocus
                         />
