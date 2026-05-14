@@ -79,7 +79,7 @@ init_db_v2()
 
 # --- DB Debug / Sync Script ---
 def force_seed_chicvill():
-    import psycopg2
+    import psycopg2 # type: ignore
     import json
     db_url = os.getenv("DATABASE_URL")
     log_content = []
@@ -95,7 +95,8 @@ def force_seed_chicvill():
         
         # 2. Check if store-chicvill is in DB
         cur.execute("SELECT COUNT(*) FROM stores WHERE id = 'store-chicvill'")
-        count_chicvill = cur.fetchone()[0]
+        row = cur.fetchone()
+        count_chicvill = row[0] if row else 0
         log_content.append(f"store-chicvill count: {count_chicvill}")
         
         if count_chicvill == 0:

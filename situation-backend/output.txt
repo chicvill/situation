@@ -1,4 +1,4 @@
-=== DB Debug/Sync Start: 2026-05-14T09:02:32.715630 ===
-Current stores in DB: [('store-chinese', '취홍루'), ('store-1', '시크앤프레시'), ('store-chicvill', '시크빌'), ('store-japanese', '미도리 스시'), ('store-chicvill02', '시크빌'), ('store-western', '라 벨라 이탈리아'), ('store-korean', '대장금 수라간'), ('store-coffee', '그레이스 하이테크 커피'), ('store-beef', '대관령 황금 한우'), ('store-tofu', '한옥마을 수제 초당순두부'), ('store-bibim', '우정 전주 돌솥비빔밥')]
+=== DB Debug/Sync Start: 2026-05-14T09:44:36.824422 ===
+Current stores in DB: [('store-chinese', '취홍루'), ('store-1', '시크앤프레시'), ('store-chicvill', '시크빌'), ('store-korean', '대장금 수라간'), ('store-japanese', '미도리 스시'), ('store-chicvill02', '시크빌'), ('store-western', '라 벨라 이탈리아'), ('store-coffee', '그레이스 하이테크 커피'), ('store-beef', '대관령 황금 한우'), ('store-tofu', '한옥마을 수제 초당순두부'), ('store-bibim', '우정 전주 돌솥비빔밥')]
 store-chicvill count: 1
-Stores in DB after sync: [('store-chinese', '취홍루'), ('store-1', '시크앤프레시'), ('store-chicvill', '시크빌'), ('store-japanese', '미도리 스시'), ('store-chicvill02', '시크빌'), ('store-western', '라 벨라 이탈리아'), ('store-korean', '대장금 수라간'), ('store-coffee', '그레이스 하이테크 커피'), ('store-beef', '대관령 황금 한우'), ('store-tofu', '한옥마을 수제 초당순두부'), ('store-bibim', '우정 전주 돌솥비빔밥')]
+Stores in DB after sync: [('store-chinese', '취홍루'), ('store-1', '시크앤프레시'), ('store-chicvill', '시크빌'), ('store-korean', '대장금 수라간'), ('store-japanese', '미도리 스시'), ('store-chicvill02', '시크빌'), ('store-western', '라 벨라 이탈리아'), ('store-coffee', '그레이스 하이테크 커피'), ('store-beef', '대관령 황금 한우'), ('store-tofu', '한옥마을 수제 초당순두부'), ('store-bibim', '우정 전주 돌솥비빔밥')]
