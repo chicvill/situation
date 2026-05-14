@@ -1,18 +1,10 @@
-/* Modern Premium Design System */
-:root {
-  --primary: #1e293b;
-  --primary-soft: rgba(30, 41, 59, 0.05);
-  --accent: #f97316;
-  --bg-main: #f8fafc;
-  --surface: #ffffff;
-  --text-main: #0f172a;
-  --text-muted: #64748b;
-  --border: #e2e8f0;
+/* MobileOrderV2 Component Styles — design tokens from index.css */
+/* local overrides for menu card radius to match brand spec */
+.orders-container,
+.mobile-v2-container {
   --radius-sm: 12px;
   --radius-md: 20px;
   --radius-lg: 32px;
-  --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
 }
 
 .mobile-v2-container {
@@ -83,7 +75,7 @@
   width: 100px;
   height: 100px;
   border-radius: var(--radius-sm);
-  object-fit: crop;
+  object-fit: cover;
 }
 
 .menu-details {

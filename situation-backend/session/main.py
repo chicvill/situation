@@ -7,10 +7,14 @@ from typing import List, Optional, Dict, Any
 import uuid
 import json
 import os
+import re
+import hashlib
+import base64
+import httpx  # type: ignore
 from datetime import datetime
 import asyncio
 from .database import (
-    save_session, save_order, get_active_session, 
+    save_session, save_order, get_active_session,
     get_orders_by_session, update_order_status, get_max_order_seq, init_db_v2,
     get_db_conn, get_situation_history, update_order_payment_status,
     get_stores_db, add_store_db, update_store_db, delete_store_db
@@ -23,7 +27,6 @@ from psycopg2.extras import RealDictCursor  # type: ignore
 # --- Render Keep-Alive ---
 async def keep_alive_task():
     """Render 서버가 잠들지 않도록 10분마다 DB 작업 및 셀프 핑을 수행합니다."""
-    import httpx
     while True:
         try:
             # 1. DB 작업 (요청하신 대로 1을 저장하고 지움)
@@ -53,23 +56,7 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Start render keepalive task
     asyncio.create_task(keep_alive_task())
-    
-    # 사업자 번호 및 매장명 중복 충돌 방지를 위한 시크앤프레시, 시크빌 매장 사전 일괄 삭제 (테스트를 위해 비활성화)
-    # try:
-    #     conn = get_db_conn()
-    #     if conn:
-    #         cur = conn.cursor()
-    #         cur.execute("DELETE FROM stores WHERE name IN ('시크앤프레시', '시크빌')")
-    #         deleted_rows = cur.rowcount
-    #         conn.commit()
-    #         cur.close()
-    #         conn.close()
-    #         print(f"🧹 [Startup Cleanup] Deleted {deleted_rows} duplicate stores ('시크앤프레시', '시크빌') from PostgreSQL database.")
-    # except Exception as e:
-    #     print(f"⚠️ [Startup Cleanup] Failed to cleanup duplicate stores: {e}")
-        
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -79,8 +66,7 @@ init_db_v2()
 
 # --- DB Debug / Sync Script ---
 def force_seed_chicvill():
-    import psycopg2 # type: ignore
-    import json
+    import psycopg2  # type: ignore  — psycopg2 used directly here to bypass the module-level connection pool
     db_url = os.getenv("DATABASE_URL")
     log_content = []
     log_content.append(f"=== DB Debug/Sync Start: {datetime.now().isoformat()} ===")
@@ -267,7 +253,7 @@ async def debug_db_endpoint():
         if db_url:
             status["database_url_masked"] = db_url.split("@")[-1] if "@" in db_url else "configured"
         
-        import psycopg2  # type: ignore
+        import psycopg2  # type: ignore  — direct connection for diagnostics
         conn = psycopg2.connect(db_url)
         status["connection_test"] = "SUCCESS"
         
@@ -397,24 +383,17 @@ async def delete_bundle(bundle_id: str):
     # 근태 기록(Attendance) 삭제 로직 강화
     if "ATT-" in bundle_id:
         try:
-            from .database import get_db_conn
             conn = get_db_conn()
             if conn:
                 cur = conn.cursor()
-                # ATT-ATT- 형태나 ATT- 형태 모두 대응하도록 숫자/문자 ID만 추출
                 # 모든 "ATT-" 접두어를 제거하여 순수 log_id 확보
-                real_log_id = bundle_id
-                while real_log_id.startswith("ATT-"):
-                    real_log_id = real_log_id[4:]
-                
-                # DB에서는 원래 ATT-가 붙은 상태로 저장되므로, ATT-를 하나만 붙여서 검색
+                real_log_id = re.sub(r'^(ATT-)+', '', bundle_id)
                 search_id = f"ATT-{real_log_id}"
-                
                 cur.execute("DELETE FROM table_attendance_logs WHERE log_id = %s OR log_id = %s", (search_id, real_log_id))
                 conn.commit()
                 cur.close()
                 conn.close()
-                print(f"🗑️ Attendance log {search_id} (original: {bundle_id}) deleted from DB.")
+                print(f"🗑️ Attendance log {search_id} deleted from DB.")
         except Exception as e:
             print(f"Error deleting attendance from DB: {e}")
 
@@ -440,7 +419,6 @@ async def process_situation(data: Dict):
     
     # 조리 완료 처리 ("조리완료")
     if "조리완료" in text_clean:
-        import re
         table_match = re.search(r'\d+', text)
         if table_match:
             table_num = int(table_match.group())
@@ -523,7 +501,6 @@ async def process_situation(data: Dict):
                 
     # 서빙 완료 처리 ("서빙완료")
     elif "서빙완료" in text_clean:
-        import re
         table_match = re.search(r'\d+', text)
         if table_match:
             table_num = int(table_match.group())
@@ -910,7 +887,6 @@ async def cancel_payment(data: Dict):
             "dashboard_url": f"https://dashboard.tosspayments.com/payments/{payment_key}"
         }
     
-    import base64, httpx
     auth = base64.b64encode(f"{toss_secret_key}:".encode()).decode()
     
     try:
@@ -1394,7 +1370,6 @@ async def direct_register_staff(data: Dict):
         raise HTTPException(status_code=400, detail="이름과 휴대폰 번호(ID)는 필수 항목입니다.")
         
     # 1. PersonalInfos 번들 생성/업데이트 (로그인 정보용)
-    import hashlib
     hashed_pw = hashlib.sha256(temporary_password.encode()).hexdigest()
     
     signup_bundle = {
