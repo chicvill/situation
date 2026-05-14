@@ -440,17 +440,34 @@ function App() {
         </div>
       )}
 
+      {/* ── Side Drawer Overlay ── */}
+      {isMenuOpen && (
+        <div
+          onClick={() => setIsMenuOpen(false)}
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            backdropFilter: 'blur(2px)',
+            zIndex: 1999,
+            animation: 'fadeIn 0.2s ease'
+          }}
+        />
+      )}
+
       {!isCustomerMode && user && (
         <div className={`side-menu-drawer ${isMenuOpen ? 'open' : ''}`}>
           <div className="drawer-header">
-            <div className="drawer-logo">{storeName} <span>{user.role.toUpperCase()}</span></div>
+            <div className="drawer-logo">
+              {storeName.length > 12 ? storeName.slice(0, 12) + '…' : storeName}
+              <span>{user.role === 'admin' ? '관리자' : user.role === 'owner' ? '점주' : user.role === 'manager' ? '점장' : '점원'}</span>
+            </div>
             <button onClick={() => setIsMenuOpen(false)}>×</button>
           </div>
           <nav className="drawer-nav">
             <button onClick={() => navigateTo('manual')}>📜 매장 운영 매뉴얼</button>
             <button onClick={() => navigateTo('settings')}>⚙️ 매장 설정</button>
             <button onClick={() => navigateTo('menu')}>📔 메뉴 설정</button>
-            <button onClick={() => navigateTo('hr')}>👥 직원관리 (직원 등록, 근태관리 등)</button>
+            <button onClick={() => navigateTo('hr')}>👥 직원 · 근태 · 급여 관리</button>
             {user.role === 'admin' && (
               <>
                 <button onClick={() => navigateTo('admin')}>🏢 매장관리 (관리자 전용)</button>
@@ -458,121 +475,128 @@ function App() {
                 <button onClick={() => navigateTo('paper')}>📄 AI 논문 보기</button>
               </>
             )}
-            <hr style={{ margin: '15px 0', border: 'none', borderTop: '1px solid rgba(0,0,0,0.05)' }} />
-            <button onClick={() => handleLogout()} style={{ color: '#ef4444' }}>🔓 로그아웃</button>
+            <hr />
+            <button onClick={() => handleLogout()} style={{ color: '#f87171' }}>🔓 로그아웃</button>
           </nav>
         </div>
       )}
 
-      <header className="premium-top-bar" style={{ 
-          padding: '15px 20px', 
-          background: 'var(--surface)',
-          borderBottom: '1px solid var(--border)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          position: 'sticky',
-          top: 0,
-          zIndex: 1000,
-          height: 'auto'
+      {/* ── Top Bar ── */}
+      <header className="premium-top-bar" style={{
+        padding: '0 18px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        height: '58px',
+        gap: '12px',
       }}>
-        {/* Line 1: Hamburger + Store Name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        {/* Left: hamburger + store name */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
           {!isCustomerMode && user && (
-            <button className="hamburger-btn" onClick={() => setIsMenuOpen(true)} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: 'var(--text-main)', padding: 0 }}>
-              ☰
+            <button
+              onClick={() => setIsMenuOpen(true)}
+              style={{
+                background: 'none', border: 'none',
+                padding: '6px', margin: '-6px',
+                cursor: 'pointer', color: 'var(--text-main)',
+                display: 'flex', alignItems: 'center',
+                borderRadius: 'var(--radius-sm)',
+                flexShrink: 0,
+                transition: 'background var(--transition-fast)',
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'none'}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <line x1="3" y1="6"  x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
             </button>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap', maxWidth: 'calc(100% - 40px)', overflow: 'hidden' }}>
-            <div style={{ 
-              fontSize: storeName && storeName.length > 8 ? '1.15rem' : '1.4rem', 
-              fontWeight: '900', 
-              color: 'var(--text-main)', 
-              letterSpacing: '-0.5px',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              maxWidth: '100%'
-            }} title={storeName}>
-              {storeName || '우리식당'}
-            </div>
-            {user?.role === 'admin' && (
-              <button 
-                onClick={() => setSelectedAdminStore(null)}
-                style={{ 
-                  background: 'rgba(255,255,255,0.08)', 
-                  border: '1px solid var(--border)', 
-                  color: 'var(--accent-orange)', 
-                  padding: '4px 10px', 
-                  borderRadius: '6px', 
-                  fontSize: '0.75rem', 
-                  fontWeight: '700', 
-                  cursor: 'pointer',
-                  transition: 'background 0.2s',
-                  whiteSpace: 'nowrap'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
-                onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-              >
-                🔄 매장 전환
-              </button>
-            )}
+          <div style={{
+            fontSize: '1rem',
+            fontWeight: '900',
+            color: 'var(--text-main)',
+            letterSpacing: '-0.4px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }} title={storeName}>
+            {storeName || '우리식당'}
           </div>
+          {user?.role === 'admin' && (
+            <button
+              onClick={() => setSelectedAdminStore(null)}
+              style={{
+                background: 'var(--accent-orange-light)',
+                border: '1px solid rgba(249,115,22,0.25)',
+                color: 'var(--accent-orange)',
+                padding: '3px 9px',
+                borderRadius: 'var(--radius-full)',
+                fontSize: '0.72rem',
+                fontWeight: '800',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              전환
+            </button>
+          )}
         </div>
 
-        {/* Line 2: Manager + Date/Time */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {/* Right: user badge + clock */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
           {!isCustomerMode && user && (
-            <div style={{ 
-              background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.1), rgba(249, 115, 22, 0.05))',
-              color: 'var(--accent-orange)', 
-              border: '1px solid rgba(249, 115, 22, 0.2)',
-              padding: '4px 12px', 
-              borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' 
+            <div style={{
+              background: 'var(--accent-orange-light)',
+              color: 'var(--accent-orange)',
+              border: '1px solid rgba(249,115,22,0.2)',
+              padding: '4px 10px',
+              borderRadius: 'var(--radius-full)',
+              fontSize: '0.75rem',
+              fontWeight: '800',
+              whiteSpace: 'nowrap',
             }}>
-              👤 {user.name} ({
-                user.role === 'admin' ? '최고관리자' :
-                user.role === 'owner' ? '점주' :
-                user.role === 'manager' ? '점장' : '점원'
-              })
+              {user.name}
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <div style={{ color: '#ef4444', fontSize: '0.8rem', fontWeight: '700' }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.65rem', fontWeight: '600', lineHeight: 1 }}>
               {currentTime.getFullYear()}.{String(currentTime.getMonth()+1).padStart(2,'0')}.{String(currentTime.getDate()).padStart(2,'0')}
             </div>
-            <div style={{ color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: '900' }}>
+            <div style={{ color: 'var(--text-main)', fontSize: '1rem', fontWeight: '900', letterSpacing: '-0.5px', lineHeight: 1.2 }}>
               {String(currentTime.getHours()).padStart(2,'0')}:{String(currentTime.getMinutes()).padStart(2,'0')}
             </div>
           </div>
         </div>
       </header>
 
-      <main className="saas-main-full" style={{ paddingTop: '10px', paddingBottom: isCustomerMode ? '0' : '90px' }}>
+      <main className="saas-main-full" style={{ paddingBottom: isCustomerMode ? '0' : '80px' }}>
         <div className="view-content">
           {user ? renderContent() : <Login onLogin={handleLogin} bundles={bundles} />}
         </div>
       </main>
 
       {!isCustomerMode && user && activeTab !== 'order' && activeTab !== 'orderV2' && (
-        <nav className="bottom-nav-bar-9" style={{ display: 'flex', overflowX: 'auto', gap: '5px', padding: '10px 15px', background: 'var(--surface)', borderTop: '1px solid var(--border)', justifyContent: 'space-between', alignItems: 'center' }}>
+        <nav className="bottom-nav-bar-9">
           {navItems.map((item, idx) => {
-            const shouldBlink = 
-              (item.tab === 'call' && flashingTabs.call && activeTab !== 'call') ||
+            const shouldBlink =
+              (item.tab === 'call'    && flashingTabs.call    && activeTab !== 'call')    ||
               (item.tab === 'waiting' && flashingTabs.waiting && activeTab !== 'waiting') ||
               (item.tab === 'reserve' && flashingTabs.reserve && activeTab !== 'reserve') ||
               (item.tab === 'parking' && flashingTabs.parking && activeTab !== 'parking') ||
-              (item.tab === 'points' && flashingTabs.points && activeTab !== 'points');
+              (item.tab === 'points'  && flashingTabs.points  && activeTab !== 'points');
 
             return (
-              <div 
-                key={idx} 
-                className={`nav-item-9 ${item.special ? 'mic-special-centered' : ''} ${activeTab === item.tab ? 'active' : ''} ${shouldBlink ? 'blink-call-bell' : ''}`} 
-                onClick={() => item.special ? startVoiceRecognition() : navigateTo(item.tab as MainTab)} 
-                style={{ minWidth: item.special ? '70px' : '50px', textAlign: 'center' }}
+              <div
+                key={idx}
+                className={`nav-item-9 ${item.special ? 'mic-special-centered' : ''} ${activeTab === item.tab ? 'active' : ''} ${shouldBlink ? 'blink-call-bell' : ''}`}
+                onClick={() => item.special ? startVoiceRecognition() : navigateTo(item.tab as MainTab)}
               >
-                <div className="nav-icon" style={{ fontSize: item.special ? '1.8rem' : '1.2rem' }}>{item.icon}</div>
-                <div className="nav-label" style={{ fontSize: '0.65rem', marginTop: '4px', whiteSpace: 'nowrap' }}>{item.label}</div>
+                <div className="nav-icon">{item.icon}</div>
+                <div className="nav-label">{item.label}</div>
               </div>
             );
           })}

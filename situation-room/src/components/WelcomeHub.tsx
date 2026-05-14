@@ -467,17 +467,17 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
       </div>
 
       {/* 2. Welcome Banner Card */}
-      <div 
-        className="glass-panel" 
+      <div
+        className="glass-panel"
         style={{
-          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01))',
+          background: 'linear-gradient(135deg, #fff9f5, #fff)',
           borderRadius: '24px',
           padding: '30px',
-          border: '1px solid var(--border)',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.06)',
+          border: '1px solid rgba(249,115,22,0.15)',
+          boxShadow: '0 8px 32px rgba(249,115,22,0.06)',
           position: 'relative',
           overflow: 'hidden',
-          marginBottom: '35px',
+          marginBottom: '28px',
           textAlign: 'center'
         }}
       >
@@ -559,7 +559,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
           </div>
 
           {/* Progress Bar */}
-          <div style={{ width: '100%', height: '8px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '10px', overflow: 'hidden', marginBottom: '25px', border: '1px solid var(--border)' }}>
+          <div style={{ width: '100%', height: '8px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden', marginBottom: '25px', border: '1px solid var(--border)' }}>
             <div 
               style={{ 
                 width: `${progressPercent}%`, 
@@ -607,7 +607,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
                   <strong style={{ fontSize: '0.95rem', color: isStep2Done ? 'var(--text-main)' : 'var(--text-muted)' }}>
                     2단계: 디지털 메뉴 구성 (메뉴판 스캔 완료)
                   </strong>
-                  <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '50px', fontWeight: 800, background: isStep2Done ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.08)', color: isStep2Done ? '#10b981' : 'var(--text-muted)' }}>
+                  <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '50px', fontWeight: 800, background: isStep2Done ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-secondary)', color: isStep2Done ? '#10b981' : 'var(--text-muted)' }}>
                     {isStep2Done ? '완료됨' : (isStep1Done ? '활성화' : '대기 중')}
                   </span>
                 </div>
@@ -634,7 +634,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
                   <strong style={{ fontSize: '0.95rem', color: isStep3Done ? 'var(--text-main)' : 'var(--text-muted)' }}>
                     3단계: 스마트 주문용 테이블 QR 코드 인쇄 및 부착
                   </strong>
-                  <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '50px', fontWeight: 800, background: isStep3Done ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.08)', color: isStep3Done ? '#10b981' : 'var(--text-muted)' }}>
+                  <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '50px', fontWeight: 800, background: isStep3Done ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-secondary)', color: isStep3Done ? '#10b981' : 'var(--text-muted)' }}>
                     {isStep3Done ? '완료됨' : (isStep2Done ? '활성화' : '대기 중')}
                   </span>
                 </div>
@@ -667,7 +667,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
                   <strong style={{ fontSize: '0.95rem', color: isStep4Done ? 'var(--text-main)' : 'var(--text-muted)' }}>
                     4단계: 근무 직원(점원/매니저) 가입 및 최종 권한 승인
                   </strong>
-                  <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '50px', fontWeight: 800, background: isStep4Done ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.08)', color: isStep4Done ? '#10b981' : 'var(--text-muted)' }}>
+                  <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '50px', fontWeight: 800, background: isStep4Done ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-secondary)', color: isStep4Done ? '#10b981' : 'var(--text-muted)' }}>
                     {isStep4Done ? '완료됨' : (isStep1Done ? '활성화' : '대기 중')}
                   </span>
                 </div>
@@ -886,13 +886,13 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
                 <div 
                   key={b.id}
                   style={{
-                    background: 'rgba(0,0,0,0.15)',
+                    background: 'var(--surface)',
                     padding: '16px 20px',
                     borderRadius: '16px',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    border: '1px solid rgba(249, 115, 22, 0.15)',
+                    border: '1px solid rgba(249, 115, 22, 0.2)',
                     transition: 'all 0.2s'
                   }}
                 >
@@ -941,13 +941,13 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
                 <div 
                   key={b.id}
                   style={{
-                    background: 'rgba(0,0,0,0.15)',
+                    background: 'var(--surface)',
                     padding: '16px 20px',
                     borderRadius: '16px',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    border: '1px solid rgba(249, 115, 22, 0.15)',
+                    border: '1px solid rgba(249, 115, 22, 0.2)',
                     transition: 'all 0.2s'
                   }}
                 >

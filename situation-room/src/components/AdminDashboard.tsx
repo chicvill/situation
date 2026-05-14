@@ -154,38 +154,26 @@ export const AdminDashboard = ({ bundles, storeDetails }: { bundles: any[], stor
                 </div>
             )}
 
-            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px', marginBottom: '40px' }}>
-                <div className="stat-card" style={{ 
-                    background: 'var(--surface)', padding: '30px', borderRadius: 'var(--radius-md)', 
-                    border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '20px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
-                }}>
-                    <div className="stat-icon" style={{ fontSize: '2rem' }}>💰</div>
+            <div className="stats-grid">
+                <div className="stat-card glass-panel">
+                    <div className="stat-icon" style={{ background: 'var(--accent-orange-light)' }}>💰</div>
                     <div className="stat-info">
-                        <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '500', marginBottom: '4px' }}>오늘의 예상 매출</label>
-                        <h3 style={{ margin: 0, fontSize: '1.6rem', fontWeight: '700', color: 'var(--accent)' }}>{todaySales.toLocaleString()}원</h3>
+                        <label>오늘의 예상 매출</label>
+                        <h3 style={{ color: 'var(--accent-orange)' }}>{todaySales.toLocaleString()}원</h3>
                     </div>
                 </div>
-                <div className="stat-card" style={{ 
-                    background: 'var(--surface)', padding: '30px', borderRadius: 'var(--radius-md)', 
-                    border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '20px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
-                }}>
-                    <div className="stat-icon" style={{ fontSize: '2rem' }}>📝</div>
+                <div className="stat-card glass-panel">
+                    <div className="stat-icon" style={{ background: 'var(--accent-light)' }}>📝</div>
                     <div className="stat-info">
-                        <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '500', marginBottom: '4px' }}>활성 주문건</label>
-                        <h3 style={{ margin: 0, fontSize: '1.6rem', fontWeight: '700', color: 'var(--primary)' }}>{orderCount}건</h3>
+                        <label>활성 주문건</label>
+                        <h3>{orderCount}건</h3>
                     </div>
                 </div>
-                <div className="stat-card" style={{ 
-                    background: 'var(--surface)', padding: '30px', borderRadius: 'var(--radius-md)', 
-                    border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '20px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
-                }}>
-                    <div className="stat-icon" style={{ fontSize: '2rem' }}>👥</div>
+                <div className="stat-card glass-panel">
+                    <div className="stat-icon" style={{ background: 'var(--success-light)' }}>👥</div>
                     <div className="stat-info">
-                        <label style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '500', marginBottom: '4px' }}>출근 직원</label>
-                        <h3 style={{ margin: 0, fontSize: '1.6rem', fontWeight: '700', color: 'var(--primary)' }}>{employeeCount}명</h3>
+                        <label>등록 직원</label>
+                        <h3>{employeeCount}명</h3>
                     </div>
                 </div>
             </div>
