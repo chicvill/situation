@@ -245,17 +245,24 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const totalPrice = useMemo(() => cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0), [cart]);
 
   // --- Functions ---
+  const sessionInactiveCount = React.useRef(0);
+
   const fetchMySession = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE}/api/session/${tableId}?store_id=${storeId}`);
       const data = await res.json();
       if (data && data.session && data.session.status === 'active') {
+        sessionInactiveCount.current = 0;
         setHasActiveSession(true);
         setSessionId(data.session.session_id);
         setMyOrders(data.orders || []);
       } else {
-        setHasActiveSession(false);
-        setSessionId('');
+        // 한 번 활성화된 세션은 연속 3회 비활성 응답이 와야 대기 화면으로 전환 (순간 오류 방지)
+        sessionInactiveCount.current += 1;
+        if (sessionInactiveCount.current >= 3) {
+          setHasActiveSession(false);
+          setSessionId('');
+        }
       }
     } catch (err) {
       console.error("Session sync failed", err);
@@ -1159,6 +1166,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
         <ConversationalUI
           bundles={bundles}
           storeName={storeName}
+          sessionPreApproved={true}
           onNavigate={(tab) => {
             if (tab === 'orderV2') setViewMode('menu');
             else onNavigate?.(tab);

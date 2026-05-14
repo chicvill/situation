@@ -7,9 +7,10 @@ export interface ConversationalUIProps {
     bundles: BundleData[];
     storeName: string;
     onNavigate?: (tab: string) => void;
+    sessionPreApproved?: boolean; // MobileOrderV2에서 임베드 시 이미 세션 확인됨 → 내부 체크 스킵
 }
 
-export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, storeName, onNavigate }) => {
+export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, storeName, onNavigate, sessionPreApproved = false }) => {
     // Parse table and store parameters from URL
     const params = new URLSearchParams(window.location.search);
     const tableNo = params.get('table') || '3';
@@ -23,16 +24,17 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     const [isPaying, setIsPaying] = useState<boolean>(false);
     const [isListening, setIsListening] = useState<boolean>(false);
 
-    const [hasSession, setHasSession] = useState<boolean>(false);
-    const [isCheckingSession, setIsCheckingSession] = useState<boolean>(true);
-    const wasApproved = useRef<boolean>(false);
+    // sessionPreApproved=true이면 부모(MobileOrderV2)가 이미 세션을 확인했으므로 즉시 활성 상태로 시작
+    const [hasSession, setHasSession] = useState<boolean>(sessionPreApproved);
+    const [isCheckingSession, setIsCheckingSession] = useState<boolean>(!sessionPreApproved);
+    const wasApproved = useRef<boolean>(sessionPreApproved);
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const hasSpokenWelcome = useRef(false);
 
     const tableId = `T${tableNo.padStart(2, '0')}`;
 
-    // 카운터의 실시간 좌석 배정 및 이용 승인 여부 동적 조회
+    // 카운터의 실시간 좌석 배정 및 이용 승인 여부 동적 조회 (임베드 모드에서는 스킵)
     const checkSession = async () => {
         try {
             const res = await fetch(`${API_BASE}/api/session/${tableId}?store_id=${storeId}`);
@@ -48,17 +50,18 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
             }
         } catch (e) {
             console.error("Session check failed in ConversationalUI:", e);
-            setHasSession(false);
+            // 네트워크 오류 시 hasSession을 false로 바꾸지 않음 (깜빡임 방지)
         } finally {
             setIsCheckingSession(false);
         }
     };
 
     useEffect(() => {
+        if (sessionPreApproved) return; // 부모가 세션 확인 → 내부 폴링 불필요
         checkSession();
         const interval = setInterval(checkSession, 3000); // 3초 주기 실시간 연동
         return () => clearInterval(interval);
-    }, [tableId, storeId]);
+    }, [tableId, storeId, sessionPreApproved]);
 
     // 좌석 배정 승인이 카운터에서 이뤄지는 순간 환영 오디오를 들려줌
     useEffect(() => {
