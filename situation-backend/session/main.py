@@ -1561,34 +1561,54 @@ async def staff_check_in(data: Dict):
     schedules = get_staff_schedules(staff_id)
     today_schedule = next((s for s in schedules if s['day_of_week'] == current_weekday), None)
     
-    if not today_schedule:
-        raise HTTPException(status_code=400, detail="오늘 배정된 근무 일정이 없습니다. 점주 수동 등록이 필요합니다.")
-        
-    # 10분 가드 계산
-    now = datetime.now()
-    sched_start_str = today_schedule['start_time'] # e.g., "10:00"
-    try:
-        shour, smin = map(int, sched_start_str.split(":"))
-        sched_time = now.replace(hour=shour, minute=smin, second=0, microsecond=0)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"스케줄 형식 오류: {e}")
-        
-    diff_minutes = (now - sched_time).total_seconds() / 60.0
-    
     force = data.get("force", False)
-    # 가드 분배 (전후 5분 수립)
-    if not force:
-        if diff_minutes < -5.0:
-            raise HTTPException(status_code=400, detail=f"출근 스케줄 시작 5분 전부터만 출근 등록이 가능합니다. (출근예정: {sched_start_str})")
-        elif diff_minutes > 5.0:
-            raise HTTPException(status_code=400, detail=f"출근 허용 시간(5분)을 초과했습니다. 점주 수동 승인을 받으세요. (출근예정: {sched_start_str})")
+    now = datetime.now()
+    
+    if not today_schedule:
+        if not force:
+            raise HTTPException(status_code=400, detail="오늘 배정된 근무 일정이 없습니다. 점주 수동 등록이 필요합니다.")
+        tardy = False # 강제 출근 시 스케줄이 없으면 지각 아님
+    else:
+        # 10분 가드 계산
+        sched_start_str = today_schedule['start_time'] # e.g., "10:00"
+        try:
+            shour, smin = map(int, sched_start_str.split(":"))
+            sched_time = now.replace(hour=shour, minute=smin, second=0, microsecond=0)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"스케줄 형식 오류: {e}")
+            
+        diff_minutes = (now - sched_time).total_seconds() / 60.0
         
-    tardy = diff_minutes >= 1.0 # 1분 넘게 늦었으면 지각 처리
+        # 가드 분배 (전후 5분 수립)
+        if not force:
+            if diff_minutes < -5.0:
+                raise HTTPException(status_code=400, detail=f"출근 스케줄 시작 5분 전부터만 출근 등록이 가능합니다. (출근예정: {sched_start_str})")
+            elif diff_minutes > 5.0:
+                raise HTTPException(status_code=400, detail=f"출근 허용 시간(5분)을 초과했습니다. 점주 수동 승인을 받으세요. (출근예정: {sched_start_str})")
+            
+        tardy = diff_minutes >= 1.0 # 1분 넘게 늦었으면 지각 처리
     
     log_id = f"ATT-{uuid.uuid4().hex[:6].upper()}"
     check_in_time = now.isoformat()
     
     if save_attendance_checkin(log_id, staff_id, store_id, check_in_time, tardy):
+        # UI 타임라인에 표시하기 위해 pool에 bundle 추가
+        att_bundle = {
+            "id": log_id,
+            "type": "attendance",
+            "title": f"[{staff['name']}] 출근 완료",
+            "items": [
+                {"name": "사원명", "value": staff['name']},
+                {"name": "지각여부", "value": "지각" if tardy else "정상"},
+                {"name": "정산상태", "value": "미정산"}
+            ],
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "store_id": store_id
+        }
+        pool = load_pool()
+        pool.insert(0, att_bundle)
+        save_pool(pool)
+        
         msg = {
             "type": "STAFF_ATTENDANCE_UPDATE",
             "staff_id": staff_id,
@@ -1598,12 +1618,14 @@ async def staff_check_in(data: Dict):
             "timestamp": check_in_time
         }
         await manager.broadcast_to_kitchen(msg)
+        await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": log_id, "type": "attendance"})
         return {"status": "success", "tardy": tardy, "check_in_time": check_in_time}
     raise HTTPException(status_code=500, detail="출근 저장 실패")
 
 @app.post("/api/staff/check-out")
 async def staff_check_out(data: Dict):
     staff_id = data.get("staff_id")
+    store_id = data.get("store_id", "default_store")
     if not staff_id:
         raise HTTPException(status_code=400, detail="staff_id required")
         
@@ -1622,6 +1644,8 @@ async def staff_check_out(data: Dict):
     today_schedule = next((s for s in schedules if s['day_of_week'] == current_weekday), None)
     
     now = datetime.now()
+    force = data.get("force", False)
+    
     if today_schedule:
         sched_end_str = today_schedule['end_time'] # e.g., "18:00"
         try:
@@ -1632,13 +1656,14 @@ async def staff_check_out(data: Dict):
             
         diff_minutes = (now - sched_time).total_seconds() / 60.0
         
-        force = data.get("force", False)
         # 전후 5분 수립
         if not force:
             if diff_minutes < -5.0:
                 raise HTTPException(status_code=400, detail=f"퇴근 스케줄 종료 5분 전부터만 퇴근 등록이 가능합니다. (퇴근예정: {sched_end_str})")
             elif diff_minutes > 5.0:
                 raise HTTPException(status_code=400, detail=f"퇴근 허용 시간(5분)을 초과했습니다. 점주 수동 연장 승인을 받으세요. (퇴근예정: {sched_end_str})")
+    elif not force:
+        raise HTTPException(status_code=400, detail="오늘 배정된 근무 일정이 없습니다. 점주 수동 등록/퇴근이 필요합니다.")
             
     # 근무시간 계산
     check_in_dt = datetime.fromisoformat(active_log['check_in_time'])
@@ -1647,6 +1672,23 @@ async def staff_check_out(data: Dict):
     
     check_out_time = now.isoformat()
     if save_attendance_checkout(staff_id, check_out_time, work_minutes):
+        # UI 타임라인에 표시하기 위해 pool에 bundle 추가
+        att_bundle = {
+            "id": f"ATT-OUT-{uuid.uuid4().hex[:4].upper()}",
+            "type": "attendance",
+            "title": f"[{staff['name']}] 퇴근 완료 (근무 {work_minutes}분)",
+            "items": [
+                {"name": "사원명", "value": staff['name']},
+                {"name": "근무시간", "value": f"{work_minutes}분"},
+                {"name": "정산상태", "value": "미정산"}
+            ],
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "store_id": store_id
+        }
+        pool = load_pool()
+        pool.insert(0, att_bundle)
+        save_pool(pool)
+        
         msg = {
             "type": "STAFF_ATTENDANCE_UPDATE",
             "staff_id": staff_id,
@@ -1656,6 +1698,7 @@ async def staff_check_out(data: Dict):
             "timestamp": check_out_time
         }
         await manager.broadcast_to_kitchen(msg)
+        await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": att_bundle['id'], "type": "attendance"})
         return {"status": "success", "work_minutes": work_minutes, "check_out_time": check_out_time}
     raise HTTPException(status_code=500, detail="퇴근 저장 실패")
 
