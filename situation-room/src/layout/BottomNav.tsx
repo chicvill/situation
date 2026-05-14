@@ -6,6 +6,8 @@ interface BottomNavProps {
   navItems: NavItem[];
   activeTab: string;
   flashingTabs: NotificationStates;
+  callCount: number;
+  waitingCount: number;
   onNavigate: (tab: string) => void;
   onVoice: () => void;
 }
@@ -14,6 +16,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   navItems,
   activeTab,
   flashingTabs,
+  callCount,
+  waitingCount,
   onNavigate,
   onVoice,
 }) => {
@@ -27,13 +31,22 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           (item.tab === 'parking' && flashingTabs.parking && activeTab !== 'parking') ||
           (item.tab === 'points'  && flashingTabs.points  && activeTab !== 'points');
 
+        const badge =
+          item.tab === 'call'    && callCount > 0    ? callCount :
+          item.tab === 'waiting' && waitingCount > 0 ? waitingCount : 0;
+
         return (
           <div
             key={idx}
             className={`nav-item-9 ${item.special ? 'mic-special-centered' : ''} ${activeTab === item.tab ? 'active' : ''} ${shouldBlink ? 'blink-call-bell' : ''}`}
             onClick={() => item.special ? onVoice() : onNavigate(item.tab)}
           >
-            <div className="nav-icon">{item.icon}</div>
+            <div className="nav-icon" style={{ position: 'relative', display: 'inline-block' }}>
+              {item.icon}
+              {badge > 0 && (
+                <span className="nav-badge">{badge > 99 ? '99+' : badge}</span>
+              )}
+            </div>
             <div className="nav-label">{item.label}</div>
           </div>
         );

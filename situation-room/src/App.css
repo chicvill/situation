@@ -993,13 +993,32 @@ tr:hover td { background: var(--surface-hover); }
 @keyframes blink-call-icon {
   0%, 100% { background: transparent; transform: scale(1); }
   50% {
-    background: rgba(239,68,68,0.15);
-    transform: scale(1.12);
-    box-shadow: 0 0 12px rgba(239,68,68,0.4);
+    background: rgba(220, 20, 20, 0.28);
+    transform: scale(1.15);
+    box-shadow: 0 0 18px rgba(220, 20, 20, 0.75), 0 0 6px rgba(220, 20, 20, 0.5);
     border-radius: var(--radius-sm);
   }
 }
-.blink-call-bell { animation: blink-call-icon 1.2s cubic-bezier(0.4,0,0.2,1) infinite; }
+.blink-call-bell { animation: blink-call-icon 0.9s cubic-bezier(0.4,0,0.2,1) infinite; }
+
+.nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #e01010;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  z-index: 10;
+}
 
 /* ════════════════════════════════════════════
    COUNTER PAD

@@ -17,6 +17,8 @@ export const useStoreSync = (storeId: string) => {
     parking: false,
     points: false,
   });
+  const [callCount, setCallCount] = useState(0);
+  const [waitingCount, setWaitingCount] = useState(0);
 
   const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 
@@ -32,6 +34,7 @@ export const useStoreSync = (storeId: string) => {
       if (callRes.ok) {
         const data = await callRes.json();
         if (Array.isArray(data)) {
+          setCallCount(data.length);
           setFlashingTabs(prev => ({ ...prev, call: data.length > 0 }));
         }
       }
@@ -41,6 +44,7 @@ export const useStoreSync = (storeId: string) => {
       if (waitingRes.ok) {
         const data = await waitingRes.json();
         if (Array.isArray(data)) {
+          setWaitingCount(data.length);
           setFlashingTabs(prev => ({ ...prev, waiting: data.length > 0 }));
         }
       }
@@ -67,7 +71,7 @@ export const useStoreSync = (storeId: string) => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
+
         // 다중 가상 매장 연동: 수신한 데이터에 store_id가 있고, 현재 가동 매장 ID와 불일치하면 필터링 통과
         if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
           return;
@@ -75,14 +79,15 @@ export const useStoreSync = (storeId: string) => {
 
         switch (data.type) {
           case 'STAFF_CALL':
+            setCallCount(prev => prev + 1);
             setFlashingTabs(prev => ({ ...prev, call: true }));
             break;
           case 'CALL_STATUS_UPDATED':
-            // 상태 변동 시 실제 잔여 건수가 존재하는지 다시 정밀 검증
             fetch(`${getApiUrl()}/api/call/active${storeId !== 'Total' ? `?store_id=${storeId}` : ''}`)
               .then(res => res.json())
               .then(calls => {
                 if (Array.isArray(calls)) {
+                  setCallCount(calls.length);
                   setFlashingTabs(prev => ({ ...prev, call: calls.length > 0 }));
                 }
               })
@@ -90,6 +95,7 @@ export const useStoreSync = (storeId: string) => {
             break;
 
           case 'WAITING_REGISTERED':
+            setWaitingCount(prev => prev + 1);
             setFlashingTabs(prev => ({ ...prev, waiting: true }));
             break;
           case 'WAITING_STATUS_CHANGED':
@@ -98,6 +104,7 @@ export const useStoreSync = (storeId: string) => {
               .then(res => res.json())
               .then(waitings => {
                 if (Array.isArray(waitings)) {
+                  setWaitingCount(waitings.length);
                   setFlashingTabs(prev => ({ ...prev, waiting: waitings.length > 0 }));
                 }
               })
@@ -137,15 +144,16 @@ export const useStoreSync = (storeId: string) => {
 
     setFlashingTabs(prev => {
       if (prev[key] === false) return prev;
-      return {
-        ...prev,
-        [key]: false
-      };
+      return { ...prev, [key]: false };
     });
+    if (tab === 'call') setCallCount(0);
+    if (tab === 'waiting') setWaitingCount(0);
   }, []);
 
   return {
     flashingTabs,
+    callCount,
+    waitingCount,
     resetFlash,
     syncInitial: checkInitialStates
   };
