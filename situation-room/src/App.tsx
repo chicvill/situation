@@ -26,6 +26,9 @@ import { WelcomeHub } from './components/WelcomeHub';
 import { useSituation } from './hooks/useSituation';
 import { useStoreFilter } from './hooks/useStoreFilter';
 import { useStoreSync } from './hooks/useStoreSync';
+import { TopBar } from './layout/TopBar';
+import { BottomNav } from './layout/BottomNav';
+import { SideDrawer } from './layout/SideDrawer';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
 
@@ -423,15 +426,15 @@ function App() {
   return (
     <div className={`saas-container mobile-full-mode ${isCustomerMode ? 'customer-mode' : ''}`}>
       {receiptData && (
-        <ReceiptModal 
-          {...receiptData} 
+        <ReceiptModal
+          {...receiptData}
           onClose={() => {
             setReceiptData(null);
             // alert 제거: 결제 완료 후 바로 진행 현황판으로 연결되도록 함
-          }} 
+          }}
         />
       )}
-      
+
       {isListening && (
         <div className="voice-overlay animate-fade-in">
           <div className="voice-wave-premium">🎙️</div>
@@ -440,138 +443,27 @@ function App() {
         </div>
       )}
 
-      {/* ── Side Drawer Overlay ── */}
-      {isMenuOpen && (
-        <div
-          onClick={() => setIsMenuOpen(false)}
-          style={{
-            position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.45)',
-            backdropFilter: 'blur(2px)',
-            zIndex: 1999,
-            animation: 'fadeIn 0.2s ease'
-          }}
+      {/* ── Side Drawer (includes overlay) ── */}
+      {!isCustomerMode && user && (
+        <SideDrawer
+          isOpen={isMenuOpen}
+          storeName={storeName}
+          user={user}
+          onClose={() => setIsMenuOpen(false)}
+          onNavigate={(tab) => navigateTo(tab as MainTab)}
+          onLogout={handleLogout}
         />
       )}
 
-      {!isCustomerMode && user && (
-        <div className={`side-menu-drawer ${isMenuOpen ? 'open' : ''}`}>
-          <div className="drawer-header">
-            <div className="drawer-logo">
-              {storeName.length > 12 ? storeName.slice(0, 12) + '…' : storeName}
-              <span>{user.role === 'admin' ? '관리자' : user.role === 'owner' ? '점주' : user.role === 'manager' ? '점장' : '점원'}</span>
-            </div>
-            <button onClick={() => setIsMenuOpen(false)}>×</button>
-          </div>
-          <nav className="drawer-nav">
-            <button onClick={() => navigateTo('manual')}>📜 매장 운영 매뉴얼</button>
-            <button onClick={() => navigateTo('settings')}>⚙️ 매장 설정</button>
-            <button onClick={() => navigateTo('menu')}>📔 메뉴 설정</button>
-            <button onClick={() => navigateTo('hr')}>👥 직원 · 근태 · 급여 관리</button>
-            {user.role === 'admin' && (
-              <>
-                <button onClick={() => navigateTo('admin')}>🏢 매장관리 (관리자 전용)</button>
-                <button onClick={() => navigateTo('inventory')}>🧠 AI 지식 인벤토리</button>
-                <button onClick={() => navigateTo('paper')}>📄 AI 논문 보기</button>
-              </>
-            )}
-            <hr />
-            <button onClick={() => handleLogout()} style={{ color: '#f87171' }}>🔓 로그아웃</button>
-          </nav>
-        </div>
-      )}
-
       {/* ── Top Bar ── */}
-      <header className="premium-top-bar" style={{
-        padding: '0 18px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        height: '58px',
-        gap: '12px',
-      }}>
-        {/* Left: hamburger + store name */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
-          {!isCustomerMode && user && (
-            <button
-              onClick={() => setIsMenuOpen(true)}
-              style={{
-                background: 'none', border: 'none',
-                padding: '6px', margin: '-6px',
-                cursor: 'pointer', color: 'var(--text-main)',
-                display: 'flex', alignItems: 'center',
-                borderRadius: 'var(--radius-sm)',
-                flexShrink: 0,
-                transition: 'background var(--transition-fast)',
-              }}
-              onMouseOver={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
-              onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                <line x1="3" y1="6"  x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            </button>
-          )}
-          <div style={{
-            fontSize: '1rem',
-            fontWeight: '900',
-            color: 'var(--text-main)',
-            letterSpacing: '-0.4px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }} title={storeName}>
-            {storeName || '우리식당'}
-          </div>
-          {user?.role === 'admin' && (
-            <button
-              onClick={() => setSelectedAdminStore(null)}
-              style={{
-                background: 'var(--accent-orange-light)',
-                border: '1px solid rgba(249,115,22,0.25)',
-                color: 'var(--accent-orange)',
-                padding: '3px 9px',
-                borderRadius: 'var(--radius-full)',
-                fontSize: '0.72rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                flexShrink: 0,
-              }}
-            >
-              전환
-            </button>
-          )}
-        </div>
-
-        {/* Right: user badge + clock */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-          {!isCustomerMode && user && (
-            <div style={{
-              background: 'var(--accent-orange-light)',
-              color: 'var(--accent-orange)',
-              border: '1px solid rgba(249,115,22,0.2)',
-              padding: '4px 10px',
-              borderRadius: 'var(--radius-full)',
-              fontSize: '0.75rem',
-              fontWeight: '800',
-              whiteSpace: 'nowrap',
-            }}>
-              {user.name}
-            </div>
-          )}
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ color: 'var(--text-muted)', fontSize: '0.65rem', fontWeight: '600', lineHeight: 1 }}>
-              {currentTime.getFullYear()}.{String(currentTime.getMonth()+1).padStart(2,'0')}.{String(currentTime.getDate()).padStart(2,'0')}
-            </div>
-            <div style={{ color: 'var(--text-main)', fontSize: '1rem', fontWeight: '900', letterSpacing: '-0.5px', lineHeight: 1.2 }}>
-              {String(currentTime.getHours()).padStart(2,'0')}:{String(currentTime.getMinutes()).padStart(2,'0')}
-            </div>
-          </div>
-        </div>
-      </header>
+      <TopBar
+        storeName={storeName}
+        user={user}
+        currentTime={currentTime}
+        isCustomerMode={isCustomerMode}
+        onMenuOpen={() => setIsMenuOpen(true)}
+        onSwitchStore={() => setSelectedAdminStore(null)}
+      />
 
       <main className="saas-main-full" style={{ paddingBottom: isCustomerMode ? '0' : '80px' }}>
         <div className="view-content">
@@ -580,27 +472,13 @@ function App() {
       </main>
 
       {!isCustomerMode && user && activeTab !== 'order' && activeTab !== 'orderV2' && (
-        <nav className="bottom-nav-bar-9">
-          {navItems.map((item, idx) => {
-            const shouldBlink =
-              (item.tab === 'call'    && flashingTabs.call    && activeTab !== 'call')    ||
-              (item.tab === 'waiting' && flashingTabs.waiting && activeTab !== 'waiting') ||
-              (item.tab === 'reserve' && flashingTabs.reserve && activeTab !== 'reserve') ||
-              (item.tab === 'parking' && flashingTabs.parking && activeTab !== 'parking') ||
-              (item.tab === 'points'  && flashingTabs.points  && activeTab !== 'points');
-
-            return (
-              <div
-                key={idx}
-                className={`nav-item-9 ${item.special ? 'mic-special-centered' : ''} ${activeTab === item.tab ? 'active' : ''} ${shouldBlink ? 'blink-call-bell' : ''}`}
-                onClick={() => item.special ? startVoiceRecognition() : navigateTo(item.tab as MainTab)}
-              >
-                <div className="nav-icon">{item.icon}</div>
-                <div className="nav-label">{item.label}</div>
-              </div>
-            );
-          })}
-        </nav>
+        <BottomNav
+          navItems={navItems}
+          activeTab={activeTab}
+          flashingTabs={flashingTabs}
+          onNavigate={(tab) => navigateTo(tab as MainTab)}
+          onVoice={startVoiceRecognition}
+        />
       )}
     </div>
   );
