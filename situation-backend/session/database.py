@@ -18,6 +18,7 @@ from .db.session_db import (
     get_active_session,
     get_session_by_id,
     update_session_status,
+    update_session_device_id,
     get_all_active_sessions,
 )
 from .db.order_db import (

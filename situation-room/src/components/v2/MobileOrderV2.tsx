@@ -246,12 +246,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
   // --- Functions ---
   const sessionInactiveCount = React.useRef(0);
-  const isFetchingSession = React.useRef(false);
   const hasEverBeenActive = React.useRef(false);
 
   const fetchMySession = useCallback(async () => {
-    if (isFetchingSession.current) return;
-    isFetchingSession.current = true;
     try {
       const res = await fetch(`${API_BASE}/api/session/${tableId}?store_id=${storeId}`);
       const data = await res.json();
@@ -273,8 +270,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       }
     } catch (err) {
       console.error("Session sync failed", err);
-    } finally {
-      isFetchingSession.current = false;
     }
   }, [tableId, storeId]);
 

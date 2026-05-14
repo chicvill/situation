@@ -92,6 +92,21 @@ def update_session_status(session_id: str, status: str):
         print(f"Update Session Status Error: {e}")
         return False
 
+def update_session_device_id(session_id: str, device_id: str):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE table_sessions SET device_id = %(device_id)s WHERE session_id = %(session_id)s",
+                   {'device_id': device_id, 'session_id': session_id})
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Update Session Device ID Error: {e}")
+        return False
+
 def get_all_active_sessions(store_id: Optional[str] = None):
     conn = get_db_conn()
     if not conn: return []

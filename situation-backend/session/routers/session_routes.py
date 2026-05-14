@@ -24,9 +24,14 @@ async def check_in(data: Dict):
 
     active = get_active_session(store_id, table_id)
     if active:
-        # 이미 활성화된 세션이 있는 경우, 기기ID 확인
-        if active['device_id'] and active['device_id'] != device_id:
-            # 다른 기기에서 접속 시도 -> 기존 일행 및 카운터에 승인 요청 전송
+        existing_device = active.get('device_id') or ''
+        # 카운터가 선점 활성화한 테이블(device_id='counter')이면 첫 번째 고객이 소유권 취득
+        if existing_device == 'counter':
+            from ..database import update_session_device_id
+            update_session_device_id(active['session_id'], device_id)
+            return active
+        # 다른 기기에서 접속 시도 -> 기존 일행 및 카운터에 승인 요청 전송
+        if existing_device and existing_device != device_id:
             msg = {
                 "type": "JOIN_REQUEST",
                 "device_id": device_id,
@@ -34,7 +39,7 @@ async def check_in(data: Dict):
                 "table_id": table_id
             }
             await manager.send_to_table(table_id, msg)
-            await manager.broadcast_to_kitchen(msg)  # 카운터(주방)에서도 확인 가능하도록
+            await manager.broadcast_to_kitchen(msg)
             return {"status": "waiting_party_approval", "session_id": active['session_id']}
         return active
 
