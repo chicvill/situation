@@ -1595,7 +1595,7 @@ async def staff_check_in(data: Dict):
         # UI 타임라인에 표시하기 위해 pool에 bundle 추가
         att_bundle = {
             "id": log_id,
-            "type": "attendance",
+            "type": "Attendance",
             "title": f"[{staff['name']}] 출근 완료",
             "items": [
                 {"name": "사원명", "value": staff['name']},
@@ -1618,7 +1618,7 @@ async def staff_check_in(data: Dict):
             "timestamp": check_in_time
         }
         await manager.broadcast_to_kitchen(msg)
-        await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": log_id, "type": "attendance"})
+        await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": log_id, "type": "Attendance"})
         return {"status": "success", "tardy": tardy, "check_in_time": check_in_time}
     raise HTTPException(status_code=500, detail="출근 저장 실패")
 
@@ -1675,7 +1675,7 @@ async def staff_check_out(data: Dict):
         # UI 타임라인에 표시하기 위해 pool에 bundle 추가
         att_bundle = {
             "id": f"ATT-OUT-{uuid.uuid4().hex[:4].upper()}",
-            "type": "attendance",
+            "type": "Attendance",
             "title": f"[{staff['name']}] 퇴근 완료 (근무 {work_minutes}분)",
             "items": [
                 {"name": "사원명", "value": staff['name']},
@@ -1698,7 +1698,7 @@ async def staff_check_out(data: Dict):
             "timestamp": check_out_time
         }
         await manager.broadcast_to_kitchen(msg)
-        await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": att_bundle['id'], "type": "attendance"})
+        await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": att_bundle['id'], "type": "Attendance"})
         return {"status": "success", "work_minutes": work_minutes, "check_out_time": check_out_time}
     raise HTTPException(status_code=500, detail="퇴근 저장 실패")
 
