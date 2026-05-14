@@ -163,7 +163,7 @@ async def close_session(data: Dict):
         success = update_session_status(session_id, "closed")
         if success:
             for order in orders:
-                if order['status'] != 'canceled':
+                if order['status'] != 'cancelled':
                     update_order_status(order['order_id'], "paid")
 
             # 모든 클라이언트에 알림
@@ -267,50 +267,55 @@ async def process_situation(data: Dict):
             # DB에서 해당 테이블의 'cooking' 상태인 주문 조회
             conn = get_db_conn()
             if conn:
-                cur = conn.cursor(cursor_factory=RealDictCursor)
-                cur.execute("""
-                    SELECT * FROM table_orders
-                    WHERE table_id = %s AND status = 'cooking'
-                    ORDER BY timestamp DESC
-                """, (normalized_table,))
-                orders = cur.fetchall()
+                try:
+                    cur = conn.cursor(cursor_factory=RealDictCursor)
+                    cur.execute("""
+                        SELECT * FROM table_orders
+                        WHERE table_id = %s AND status = 'cooking'
+                        ORDER BY timestamp DESC
+                    """, (normalized_table,))
+                    orders = cur.fetchall()
 
-                # 특정 메뉴가 언급되었는지 확인
-                target_order = None
-                if orders:
-                    # 언급된 메뉴 추출 (예: 짜장면, 짬뽕 등)
-                    for order in orders:
-                        items_list = []
-                        items_raw = order.get('items')
-                        if isinstance(items_raw, str):
-                            try:
-                                items_list = json.loads(items_raw)
-                            except:
-                                pass
-                        elif isinstance(items_raw, list):
-                            items_list = items_raw
+                    # 특정 메뉴가 언급되었는지 확인
+                    target_order = None
+                    if orders:
+                        # 언급된 메뉴 추출 (예: 짜장면, 짬뽕 등)
+                        for order in orders:
+                            items_list = []
+                            items_raw = order.get('items')
+                            if isinstance(items_raw, str):
+                                try:
+                                    items_list = json.loads(items_raw)
+                                except Exception:
+                                    pass
+                            elif isinstance(items_raw, list):
+                                items_list = items_raw
 
-                        # 아이템 이름과 비교
-                        for item in items_list:
-                            item_name = item.get('name', '')
-                            if item_name in text:
-                                target_order = order
+                            # 아이템 이름과 비교
+                            for item in items_list:
+                                item_name = item.get('name', '')
+                                if item_name in text:
+                                    target_order = order
+                                    break
+                            if target_order:
                                 break
-                        if target_order:
-                            break
 
-                    # 매칭된 메뉴가 없으면 가장 최근 cooking 주문 선택
-                    if not target_order:
-                        target_order = orders[0]
+                        # 매칭된 메뉴가 없으면 가장 최근 cooking 주문 선택
+                        if not target_order:
+                            target_order = orders[0]
+
+                    if target_order:
+                        # 상태를 'ready'로 변경
+                        cur.execute("""
+                            UPDATE table_orders SET status = 'ready'
+                            WHERE order_id = %s
+                        """, (target_order['order_id'],))
+                        conn.commit()
+                finally:
+                    cur.close()
+                    conn.close()
 
                 if target_order:
-                    # 상태를 'ready'로 변경
-                    cur.execute("""
-                        UPDATE table_orders SET status = 'ready'
-                        WHERE order_id = %s
-                    """, (target_order['order_id'],))
-                    conn.commit()
-
                     # 브로드캐스트 전송
                     msg = {
                         "type": "STATUS_UPDATE",
@@ -318,9 +323,6 @@ async def process_situation(data: Dict):
                         "status": "ready"
                     }
                     await manager.broadcast_to_kitchen(msg)
-
-                    cur.close()
-                    conn.close()
 
                     # 상황 보고 로그용 새 번들 생성하여 풀에 기록
                     new_bnd = {
@@ -338,8 +340,6 @@ async def process_situation(data: Dict):
                     await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": new_bnd["id"], "type": "Analysis"})
 
                     return new_bnd
-                cur.close()
-                conn.close()
 
     # 서빙 완료 처리 ("서빙완료")
     elif "서빙완료" in text_clean:
@@ -351,21 +351,26 @@ async def process_situation(data: Dict):
             # DB에서 해당 테이블의 'ready' 상태인 주문들을 'served'로 변경
             conn = get_db_conn()
             if conn:
-                cur = conn.cursor(cursor_factory=RealDictCursor)
-                cur.execute("""
-                    SELECT * FROM table_orders
-                    WHERE table_id = %s AND status = 'ready'
-                """, (normalized_table,))
-                orders = cur.fetchall()
+                try:
+                    cur = conn.cursor(cursor_factory=RealDictCursor)
+                    cur.execute("""
+                        SELECT * FROM table_orders
+                        WHERE table_id = %s AND status = 'ready'
+                    """, (normalized_table,))
+                    orders = cur.fetchall()
+
+                    if orders:
+                        for order in orders:
+                            cur.execute("""
+                                UPDATE table_orders SET status = 'served'
+                                WHERE order_id = %s
+                            """, (order['order_id'],))
+                        conn.commit()
+                finally:
+                    cur.close()
+                    conn.close()
 
                 if orders:
-                    for order in orders:
-                        cur.execute("""
-                            UPDATE table_orders SET status = 'served'
-                            WHERE order_id = %s
-                        """, (order['order_id'],))
-                    conn.commit()
-
                     # 브로드캐스트 전송
                     for order in orders:
                         msg = {
@@ -374,9 +379,6 @@ async def process_situation(data: Dict):
                             "status": "served"
                         }
                         await manager.broadcast_to_kitchen(msg)
-
-                    cur.close()
-                    conn.close()
 
                     # 상황 보고 로그용 새 번들 생성하여 풀에 기록
                     new_bnd = {
@@ -394,8 +396,6 @@ async def process_situation(data: Dict):
                     await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": new_bnd["id"], "type": "Analysis"})
 
                     return new_bnd
-                cur.close()
-                conn.close()
 
     # 1. AI 엔진을 통한 텍스트 분석 및 구조화
     from ai_engine import parse_situation_text

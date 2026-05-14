@@ -85,7 +85,8 @@ export const useStoreSync = (storeId: string) => {
                 if (Array.isArray(calls)) {
                   setFlashingTabs(prev => ({ ...prev, call: calls.length > 0 }));
                 }
-              });
+              })
+              .catch(err => console.error('Failed to refresh call status:', err));
             break;
 
           case 'WAITING_REGISTERED':
@@ -99,7 +100,8 @@ export const useStoreSync = (storeId: string) => {
                 if (Array.isArray(waitings)) {
                   setFlashingTabs(prev => ({ ...prev, waiting: waitings.length > 0 }));
                 }
-              });
+              })
+              .catch(err => console.error('Failed to refresh waiting status:', err));
             break;
 
           case 'RESERVATION_UPDATED':

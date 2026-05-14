@@ -9,11 +9,14 @@ const STORAGE_KEYS = {
     STORE_NAME: 'situation_store_name'
 };
 
+const SAFE_ID_PATTERN = /^[a-zA-Z0-9_\-]{1,64}$/;
+const SAFE_NAME_PATTERN = /^[\w\s가-힣\-]{1,100}$/;
+
 export const getStoredStoreId = (): string => {
     // 1. URL Query Parameter takes priority
     const params = new URLSearchParams(window.location.search);
     const urlStoreId = params.get('storeId') || params.get('store_id');
-    if (urlStoreId) {
+    if (urlStoreId && SAFE_ID_PATTERN.test(urlStoreId)) {
         localStorage.setItem(STORAGE_KEYS.STORE_ID, urlStoreId);
         return urlStoreId;
     }
@@ -25,7 +28,7 @@ export const getStoredStoreId = (): string => {
 export const getStoredStoreName = (): string => {
     const params = new URLSearchParams(window.location.search);
     const urlStoreName = params.get('store') || params.get('store_name') || params.get('storeName');
-    if (urlStoreName) {
+    if (urlStoreName && SAFE_NAME_PATTERN.test(urlStoreName)) {
         localStorage.setItem(STORAGE_KEYS.STORE_NAME, urlStoreName);
         return urlStoreName;
     }

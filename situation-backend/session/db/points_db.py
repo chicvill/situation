@@ -19,6 +19,9 @@ def get_customer_points(phone: str, store_id: str = 'store-1'):
         return 0
 
 def update_customer_points(phone: str, points_to_add: int, store_id: str = 'store-1'):
+    if points_to_add < 0:
+        print(f"Update Points Error: negative points ({points_to_add}) rejected for {phone}")
+        return False
     conn = get_db_conn()
     if not conn: return False
     try:

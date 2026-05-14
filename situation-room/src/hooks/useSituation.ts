@@ -71,8 +71,8 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                 if (data.type === 'STATUS_UPDATED') {
                     setBundles(prev => {
                         const currentPrev = Array.isArray(prev) ? prev : [];
-                        return currentPrev.map(b => 
-                            data.ids.includes(b.id) ? { ...b, status: data.status } : b
+                        return currentPrev.map(b =>
+                            data.ids?.includes(b.id) ? { ...b, status: data.status } : b
                         );
                     });
                 } else if (data.type === 'KITCHEN_DONE') {

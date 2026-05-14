@@ -55,7 +55,7 @@ def get_today_checkin(staff_id: str):
         print(f"Get Today Checkin Error: {e}")
         return None
 
-def save_attendance_checkout(staff_id: str, check_out_time: str, work_minutes: int, device_id: str = None):
+def save_attendance_checkout(staff_id: str, log_id: str, check_out_time: str, work_minutes: int, device_id: str = None):
     conn = get_db_conn()
     if not conn: return False
     try:
@@ -66,8 +66,9 @@ def save_attendance_checkout(staff_id: str, check_out_time: str, work_minutes: i
                 work_minutes = %(work_minutes)s,
                 status = 'completed',
                 device_id = COALESCE(%(device_id)s, device_id)
-            WHERE staff_id = %(staff_id)s AND status = 'working'
+            WHERE log_id = %(log_id)s AND staff_id = %(staff_id)s AND status = 'working'
         """, {
+            'log_id': log_id,
             'staff_id': staff_id,
             'check_out_time': check_out_time,
             'work_minutes': work_minutes,

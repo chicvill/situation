@@ -370,7 +370,7 @@ async def staff_check_out(data: Dict):
         work_minutes = 0
 
     check_out_time = now.isoformat()
-    if save_attendance_checkout(staff_id, check_out_time, work_minutes, device_id):
+    if save_attendance_checkout(staff_id, active_log['log_id'], check_out_time, work_minutes, device_id):
         # UI 타임라인에 표시하기 위해 pool에 bundle 추가
         att_bundle = {
             "id": f"ATT-OUT-{uuid.uuid4().hex[:4].upper()}",

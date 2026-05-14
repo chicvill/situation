@@ -177,7 +177,8 @@ def get_all_active_orders_as_bundles(store_id: Optional[str] = None):
             bundle_items = []
             for item in items_list:
                 name = item.get('name', '알 수 없음')
-                qty = item.get('quantity') or item.get('qty') or 1
+                qty_val = item.get('quantity') if item.get('quantity') is not None else item.get('qty')
+                qty = qty_val if qty_val is not None else 1
                 bundle_items.append({'name': name, 'value': str(qty)})
 
             timestamp_val = order.get('timestamp')

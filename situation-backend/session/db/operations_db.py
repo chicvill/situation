@@ -146,9 +146,10 @@ def get_active_calls(table_id: Optional[str] = None, store_id: Optional[str] = N
                 conn.close()
             except Exception:
                 pass
-            err_msg = str(e)
-            if 'deadlock' in err_msg.lower() and attempt < max_retries - 1:
-                print(f"⚠️ Get Active Calls deadlock (attempt {attempt + 1}), retrying...")
+            err_msg = str(e).lower()
+            retryable = any(k in err_msg for k in ('deadlock', 'connection', 'timeout', 'server closed'))
+            if retryable and attempt < max_retries - 1:
+                print(f"⚠️ Get Active Calls transient error (attempt {attempt + 1}), retrying... ({e})")
                 time.sleep(0.1 * (attempt + 1))
                 continue
             print(f"Get Active Calls Error: {e}")
