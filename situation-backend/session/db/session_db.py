@@ -49,7 +49,7 @@ def get_active_session(store_id: str, table_id: str):
             cur.execute("""
                 SELECT * FROM table_sessions
                 WHERE store_id = %(store_id)s AND table_id = %(table_id)s AND status != 'closed'
-                LIMIT 1
+                ORDER BY checkin_time DESC LIMIT 1
             """, {'store_id': store_id, 'table_id': table_id})
         result = cur.fetchone()
         cur.close()

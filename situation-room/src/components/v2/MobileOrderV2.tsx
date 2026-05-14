@@ -246,26 +246,35 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
   // --- Functions ---
   const sessionInactiveCount = React.useRef(0);
+  const isFetchingSession = React.useRef(false);
+  const hasEverBeenActive = React.useRef(false);
 
   const fetchMySession = useCallback(async () => {
+    if (isFetchingSession.current) return;
+    isFetchingSession.current = true;
     try {
       const res = await fetch(`${API_BASE}/api/session/${tableId}?store_id=${storeId}`);
       const data = await res.json();
       if (data && data.session && data.session.status === 'active') {
         sessionInactiveCount.current = 0;
+        hasEverBeenActive.current = true;
         setHasActiveSession(true);
         setSessionId(data.session.session_id);
         setMyOrders(data.orders || []);
       } else {
-        // 한 번 활성화된 세션은 연속 3회 비활성 응답이 와야 대기 화면으로 전환 (순간 오류 방지)
-        sessionInactiveCount.current += 1;
-        if (sessionInactiveCount.current >= 3) {
-          setHasActiveSession(false);
-          setSessionId('');
+        // 최초 활성화 이후에만 비활성 카운트 (대기 중엔 카운트 불필요)
+        if (hasEverBeenActive.current) {
+          sessionInactiveCount.current += 1;
+          if (sessionInactiveCount.current >= 3) {
+            setHasActiveSession(false);
+            setSessionId('');
+          }
         }
       }
     } catch (err) {
       console.error("Session sync failed", err);
+    } finally {
+      isFetchingSession.current = false;
     }
   }, [tableId, storeId]);
 
@@ -648,13 +657,17 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     return () => window.removeEventListener('popstate', handlePopState);
   }, [showProgress]);
 
+  const checkinStoreNameRef = React.useRef(storeName);
   useEffect(() => {
+    // storeName deliberately excluded from deps: re-running checkin when bundles update
+    // can create duplicate pending sessions before the first one commits.
     fetch(`${API_BASE}/api/checkin/request`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tableNo, deviceId, store: storeName, store_id: storeId })
+      body: JSON.stringify({ tableNo, deviceId, store: checkinStoreNameRef.current, store_id: storeId })
     }).catch(err => console.error("Checkin Error:", err));
-  }, [tableNo, deviceId, storeName, storeId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tableNo, deviceId, storeId]);
 
 
 
