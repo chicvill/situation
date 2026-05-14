@@ -1676,12 +1676,25 @@ async def staff_check_out(data: Dict):
     store_id = data.get("store_id", "default_store")
     if not staff_id:
         raise HTTPException(status_code=400, detail="staff_id required")
-        
-    from .database import get_staff, get_staff_schedules, save_attendance_checkout, get_active_attendance_log
-    
+
+    device_id = data.get("device_id") or "unknown"
+    force = data.get("force", False)
+
+    from .database import get_staff, get_staff_schedules, save_attendance_checkout, get_active_attendance_log, get_today_checkout
+
     staff = get_staff(staff_id)
     if not staff: raise HTTPException(status_code=404, detail="Staff account not found")
-        
+
+    if not force:
+        today_log = get_today_checkout(staff_id)
+        if today_log:
+            reg_device = today_log.get('device_id') or '알 수 없음'
+            reg_time = str(today_log.get('check_out_time', ''))[:19]
+            raise HTTPException(
+                status_code=400,
+                detail=f"오늘 이미 퇴근이 등록되어 있습니다. 동일 시간대 중복 스캔은 허용되지 않습니다.\n최초 등록: {reg_time} / 단말기: {reg_device}"
+            )
+
     active_log = get_active_attendance_log(staff_id)
     if not active_log:
         raise HTTPException(status_code=400, detail="현재 출근 상태가 아닙니다. 먼저 출근 등록을 완료하세요.")
@@ -1692,8 +1705,7 @@ async def staff_check_out(data: Dict):
     today_schedule = next((s for s in schedules if s['day_of_week'] == current_weekday), None)
     
     now = datetime.now()
-    force = data.get("force", False)
-    
+
     if today_schedule:
         sched_end_str = today_schedule['end_time'] # e.g., "18:00"
         try:
@@ -1719,7 +1731,7 @@ async def staff_check_out(data: Dict):
     if work_minutes < 0: work_minutes = 0
     
     check_out_time = now.isoformat()
-    if save_attendance_checkout(staff_id, check_out_time, work_minutes):
+    if save_attendance_checkout(staff_id, check_out_time, work_minutes, device_id):
         # UI 타임라인에 표시하기 위해 pool에 bundle 추가
         att_bundle = {
             "id": f"ATT-OUT-{uuid.uuid4().hex[:4].upper()}",

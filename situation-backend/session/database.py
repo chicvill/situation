@@ -1448,21 +1448,23 @@ def get_today_checkin(staff_id: str):
         print(f"Get Today Checkin Error: {e}")
         return None
 
-def save_attendance_checkout(staff_id: str, check_out_time: str, work_minutes: int):
+def save_attendance_checkout(staff_id: str, check_out_time: str, work_minutes: int, device_id: str = None):
     conn = get_db_conn()
     if not conn: return False
     try:
         cur = conn.cursor()
         cur.execute("""
-            UPDATE table_attendance_logs 
-            SET check_out_time = %(check_out_time)s, 
-                work_minutes = %(work_minutes)s, 
-                status = 'completed'
+            UPDATE table_attendance_logs
+            SET check_out_time = %(check_out_time)s,
+                work_minutes = %(work_minutes)s,
+                status = 'completed',
+                device_id = COALESCE(%(device_id)s, device_id)
             WHERE staff_id = %(staff_id)s AND status = 'working'
         """, {
             'staff_id': staff_id,
             'check_out_time': check_out_time,
-            'work_minutes': work_minutes
+            'work_minutes': work_minutes,
+            'device_id': device_id
         })
         conn.commit()
         cur.close()
@@ -1471,6 +1473,28 @@ def save_attendance_checkout(staff_id: str, check_out_time: str, work_minutes: i
     except Exception as e:
         print(f"Save Attendance Checkout Error: {e}")
         return False
+
+
+def get_today_checkout(staff_id: str):
+    """당일 퇴근 기록 조회 (중복 스캔 방지용)"""
+    conn = get_db_conn()
+    if not conn: return None
+    try:
+        today = datetime.now().strftime("%Y-%m-%d")
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT log_id, device_id, check_out_time, work_minutes
+            FROM table_attendance_logs
+            WHERE staff_id = %(staff_id)s AND check_out_time LIKE %(today)s
+            ORDER BY check_out_time DESC LIMIT 1
+        """, {'staff_id': staff_id, 'today': f"{today}%"})
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        return dict(row) if row else None
+    except Exception as e:
+        print(f"Get Today Checkout Error: {e}")
+        return None
 
 def get_active_attendance_log(staff_id: str):
     conn = get_db_conn()
