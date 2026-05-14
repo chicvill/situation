@@ -101,6 +101,25 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         } catch (err) { console.error(err); } finally { setIsProcessing(false); }
     };
 
+    const handleDeleteLog = async (ev: React.MouseEvent, bundleId: string) => {
+        ev.stopPropagation();
+        if (!window.confirm('이 근태 기록을 삭제하시겠습니까? (삭제 시 복구할 수 없으며 타임라인과 DB 모두에서 제거됩니다.)')) return;
+        
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const response = await fetch(`${apiUrl}/api/bundle/${bundleId}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                // bundles state will be updated via socket (POOL_UPDATED)
+            } else {
+                alert('삭제 중 오류가 발생했습니다.');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const handleResignEmployee = async (bundle: any) => {
         if (!window.confirm(`${bundle.title} 사원의 퇴사 처리를 진행하시겠습니까? 로그인 권한이 즉시 차단됩니다.`)) return;
         setIsProcessing(true);
@@ -912,7 +931,28 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                                         </div>
                                     </div>
                                 </div>
-                                <span className="time" style={{ opacity: 0.5, fontSize: '0.85rem' }}>{a.timestamp}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <span className="time" style={{ opacity: 0.5, fontSize: '0.85rem' }}>{a.timestamp}</span>
+                                    {(user.role === 'owner' || user.role === 'admin') && (
+                                        <button 
+                                            onClick={(ev) => handleDeleteLog(ev, a.id)}
+                                            style={{ 
+                                                background: 'rgba(239, 68, 68, 0.1)', 
+                                                color: '#ef4444', 
+                                                border: '1px solid rgba(239, 68, 68, 0.2)', 
+                                                padding: '4px 8px', 
+                                                borderRadius: '6px', 
+                                                fontSize: '0.7rem',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                                        >
+                                            삭제
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         );
                     }) : (

@@ -1701,7 +1701,7 @@ def get_all_attendance_as_bundles(store_id: Optional[str] = None):
         cur = conn.cursor(cursor_factory=RealDictCursor)
         query = """
             SELECT l.*, s.name as staff_name FROM table_attendance_logs l
-            JOIN table_staff_accounts s ON l.staff_id = s.staff_id
+            LEFT JOIN table_staff_accounts s ON l.staff_id = s.staff_id
         """
         params = {}
         if store_id and store_id != "Total":
@@ -1719,7 +1719,8 @@ def get_all_attendance_as_bundles(store_id: Optional[str] = None):
             action_type = "퇴근" if log['check_out_time'] else "출근"
             tardy_str = " (지각)" if log['tardy'] else ""
             paid_str = " (지급완료)" if log.get('paid') else " (미지급)"
-            title = f"근태 기록: {log['staff_name']}님 {action_type} 완료{tardy_str}{paid_str}"
+            staff_display_name = log['staff_name'] or f"미등록({log['staff_id']})"
+            title = f"근태 기록: {staff_display_name}님 {action_type} 완료{tardy_str}{paid_str}"
             timestamp = log['check_out_time'] or log['check_in_time'] or ''
             
             bundles.append({
@@ -1730,7 +1731,7 @@ def get_all_attendance_as_bundles(store_id: Optional[str] = None):
                 "status": log['status'],
                 "timestamp": timestamp,
                 "items": [
-                    {"name": "직원명", "value": log['staff_name']},
+                    {"name": "직원명", "value": staff_display_name},
                     {"name": "아이디", "value": log['staff_id']},
                     {"name": "상태", "value": log['status']},
                     {"name": "지각여부", "value": "지각" if log['tardy'] else "정상"},

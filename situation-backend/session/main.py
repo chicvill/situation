@@ -388,6 +388,44 @@ async def update_bundle(bundle_id: str, bundle: Dict):
         return {"status": "success"}
     raise HTTPException(status_code=500, detail="Failed to save bundle")
 
+@app.delete("/api/bundle/{bundle_id}")
+async def delete_bundle(bundle_id: str):
+    pool = load_pool()
+    original_pool_len = len(pool)
+    pool = [b for b in pool if b.get("id") != bundle_id]
+    
+    # 근태 기록(Attendance) 삭제 로직 강화
+    if "ATT-" in bundle_id:
+        try:
+            from .database import get_db_conn
+            conn = get_db_conn()
+            if conn:
+                cur = conn.cursor()
+                # ATT-ATT- 형태나 ATT- 형태 모두 대응하도록 숫자/문자 ID만 추출
+                # 모든 "ATT-" 접두어를 제거하여 순수 log_id 확보
+                real_log_id = bundle_id
+                while real_log_id.startswith("ATT-"):
+                    real_log_id = real_log_id[4:]
+                
+                # DB에서는 원래 ATT-가 붙은 상태로 저장되므로, ATT-를 하나만 붙여서 검색
+                search_id = f"ATT-{real_log_id}"
+                
+                cur.execute("DELETE FROM table_attendance_logs WHERE log_id = %s OR log_id = %s", (search_id, real_log_id))
+                conn.commit()
+                cur.close()
+                conn.close()
+                print(f"🗑️ Attendance log {search_id} (original: {bundle_id}) deleted from DB.")
+        except Exception as e:
+            print(f"Error deleting attendance from DB: {e}")
+
+    if len(pool) < original_pool_len or "ATT-" in bundle_id:
+        if save_pool(pool):
+            await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "bundle_id": bundle_id})
+            return {"status": "success"}
+    
+    await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "bundle_id": bundle_id})
+    return {"status": "success"}
+
 @app.post("/api/situation")
 async def process_situation(data: Dict):
     text = data.get("text")
@@ -1605,10 +1643,6 @@ async def staff_check_in(data: Dict):
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "store_id": store_id
         }
-        pool = load_pool()
-        pool.insert(0, att_bundle)
-        save_pool(pool)
-        
         msg = {
             "type": "STAFF_ATTENDANCE_UPDATE",
             "staff_id": staff_id,
@@ -1685,10 +1719,6 @@ async def staff_check_out(data: Dict):
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "store_id": store_id
         }
-        pool = load_pool()
-        pool.insert(0, att_bundle)
-        save_pool(pool)
-        
         msg = {
             "type": "STAFF_ATTENDANCE_UPDATE",
             "staff_id": staff_id,
