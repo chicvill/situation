@@ -1,10 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 
 export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any }> = ({ bundles, user, storeDetails }) => {
     const { storeId, storeName } = useStoreFilter();
     const params = new URLSearchParams(window.location.search);
     const isCheckinMode = params.get('mode') === 'hr' && params.get('action') === 'checkin';
+
+    const deviceId = useMemo(() => {
+        let id = localStorage.getItem('mqnet_kiosk_device_id');
+        if (!id) {
+            id = 'KIOSK_' + Math.random().toString(36).substring(2, 9).toUpperCase();
+            localStorage.setItem('mqnet_kiosk_device_id', id);
+        }
+        return id;
+    }, []);
     const [isProcessing, setIsProcessing] = useState(false);
     const [editingWage, setEditingWage] = useState<{ id: string, wage: string } | null>(null);
     const [editingPhone, setEditingPhone] = useState<{ id: string, phone: string } | null>(null);
@@ -176,20 +185,21 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         ev.stopPropagation();
         const actionText = actionType === 'check-in' ? '출근' : '퇴근';
         const empName = emp.items.find((i: any) => i.name === '이름')?.value || '-';
-        
+
         if (!window.confirm(`⚠️ 점주 예외 권한으로 ${empName} 사원의 ${actionText}을(를) 강제 기록하시겠습니까?\n이 작업은 5분 스케줄 제한을 무시하고 즉시 처리됩니다.`)) return;
 
         setIsProcessing(true);
         try {
             const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
             const endpoint = actionType === 'check-in' ? '/api/staff/check-in' : '/api/staff/check-out';
-            
+
             const response = await fetch(`${apiUrl}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     staff_id: emp.items.find((i: any) => i.name === '아이디')?.value || emp.id,
                     store_id: storeId === 'Total' ? 'store-korean' : storeId,
+                    device_id: deviceId,
                     force: true
                 })
             });
@@ -226,13 +236,14 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
             try {
                 const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
                 const endpoint = selectedActionForQr === 'check-in' ? '/api/staff/check-in' : '/api/staff/check-out';
-                
+
                 const response = await fetch(`${apiUrl}${endpoint}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         staff_id: selectedStaffForQr,
-                        store_id: storeId === 'Total' ? 'store-korean' : storeId
+                        store_id: storeId === 'Total' ? 'store-korean' : storeId,
+                        device_id: deviceId
                     })
                 });
 
@@ -342,7 +353,8 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     staff_id: emp.items.find((i: any) => i.name === '아이디')?.value || emp.id,
-                    store_id: storeId === 'Total' ? 'store-korean' : storeId
+                    store_id: storeId === 'Total' ? 'store-korean' : storeId,
+                    device_id: deviceId
                 })
             });
 

@@ -230,11 +230,13 @@ def init_db_v2():
                 work_minutes INTEGER,
                 status TEXT DEFAULT 'working',
                 tardy BOOLEAN DEFAULT FALSE,
-                paid BOOLEAN DEFAULT FALSE
+                paid BOOLEAN DEFAULT FALSE,
+                device_id TEXT
             )
         """)
         try:
             cur.execute("ALTER TABLE table_attendance_logs ADD COLUMN IF NOT EXISTS paid BOOLEAN DEFAULT FALSE")
+            cur.execute("ALTER TABLE table_attendance_logs ADD COLUMN IF NOT EXISTS device_id TEXT")
         except Exception:
             pass
 
@@ -1395,24 +1397,26 @@ def get_staff_schedules(staff_id: str, store_id: Optional[str] = None):
         print(f"Get Staff Schedules Error: {e}")
         return []
 
-def save_attendance_checkin(log_id: str, staff_id: str, store_id: str, check_in_time: str, tardy: bool = False):
+def save_attendance_checkin(log_id: str, staff_id: str, store_id: str, check_in_time: str, tardy: bool = False, device_id: str = None):
     conn = get_db_conn()
     if not conn: return False
     try:
         cur = conn.cursor()
         query = """
-            INSERT INTO table_attendance_logs (log_id, staff_id, store_id, check_in_time, status, tardy)
-            VALUES (%(log_id)s, %(staff_id)s, %(store_id)s, %(check_in_time)s, 'working', %(tardy)s)
+            INSERT INTO table_attendance_logs (log_id, staff_id, store_id, check_in_time, status, tardy, device_id)
+            VALUES (%(log_id)s, %(staff_id)s, %(store_id)s, %(check_in_time)s, 'working', %(tardy)s, %(device_id)s)
             ON CONFLICT (log_id) DO UPDATE SET
                 check_in_time = EXCLUDED.check_in_time,
-                tardy = EXCLUDED.tardy
+                tardy = EXCLUDED.tardy,
+                device_id = EXCLUDED.device_id
         """
         cur.execute(query, {
             'log_id': log_id,
             'staff_id': staff_id,
             'store_id': store_id,
             'check_in_time': check_in_time,
-            'tardy': tardy
+            'tardy': tardy,
+            'device_id': device_id
         })
         conn.commit()
         cur.close()
@@ -1421,6 +1425,28 @@ def save_attendance_checkin(log_id: str, staff_id: str, store_id: str, check_in_
     except Exception as e:
         print(f"Save Attendance Checkin Error: {e}")
         return False
+
+def get_today_checkin(staff_id: str):
+    """당일 출근 기록 조회 (중복 스캔 방지용)"""
+    conn = get_db_conn()
+    if not conn: return None
+    try:
+        today = datetime.now().strftime("%Y-%m-%d")
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT log_id, device_id, check_in_time, tardy
+            FROM table_attendance_logs
+            WHERE staff_id = %(staff_id)s AND check_in_time LIKE %(today)s
+            ORDER BY check_in_time ASC
+            LIMIT 1
+        """, {'staff_id': staff_id, 'today': f"{today}%"})
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        return row
+    except Exception as e:
+        print(f"Get Today Checkin Error: {e}")
+        return None
 
 def save_attendance_checkout(staff_id: str, check_out_time: str, work_minutes: int):
     conn = get_db_conn()

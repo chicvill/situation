@@ -1570,38 +1570,52 @@ async def get_staff_schedules_endpoint(staff_id: str):
 async def staff_check_in(data: Dict):
     staff_id = data.get("staff_id")
     store_id = data.get("store_id") or "default_store"
-    
+    device_id = data.get("device_id") or "unknown"
+
     if not staff_id:
         raise HTTPException(status_code=400, detail="staff_id required")
-        
-    from .database import get_staff, get_staff_schedules, save_attendance_checkin, get_active_attendance_log
-    
+
+    from .database import get_staff, get_staff_schedules, save_attendance_checkin, get_active_attendance_log, get_today_checkin
+
     staff = get_staff(staff_id)
     if not staff:
         raise HTTPException(status_code=404, detail="Staff account not found")
-        
+
     if staff['status'] != 'approved':
         raise HTTPException(status_code=400, detail="승인된 직원만 출퇴근이 가능합니다. 점주의 승인을 받으세요.")
-        
+
     # 계약 기간 확인
     today_str = datetime.now().strftime("%Y-%m-%d")
     contract = staff['contract_period']
     if not (contract.get("start") <= today_str <= contract.get("end")):
         raise HTTPException(status_code=400, detail="근로계약 기간 외 출퇴근은 불가합니다. 계약 기간을 확인하세요.")
-        
+
+    force = data.get("force", False)
+
+    # 당일 중복 출근 방지 (디바이스 무관, 퇴근 후 재출근 포함 차단)
+    if not force:
+        today_log = get_today_checkin(staff_id)
+        if today_log:
+            reg_device = today_log.get('device_id') or '알 수 없음'
+            reg_time = str(today_log.get('check_in_time', ''))[:19]
+            tardy_flag = " (지각 기록됨)" if today_log.get('tardy') else ""
+            raise HTTPException(
+                status_code=400,
+                detail=f"오늘 이미 출근이 등록되어 있습니다. 동일 시간대 중복 스캔은 허용되지 않습니다{tardy_flag}.\n최초 등록: {reg_time} / 단말기: {reg_device}"
+            )
+
     # 이미 출근 중인지 확인
     active_log = get_active_attendance_log(staff_id)
     if active_log:
         raise HTTPException(status_code=400, detail="이미 출근 상태입니다.")
-        
+
     # 요일별 스케줄 체크 (0: 월요일, ..., 6: 일요일)
     current_weekday = datetime.now().weekday()
     schedules = get_staff_schedules(staff_id)
     today_schedule = next((s for s in schedules if s['day_of_week'] == current_weekday), None)
-    
-    force = data.get("force", False)
+
     now = datetime.now()
-    
+
     if not today_schedule:
         if not force:
             raise HTTPException(status_code=400, detail="오늘 배정된 근무 일정이 없습니다. 점주 수동 등록이 필요합니다.")
@@ -1614,22 +1628,22 @@ async def staff_check_in(data: Dict):
             sched_time = now.replace(hour=shour, minute=smin, second=0, microsecond=0)
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"스케줄 형식 오류: {e}")
-            
+
         diff_minutes = (now - sched_time).total_seconds() / 60.0
-        
+
         # 가드 분배 (전후 5분 수립)
         if not force:
             if diff_minutes < -5.0:
                 raise HTTPException(status_code=400, detail=f"출근 스케줄 시작 5분 전부터만 출근 등록이 가능합니다. (출근예정: {sched_start_str})")
             elif diff_minutes > 5.0:
                 raise HTTPException(status_code=400, detail=f"출근 허용 시간(5분)을 초과했습니다. 점주 수동 승인을 받으세요. (출근예정: {sched_start_str})")
-            
+
         tardy = diff_minutes >= 1.0 # 1분 넘게 늦었으면 지각 처리
-    
+
     log_id = f"ATT-{uuid.uuid4().hex[:6].upper()}"
     check_in_time = now.isoformat()
-    
-    if save_attendance_checkin(log_id, staff_id, store_id, check_in_time, tardy):
+
+    if save_attendance_checkin(log_id, staff_id, store_id, check_in_time, tardy, device_id):
         # UI 타임라인에 표시하기 위해 pool에 bundle 추가
         att_bundle = {
             "id": log_id,
