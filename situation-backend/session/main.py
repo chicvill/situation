@@ -1618,7 +1618,7 @@ async def staff_check_in(data: Dict):
             "timestamp": check_in_time
         }
         await manager.broadcast_to_kitchen(msg)
-        await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": log_id, "type": "Attendance"})
+        await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "bundle_id": log_id, "bundle_type": "Attendance", "store_id": store_id})
         return {"status": "success", "tardy": tardy, "check_in_time": check_in_time}
     raise HTTPException(status_code=500, detail="출근 저장 실패")
 
@@ -1698,7 +1698,7 @@ async def staff_check_out(data: Dict):
             "timestamp": check_out_time
         }
         await manager.broadcast_to_kitchen(msg)
-        await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": att_bundle['id'], "type": "Attendance"})
+        await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "bundle_id": att_bundle['id'], "bundle_type": "Attendance", "store_id": store_id})
         return {"status": "success", "work_minutes": work_minutes, "check_out_time": check_out_time}
     raise HTTPException(status_code=500, detail="퇴근 저장 실패")
 
