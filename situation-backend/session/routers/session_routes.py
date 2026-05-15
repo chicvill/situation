@@ -22,22 +22,28 @@ async def check_in(data: Dict):
     if not table_id:
         raise HTTPException(status_code=400, detail="table_id required")
 
+    # 1. 활성 세션 확인 (유연한 매칭)
     active = get_active_session(store_id, table_id)
     if not active:
-        return {"status": "no_session"}
+        # Fallback logic for cross-store session linking (e.g., default_store vs specific store ID)
+        alt_store_id = "default_store" if store_id != "default_store" else "Total"
+        active = get_active_session(alt_store_id, table_id)
+        if not active:
+            return {"status": "no_session"}
+        print(f"🔗 [Session Linked] Found active session via fallback in check_in: {alt_store_id}")
 
+    # 현재 세션의 전체 주문 내역 조회
+    orders = get_orders_by_session(active['session_id'])
+    
     existing_device = active.get('device_id') or ''
+    
+    # [핵심 로직] 동일 기기 재접속 OR 이미 해당 세션에 주문 이력이 있는 기기라면 즉시 active 판정
+    # (합류 승인을 받았거나 이미 주문을 마친 손님이 새로고침했을 때 '대기 중'에 갇히는 현상 방지)
+    device_has_orders = any(str(o.get('device_id')) == str(device_id) for o in orders)
 
-    # 카운터가 개설한 빈 소유권 세션 → 첫 번째 고객이 소유권 취득
-    if existing_device == '':
-        if device_id:
+    if existing_device == '' or existing_device == device_id or device_has_orders:
+        if existing_device == '' and device_id:
             update_session_device_id(active['session_id'], device_id)
-        orders = get_orders_by_session(active['session_id'])
-        return {"status": "active", "session": active, "orders": orders}
-
-    # 동일 기기 재접속
-    if existing_device == device_id:
-        orders = get_orders_by_session(active['session_id'])
         return {"status": "active", "session": active, "orders": orders}
 
     # 다른 기기 → 더치페이 합류 승인 요청

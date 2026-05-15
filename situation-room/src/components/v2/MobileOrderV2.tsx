@@ -281,6 +281,11 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
         setMyOrders(data.orders || []);
         sessionPhaseRef.current = 'active';
         setSessionPhase('active');
+
+        // 주문 내역이 있으면 자동으로 현황판 모드로 전환
+        if (data.orders && data.orders.length > 0) {
+          setShowProgress(true);
+        }
       } else if (data.status === 'waiting_approval') {
         pendingSessionIdRef.current = data.session_id || '';
         sessionPhaseRef.current = 'waiting_approval';
@@ -862,7 +867,10 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
                           #{order.order_seq}차 주문 {isPaid ? ' (결제완료)' : ' (미결제)'}
                         </span>
                         <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
-                          {order.status === 'cooking' ? '🔥 조리중' : order.status === 'ready' ? '⚡ 조리완료' : '✅ 서빙완료'}
+                          {order.status === 'cooking' ? '🔥 조리중' : 
+                           order.status === 'ready' ? '⚡ 조리완료' : 
+                           (order.status === 'pending_payment' || order.status === 'pending') ? '💳 결제 대기중' : 
+                           order.status === 'served' ? '✅ 서빙완료' : '⌛ 접수중'}
                         </span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
