@@ -383,7 +383,7 @@ function App() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'guide': return <ConversationalUI bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} />;
+      case 'guide': 
       case 'orderV2': return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} isCustomerMode={isCustomerMode} />;
       case 'kitchen': return <KitchenDisplay />;
       case 'counter': return <CounterPad storeId={storeId} />;
@@ -418,7 +418,7 @@ function App() {
       case 'reserve': return <ReservationManager bundles={bundles} />;
       case 'parking': return <ParkingManager storeId={storeId} />;
       case 'points': return <PointsManager storeId={storeId} />;
-      default: return <ConversationalUI bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} />;
+      default: return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} isCustomerMode={isCustomerMode} />;
     }
   };
 

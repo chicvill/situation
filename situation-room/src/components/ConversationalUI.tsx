@@ -126,15 +126,39 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         
         if (!menuBundle) return [];
         
-        return menuBundle.items.map((item: any) => ({
-            name: String(item.name || '').trim(),
-            price: typeof item.price === 'number' ? item.price : (parseInt(String(item.value || item.price || '0').replace(/[^0-9]/g, '')) || 0),
-            category: item.category || '기타',
-            desc: item.description || item.desc || '',
-            image: (item.icon || item.image) ? 
-                   ((item.icon || item.image).startsWith('http') ? (item.icon || item.image) : (item.icon || item.image)) : 
-                   'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=cover'
-        })).filter((m: any) => m.name);
+        const getFallbackImage = (item: any) => {
+            const cat = String(item.category || '').toLowerCase();
+            const name = String(item.name || '').toLowerCase();
+            
+            if (name.includes('커피') || name.includes('아메리카노') || cat.includes('커피') || cat.includes('에스프레소')) 
+                return 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&h=200&fit=crop';
+            if (name.includes('치킨') || name.includes('닭')) 
+                return 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=300&h=200&fit=crop';
+            if (name.includes('바베큐') || name.includes('고기') || name.includes('등갈비') || cat.includes('요리')) 
+                return 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300&h=200&fit=crop';
+            if (name.includes('케이크') || name.includes('디저트') || cat.includes('디저트')) 
+                return 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=300&h=200&fit=crop';
+            if (name.includes('탕') || name.includes('국물') || cat.includes('안주')) 
+                return 'https://images.unsplash.com/photo-1534422298391-e4f8c170db06?w=300&h=200&fit=crop';
+            if (cat.includes('주류') || name.includes('맥주') || name.includes('소주')) 
+                return 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=300&h=200&fit=crop';
+            
+            return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&h=200&fit=crop';
+        };
+
+        return menuBundle.items.map((item: any) => {
+            const imgPath = item.icon || item.image || '';
+            const isUrl = typeof imgPath === 'string' && imgPath.startsWith('http');
+            
+            return {
+                name: String(item.name || '').trim(),
+                price: typeof item.price === 'number' ? item.price : (parseInt(String(item.value || item.price || '0').replace(/[^0-9]/g, '')) || 0),
+                category: item.category || '기타',
+                desc: item.description || item.desc || '',
+                image: isUrl ? imgPath : getFallbackImage(item),
+                icon: !isUrl ? imgPath : '' // 이모지 보존용
+            };
+        }).filter((m: any) => m.name);
     })();
 
     // Initial Welcome Message or Post-Payment Restoration Dialog
@@ -652,7 +676,14 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                                         <div key={idx} style={{
                                             width: '160px', flexShrink: 0, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px'
                                         }}>
-                                            {item.image && <img src={item.image} style={{ width: '100%', height: '90px', objectFit: 'cover', borderRadius: '10px' }} alt={item.name} />}
+                                        <div style={{ position: 'relative', width: '100%', height: '90px' }}>
+                                            {item.image && <img src={item.image} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} alt={item.name} />}
+                                            {item.icon && !item.icon.startsWith('http') && (
+                                                <div style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(255,255,255,0.8)', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
+                                                    {item.icon}
+                                                </div>
+                                            )}
+                                        </div>
                                             <div style={{ fontWeight: 800, fontSize: '13px', color: '#1e293b' }}>{item.name}</div>
                                             <div style={{ fontSize: '10px', color: '#64748b', height: '30px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{item.desc}</div>
                                             <div style={{ fontWeight: 900, fontSize: '12px', color: '#f97316' }}>{item.price.toLocaleString()}원</div>
