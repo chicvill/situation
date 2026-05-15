@@ -10,7 +10,6 @@ import { CounterPad } from './components/CounterPad';
 import { QRManager } from './components/QRManager';
 import { PaperViewer } from './components/PaperViewer';
 import { LogicInventory } from './components/LogicInventory';
-import { ConversationalUI } from './components/ConversationalUI';
 import { ReceiptModal } from './components/ReceiptModal';
 import { HRManager } from './components/HRManager';
 import { WaitingManager } from './components/WaitingManager';

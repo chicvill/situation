@@ -23,10 +23,10 @@ async def get_pool(store_id: Optional[str] = None):
     pool.extend(attendance_bundles)
 
     if store_id and store_id != "Total":
-        # store_id가 일치하거나 매장 정보가 없는(공용) 번들, 또는 회원가입 신청서(PersonalInfos)만 반환
+        # Always include Menus, PersonalInfos, and bundles matching store_id
         return [
             b for b in pool
-            if b.get("store_id") == store_id or not b.get("store_id") or b.get("type") == "PersonalInfos"
+            if b.get("store_id") == store_id or not b.get("store_id") or b.get("type") in ["Menus", "PersonalInfos"]
         ]
     return pool
 

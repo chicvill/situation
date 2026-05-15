@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import './ConversationalUI.css';
 import type { BundleData } from '../types';
 import { API_BASE } from '../config';
@@ -97,34 +97,41 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         };
     }, []);
 
-    // Extract menus from bundles dynamically using the ultra-robust defensive matching strategy
-    const menus = (() => {
+    // Extract menus from bundles dynamically using an ultra-robust defensive matching strategy
+    const menus = useMemo(() => {
         const safeBundles = Array.isArray(bundles) ? bundles : [];
+        if (safeBundles.length === 0) {
+            console.log("ConversationalUI: No bundles available yet.");
+            return [];
+        }
+
+        console.log(`ConversationalUI: Searching menus for storeId=${storeId}, storeName=${storeName}`);
         
-        // 1. Try matching by exact store_id
+        // 1. Precise match by storeId
         let menuBundle = safeBundles.find(b => b.type === 'Menus' && b.store_id === storeId);
         
-        // 2. Try exact store name match
+        // 2. Fallback to storeName match (case-insensitive & partial)
         if (!menuBundle && storeName) {
-            menuBundle = safeBundles.find(b => b.type === 'Menus' && b.store === storeName);
-        }
-        
-        // 3. Try partial store name match (e.g., '초당' or '이탈리아' keywords)
-        if (!menuBundle && storeName) {
-            const cleanStoreName = storeName.replace(/\s+/g, '');
+            const cleanTarget = storeName.replace(/\s+/g, '').toLowerCase();
             menuBundle = safeBundles.find(b => {
                 if (b.type !== 'Menus' || !b.store) return false;
-                const cleanBStoreName = b.store.replace(/\s+/g, '');
-                return cleanStoreName.includes(cleanBStoreName) || cleanBStoreName.includes(cleanStoreName);
+                const cleanSource = b.store.replace(/\s+/g, '').toLowerCase();
+                return cleanSource.includes(cleanTarget) || cleanTarget.includes(cleanSource);
             });
         }
         
-        // 4. Absolute fallback to first available Menus bundle
+        // 3. Fallback to any Menus bundle (last resort)
         if (!menuBundle) {
             menuBundle = safeBundles.find(b => b.type === 'Menus');
+            if (menuBundle) console.log("ConversationalUI: Found fallback menu bundle:", menuBundle.store);
         }
         
-        if (!menuBundle) return [];
+        if (!menuBundle || !menuBundle.items) {
+            console.log("ConversationalUI: No menu bundle found even with fallbacks.");
+            return [];
+        }
+
+        console.log(`ConversationalUI: Found ${menuBundle.items.length} menu items for ${menuBundle.store}`);
         
         const getFallbackImage = (item: any) => {
             const cat = String(item.category || '').toLowerCase();
@@ -156,10 +163,17 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 category: item.category || '기타',
                 desc: item.description || item.desc || '',
                 image: isUrl ? imgPath : getFallbackImage(item),
-                icon: !isUrl ? imgPath : '' // 이모지 보존용
+                icon: !isUrl ? imgPath : ''
             };
         }).filter((m: any) => m.name);
-    })();
+    }, [bundles, storeId, storeName]);
+
+    const scroll = (direction: 'left' | 'right') => {
+        if (scrollRef.current) {
+            const scrollAmount = 240;
+            scrollRef.current.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+        }
+    };
 
     // Initial Welcome Message or Post-Payment Restoration Dialog
     useEffect(() => {
@@ -667,12 +681,32 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                         {/* Menu Selection Carousel */}
                         {msg.isMenuCarousel && orderStep === 'menu_selection' && (
                             <div style={{ marginTop: '10px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                    <span style={{ fontSize: '11px', color: '#f97316', fontWeight: 800 }}>👈 좌우로 밀어서 메뉴를 선택하세요 👉</span>
-                                    <span style={{ fontSize: '10px', color: '#94a3b8' }}>총 {menus.length}개</span>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ fontSize: '12px', color: '#f97316', fontWeight: 900 }}>🍔 메뉴 선택</span>
+                                        <span style={{ fontSize: '10px', color: '#94a3b8' }}>(총 {menus.length}개)</span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); scroll('left'); }} 
+                                            style={{ background: '#f97316', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', fontWeight: 900 }}
+                                        >
+                                            ←
+                                        </button>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); scroll('right'); }} 
+                                            style={{ background: '#f97316', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', fontWeight: 900 }}
+                                        >
+                                            →
+                                        </button>
+                                    </div>
                                 </div>
-                                <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', padding: '5px 0 15px', width: '100%', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }} className="no-scrollbar">
-                                    {menus.map((item, idx) => (
+                                <div 
+                                    ref={scrollRef}
+                                    style={{ display: 'flex', gap: '12px', overflowX: 'auto', padding: '5px 5px 15px', width: '100%', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', position: 'relative' }} 
+                                    className="no-scrollbar"
+                                >
+                                    {menus.map((item: any, idx: number) => (
                                         <div key={idx} style={{
                                             width: '160px', flexShrink: 0, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px'
                                         }}>
