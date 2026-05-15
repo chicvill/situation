@@ -370,20 +370,23 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         speak("카드가 감지되었습니다. 결제를 승인하는 중입니다. 잠시만 기다려 주세요.");
         
         try {
-            // 1. 서버에 실제 주문 내역 전송
-            const orderRes = await fetch(`${API_BASE}/api/order/request`, {
+            // 1. 서버에 실제 주문 내역 전송 (표준 엔드포인트: /api/order/direct)
+            const orderRes = await fetch(`${API_BASE}/api/order/direct`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    session_id: sessionId,
-                    table_id: tableId,
                     store_id: storeId,
+                    table_id: tableId,
+                    device_id: `MOBILE-${tableId}-CHAT`, // 채팅창 전용 기기 식별자
                     items: cart.map(item => ({
                         name: item.name,
                         price: item.price,
-                        qty: item.qty || 1
+                        quantity: item.qty || 1 // 서버 규격: quantity
                     })),
-                    payment_method: 'Card/App'
+                    total_price: cartTotal,
+                    payment_status: 'paid', // 결제 완료 상태로 전송
+                    payment_method: 'Card/App',
+                    metadata: { source: 'conversational_ai' }
                 })
             });
 
@@ -464,13 +467,13 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         }]);
 
         try {
-            const res = await fetch(`${API_BASE}/api/parking/register`, {
+            const res = await fetch(`${API_BASE}/api/parking/validate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    store_id: storeId,
-                    car_number: plateNo,
-                    table_id: `Table ${tableNo}`
+                    session_id: sessionId,
+                    vehicle_number: plateNo,
+                    discount_minutes: 120
                 })
             });
             if (res.ok) {
