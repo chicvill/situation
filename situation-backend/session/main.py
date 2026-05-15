@@ -14,6 +14,7 @@ from .state import manager, load_pool, save_pool, POOL_FILE  # noqa: F401 — re
 from .models import OrderItem, OrderRequest, StatusUpdate, StoreCreateRequest, StoreUpdateRequest  # noqa: F401
 
 from .routers import store, pool, session_routes, payment, order, operations, staff, chat, manual, websocket
+from .mqtt_handler import run_mqtt_client
 
 
 # --- Render Keep-Alive ---
@@ -48,6 +49,7 @@ async def keep_alive_task():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     asyncio.create_task(keep_alive_task())
+    asyncio.create_task(run_mqtt_client(manager))  # MQTT 병행 운용 시작
     yield
 
 

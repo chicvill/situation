@@ -15,14 +15,14 @@ openai_model = "gpt-4o-mini"
 client = None
 if openai_key and not openai_key.startswith("MY_"):
     client = openai.OpenAI(api_key=openai_key)
-    print("✅ OpenAI Engine Ready.")
+    print("[OK] OpenAI Engine Ready.")
 
 # Gemini Client (Explicitly Disabled)
 gemini_model = None
-print("ℹ️ Gemini Engine Disabled. Using ChatGPT only.")
+print("[INFO] Gemini Engine Disabled. Using ChatGPT only.")
 
 if not client:
-    print("⚠️ Warning: OpenAI API key not found. Please check your .env file.")
+    print("[WARN] Warning: OpenAI API key not found. Please check your .env file.")
 
 def analyze_document_image(image_bytes: bytes, doc_type: str) -> dict:
     if not client:

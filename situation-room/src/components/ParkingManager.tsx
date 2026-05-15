@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { WS_BASE } from '../config';
+import { subscribeTopic } from '../services/mqttClient';
 
 interface Parking {
     parking_id: string;
@@ -40,16 +40,12 @@ export const ParkingManager = ({ storeId }: ParkingManagerProps) => {
     useEffect(() => {
         fetchParkings();
 
-        // 실시간 주차 등록 웹소켓 바인딩
-        const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
+        // MQTT situation/kitchen 구독으로 실시간 주차 등록 수신
+        const unsubscribe = subscribeTopic('situation/kitchen', (data) => {
             if (data.type === 'PARKING_APPLIED') {
-                // 다중 매장 데이터 노출 방지 체크
                 if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
                     return;
                 }
-
                 setParkings(prev => {
                     if (prev.some(p => p.parking_id === data.parking_id)) return prev;
                     return [{
@@ -63,9 +59,9 @@ export const ParkingManager = ({ storeId }: ParkingManagerProps) => {
                     }, ...prev];
                 });
             }
-        };
+        });
 
-        return () => ws.close();
+        return unsubscribe;
     }, [storeId]);
 
     const filteredParkings = useMemo(() => {

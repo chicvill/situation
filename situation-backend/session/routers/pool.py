@@ -9,7 +9,7 @@ router = APIRouter()
 
 @router.get("/api/pool")
 async def get_pool(store_id: Optional[str] = None):
-    pool = load_pool()
+    pool = list(load_pool())  # _pool_cache를 직접 변형하지 않도록 복사본 사용
 
     # DB의 활성 주문들을 실시간 번들로 조회하여 통합
     from ..database import get_all_active_orders_as_bundles, get_all_staff_as_bundles, get_all_attendance_as_bundles

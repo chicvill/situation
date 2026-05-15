@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'; // Git Force Trigger: 2026-05-04 23:27
 import './MobileOrderV2.css';
 import type { BundleData } from '../../types';
-import { WS_BASE, API_BASE } from '../../config';
+import { API_BASE } from '../../config';
+import { subscribeTopic } from '../../services/mqttClient';
 import { PaymentModal } from '../PaymentModal';
 import { PaymentService } from '../../services/paymentService';
 import { ConversationalUI } from '../ConversationalUI';
@@ -365,9 +366,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
   // --- Effects ---
   useEffect(() => {
-    const ws = new WebSocket(`${WS_BASE}/ws/table/${tableId}`);
-    ws.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
+    const unsubscribeTable = subscribeTopic(`situation/table/${tableId}`, (msg) => {
       switch (msg.type) {
         case 'SESSION_OPENED':
           joinSession();
@@ -396,7 +395,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
         default:
           refreshOrders();
       }
-    };
+    });
 
     joinSession();
 
@@ -406,7 +405,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       }
     }, 5000);
 
-    return () => { ws.close(); clearInterval(timer); };
+    return () => { unsubscribeTable(); clearInterval(timer); };
   }, [tableId, storeId, deviceId, joinSession, refreshOrders]);
 
   // --- Delayed Payment Watcher ---
@@ -521,7 +520,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
         body: JSON.stringify({
           session_id: targetSessionId,
           vehicle_number: vehicleNumber,
-          discount_minutes: 120
+          discount_minutes: 120,
+          store_id: storeId
         })
       });
       if (res.ok) {

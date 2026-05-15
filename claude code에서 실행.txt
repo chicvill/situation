@@ -1,0 +1,6 @@
+claude code에서 실행
+
+'''
+! cd C:\Users\USER\Desktop\Workstation\situation && run.bat
+
+'''

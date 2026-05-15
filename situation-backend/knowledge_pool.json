@@ -2299,5 +2299,212 @@
     "timestamp": "2026-05-14 06:50:00",
     "store": "시크빌",
     "store_id": "store-chicvill02"
+  },
+  {
+    "id": "ORD-EE62BCC3",
+    "type": "Orders",
+    "title": "테이블 T02 주문",
+    "store_id": "store-1",
+    "status": "ready",
+    "timestamp": "2026-05-15T04:25:04.517771",
+    "table": "T02",
+    "items": [
+      {
+        "name": "프리미엄 모듬 바베큐 플레이트",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "id": "ORD-BF726FA9",
+    "type": "Orders",
+    "title": "테이블 T04 주문",
+    "store_id": "store-1",
+    "status": "cooking",
+    "timestamp": "2026-05-15T05:21:44.754285",
+    "table": "T04",
+    "items": [
+      {
+        "name": "바삭 후라이드 치킨",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "id": "ORD-EE62BCC3",
+    "type": "Orders",
+    "title": "테이블 T02 주문",
+    "store_id": "store-1",
+    "status": "ready",
+    "timestamp": "2026-05-15T04:25:04.517771",
+    "table": "T02",
+    "items": [
+      {
+        "name": "프리미엄 모듬 바베큐 플레이트",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "id": "ORD-BF726FA9",
+    "type": "Orders",
+    "title": "테이블 T04 주문",
+    "store_id": "store-1",
+    "status": "cooking",
+    "timestamp": "2026-05-15T05:21:44.754285",
+    "table": "T04",
+    "items": [
+      {
+        "name": "바삭 후라이드 치킨",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "id": "ORD-EE62BCC3",
+    "type": "Orders",
+    "title": "테이블 T02 주문",
+    "store_id": "store-1",
+    "status": "ready",
+    "timestamp": "2026-05-15T04:25:04.517771",
+    "table": "T02",
+    "items": [
+      {
+        "name": "프리미엄 모듬 바베큐 플레이트",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "id": "ORD-BF726FA9",
+    "type": "Orders",
+    "title": "테이블 T04 주문",
+    "store_id": "store-1",
+    "status": "cooking",
+    "timestamp": "2026-05-15T05:21:44.754285",
+    "table": "T04",
+    "items": [
+      {
+        "name": "바삭 후라이드 치킨",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "id": "ORD-EE62BCC3",
+    "type": "Orders",
+    "title": "테이블 T02 주문",
+    "store_id": "store-1",
+    "status": "ready",
+    "timestamp": "2026-05-15T04:25:04.517771",
+    "table": "T02",
+    "items": [
+      {
+        "name": "프리미엄 모듬 바베큐 플레이트",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "id": "ORD-BF726FA9",
+    "type": "Orders",
+    "title": "테이블 T04 주문",
+    "store_id": "store-1",
+    "status": "cooking",
+    "timestamp": "2026-05-15T05:21:44.754285",
+    "table": "T04",
+    "items": [
+      {
+        "name": "바삭 후라이드 치킨",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "id": "ORD-EE62BCC3",
+    "type": "Orders",
+    "title": "테이블 T02 주문",
+    "store_id": "store-1",
+    "status": "ready",
+    "timestamp": "2026-05-15T04:25:04.517771",
+    "table": "T02",
+    "items": [
+      {
+        "name": "프리미엄 모듬 바베큐 플레이트",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "id": "ORD-BF726FA9",
+    "type": "Orders",
+    "title": "테이블 T04 주문",
+    "store_id": "store-1",
+    "status": "cooking",
+    "timestamp": "2026-05-15T05:21:44.754285",
+    "table": "T04",
+    "items": [
+      {
+        "name": "바삭 후라이드 치킨",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "id": "ORD-EE62BCC3",
+    "type": "Orders",
+    "title": "테이블 T02 주문",
+    "store_id": "store-1",
+    "status": "ready",
+    "timestamp": "2026-05-15T04:25:04.517771",
+    "table": "T02",
+    "items": [
+      {
+        "name": "프리미엄 모듬 바베큐 플레이트",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "id": "ORD-BF726FA9",
+    "type": "Orders",
+    "title": "테이블 T04 주문",
+    "store_id": "store-1",
+    "status": "cooking",
+    "timestamp": "2026-05-15T05:21:44.754285",
+    "table": "T04",
+    "items": [
+      {
+        "name": "바삭 후라이드 치킨",
+        "value": "1"
+      }
+    ]
+  },
+  {
+    "id": "USER-01011112222",
+    "type": "PersonalInfos",
+    "title": "홍길동님 등록 완료 (직원)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "홍길동"
+      },
+      {
+        "name": "아이디",
+        "value": "01011112222"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "staff"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-15 15:51:29",
+    "store": "시크앤프레시",
+    "store_id": "store-1"
   }
 ]

@@ -28,6 +28,15 @@ const getWsBase = () => {
     return `${protocol}://${host}:8000`;
 };
 
+const getMqttWsBase = () => {
+    if (import.meta.env.VITE_MQTT_WS_URL) return import.meta.env.VITE_MQTT_WS_URL;
+    const host = window.location.hostname;
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    // Mosquitto WebSocket 기본 포트: 9001
+    return `${protocol}://${host}:9001`;
+};
+
 export const API_BASE = getApiBase();
 export const WS_BASE = getWsBase();
+export const MQTT_WS_BASE = getMqttWsBase();
 export const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || 'test_ck_D5b4Zne68wxL1Pn6k0m8rlzYWBn1';

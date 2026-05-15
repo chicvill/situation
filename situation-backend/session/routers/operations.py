@@ -98,7 +98,7 @@ async def staff_call(data: Dict):
     }
 
     if save_call(call_data):
-        # 주방/카운터에 실시간 호출 브로드캐스트
+        print(f"[DB 저장 상태] 성공 - call_id={call_id}, table={table_id}, store={store_id}")
         msg = {
             "type": "STAFF_CALL",
             "call_id": call_id,
@@ -107,9 +107,18 @@ async def staff_call(data: Dict):
             "status": "pending",
             "store_id": store_id
         }
+        # 기존 WebSocket 브로드캐스트 (하위 호환 유지)
         await manager.broadcast_to_kitchen(msg)
         await manager.send_to_table(table_id, msg)
+        # MQTT 브로드캐스트 (카운터/주방으로 병행 발행)
+        try:
+            from ..mqtt_handler import mqtt_publish
+            await mqtt_publish(f"store/{store_id}/call/broadcast", msg)
+        except Exception as e:
+            print(f"[MQTT 브로드캐스트 오류] HTTP /api/call 경로: {e}")
         return call_data
+
+    print(f"[DB 저장 상태] 실패 - call_id={call_id}, table={table_id}")
     raise HTTPException(status_code=500, detail="Failed to process staff call")
 
 
@@ -225,7 +234,8 @@ async def validate_parking(data: Dict):
 
     from ..database import save_parking, get_session_by_id
     session_info = get_session_by_id(session_id)
-    store_id = session_info.get("store_id") if session_info else "store-1"
+    store_id = (session_info.get("store_id") if session_info else None) or data.get("store_id") or data.get("storeId") or "Total"
+    table_id_from_session = session_info.get("table_id") if session_info else None
 
     if save_parking(park_data):
         await manager.broadcast_to_kitchen({
@@ -234,7 +244,8 @@ async def validate_parking(data: Dict):
             "session_id": session_id,
             "vehicle_number": vehicle_number,
             "status": "applied",
-            "store_id": store_id
+            "store_id": store_id,
+            "table_id": table_id_from_session
         })
         return park_data
     raise HTTPException(status_code=500, detail="Failed to save parking registration")

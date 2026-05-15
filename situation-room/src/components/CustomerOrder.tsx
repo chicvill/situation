@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { WS_BASE, API_BASE } from '../config';
+import { API_BASE } from '../config';
+import { subscribeTopic } from '../services/mqttClient';
 import type { BundleData } from '../types';
 import { PaymentModal } from './PaymentModal';
 
@@ -73,42 +74,33 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
     checkSession();
     const timer = setInterval(checkSession, 3000); // 3초마다 체크
     
-    // 실시간 웹소켓 연결 (경고 메시지 등 수신)
-    const wsUrl = `${WS_BASE}/ws/table/${tableId}`;
-    const ws = new WebSocket(wsUrl);
-    
-    ws.onmessage = (event) => {
+    // MQTT situation/table/{tableId} 구독으로 테이블 이벤트 수신
+    const unsubscribeTable = subscribeTopic(`situation/table/${tableId}`, (data) => {
       try {
-        const data = JSON.parse(event.data);
-        if (data.type === 'ALERT_MESSAGE') {
-          // Alert message handling removed for unified V2 design
-        } else if (data.type === 'CLEAR_ALERT') {
-          // Clear alert handling removed
-        } else if (data.type === 'SESSION_CLOSED') {
-          window.location.reload(); // 세션 종료 시 새로고침
+        if (data.type === 'SESSION_CLOSED') {
+          window.location.reload();
         } else if (data.type === 'JOIN_REQUEST') {
-          // 다른 기기가 이 테이블에 합류하려고 함
           setPendingJoinRequest({ deviceId: data.device_id, sessionId: data.session_id });
         } else if (data.type === 'JOIN_RESPONSE') {
-          // 내 합류 요청에 대한 결과
           if (data.device_id === deviceId) {
             if (data.approved) {
               setIsWaitingForPartyApproval(false);
               setHasSession(true);
             } else {
               alert("일행이 합류를 거절했습니다.");
-              window.location.href = "/"; // 메인으로 튕겨냄
+              window.location.href = "/";
+            }
             }
           }
         }
       } catch (e) {
-        console.error("WS Message Error:", e);
+        console.error("MQTT Message Error:", e);
       }
-    };
+    });
 
     return () => {
       clearInterval(timer);
-      ws.close();
+      unsubscribeTable();
     };
   }, [tableId, storeId]);
 

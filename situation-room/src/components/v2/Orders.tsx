@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import '../../Orders.css';
 import type { BundleData } from '../../types';
-import { WS_BASE, API_BASE } from '../../config';
+import { API_BASE } from '../../config';
+import { subscribeTopic } from '../../services/mqttClient';
 import { PaymentModal } from '../PaymentModal';
 
 interface Props {
@@ -147,18 +148,15 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
   // --- Effects ---
   useEffect(() => {
     fetchMySession();
-    const wsUrl = `${WS_BASE}/ws/table/${tableId}`;
-    const ws = new WebSocket(wsUrl);
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
+    const unsubscribeTable = subscribeTopic(`situation/table/${tableId}`, (data) => {
       if (['STATUS_UPDATE', 'STATUS_UPDATED', 'NEW_ORDER', 'SESSION_OPENED', 'PAYMENT_CONFIRMED', 'PAYMENT_APPROVED', 'ORDER_UPDATED', 'KITCHEN_DONE'].includes(data.type)) {
         fetchMySession();
       } else if (data.type === 'SESSION_CLOSED') {
         window.location.reload();
       }
-    };
+    });
     const timer = setInterval(fetchMySession, 5000);
-    return () => { ws.close(); clearInterval(timer); };
+    return () => { unsubscribeTable(); clearInterval(timer); };
   }, [tableId, storeId, fetchMySession]);
 
   // --- Draggable Cart Logic ---

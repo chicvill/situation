@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { PaymentModal } from './PaymentModal';
 import { useStoreFilter } from '../hooks/useStoreFilter';
-import { WS_BASE } from '../config';
+import { subscribeTopic } from '../services/mqttClient';
 
 interface CounterPadProps {
     storeId?: string;
@@ -44,41 +44,28 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
         // 1. 초기 로드
         fetchSessions();
 
-        // 2. WebSocket 실시간 갱신 (자동 재연결 포함)
-        let ws: WebSocket;
-        let reconnectTimeout: any;
-
-        const connect = () => {
-            ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                // 주문 취소·수정·결제·호출·주차 등 모든 이벤트에서 재조회
-                if ([
-                    'NEW_ORDER', 'STATUS_UPDATE', 'ORDER_UPDATED',
-                    'SESSION_CLOSED', 'PAYMENT_CONFIRMED', 'PARTIAL_SETTLEMENT',
-                    'STAFF_CALL', 'PARKING_APPLIED'
-                ].includes(data.type)) {
-                    fetchSessions();
-                }
-                if (data.type === 'JOIN_REQUEST') {
-                    setPendingJoins(prev => ({
-                        ...prev,
-                        [data.table_id]: [...(prev[data.table_id] || []), data]
-                    }));
-                }
-                if (data.type === 'JOIN_RESPONSE') {
-                    setPendingJoins(prev => {
-                        const tableRequests = (prev[data.table_id] || []).filter(r => r.device_id !== data.device_id);
-                        return { ...prev, [data.table_id]: tableRequests };
-                    });
-                }
-            };
-            ws.onclose = () => {
-                reconnectTimeout = setTimeout(connect, 3000);
-            };
-        };
-
-        connect();
+        // 2. MQTT situation/kitchen 구독으로 실시간 갱신
+        const unsubscribeKitchen = subscribeTopic('situation/kitchen', (data) => {
+            if ([
+                'NEW_ORDER', 'STATUS_UPDATE', 'ORDER_UPDATED',
+                'SESSION_CLOSED', 'PAYMENT_CONFIRMED', 'PARTIAL_SETTLEMENT',
+                'STAFF_CALL', 'PARKING_APPLIED'
+            ].includes(data.type)) {
+                fetchSessions();
+            }
+            if (data.type === 'JOIN_REQUEST') {
+                setPendingJoins(prev => ({
+                    ...prev,
+                    [data.table_id]: [...(prev[data.table_id] || []), data]
+                }));
+            }
+            if (data.type === 'JOIN_RESPONSE') {
+                setPendingJoins(prev => {
+                    const tableRequests = (prev[data.table_id] || []).filter(r => r.device_id !== data.device_id);
+                    return { ...prev, [data.table_id]: tableRequests };
+                });
+            }
+        });
 
         // 3. 탭 포커스 복귀 시 즉시 재조회 (다른 탭에서 변경 후 돌아온 경우 대비)
         const handleVisibilityChange = () => {
@@ -92,7 +79,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
         const pollInterval = setInterval(fetchSessions, 30000);
 
         return () => {
-            ws.close();
+            unsubscribeKitchen();
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             clearInterval(pollInterval);
         };

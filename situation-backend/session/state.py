@@ -1,8 +1,6 @@
 import os
 import json
-import asyncio
-from fastapi import WebSocket
-from typing import Dict, List, Optional
+from typing import Optional
 
 POOL_FILE = os.path.join(os.path.dirname(__file__), "..", "knowledge_pool.json")
 
@@ -26,7 +24,7 @@ def load_pool() -> list:
 
 def save_pool(pool: list) -> bool:
     global _pool_cache
-    _pool_cache = pool  # 캐시 즉시 갱신
+    _pool_cache = pool
     try:
         with open(POOL_FILE, "w", encoding="utf-8") as f:
             json.dump(pool, f, ensure_ascii=False, indent=2)
@@ -36,51 +34,26 @@ def save_pool(pool: list) -> bool:
         return False
 
 
-async def _safe_send(ws: WebSocket, message: dict):
-    try:
-        await ws.send_json(message)
-    except Exception:
-        pass
-
-
 class ConnectionManager:
-    def __init__(self):
-        # table_id: [websockets]
-        self.active_connections: Dict[str, List[WebSocket]] = {}
-        self.kitchen_connections: List[WebSocket] = []
+    """MQTT 기반 실시간 메시지 브로드캐스트 매니저.
 
-    async def connect(self, websocket: WebSocket, client_id: str = "mobile"):
-        await websocket.accept()
-        if client_id == "kitchen":
-            self.kitchen_connections.append(websocket)
-        else:
-            if client_id not in self.active_connections:
-                self.active_connections[client_id] = []
-            self.active_connections[client_id].append(websocket)
-
-    def disconnect(self, websocket: WebSocket, client_id: str = "mobile"):
-        if client_id == "kitchen":
-            if websocket in self.kitchen_connections:
-                self.kitchen_connections.remove(websocket)
-        else:
-            if client_id in self.active_connections:
-                if websocket in self.active_connections[client_id]:
-                    self.active_connections[client_id].remove(websocket)
+    토픽:
+      situation/kitchen           — 주방·카운터 전체 broadcast
+      situation/table/{table_id}  — 특정 테이블 모바일 대상 메시지
+    """
 
     async def broadcast_to_kitchen(self, message: dict):
-        if not self.kitchen_connections:
-            return
-        await asyncio.gather(
-            *[_safe_send(ws, message) for ws in self.kitchen_connections]
-        )
+        from .mqtt_handler import mqtt_publish
+        await mqtt_publish("situation/kitchen", message)
 
     async def send_to_table(self, table_id: str, message: dict):
-        conns = self.active_connections.get(table_id)
-        if not conns:
-            return
-        await asyncio.gather(
-            *[_safe_send(ws, message) for ws in conns]
-        )
+        from .mqtt_handler import mqtt_publish
+        await mqtt_publish(f"situation/table/{table_id}", message)
+
+    # --- 하위 호환: 기존 코드에서 active_connections를 순회하는 곳이 있어서 빈 dict 유지 ---
+    @property
+    def active_connections(self) -> dict:
+        return {}
 
 
 manager = ConnectionManager()

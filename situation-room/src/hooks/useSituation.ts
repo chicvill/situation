@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Message, BundleData } from '../types';
-import { API_BASE, WS_BASE } from '../config';
+import { API_BASE } from '../config';
+import { subscribeTopic } from '../services/mqttClient';
 
 export const useSituation = (storeId: string = "", storeName: string = "") => {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -45,84 +46,66 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
         fetchInitialData();
     }, [fetchInitialData]);
 
-    // WebSocket Connection
+    // MQTT situation/kitchen 구독으로 실시간 업데이트
     useEffect(() => {
-        let socket: WebSocket | null = null;
+        const unsubscribe = subscribeTopic('situation/kitchen', (data) => {
+            const currentStoreId = storeIdRef.current;
+            const storeMatches = !data.store_id || data.store_id === currentStoreId || currentStoreId === "Total" || currentStoreId === "";
 
-        const connectWS = () => {
-            socket = new WebSocket(`${WS_BASE}/ws/kitchen`);
-            socketRef.current = socket;
-
-            socket.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                const currentStoreId = storeIdRef.current;
-
-                const storeMatches = !data.store_id || data.store_id === currentStoreId || currentStoreId === "Total" || currentStoreId === "";
-
-                // Handle Bundle Updates (full bundle payload → 로컬 상태 직접 갱신, fetch 불필요)
-                const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins'];
-                if (data.id && bundleTypes.includes(data.type)) {
-                    if (currentStoreId !== "Total" && currentStoreId !== "" && data.store_id && data.store_id !== currentStoreId) {
-                        return;
+            const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins'];
+            if (data.id && bundleTypes.includes(data.type)) {
+                if (currentStoreId !== "Total" && currentStoreId !== "" && data.store_id && data.store_id !== currentStoreId) {
+                    return;
+                }
+                setBundles(prev => {
+                    const currentPrev = Array.isArray(prev) ? prev : [];
+                    const index = currentPrev.findIndex(b => b.id === data.id);
+                    if (index !== -1) {
+                        const newBundles = [...currentPrev];
+                        newBundles[index] = data;
+                        return newBundles;
                     }
-                    setBundles(prev => {
-                        const currentPrev = Array.isArray(prev) ? prev : [];
-                        const index = currentPrev.findIndex(b => b.id === data.id);
-                        if (index !== -1) {
-                            const newBundles = [...currentPrev];
-                            newBundles[index] = data;
-                            return newBundles;
-                        }
-                        return [data, ...currentPrev];
-                    });
-                    return;
-                }
+                    return [data, ...currentPrev];
+                });
+                return;
+            }
 
-                // 상태 변경 — 로컬 상태 직접 갱신
-                if (data.type === 'STATUS_UPDATED') {
-                    setBundles(prev => {
-                        const currentPrev = Array.isArray(prev) ? prev : [];
-                        return currentPrev.map(b =>
-                            data.ids?.includes(b.id) ? { ...b, status: data.status } : b
-                        );
-                    });
-                    return;
-                }
+            if (data.type === 'STATUS_UPDATED') {
+                setBundles(prev => {
+                    const currentPrev = Array.isArray(prev) ? prev : [];
+                    return currentPrev.map(b =>
+                        data.ids?.includes(b.id) ? { ...b, status: data.status } : b
+                    );
+                });
+                return;
+            }
 
-                if (data.type === 'STATUS_UPDATE') {
-                    setBundles(prev => {
-                        const currentPrev = Array.isArray(prev) ? prev : [];
-                        return currentPrev.map(b =>
-                            b.id === data.order_id ? { ...b, status: data.status } : b
-                        );
-                    });
-                    return;
-                }
+            if (data.type === 'STATUS_UPDATE') {
+                setBundles(prev => {
+                    const currentPrev = Array.isArray(prev) ? prev : [];
+                    return currentPrev.map(b =>
+                        b.id === data.order_id ? { ...b, status: data.status } : b
+                    );
+                });
+                return;
+            }
 
-                if (data.type === 'KITCHEN_DONE') {
-                    setBundles(prev => {
-                        const currentPrev = Array.isArray(prev) ? prev : [];
-                        return currentPrev.map(b => b.id === data.bundleId ? { ...b, status: 'ready' } : b);
-                    });
-                    return;
-                }
+            if (data.type === 'KITCHEN_DONE') {
+                setBundles(prev => {
+                    const currentPrev = Array.isArray(prev) ? prev : [];
+                    return currentPrev.map(b => b.id === data.bundleId ? { ...b, status: 'ready' } : b);
+                });
+                return;
+            }
 
-                // 그 외 — 전체 refetch (디바운스 적용)
-                if (storeMatches) {
-                    debouncedFetch();
-                }
-            };
+            if (storeMatches) {
+                debouncedFetch();
+            }
+        });
 
-            socket.onclose = () => {
-                console.log("WS Closed. Reconnecting...");
-                setTimeout(connectWS, 3000);
-            };
-        };
-
-        connectWS();
         return () => {
             if (fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current);
-            if (socket) socket.close();
+            unsubscribe();
         };
     }, [debouncedFetch]);
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { BundleData } from '../types';
-import { WS_BASE, API_BASE } from '../config';
+import { API_BASE } from '../config';
+import { subscribeTopic } from '../services/mqttClient';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 
 export const KitchenDisplay: React.FC = () => {
@@ -20,30 +21,14 @@ export const KitchenDisplay: React.FC = () => {
 
     useEffect(() => {
         fetchKitchenOrders();
-        let ws: WebSocket;
-        let reconnectTimeout: any;
+        const refreshTypes = ['NEW_ORDER', 'STATUS_UPDATE', 'PAYMENT_CONFIRMED', 'STAFF_CALL', 'PARKING_APPLIED'];
+        const unsubscribe = subscribeTopic('situation/kitchen', (data) => {
+            if (refreshTypes.includes(data.type)) {
+                fetchKitchenOrders();
+            }
+        });
 
-        const connect = () => {
-            ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                const refreshTypes = ['NEW_ORDER', 'STATUS_UPDATE', 'PAYMENT_CONFIRMED', 'STAFF_CALL', 'PARKING_APPLIED'];
-                if (refreshTypes.includes(data.type)) {
-                    fetchKitchenOrders();
-                }
-            };
-            ws.onclose = () => {
-                // Connection closed, try to reconnect after 3 seconds
-                reconnectTimeout = setTimeout(connect, 3000);
-            };
-        };
-
-        connect();
-
-        return () => {
-            clearTimeout(reconnectTimeout);
-            if (ws) ws.close();
-        };
+        return unsubscribe;
     }, [storeId]);
 
     const markAsDone = async (orderId: string) => {

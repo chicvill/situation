@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { WS_BASE } from '../config';
+import { subscribeTopic } from '../services/mqttClient';
 
 interface CustomerPoint {
     phone: string;
@@ -36,16 +36,12 @@ export const PointsManager = ({ storeId }: PointsManagerProps) => {
     useEffect(() => {
         fetchPoints();
 
-        // 실시간 포인트 적립 웹소켓 바인딩
-        const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
+        // MQTT situation/kitchen 구독으로 실시간 포인트 적립 수신
+        const unsubscribe = subscribeTopic('situation/kitchen', (data) => {
             if (data.type === 'POINTS_UPDATED') {
-                // 다중 매장 데이터 노출 방지 체크
                 if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
                     return;
                 }
-
                 setPoints(prev => {
                     const exists = prev.find(p => p.phone === data.phone);
                     if (exists) {
@@ -63,9 +59,9 @@ export const PointsManager = ({ storeId }: PointsManagerProps) => {
                     }
                 });
             }
-        };
+        });
 
-        return () => ws.close();
+        return unsubscribe;
     }, [storeId]);
 
     const filteredPoints = useMemo(() => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { WS_BASE } from '../config';
+import { subscribeTopic } from '../services/mqttClient';
 
 export interface NotificationStates {
   call: boolean;
@@ -65,87 +65,68 @@ export const useStoreSync = (storeId: string) => {
     useEffect(() => {
     checkInitialStates();
 
-    // 2. 단 하나의 웹소켓(WebSocket) 커넥션으로 하단 모든 탭 아이콘의 실시간 동기화 및 깜빡임 연동!
-    let ws: WebSocket;
-    let reconnectTimeout: any;
-
-    const connect = () => {
-      ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-
-          // 다중 가상 매장 연동: 수신한 데이터에 store_id가 있고, 현재 가동 매장 ID와 불일치하면 필터링 통과
-          if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
-            return;
-          }
-
-          switch (data.type) {
-            case 'STAFF_CALL':
-              setCallCount(prev => prev + 1);
-              setFlashingTabs(prev => ({ ...prev, call: true }));
-              break;
-            case 'CALL_STATUS_UPDATED':
-              fetch(`${getApiUrl()}/api/call/active${storeId !== 'Total' ? `?store_id=${storeId}` : ''}`)
-                .then(res => res.json())
-                .then(calls => {
-                  if (Array.isArray(calls)) {
-                    setCallCount(calls.length);
-                    setFlashingTabs(prev => ({ ...prev, call: calls.length > 0 }));
-                  }
-                })
-                .catch(err => console.error('Failed to refresh call status:', err));
-              break;
-
-            case 'WAITING_REGISTERED':
-              setWaitingCount(prev => prev + 1);
-              setFlashingTabs(prev => ({ ...prev, waiting: true }));
-              break;
-            case 'WAITING_STATUS_CHANGED':
-            case 'WAITING_UPDATED':
-              fetch(`${getApiUrl()}/api/waiting/active${storeId !== 'Total' ? `?store_id=${storeId}` : ''}`)
-                .then(res => res.json())
-                .then(waitings => {
-                  if (Array.isArray(waitings)) {
-                    setWaitingCount(waitings.length);
-                    setFlashingTabs(prev => ({ ...prev, waiting: waitings.length > 0 }));
-                  }
-                })
-                .catch(err => console.error('Failed to refresh waiting status:', err));
-              break;
-
-            case 'RESERVATION_UPDATED':
-              setFlashingTabs(prev => ({ ...prev, reserve: true }));
-              break;
-
-            case 'PARKING_APPLIED':
-              setFlashingTabs(prev => ({ ...prev, parking: true }));
-              break;
-
-            case 'POINTS_UPDATED':
-              setFlashingTabs(prev => ({ ...prev, points: true }));
-              break;
-
-            default:
-              break;
-          }
-        } catch (err) {
-          console.error('Store Notification WS Parsing Error:', err);
+    // 2. MQTT situation/kitchen 구독으로 모든 탭 아이콘 실시간 동기화
+    const unsubscribe = subscribeTopic('situation/kitchen', (data) => {
+      try {
+        if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
+          return;
         }
-      };
 
-      ws.onclose = () => {
-        reconnectTimeout = setTimeout(connect, 3000);
-      };
-    };
+        switch (data.type) {
+          case 'STAFF_CALL':
+            setCallCount(prev => prev + 1);
+            setFlashingTabs(prev => ({ ...prev, call: true }));
+            break;
+          case 'CALL_STATUS_UPDATED':
+            fetch(`${getApiUrl()}/api/call/active${storeId !== 'Total' ? `?store_id=${storeId}` : ''}`)
+              .then(res => res.json())
+              .then(calls => {
+                if (Array.isArray(calls)) {
+                  setCallCount(calls.length);
+                  setFlashingTabs(prev => ({ ...prev, call: calls.length > 0 }));
+                }
+              })
+              .catch(err => console.error('Failed to refresh call status:', err));
+            break;
 
-    connect();
+          case 'WAITING_REGISTERED':
+            setWaitingCount(prev => prev + 1);
+            setFlashingTabs(prev => ({ ...prev, waiting: true }));
+            break;
+          case 'WAITING_STATUS_CHANGED':
+          case 'WAITING_UPDATED':
+            fetch(`${getApiUrl()}/api/waiting/active${storeId !== 'Total' ? `?store_id=${storeId}` : ''}`)
+              .then(res => res.json())
+              .then(waitings => {
+                if (Array.isArray(waitings)) {
+                  setWaitingCount(waitings.length);
+                  setFlashingTabs(prev => ({ ...prev, waiting: waitings.length > 0 }));
+                }
+              })
+              .catch(err => console.error('Failed to refresh waiting status:', err));
+            break;
 
-    return () => {
-      clearTimeout(reconnectTimeout);
-      if (ws) ws.close();
-    };
+          case 'RESERVATION_UPDATED':
+            setFlashingTabs(prev => ({ ...prev, reserve: true }));
+            break;
+
+          case 'PARKING_APPLIED':
+            setFlashingTabs(prev => ({ ...prev, parking: true }));
+            break;
+
+          case 'POINTS_UPDATED':
+            setFlashingTabs(prev => ({ ...prev, points: true }));
+            break;
+
+          default:
+            break;
+        }
+      } catch (err) {
+        console.error('Store Notification MQTT Parsing Error:', err);
+      }
+    });
+
+    return unsubscribe;
   }, [storeId, checkInitialStates]);
 
   // 3. 특정 탭 클릭 이동 시 해당 알림 깜빡임 즉시 초기화(Reset)
