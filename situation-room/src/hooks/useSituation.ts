@@ -7,8 +7,6 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [bundles, setBundles] = useState<BundleData[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const socketRef = useRef<WebSocket | null>(null);
-    const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const storeIdRef = useRef(storeId);
     useEffect(() => { storeIdRef.current = storeId; }, [storeId]);
@@ -33,30 +31,27 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
         }
     }, [storeId]);
 
-    // 300ms 디바운스: 연속 이벤트가 쏟아져도 1회만 fetch
-    const debouncedFetch = useCallback(() => {
-        if (fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current);
-        fetchDebounceRef.current = setTimeout(() => {
-            fetchInitialData();
-        }, 300);
-    }, [fetchInitialData]);
-
     // Initial Data Fetch
     useEffect(() => {
         fetchInitialData();
     }, [fetchInitialData]);
 
-    // MQTT situation/kitchen 구독으로 실시간 업데이트
+    // MQTT store/{store_id}/kitchen 구독으로 타겟팅 업데이트
     useEffect(() => {
-        const unsubscribe = subscribeTopic('situation/kitchen', (data) => {
-            const currentStoreId = storeIdRef.current;
-            const storeMatches = !data.store_id || data.store_id === currentStoreId || currentStoreId === "Total" || currentStoreId === "";
+        const currentStoreId = storeIdRef.current;
+        // Total이거나 빈 값이면(어드민) 모든 매장(store/+/kitchen) 구독, 아니면 특정 매장만 구독
+        const topic = (currentStoreId && currentStoreId !== "Total") 
+            ? `store/${currentStoreId}/kitchen` 
+            : `store/+/kitchen`;
 
+        const unsubscribe = subscribeTopic(topic, (data) => {
+            console.log(`[CHECKPOINT - 수신] MQTT 메시지 도착 (type: ${data.type}):`, data);
+            
             const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins'];
+            
             if (data.id && bundleTypes.includes(data.type)) {
-                if (currentStoreId !== "Total" && currentStoreId !== "" && data.store_id && data.store_id !== currentStoreId) {
-                    return;
-                }
+                console.log(`[CHECKPOINT - 매칭] 기존 bundleTypes로 처리됨: ${data.type}`);
+                // 브로커에서 이미 필터링되어 오므로 클라이언트 사이드 거름망 로직 생략
                 setBundles(prev => {
                     const currentPrev = Array.isArray(prev) ? prev : [];
                     const index = currentPrev.findIndex(b => b.id === data.id);
@@ -71,6 +66,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             }
 
             if (data.type === 'STATUS_UPDATED') {
+                console.log(`[CHECKPOINT - 매칭] STATUS_UPDATED 처리됨`);
                 setBundles(prev => {
                     const currentPrev = Array.isArray(prev) ? prev : [];
                     return currentPrev.map(b =>
@@ -81,6 +77,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             }
 
             if (data.type === 'STATUS_UPDATE') {
+                console.log(`[CHECKPOINT - 매칭] STATUS_UPDATE 처리됨`);
                 setBundles(prev => {
                     const currentPrev = Array.isArray(prev) ? prev : [];
                     return currentPrev.map(b =>
@@ -91,6 +88,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             }
 
             if (data.type === 'KITCHEN_DONE') {
+                console.log(`[CHECKPOINT - 매칭] KITCHEN_DONE 처리됨`);
                 setBundles(prev => {
                     const currentPrev = Array.isArray(prev) ? prev : [];
                     return currentPrev.map(b => b.id === data.bundleId ? { ...b, status: 'ready' } : b);
@@ -98,16 +96,52 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                 return;
             }
 
-            if (storeMatches) {
-                debouncedFetch();
+            // [MQTT 최적화 #2] Payload 중심 업데이트: 
+            // 직원 호출(STAFF_CALL) 등 특수 이벤트도 API 폴링 없이 로컬에서 BundleData로 즉시 변환하여 반영
+            if (data.type === 'STAFF_CALL') {
+                console.log(`[CHECKPOINT - 매칭] STAFF_CALL 처리됨`);
+                const newCall: BundleData = {
+                    id: data.call_id,
+                    type: 'Log',
+                    title: `직원 호출: ${data.table_id || '테이블'}`,
+                    items: [
+                        { name: '호출 유형', value: data.call_type || '직원호출' },
+                        { name: '테이블', value: data.table_id || '' }
+                    ],
+                    timestamp: new Date().toLocaleTimeString(),
+                    status: 'pending',
+                    store_id: data.store_id
+                };
+                setBundles(prev => {
+                    const currentPrev = Array.isArray(prev) ? prev : [];
+                    return [newCall, ...currentPrev];
+                });
+                return;
             }
+
+            // 그 외 알 수 없는 포맷의 데이터는 부분 병합 시도
+            if (data.id && data.type && !['STATUS_UPDATED', 'STATUS_UPDATE', 'KITCHEN_DONE'].includes(data.type)) {
+                console.log(`[CHECKPOINT - 매칭] 알 수 없는 타입 부분 병합 시도: ${data.type}`);
+                setBundles(prev => {
+                    const currentPrev = Array.isArray(prev) ? prev : [];
+                    const index = currentPrev.findIndex(b => b.id === data.id);
+                    if (index !== -1) {
+                        const newBundles = [...currentPrev];
+                        newBundles[index] = { ...newBundles[index], ...data };
+                        return newBundles;
+                    }
+                    return [data as BundleData, ...currentPrev];
+                });
+                return;
+            }
+
+            console.warn(`[CHECKPOINT - 🚨 누락 경고 🚨] 어떤 조건에도 맞지 않아 화면에 반영되지 않은 메시지!`, data);
         });
 
         return () => {
-            if (fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current);
             unsubscribe();
         };
-    }, [debouncedFetch]);
+    }, []);
 
     // API Situation Handler
     const handleSendMessage = useCallback(async (text: string, targetId?: string, context?: string, overrideStoreId?: string, overrideStoreName?: string) => {

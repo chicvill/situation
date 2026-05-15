@@ -162,4 +162,4 @@ app.include_router(operations.router)
 app.include_router(staff.router)
 app.include_router(chat.router)
 app.include_router(manual.router)
-app.include_router(websocket.router)
+# app.include_router(websocket.router)  # Removed as part of MQTT migration

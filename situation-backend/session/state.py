@@ -44,16 +44,17 @@ class ConnectionManager:
 
     async def broadcast_to_kitchen(self, message: dict):
         from .mqtt_handler import mqtt_publish
-        await mqtt_publish("situation/kitchen", message)
+        store_id = message.get("store_id")
+        if not store_id:
+            print(f"[CHECKPOINT - BE 경고] 브로드캐스트 메시지에 store_id가 누락됨! 프론트가 구독 못할 수 있음. message={message}")
+        topic = f"store/{store_id}/kitchen" if store_id else "store/broadcast/kitchen"
+        # 중요한 데이터(주문, 호출 등)는 QoS 1을 사용하여 전달 보장
+        await mqtt_publish(topic, message, qos=1)
 
     async def send_to_table(self, table_id: str, message: dict):
         from .mqtt_handler import mqtt_publish
-        await mqtt_publish(f"situation/table/{table_id}", message)
-
-    # --- 하위 호환: 기존 코드에서 active_connections를 순회하는 곳이 있어서 빈 dict 유지 ---
-    @property
-    def active_connections(self) -> dict:
-        return {}
+        # 모바일 기기(테이블)로 보내는 메시지도 QoS 1로 보장
+        await mqtt_publish(f"situation/table/{table_id}", message, qos=1)
 
 
 manager = ConnectionManager()

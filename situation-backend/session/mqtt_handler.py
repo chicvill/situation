@@ -27,7 +27,7 @@ MQTT_PORT = int(os.getenv("MQTT_BROKER_PORT", "1885"))  # 1885: 기존 Windows �
 _mqtt_client: Optional[Any] = None
 
 
-async def mqtt_publish(topic: str, payload: dict) -> bool:
+async def mqtt_publish(topic: str, payload: dict, qos: int = 0) -> bool:
     """카운터/주방으로 MQTT 메시지 발행."""
     global _mqtt_client
     if not MQTT_AVAILABLE:
@@ -37,8 +37,8 @@ async def mqtt_publish(topic: str, payload: dict) -> bool:
         return False
     try:
         message = json.dumps(payload, ensure_ascii=False)
-        await _mqtt_client.publish(topic, message)
-        print(f"[MQTT 브로드캐스트] topic={topic} | {message[:150]}")
+        await _mqtt_client.publish(topic, message, qos=qos)
+        print(f"[MQTT 브로드캐스트] topic={topic} (QoS: {qos}) | {message[:150]}")
         return True
     except Exception as e:
         print(f"[MQTT 브로드캐스트 오류] topic={topic} error={e}")
