@@ -49,7 +49,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             
             const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins'];
             
-            if (data.id && bundleTypes.includes(data.type)) {
+            if (data.id && typeof data.type === 'string' && bundleTypes.includes(data.type)) {
                 console.log(`[CHECKPOINT - 매칭] 기존 bundleTypes로 처리됨: ${data.type}`);
                 // 브로커에서 이미 필터링되어 오므로 클라이언트 사이드 거름망 로직 생략
                 setBundles(prev => {
@@ -57,10 +57,10 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                     const index = currentPrev.findIndex(b => b.id === data.id);
                     if (index !== -1) {
                         const newBundles = [...currentPrev];
-                        newBundles[index] = data;
+                        newBundles[index] = data as BundleData;
                         return newBundles;
                     }
-                    return [data, ...currentPrev];
+                    return [data as BundleData, ...currentPrev];
                 });
                 return;
             }
@@ -70,7 +70,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                 setBundles(prev => {
                     const currentPrev = Array.isArray(prev) ? prev : [];
                     return currentPrev.map(b =>
-                        data.ids?.includes(b.id) ? { ...b, status: data.status } : b
+                        (Array.isArray(data.ids) && data.ids.includes(b.id)) ? { ...b, status: data.status } : b
                     );
                 });
                 return;
@@ -101,16 +101,16 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             if (data.type === 'STAFF_CALL') {
                 console.log(`[CHECKPOINT - 매칭] STAFF_CALL 처리됨`);
                 const newCall: BundleData = {
-                    id: data.call_id,
+                    id: String(data.call_id || Date.now()),
                     type: 'Log',
                     title: `직원 호출: ${data.table_id || '테이블'}`,
                     items: [
-                        { name: '호출 유형', value: data.call_type || '직원호출' },
-                        { name: '테이블', value: data.table_id || '' }
+                        { name: '호출 유형', value: String(data.call_type || '직원호출') },
+                        { name: '테이블', value: String(data.table_id || '') }
                     ],
                     timestamp: new Date().toLocaleTimeString(),
                     status: 'pending',
-                    store_id: data.store_id
+                    store_id: data.store_id ? String(data.store_id) : undefined
                 };
                 setBundles(prev => {
                     const currentPrev = Array.isArray(prev) ? prev : [];
@@ -120,7 +120,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             }
 
             // 그 외 알 수 없는 포맷의 데이터는 부분 병합 시도
-            if (data.id && data.type && !['STATUS_UPDATED', 'STATUS_UPDATE', 'KITCHEN_DONE'].includes(data.type)) {
+            if (data.id && typeof data.type === 'string' && !['STATUS_UPDATED', 'STATUS_UPDATE', 'KITCHEN_DONE'].includes(data.type)) {
                 console.log(`[CHECKPOINT - 매칭] 알 수 없는 타입 부분 병합 시도: ${data.type}`);
                 setBundles(prev => {
                     const currentPrev = Array.isArray(prev) ? prev : [];
