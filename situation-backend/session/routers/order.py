@@ -34,16 +34,22 @@ async def process_order(order_req: OrderRequest):
     if not session:
         print(f"⚠️ [Warning] No active session found for Table {order_req.table_id}. Creating new one...")
         from ..routers.session_routes import check_in
-        session = await check_in({
+        res = await check_in({
             "store_id": effective_store_id,
             "table_id": order_req.table_id,
             "device_id": order_req.device_id
         })
+        # check_in returns {"status": "active", "session": {...}, ...}
+        if isinstance(res, dict) and res.get("status") == "active":
+            session = res.get("session")
+        else:
+            # If still no session, create a fallback dict with at least the table_id
+            session = {"session_id": "SESS-GENERIC", "table_id": order_req.table_id, "store_id": effective_store_id}
 
     session_dict = session if isinstance(session, dict) else {}
-    session_id = str(session_dict.get('session_id', ''))
-    table_id_val = str(session_dict.get('table_id', ''))
-    store_id_val = str(session_dict.get('store_id', ''))
+    session_id = str(session_dict.get('session_id') or 'SESS-NONE')
+    table_id_val = str(session_dict.get('table_id') or order_req.table_id)
+    store_id_val = str(session_dict.get('store_id') or effective_store_id)
 
     print(f"✅ [Target Session] ID: {session_id} | Table: {table_id_val} | Store: {store_id_val}")
 
