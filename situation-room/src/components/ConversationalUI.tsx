@@ -371,26 +371,38 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         
         try {
             // 1. 서버에 실제 주문 내역 전송 (표준 엔드포인트: /api/order/direct)
+            const orderPayload = {
+                store_id: storeId,
+                table_id: tableId,
+                device_id: `MOBILE-${tableId}-CHAT`, // 채팅창 전용 기기 식별자
+                items: cart.map(item => ({
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.qty || 1 // 서버 규격: quantity
+                })),
+                total_price: cartTotal,
+                payment_status: 'paid', // 결제 완료 상태로 전송
+                payment_method: 'Card/App',
+                metadata: { source: 'conversational_ai' }
+            };
+            
+            console.log("📍 [Checkpoint 1] 모바일에서 백엔드로 전송하는 Payload:", JSON.stringify(orderPayload, null, 2));
+
             const orderRes = await fetch(`${API_BASE}/api/order/direct`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    store_id: storeId,
-                    table_id: tableId,
-                    device_id: `MOBILE-${tableId}-CHAT`, // 채팅창 전용 기기 식별자
-                    items: cart.map(item => ({
-                        name: item.name,
-                        price: item.price,
-                        quantity: item.qty || 1 // 서버 규격: quantity
-                    })),
-                    total_price: cartTotal,
-                    payment_status: 'paid', // 결제 완료 상태로 전송
-                    payment_method: 'Card/App',
-                    metadata: { source: 'conversational_ai' }
-                })
+                body: JSON.stringify(orderPayload)
             });
 
-            if (!orderRes.ok) throw new Error('Order submission failed');
+            console.log("📍 [Checkpoint 2] 백엔드 응답 상태 코드:", orderRes.status);
+
+            if (!orderRes.ok) {
+                const errorData = await orderRes.text();
+                console.error("📍 [Checkpoint 2 Failed] 백엔드에서 주문 거부:", errorData);
+                throw new Error(`Order submission failed: ${orderRes.status}`);
+            }
+
+            console.log("📍 [Checkpoint 7] 프론트엔드 결제 완료 처리 진입");
 
             // 2. 승인 지연 시뮬레이션
             await new Promise(resolve => setTimeout(resolve, 2000));

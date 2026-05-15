@@ -138,10 +138,14 @@ function App() {
     const mode = params.get('mode');
     
     // 1. URL 모드 체크 (고객 주문 및 고객 대기 등록 등)
-    if (mode === 'customer' || mode === 'waiting') {
+    if (mode === 'customer') {
       const guest = { id: 'guest', name: '손님', role: 'customer' };
-      // QR 스캔 시 MobileOrderV2(orderV2)로 직접 진입, 내부에서 AI 비서 모드로 시작 (PC와 동일한 통합 화면)
       setActiveTab('orderV2');
+      setUser(guest);
+      return;
+    } else if (mode === 'waiting') {
+      const guest = { id: 'guest', name: '손님', role: 'customer' };
+      setActiveTab('waiting');
       setUser(guest);
       return;
     } else if (mode === 'manual' || (mode === 'hr' && params.get('action') === 'checkin')) {

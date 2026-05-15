@@ -53,44 +53,57 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId }) => {
     useEffect(() => {
         fetchCalls();
 
-        // 카운터 및 주방 전용 실시간 웹소켓 연결
-        const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            if (data.type === 'STAFF_CALL') {
-                // 다중 매장 데이터 노출 방지 체크
-                if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
-                    return;
-                }
+        // 카운터 및 주방 전용 실시간 웹소켓 연결 (자동 재연결 포함)
+        let ws: WebSocket;
+        let reconnectTimeout: any;
 
-                setCalls(prev => {
-                    if (prev.some(c => c.call_id === data.call_id)) return prev;
-                    return [...prev, {
-                        call_id: data.call_id,
-                        table_id: data.table_id,
-                        session_id: data.session_id || 'SESS-NONE',
-                        call_type: data.call_type || '직원호출',
-                        status: 'pending',
-                        timestamp: new Date().toISOString()
-                    }];
-                });
-                
-                // 알림 차임벨 재생 (브라우저 정책 허용 시)
-                try {
-                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-600.wav');
-                    audio.volume = 0.5;
-                    audio.play();
-                } catch (err) {
-                    console.log('Chime sound play was blocked or interrupted');
+        const connect = () => {
+            ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'STAFF_CALL') {
+                    // 다중 매장 데이터 노출 방지 체크
+                    if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
+                        return;
+                    }
+
+                    setCalls(prev => {
+                        if (prev.some(c => c.call_id === data.call_id)) return prev;
+                        return [...prev, {
+                            call_id: data.call_id,
+                            table_id: data.table_id,
+                            session_id: data.session_id || 'SESS-NONE',
+                            call_type: data.call_type || '직원호출',
+                            status: 'pending',
+                            timestamp: new Date().toISOString()
+                        }];
+                    });
+                    
+                    // 알림 차임벨 재생 (브라우저 정책 허용 시)
+                    try {
+                        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-600.wav');
+                        audio.volume = 0.5;
+                        audio.play();
+                    } catch (err) {
+                        console.log('Chime sound play was blocked or interrupted');
+                    }
+                } else if (data.type === 'CALL_STATUS_UPDATED') {
+                    if (data.status === 'completed' || data.status === 'cancelled') {
+                        setCalls(prev => prev.filter(c => c.call_id !== data.call_id));
+                    }
                 }
-            } else if (data.type === 'CALL_STATUS_UPDATED') {
-                if (data.status === 'completed' || data.status === 'cancelled') {
-                    setCalls(prev => prev.filter(c => c.call_id !== data.call_id));
-                }
-            }
+            };
+            ws.onclose = () => {
+                reconnectTimeout = setTimeout(connect, 3000);
+            };
         };
 
-        return () => ws.close();
+        connect();
+
+        return () => {
+            clearTimeout(reconnectTimeout);
+            if (ws) ws.close();
+        };
     }, [storeId]);
 
     return (

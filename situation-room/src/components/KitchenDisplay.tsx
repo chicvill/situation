@@ -20,16 +20,30 @@ export const KitchenDisplay: React.FC = () => {
 
     useEffect(() => {
         fetchKitchenOrders();
-        const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
-        ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            // 모든 신규 주문, 상태 업데이트, 호출, 주차 등록 시 리프레시
-            const refreshTypes = ['NEW_ORDER', 'STATUS_UPDATE', 'PAYMENT_CONFIRMED', 'STAFF_CALL', 'PARKING_APPLIED'];
-            if (refreshTypes.includes(data.type)) {
-                fetchKitchenOrders();
-            }
+        let ws: WebSocket;
+        let reconnectTimeout: any;
+
+        const connect = () => {
+            ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                const refreshTypes = ['NEW_ORDER', 'STATUS_UPDATE', 'PAYMENT_CONFIRMED', 'STAFF_CALL', 'PARKING_APPLIED'];
+                if (refreshTypes.includes(data.type)) {
+                    fetchKitchenOrders();
+                }
+            };
+            ws.onclose = () => {
+                // Connection closed, try to reconnect after 3 seconds
+                reconnectTimeout = setTimeout(connect, 3000);
+            };
         };
-        return () => ws.close();
+
+        connect();
+
+        return () => {
+            clearTimeout(reconnectTimeout);
+            if (ws) ws.close();
+        };
     }, [storeId]);
 
     const markAsDone = async (orderId: string) => {

@@ -41,8 +41,11 @@ def save_order(order_data: dict):
         conn.commit()
         cur.close()
         conn.close()
+        print(f"✅ [save_order] Successfully saved order {order_data['order_id']} to DB.")
+        return True
     except Exception as e:
-        print(f"Supabase Save Error (Order): {e}")
+        print(f"❌ [save_order] ERROR: Failed to save order {order_data.get('order_id')}: {e}")
+        return False
 
 def get_orders_by_session(session_id: str):
     conn = get_db_conn()

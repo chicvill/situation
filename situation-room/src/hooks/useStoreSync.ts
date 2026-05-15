@@ -62,77 +62,89 @@ export const useStoreSync = (storeId: string) => {
     }
   }, [storeId]);
 
-  useEffect(() => {
+    useEffect(() => {
     checkInitialStates();
 
     // 2. 단 하나의 웹소켓(WebSocket) 커넥션으로 하단 모든 탭 아이콘의 실시간 동기화 및 깜빡임 연동!
-    const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
+    let ws: WebSocket;
+    let reconnectTimeout: any;
 
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
+    const connect = () => {
+      ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
 
-        // 다중 가상 매장 연동: 수신한 데이터에 store_id가 있고, 현재 가동 매장 ID와 불일치하면 필터링 통과
-        if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
-          return;
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          // 다중 가상 매장 연동: 수신한 데이터에 store_id가 있고, 현재 가동 매장 ID와 불일치하면 필터링 통과
+          if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
+            return;
+          }
+
+          switch (data.type) {
+            case 'STAFF_CALL':
+              setCallCount(prev => prev + 1);
+              setFlashingTabs(prev => ({ ...prev, call: true }));
+              break;
+            case 'CALL_STATUS_UPDATED':
+              fetch(`${getApiUrl()}/api/call/active${storeId !== 'Total' ? `?store_id=${storeId}` : ''}`)
+                .then(res => res.json())
+                .then(calls => {
+                  if (Array.isArray(calls)) {
+                    setCallCount(calls.length);
+                    setFlashingTabs(prev => ({ ...prev, call: calls.length > 0 }));
+                  }
+                })
+                .catch(err => console.error('Failed to refresh call status:', err));
+              break;
+
+            case 'WAITING_REGISTERED':
+              setWaitingCount(prev => prev + 1);
+              setFlashingTabs(prev => ({ ...prev, waiting: true }));
+              break;
+            case 'WAITING_STATUS_CHANGED':
+            case 'WAITING_UPDATED':
+              fetch(`${getApiUrl()}/api/waiting/active${storeId !== 'Total' ? `?store_id=${storeId}` : ''}`)
+                .then(res => res.json())
+                .then(waitings => {
+                  if (Array.isArray(waitings)) {
+                    setWaitingCount(waitings.length);
+                    setFlashingTabs(prev => ({ ...prev, waiting: waitings.length > 0 }));
+                  }
+                })
+                .catch(err => console.error('Failed to refresh waiting status:', err));
+              break;
+
+            case 'RESERVATION_UPDATED':
+              setFlashingTabs(prev => ({ ...prev, reserve: true }));
+              break;
+
+            case 'PARKING_APPLIED':
+              setFlashingTabs(prev => ({ ...prev, parking: true }));
+              break;
+
+            case 'POINTS_UPDATED':
+              setFlashingTabs(prev => ({ ...prev, points: true }));
+              break;
+
+            default:
+              break;
+          }
+        } catch (err) {
+          console.error('Store Notification WS Parsing Error:', err);
         }
+      };
 
-        switch (data.type) {
-          case 'STAFF_CALL':
-            setCallCount(prev => prev + 1);
-            setFlashingTabs(prev => ({ ...prev, call: true }));
-            break;
-          case 'CALL_STATUS_UPDATED':
-            fetch(`${getApiUrl()}/api/call/active${storeId !== 'Total' ? `?store_id=${storeId}` : ''}`)
-              .then(res => res.json())
-              .then(calls => {
-                if (Array.isArray(calls)) {
-                  setCallCount(calls.length);
-                  setFlashingTabs(prev => ({ ...prev, call: calls.length > 0 }));
-                }
-              })
-              .catch(err => console.error('Failed to refresh call status:', err));
-            break;
-
-          case 'WAITING_REGISTERED':
-            setWaitingCount(prev => prev + 1);
-            setFlashingTabs(prev => ({ ...prev, waiting: true }));
-            break;
-          case 'WAITING_STATUS_CHANGED':
-          case 'WAITING_UPDATED':
-            fetch(`${getApiUrl()}/api/waiting/active${storeId !== 'Total' ? `?store_id=${storeId}` : ''}`)
-              .then(res => res.json())
-              .then(waitings => {
-                if (Array.isArray(waitings)) {
-                  setWaitingCount(waitings.length);
-                  setFlashingTabs(prev => ({ ...prev, waiting: waitings.length > 0 }));
-                }
-              })
-              .catch(err => console.error('Failed to refresh waiting status:', err));
-            break;
-
-          case 'RESERVATION_UPDATED':
-            setFlashingTabs(prev => ({ ...prev, reserve: true }));
-            break;
-
-          case 'PARKING_APPLIED':
-            setFlashingTabs(prev => ({ ...prev, parking: true }));
-            break;
-
-          case 'POINTS_UPDATED':
-            setFlashingTabs(prev => ({ ...prev, points: true }));
-            break;
-
-          default:
-            break;
-        }
-      } catch (err) {
-        console.error('Store Notification WS Parsing Error:', err);
-      }
+      ws.onclose = () => {
+        reconnectTimeout = setTimeout(connect, 3000);
+      };
     };
 
+    connect();
+
     return () => {
-      ws.close();
+      clearTimeout(reconnectTimeout);
+      if (ws) ws.close();
     };
   }, [storeId, checkInitialStates]);
 
