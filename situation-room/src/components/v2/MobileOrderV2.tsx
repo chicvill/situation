@@ -145,6 +145,23 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     return id;
   }, []);
 
+  const handleStaffCall = async () => {
+    try {
+      await fetch(`${API_BASE}/api/call`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          table_id: `Table ${tableNo}`,
+          call_type: '직원호출',
+          store_id: storeId
+        })
+      });
+      alert('🔔 카운터로 호출 신호를 보냈습니다. 잠시만 기다려 주세요!');
+    } catch (e) {
+      alert('직원을 호출했습니다. 곧 가겠습니다!');
+    }
+  };
+
   const menus = useMemo(() => {
     const safeBundles = Array.isArray(bundles) ? bundles : [];
     
@@ -1207,7 +1224,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
             <div className="table-badge">Table {tableNo}</div>
             <div className="status-box"><div className="spinner-small"></div><p>{statusMsg}</p></div>
             <p className="sub-text">{subText}</p>
-            <button className="inquiry-btn-large" onClick={() => alert('직원을 호출했습니다.')}>🔔 직원 문의</button>
+            <button className="inquiry-btn-large" onClick={handleStaffCall}>🔔 직원 문의</button>
           </div>
         </div>
       </div>

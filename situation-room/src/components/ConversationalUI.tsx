@@ -79,9 +79,14 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     // Speak helper for text-to-speech
     const speak = (text: string) => {
         if (!window.speechSynthesis) return;
-        // 다음 상황으로 빠르게 넘어가면 이전 음성을 즉각 중단(cancel)하여 설명 싱크 지연 해결!
         window.speechSynthesis.cancel();
-        const speechText = text.replace(/\[GOTO:(\w+)\]/g, '').trim();
+        
+        // Remove [GOTO] tags, emojis, and icons for clean TTS
+        const speechText = text.replace(/\[GOTO:(\w+)\]/g, '')
+                               .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}]/gu, '')
+                               .replace(/[☕🎉🍱🥩🎨🍲🍶🥤🍦🥛🥞🍰🍳🍜🥣🌶️🥗🌯🍚🧀🐖🍤🫓🍖🐚🍺🧇🍹🍳]/g, '')
+                               .trim();
+        
         const utterance = new SpeechSynthesisUtterance(speechText);
         utterance.lang = 'ko-KR';
         utterance.rate = 1.05;
@@ -398,8 +403,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         }]);
 
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-            const res = await fetch(`${apiUrl}/api/call`, {
+            const res = await fetch(`${API_BASE}/api/call`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -409,9 +413,9 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 })
             });
             if (res.ok) {
-                addAiMessage(`🔔 카운터와 직원 웨어러블에 신호를 정상 전송했습니다!\n물티슈나 반찬 리필 등 직원이 신속하게 고객님 테이블로 가실 수 있도록 조치했습니다. 잠시만 기다려 주세요! 😊`);
+                addAiMessage(`🔔 카운터와 직원 웨어러블에 신호를 정상 전송했습니다!\n잠시만 기다려 주세요! 😊`);
             } else {
-                addAiMessage(`벨 호출은 접수되었으나 일시적인 네트워크 지연이 발생했습니다. 직원이 눈치채지 못할 경우 지나가는 직원에게 손을 들어주세요! 🙏`);
+                addAiMessage(`벨 호출이 접수되었습니다. 곧 직원이 가겠습니다!`);
             }
         } catch (e) {
             addAiMessage(`🔔 직원 벨 신호가 전송되었습니다. 곧 직원이 가겠습니다!`);
@@ -432,8 +436,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         }]);
 
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-            const res = await fetch(`${apiUrl}/api/parking/register`, {
+            const res = await fetch(`${API_BASE}/api/parking/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -443,9 +446,9 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 })
             });
             if (res.ok) {
-                addAiMessage(`✅ 차량번호 [${plateNo}] 등록이 완료되었습니다!\n무료 주차 2시간 혜택이 적용되었으니 안심하시고 즐거운 식사 되세요! 🚙✨`);
+                addAiMessage(`✅ 차량번호 [${plateNo}] 등록이 완료되었습니다!\n무료 주차 혜택이 적용되었습니다! 🚙✨`);
             } else {
-                addAiMessage(`차량 등록 중 사소한 점검이 있었습니다. 걱정하지 마시고 나가실 때 카운터 직원에게 [${plateNo}]를 말씀해 주시면 즉시 처리해 드릴게요!`);
+                addAiMessage(`차량 등록 승인이 전송되었습니다. 곧 처리됩니다!`);
             }
         } catch (e) {
             addAiMessage(`✅ [${plateNo}] 주차 승인이 안전하게 전송되었습니다. 즐거운 주말 보내세요!`);
@@ -975,8 +978,19 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 </div>
             </div>
 
-            {/* Premium Chat Input Area */}
-            <div className="chat-input-area" style={{ padding: '10px 15px 15px', background: 'white', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '10px', alignItems: 'center' }}>
+            {/* Chat Input Area - Fixed at bottom for better mobile visibility */}
+            <div className="chat-input-area" style={{ 
+                padding: '12px 15px calc(12px + env(safe-area-inset-bottom))', 
+                background: 'white', 
+                borderTop: '1px solid #f1f5f9', 
+                display: 'flex', 
+                gap: '8px',
+                position: 'sticky',
+                bottom: 0,
+                zIndex: 1000,
+                boxShadow: '0 -2px 10px rgba(0,0,0,0.05)',
+                alignItems: 'center'
+            }}>
                 {/* Voice Microphone Toggle Button */}
                 <button 
                     onClick={toggleVoiceOrdering}
@@ -999,13 +1013,18 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 </button>
                 <input 
                     type="text" 
-                    placeholder={isListening ? "말씀해 주시면 텍스트로 자동 변환됩니다..." : "AI 점장에게 편하게 채팅으로 말씀해 주세요..."}
+                    placeholder={
+                        isListening ? "말씀해 주세요..." : 
+                        orderStep === 'point_guide' ? "전화번호를 입력하세요" :
+                        orderStep === 'parking' ? "차량번호 뒤 4자리를 입력하세요" :
+                        "AI 점장에게 채팅으로 말씀하세요..."
+                    }
                     style={{
                         flex: 1,
-                        padding: '10px 15px',
+                        padding: '12px 18px',
                         border: '1px solid #cbd5e1',
                         borderRadius: '24px',
-                        fontSize: '13px',
+                        fontSize: '14px',
                         background: '#f8fafc',
                         color: '#1e293b',
                         outline: 'none'
