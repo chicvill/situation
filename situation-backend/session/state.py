@@ -44,9 +44,21 @@ class ConnectionManager:
 
     async def broadcast_to_kitchen(self, message: dict):
         from .mqtt_handler import mqtt_publish
+        
+        # 1. 루트 레벨에서 탐색
         store_id = message.get("store_id")
+        
+        # 2. 내부에 감춰진 데이터에서 탐색 (NEW_ORDER 등)
+        if not store_id:
+            for key in ["order", "session", "data", "call", "info"]:
+                if key in message and isinstance(message[key], dict):
+                    store_id = message[key].get("store_id")
+                    if store_id:
+                        break
+
         if not store_id:
             print(f"[CHECKPOINT - BE 경고] 브로드캐스트 메시지에 store_id가 누락됨! 프론트가 구독 못할 수 있음. message={message}")
+            
         topic = f"store/{store_id}/kitchen" if store_id else "store/broadcast/kitchen"
         # 중요한 데이터(주문, 호출 등)는 QoS 1을 사용하여 전달 보장
         await mqtt_publish(topic, message, qos=1)

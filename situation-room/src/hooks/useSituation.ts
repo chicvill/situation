@@ -44,7 +44,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             ? `store/${currentStoreId}/kitchen` 
             : `store/+/kitchen`;
 
-        const unsubscribe = subscribeTopic(topic, (data) => {
+        const messageHandler = (data: any) => {
             console.log(`[CHECKPOINT - 수신] MQTT 메시지 도착 (type: ${data.type}):`, data);
             
             const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins'];
@@ -136,10 +136,19 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             }
 
             console.warn(`[CHECKPOINT - 🚨 누락 경고 🚨] 어떤 조건에도 맞지 않아 화면에 반영되지 않은 메시지!`, data);
-        });
+        };
+
+        const unsubscribe1 = subscribeTopic(topic, messageHandler);
+        let unsubscribe2 = () => {};
+        
+        // 특정 매장 구독인 경우, store_id가 누락된 공통 브로드캐스트 메시지도 놓치지 않도록 추가 구독
+        if (topic !== 'store/+/kitchen') {
+            unsubscribe2 = subscribeTopic('store/broadcast/kitchen', messageHandler);
+        }
 
         return () => {
-            unsubscribe();
+            unsubscribe1();
+            unsubscribe2();
         };
     }, []);
 
