@@ -407,7 +407,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    table_id: `Table ${tableNo}`,
+                    table_id: tableId,
                     call_type: callType,
                     store_id: storeId
                 })

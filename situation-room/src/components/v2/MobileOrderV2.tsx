@@ -151,7 +151,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          table_id: `Table ${tableNo}`,
+          table_id: tableId,
           call_type: '직원호출',
           store_id: storeId
         })
