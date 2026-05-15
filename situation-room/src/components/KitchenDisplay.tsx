@@ -23,8 +23,9 @@ export const KitchenDisplay: React.FC = () => {
         const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            // 모든 신규 주문이나 상태 업데이트 시 리프레시
-            if (data.type === 'NEW_ORDER' || data.type === 'STATUS_UPDATE' || data.type === 'PAYMENT_CONFIRMED') {
+            // 모든 신규 주문, 상태 업데이트, 호출, 주차 등록 시 리프레시
+            const refreshTypes = ['NEW_ORDER', 'STATUS_UPDATE', 'PAYMENT_CONFIRMED', 'STAFF_CALL', 'PARKING_APPLIED'];
+            if (refreshTypes.includes(data.type)) {
                 fetchKitchenOrders();
             }
         };

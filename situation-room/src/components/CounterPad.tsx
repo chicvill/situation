@@ -48,10 +48,11 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
         const ws = new WebSocket(`${WS_BASE}/ws/kitchen`);
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            // 주문 취소·수정·결제 등 금액에 영향을 주는 모든 이벤트에서 재조회
+            // 주문 취소·수정·결제·호출·주차 등 모든 이벤트에서 재조회
             if ([
                 'NEW_ORDER', 'STATUS_UPDATE', 'ORDER_UPDATED',
-                'SESSION_CLOSED', 'PAYMENT_CONFIRMED', 'PARTIAL_SETTLEMENT'
+                'SESSION_CLOSED', 'PAYMENT_CONFIRMED', 'PARTIAL_SETTLEMENT',
+                'STAFF_CALL', 'PARKING_APPLIED'
             ].includes(data.type)) {
                 fetchSessions();
             }
