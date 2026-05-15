@@ -24,6 +24,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     const [orderStep, setOrderStep] = useState<string>('welcome'); // welcome, menu_selection, point_guide, cash_invoice_guide, payment_method_selection, paying, paid
     const [isPaying, setIsPaying] = useState<boolean>(false);
     const [isListening, setIsListening] = useState<boolean>(false);
+    const [sessionId, setSessionId] = useState<string>('');
 
     // sessionPreApproved=true이면 부모(MobileOrderV2)가 이미 세션을 확인했으므로 즉시 활성 상태로 시작
     const [hasSession, setHasSession] = useState<boolean>(sessionPreApproved);
@@ -43,8 +44,10 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 const data = await res.json();
                 if (data && data.session && data.session.status === 'active') {
                     setHasSession(true);
+                    setSessionId(data.session.session_id);
                 } else {
                     setHasSession(false);
+                    setSessionId('');
                 }
             } else {
                 setHasSession(false);
@@ -172,6 +175,8 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
             };
         }).filter((m: any) => m.name);
     }, [bundles, storeId, storeName]);
+    
+    const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0), [cart]);
 
     const scroll = (direction: 'left' | 'right') => {
         if (scrollRef.current) {
@@ -363,11 +368,33 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     };
 
     // Simulate safe checkout card terminal action
-    const handleExecutePaymentSim = () => {
+    const handleExecutePaymentSim = async () => {
         setIsPaying(true);
         speak("카드가 감지되었습니다. 결제를 승인하는 중입니다. 잠시만 기다려 주세요.");
         
-        setTimeout(() => {
+        try {
+            // 1. 서버에 실제 주문 내역 전송
+            const orderRes = await fetch(`${API_BASE}/api/order/request`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    table_id: tableId,
+                    store_id: storeId,
+                    items: cart.map(item => ({
+                        name: item.name,
+                        price: item.price,
+                        qty: item.qty || 1
+                    })),
+                    payment_method: 'Card/App'
+                })
+            });
+
+            if (!orderRes.ok) throw new Error('Order submission failed');
+
+            // 2. 승인 지연 시뮬레이션
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
             setIsPaying(false);
             setOrderStep('paid');
             
@@ -390,7 +417,11 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
             
             // Clear local cart for next session if any
             setCart([]);
-        }, 2200);
+        } catch (err) {
+            console.error("Order payment error:", err);
+            addAiMessage("⚠️ 결제 승인 처리 중 오류가 발생했습니다. 카운터로 문의해 주세요.");
+            setIsPaying(false);
+        }
     };
 
     // --- CALL STAFF FLOW ---
@@ -763,13 +794,35 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                             </div>
                         )}
 
-                        {/* Point accumulation action buttons */}
+                        {/* Phone Number Entry Card (Point Guide) */}
                         {msg.isPointGuide && orderStep === 'point_guide' && (
-                            <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
-                                <button onClick={() => handleSelectPoints('010-1234-5678')} style={{ flex: 1, padding: '8px 12px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#3b82f6' }}>
-                                    📱 010-1234-5678로 적립
-                                </button>
-                                <button onClick={() => handleSelectPoints('skip')} style={{ flex: 1, padding: '8px 12px', background: '#f1f5f9', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#64748b' }}>
+                            <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '15px', marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '10px', minWidth: '220px' }}>
+                                <div style={{ fontSize: '12px', fontWeight: 800, color: '#ea580c' }}>📱 포인트 적립 / 번호 입력</div>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    <input 
+                                        type="tel" 
+                                        placeholder="01012345678" 
+                                        id={`chat-phone-input-${msg.id}`}
+                                        style={{ flex: 1, padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', outline: 'none', fontWeight: 700 }}
+                                    />
+                                    <button 
+                                        onClick={() => {
+                                            const inputEl = document.getElementById(`chat-phone-input-${msg.id}`) as HTMLInputElement;
+                                            if (inputEl && inputEl.value.length >= 10) {
+                                                handleSelectPoints(inputEl.value);
+                                            } else {
+                                                alert("올바른 전화번호를 입력해 주세요!");
+                                            }
+                                        }}
+                                        style={{ padding: '8px 16px', background: '#ea580c', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}
+                                    >
+                                        확인
+                                    </button>
+                                </div>
+                                <button 
+                                    onClick={() => handleSelectPoints('skip')}
+                                    style={{ padding: '6px', background: 'none', border: 'none', color: '#64748b', fontSize: '11px', textDecoration: 'underline', cursor: 'pointer' }}
+                                >
                                     건너뛰기 ⏩
                                 </button>
                             </div>
@@ -790,21 +843,35 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                             </div>
                         )}
 
-                        {/* Payment Method selector buttons */}
+                        {/* Payment Method Selection Dropdown */}
                         {msg.isPaymentMethodGuide && orderStep === 'payment_method_selection' && (
-                            <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
-                                <button onClick={() => handleSelectPaymentMethod('신용카드')} style={{ flex: 1, minWidth: '110px', padding: '10px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                    💳 신용카드 결제
-                                </button>
-                                <button onClick={() => handleSelectPaymentMethod('토스페이')} style={{ flex: 1, minWidth: '110px', padding: '10px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                    🔵 토스페이 결제
-                                </button>
-                                <button onClick={() => handleSelectPaymentMethod('카카오페이')} style={{ flex: 1, minWidth: '110px', padding: '10px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#eab308', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                    🟡 카카오페이 결제
-                                </button>
-                                <button onClick={() => triggerStaffCallFlow('카운터 현금결제')} style={{ flex: 1, minWidth: '110px', padding: '10px', background: '#f1f5f9', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                    🏦 카운터 현금
-                                </button>
+                            <div style={{ marginTop: '10px', minWidth: '220px' }}>
+                                <select 
+                                    onChange={(e) => {
+                                        if (e.target.value) handleSelectPaymentMethod(e.target.value);
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px',
+                                        borderRadius: '10px',
+                                        border: '2px solid #3b82f6',
+                                        background: 'white',
+                                        fontSize: '14px',
+                                        fontWeight: 700,
+                                        color: '#1e293b',
+                                        outline: 'none',
+                                        appearance: 'none',
+                                        backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%231e293b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
+                                        backgroundRepeat: 'no-repeat',
+                                        backgroundPosition: 'right 12px top 50%',
+                                        backgroundSize: '12px auto'
+                                    }}
+                                >
+                                    <option value="">결제 수단 선택...</option>
+                                    <option value="계좌이체">🏦 계좌이체</option>
+                                    <option value="카드/페이">💳 카드 / 페이 결제</option>
+                                    <option value="카운터결제">🏪 카운터에서 결제</option>
+                                </select>
                             </div>
                         )}
 
@@ -978,7 +1045,8 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 </div>
             </div>
 
-            {/* Chat Input Area - Fixed at bottom for better mobile visibility */}
+            {/* Chat Input Area - Hidden during specific steps */}
+            {!['point_guide', 'payment_method_selection', 'cash_invoice_guide', 'paying'].includes(orderStep) && (
             <div className="chat-input-area" style={{ 
                 padding: '12px 15px calc(12px + env(safe-area-inset-bottom))', 
                 background: 'white', 
@@ -1059,6 +1127,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                     전송
                 </button>
             </div>
+            )}
         </div>
     );
 };
