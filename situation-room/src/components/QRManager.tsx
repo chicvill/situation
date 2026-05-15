@@ -85,6 +85,11 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
             data: `${baseUrl}/?mode=waiting&action=register&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
         },
         {
+            title: "📅 실시간 예약 신청",
+            label: "RS",
+            data: `${baseUrl}/?mode=reserve&action=register&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
+        },
+        {
             title: "👥 직원 출퇴근",
             label: "AB",
             data: `${baseUrl}/?mode=hr&action=checkin&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`

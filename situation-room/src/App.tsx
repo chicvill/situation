@@ -143,9 +143,9 @@ function App() {
       setActiveTab('orderV2');
       setUser(guest);
       return;
-    } else if (mode === 'waiting') {
+    } else if (mode === 'waiting' || mode === 'reserve') {
       const guest = { id: 'guest', name: '손님', role: 'customer' };
-      setActiveTab('waiting');
+      setActiveTab(mode as MainTab);
       setUser(guest);
       return;
     } else if (mode === 'manual' || (mode === 'hr' && params.get('action') === 'checkin')) {
@@ -418,7 +418,7 @@ function App() {
       case 'manual': return <StoreManualEditor storeId={storeId} user={user} />;
       case 'hr': return <HRManager bundles={bundles} user={user} storeDetails={storeDetails} />;
       case 'waiting': return <WaitingManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'waiting', sId, sName)} />;
-      case 'reserve': return <ReservationManager bundles={bundles} />;
+      case 'reserve': return <ReservationManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'reserve', sId, sName)} />;
       case 'parking': return <ParkingManager storeId={storeId} />;
       case 'points': return <PointsManager storeId={storeId} />;
       default: return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} isCustomerMode={isCustomerMode} />;

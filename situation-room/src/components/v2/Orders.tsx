@@ -663,7 +663,11 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
           <div className="glow-circle"></div>
           <div className="waiting-content">
             <h1 className="main-title">Welcome to<br/>{storeName}</h1>
-            <div className="table-badge">Table {tableNo}</div>
+            <div className="table-badge">Table {tableNo}{(() => {
+                const num = parseInt(tableNo);
+                const cap = !isNaN(num) ? ((num <= 4) ? 4 : (num <= 8) ? 2 : (num <= 10) ? 6 : 4) : null;
+                return cap ? `[${cap}]` : '';
+            })()}</div>
             <div className="status-box"><div className="spinner-small"></div><p>스마트 오더 연결 중...</p></div>
             <p className="sub-text">좌석 확인이 완료되면 자동으로 메뉴판이 활성화됩니다.</p>
             <button className="inquiry-btn-large" onClick={() => alert('직원을 호출했습니다.')}>🔔 직원 문의</button>
@@ -691,7 +695,13 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
           </div>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>[Table {tableNo}]</div>
+            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-main)', letterSpacing: '-0.5px' }}>
+                [Table {tableNo}{(() => {
+                    const num = parseInt(tableNo);
+                    const cap = !isNaN(num) ? ((num <= 4) ? 4 : (num <= 8) ? 2 : (num <= 10) ? 6 : 4) : null;
+                    return cap ? `[${cap}]` : '';
+                })()}]
+            </div>
             
             <button 
               onClick={() => setShowHistory(true)}

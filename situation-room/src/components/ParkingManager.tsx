@@ -131,7 +131,14 @@ export const ParkingManager = ({ storeId }: ParkingManagerProps) => {
                             filteredParkings.map((p) => (
                                 <tr key={p.parking_id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.2s' }} className="table-row-hover">
                                     <td style={{ padding: '16px 24px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>{p.parking_id}</td>
-                                    <td style={{ padding: '16px 24px', fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>{p.vehicle_number}</td>
+                                    <td style={{ 
+                                        padding: '16px 24px', 
+                                        fontSize: '1.05rem', 
+                                        fontWeight: 800, 
+                                        color: 'var(--text-main)',
+                                        animation: 'pulse-glow 2s infinite',
+                                        borderRadius: '8px'
+                                    }}>{p.vehicle_number}</td>
                                     <td style={{ padding: '16px 24px', fontSize: '0.9rem', color: 'var(--accent)', fontWeight: 700 }}>
                                         {p.table_id ? `Table ${p.table_id}` : '원클릭 셀프'}
                                     </td>

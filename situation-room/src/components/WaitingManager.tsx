@@ -10,10 +10,64 @@ interface WaitingManagerProps {
 
 export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendMessage }) => {
     const { storeId, storeName } = useStoreFilter();
+    const params = new URLSearchParams(window.location.search);
+    const isRegistrationMode = params.get('mode') === 'waiting' && params.get('action') === 'register';
+    
+    const [regName, setRegName] = React.useState('');
+    const [regPhone, setRegPhone] = React.useState('');
+    const [regCount, setRegCount] = React.useState('2');
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!regPhone) return alert('연락처를 입력해주세요.');
+        setIsSubmitting(true);
+        try {
+            const cleanPhone = regPhone.replace(/[^0-9]/g, '');
+            const message = `${regName || '손님'} ${cleanPhone} ${regCount}명 대기 등록`;
+            onSendMessage(message, storeId, storeName);
+            alert('대기 등록이 완료되었습니다! 잠시만 기다려주세요.');
+            setRegName('');
+            setRegPhone('');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    if (isRegistrationMode) {
+        return (
+            <div className="customer-waiting-registration animate-fade-in" style={{ padding: '40px 20px', background: 'var(--bg-main)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '30px', borderRadius: '24px', border: '1px solid var(--border)' }}>
+                    <h2 style={{ textAlign: 'center', marginBottom: '10px', fontSize: '1.6rem', fontWeight: 900 }}>🛎️ 대기 등록</h2>
+                    <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '30px', fontSize: '0.9rem' }}>{storeName} 방문을 환영합니다.</p>
+                    
+                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 700 }}>이름 (선택)</label>
+                            <input type="text" value={regName} onChange={e => setRegName(e.target.value)} placeholder="성함을 입력해주세요" style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)' }} />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 700 }}>연락처 (필수)</label>
+                            <input type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="010-0000-0000" style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)' }} required />
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 700 }}>인원</label>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                {['1', '2', '3', '4', '5+'].map(c => (
+                                    <button key={c} type="button" onClick={() => setRegCount(c)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: regCount === c ? '2px solid var(--accent-orange)' : '1px solid var(--border)', background: regCount === c ? 'var(--accent-orange)' : 'transparent', color: regCount === c ? 'white' : 'var(--text-main)', fontWeight: 800 }}>{c}</button>
+                                ))}
+                            </div>
+                        </div>
+                        <button type="submit" disabled={isSubmitting} style={{ marginTop: '10px', padding: '18px', borderRadius: '15px', border: 'none', background: 'var(--primary)', color: 'white', fontWeight: 900, fontSize: '1.1rem', cursor: 'pointer', boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>{isSubmitting ? '등록 중...' : '대기 등록하기'}</button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
     
     // 대기 번들 중 진짜 활성화된(취소/완료되지 않은) 목록만 필터링 (역사적 사건 로그 제외)
     const waitingList = bundles.filter(b => {
-        if (b.type !== 'Waiting') return false;
+        if (b.type !== 'Waiting' && !(b.type === 'Orders' && b.table_id === '99')) return false;
         
         // 1. 매장 필터링
         const storeMatch = storeId === 'Total' || b.store_id === storeId || !b.store_id;

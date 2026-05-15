@@ -251,7 +251,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
             </div>
 
-            {existingPoints >= 1000 && (
+            {existingPoints > 0 ? (
               <button
                 onClick={() => setUsePoints(usePoints === 0 ? existingPoints : 0)}
                 style={{ 
@@ -262,8 +262,12 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   transition: 'all 0.2s'
                 }}
               >
-                {usePoints > 0 ? `사용 취소 (-${usePoints.toLocaleString()}원)` : `모든 포인트 사용하기`}
+                {usePoints > 0 ? `사용 취소 (-${usePoints.toLocaleString()}원)` : `보유 포인트 전액 사용하기`}
               </button>
+            ) : (
+              <div style={{ padding: '12px', textAlign: 'center', background: 'rgba(0,0,0,0.03)', borderRadius: '10px', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                💡 적립된 포인트가 없습니다.
+              </div>
             )}
           </div>
         )}

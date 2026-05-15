@@ -44,12 +44,14 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
         // 1. 초기 로드
         fetchSessions();
 
-        // 2. MQTT situation/kitchen 구독으로 실시간 갱신
-        const unsubscribeKitchen = subscribeTopic('situation/kitchen', (data) => {
+        // 2. MQTT 구독으로 실시간 갱신
+        const topic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : `store/+/kitchen`;
+        
+        const messageHandler = (data: any) => {
             if ([
                 'NEW_ORDER', 'STATUS_UPDATE', 'ORDER_UPDATED',
                 'SESSION_CLOSED', 'PAYMENT_CONFIRMED', 'PARTIAL_SETTLEMENT',
-                'STAFF_CALL', 'PARKING_APPLIED'
+                'STAFF_CALL', 'PARKING_APPLIED', 'WAITING_REGISTERED'
             ].includes(data.type)) {
                 fetchSessions();
             }
@@ -65,21 +67,14 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                     return { ...prev, [data.table_id]: tableRequests };
                 });
             }
-        });
-
-        // 3. 탭 포커스 복귀 시 즉시 재조회 (다른 탭에서 변경 후 돌아온 경우 대비)
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                fetchSessions();
-            }
         };
-        document.addEventListener('visibilitychange', handleVisibilityChange);
 
-        // 4. 30초 주기 폴링 (네트워크 단절 등 WebSocket 누락 방지)
-        const pollInterval = setInterval(fetchSessions, 30000);
+        const unsubscribe1 = subscribeTopic(topic, messageHandler);
+        const unsubscribe2 = (storeId && storeId !== 'Total') ? subscribeTopic('store/broadcast/kitchen', messageHandler) : () => {};
 
         return () => {
-            unsubscribeKitchen();
+            unsubscribe1();
+            unsubscribe2();
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             clearInterval(pollInterval);
         };
@@ -301,12 +296,13 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                         {tables.map(num => {
                             const tableId = `T${String(num).padStart(2, '0')}`;
                             const isOccupied = sessions.some(s => s.table_id === tableId);
+                            const capacity = (num <= 4) ? 4 : (num <= 8) ? 2 : (num <= 10) ? 6 : 4;
                             
                             return (
                                 <button
                                     key={num}
                                     disabled={isOccupied}
-                                    onClick={() => handleOpenSession(`T${String(num).padStart(2, '0')}`)}
+                                    onClick={() => handleOpenSession(tableId)}
                                     style={{
                                         padding: '10px 18px',
                                         borderRadius: '8px',
@@ -320,7 +316,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                         whiteSpace: 'nowrap'
                                     }}
                                 >
-                                    {num} {isOccupied ? '🔴' : '⚪'}
+                                    {tableId}[{capacity}] {isOccupied ? '🔴' : '⚪'}
                                 </button>
                             );
                         })}
@@ -388,7 +384,12 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                                         <span style={{ fontSize: '1.6rem', fontWeight: '800', color: isPending ? 'var(--warning)' : 'var(--primary)' }}>
-                                            TABLE {session.table_id}
+                                            TABLE {session.table_id}{(() => {
+                                                const num = parseInt(session.table_id.replace('T', ''));
+                                                if (isNaN(num)) return '';
+                                                const cap = (num <= 4) ? 4 : (num <= 8) ? 2 : (num <= 10) ? 6 : 4;
+                                                return `[${cap}]`;
+                                            })()}
                                         </span>
                                         <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', wordBreak: 'break-all' }}>{session.session_id}</span>
                                         {isPending && (
