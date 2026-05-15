@@ -39,6 +39,8 @@ interface Order {
   items: OrderItem[];
 }
 
+type SessionPhase = 'loading' | 'no_session' | 'waiting_approval' | 'active';
+
 const getUpsellRecommendation = (mainItemName: string) => {
   const cleanName = mainItemName.toLowerCase();
   if (cleanName.includes('커피') || cleanName.includes('아메리카노') || cleanName.includes('에스프레소') || cleanName.includes('라떼')) {
@@ -98,7 +100,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const [showProgress, setShowProgress] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceToast, setVoiceToast] = useState<string | null>(null);
-  const [hasActiveSession, setHasActiveSession] = useState(false);
+  const [sessionPhase, setSessionPhase] = useState<SessionPhase>('loading');
   const [sessionId, setSessionId] = useState('');
   const [showPayModal, setShowPayModal] = useState(false);
   const [showParkingModal, setShowParkingModal] = useState(false);
@@ -244,34 +246,55 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const categories = useMemo(() => ['전체', ...new Set(menus.map(m => m.category))], [menus]);
   const totalPrice = useMemo(() => cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0), [cart]);
 
-  // --- Functions ---
-  const sessionInactiveCount = React.useRef(0);
-  const hasEverBeenActive = React.useRef(false);
+  // --- Session State Machine ---
+  const sessionIdRef = React.useRef('');
+  const sessionPhaseRef = React.useRef<SessionPhase>('loading');
+  const pendingSessionIdRef = React.useRef('');
+  const storeNameRef = React.useRef(storeName);
+  useEffect(() => { storeNameRef.current = storeName; }, [storeName]);
 
-  const fetchMySession = useCallback(async () => {
+  const refreshOrders = useCallback(async () => {
+    if (!sessionIdRef.current) return;
     try {
       const res = await fetch(`${API_BASE}/api/session/${tableId}?store_id=${storeId}`);
       const data = await res.json();
-      if (data && data.session && data.session.status === 'active') {
-        sessionInactiveCount.current = 0;
-        hasEverBeenActive.current = true;
-        setHasActiveSession(true);
-        setSessionId(data.session.session_id);
+      if (data?.session?.status === 'active') {
         setMyOrders(data.orders || []);
-      } else {
-        // 최초 활성화 이후에만 비활성 카운트 (대기 중엔 카운트 불필요)
-        if (hasEverBeenActive.current) {
-          sessionInactiveCount.current += 1;
-          if (sessionInactiveCount.current >= 3) {
-            setHasActiveSession(false);
-            setSessionId('');
-          }
-        }
       }
     } catch (err) {
-      console.error("Session sync failed", err);
+      console.error("Refresh orders failed:", err);
     }
   }, [tableId, storeId]);
+
+  const joinSession = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/checkin/request`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tableNo, deviceId, store: storeNameRef.current, store_id: storeId })
+      });
+      const data = await res.json();
+      if (data.status === 'active') {
+        const sid = data.session?.session_id || '';
+        sessionIdRef.current = sid;
+        setSessionId(sid);
+        setMyOrders(data.orders || []);
+        sessionPhaseRef.current = 'active';
+        setSessionPhase('active');
+      } else if (data.status === 'waiting_approval') {
+        pendingSessionIdRef.current = data.session_id || '';
+        sessionPhaseRef.current = 'waiting_approval';
+        setSessionPhase('waiting_approval');
+      } else {
+        sessionPhaseRef.current = 'no_session';
+        setSessionPhase('no_session');
+      }
+    } catch (err) {
+      console.error("Checkin error:", err);
+      sessionPhaseRef.current = 'no_session';
+      setSessionPhase('no_session');
+    }
+  }, [tableNo, deviceId, storeId]);
 
   const addToCart = useCallback((menu: MenuItem) => {
     setCart(prev => {
@@ -320,20 +343,49 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
   // --- Effects ---
   useEffect(() => {
-    fetchMySession();
-    const wsUrl = `${WS_BASE}/ws/table/${tableId}`;
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(`${WS_BASE}/ws/table/${tableId}`);
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (['STATUS_UPDATE', 'STATUS_UPDATED', 'NEW_ORDER', 'SESSION_OPENED', 'PAYMENT_CONFIRMED', 'PAYMENT_APPROVED', 'ORDER_UPDATED', 'KITCHEN_DONE'].includes(data.type)) {
-        fetchMySession();
-      } else if (data.type === 'SESSION_CLOSED') {
-        window.location.reload();
+      const msg = JSON.parse(event.data);
+      switch (msg.type) {
+        case 'SESSION_OPENED':
+          joinSession();
+          break;
+        case 'SESSION_CLOSED':
+          sessionIdRef.current = '';
+          setSessionId('');
+          setMyOrders([]);
+          sessionPhaseRef.current = 'no_session';
+          setSessionPhase('no_session');
+          break;
+        case 'JOIN_RESPONSE':
+          if (msg.device_id === deviceId) {
+            if (msg.approved) {
+              sessionIdRef.current = msg.session_id;
+              setSessionId(msg.session_id);
+              sessionPhaseRef.current = 'active';
+              setSessionPhase('active');
+              refreshOrders();
+            } else {
+              sessionPhaseRef.current = 'no_session';
+              setSessionPhase('no_session');
+            }
+          }
+          break;
+        default:
+          refreshOrders();
       }
     };
-    const timer = setInterval(fetchMySession, 5000);
+
+    joinSession();
+
+    const timer = setInterval(() => {
+      if (sessionPhaseRef.current !== 'waiting_approval') {
+        joinSession();
+      }
+    }, 5000);
+
     return () => { ws.close(); clearInterval(timer); };
-  }, [tableId, storeId, fetchMySession]);
+  }, [tableId, storeId, deviceId, joinSession, refreshOrders]);
 
   // --- Delayed Payment Watcher ---
   useEffect(() => {
@@ -354,25 +406,24 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       const { success } = e.detail;
       if (success) {
         localStorage.removeItem('payment_success_flag');
-        setCart([]); // 장바구니 품목 완전히 초기화 (이중 결제 및 누적 결제 원천 방지)
-        fetchMySession();
-        setShowProgress(true); // 진행창 보여주기 (주문 진행 현황으로 이동)
+        setCart([]);
+        refreshOrders();
+        setShowProgress(true);
       }
     };
 
-    // Fail-safe: 마운트 시점에 URL에 결제 성공 파라미터가 있거나 로컬스토리지 완료 플래그가 존재하면 즉시 진행창 노출
     const params = new URLSearchParams(window.location.search);
     const hasSuccessFlag = localStorage.getItem('payment_success_flag') === 'true';
     if (params.get('payment_success') === 'true' || hasSuccessFlag) {
-      localStorage.removeItem('payment_success_flag'); // 플래그 즉시 소비 및 제거
-      setCart([]); // 장바구니 품목 완전히 초기화
-      fetchMySession();
+      localStorage.removeItem('payment_success_flag');
+      setCart([]);
+      refreshOrders();
       setShowProgress(true);
     }
 
     window.addEventListener('payment_finished', handleFinished);
     return () => window.removeEventListener('payment_finished', handleFinished);
-  }, [fetchMySession]);
+  }, [refreshOrders]);
 
   // --- Auto Generate AI Story for Electronic/Loaded Orders ---
   useEffect(() => {
@@ -652,17 +703,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     return () => window.removeEventListener('popstate', handlePopState);
   }, [showProgress]);
 
-  const checkinStoreNameRef = React.useRef(storeName);
-  useEffect(() => {
-    // storeName deliberately excluded from deps: re-running checkin when bundles update
-    // can create duplicate pending sessions before the first one commits.
-    fetch(`${API_BASE}/api/checkin/request`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tableNo, deviceId, store: checkinStoreNameRef.current, store_id: storeId })
-    }).catch(err => console.error("Checkin Error:", err));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tableNo, deviceId, storeId]);
 
 
 
@@ -714,7 +754,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       if (isCounterPay) {
         PaymentService.log("CP-02", "Counter/Cash Flow - Skipping external PG");
         setCart([]);
-        fetchMySession();
+        refreshOrders();
         generateAiStory(currentCart);
         setShowProgress(true);
       } else {
@@ -737,7 +777,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     } finally { 
       setIsOrdering(false); 
     }
-  }, [tableId, deviceId, storeId, cart, totalPrice, fetchMySession, generateAiStory]);
+  }, [tableId, deviceId, storeId, cart, totalPrice, refreshOrders, generateAiStory]);
 
   const handleAddUpsell = useCallback((rec: any) => {
     // Find if this menu item exists in our loaded menus
@@ -1141,7 +1181,15 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     );
   };
 
-  if (!hasActiveSession) {
+  if (sessionPhase !== 'active') {
+    const statusMsg = sessionPhase === 'loading'
+      ? '연결 확인 중...'
+      : sessionPhase === 'waiting_approval'
+      ? '합류 승인 대기 중...'
+      : '카운터 테이블 활성화 대기 중...';
+    const subText = sessionPhase === 'waiting_approval'
+      ? '카운터 또는 일행의 승인 후 주문이 가능합니다.'
+      : '좌석 확인이 완료되면 자동으로 메뉴판이 활성화됩니다.';
     return (
       <div className="mobile-v2-container flex-center">
         <div className="premium-waiting-card animate-slide-up">
@@ -1149,8 +1197,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           <div className="waiting-content">
             <h1 className="main-title">Welcome to<br/>{storeName}</h1>
             <div className="table-badge">Table {tableNo}</div>
-            <div className="status-box"><div className="spinner-small"></div><p>스마트 오더 연결 중...</p></div>
-            <p className="sub-text">좌석 확인이 완료되면 자동으로 메뉴판이 활성화됩니다.</p>
+            <div className="status-box"><div className="spinner-small"></div><p>{statusMsg}</p></div>
+            <p className="sub-text">{subText}</p>
             <button className="inquiry-btn-large" onClick={() => alert('직원을 호출했습니다.')}>🔔 직원 문의</button>
           </div>
         </div>

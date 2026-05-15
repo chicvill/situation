@@ -7,8 +7,8 @@ from fastapi import APIRouter, HTTPException
 from psycopg2.extras import RealDictCursor  # type: ignore
 from ..state import manager, load_pool, save_pool
 from ..database import (
-    save_session, get_active_session,
-    get_orders_by_session, update_order_status, get_db_conn
+    save_session, get_active_session, get_session_by_id,
+    get_orders_by_session, update_order_status, update_session_device_id, get_db_conn
 )
 
 router = APIRouter()
@@ -23,45 +23,33 @@ async def check_in(data: Dict):
         raise HTTPException(status_code=400, detail="table_id required")
 
     active = get_active_session(store_id, table_id)
-    if active:
-        existing_device = active.get('device_id') or ''
-        # 카운터가 선점 활성화한 테이블(device_id='counter')이면 첫 번째 고객이 소유권 취득
-        if existing_device == 'counter':
-            from ..database import update_session_device_id
+    if not active:
+        return {"status": "no_session"}
+
+    existing_device = active.get('device_id') or ''
+
+    # 카운터가 개설한 빈 소유권 세션 → 첫 번째 고객이 소유권 취득
+    if existing_device == '':
+        if device_id:
             update_session_device_id(active['session_id'], device_id)
-            return active
-        # 다른 기기에서 접속 시도 -> 기존 일행 및 카운터에 승인 요청 전송
-        if existing_device and existing_device != device_id:
-            msg = {
-                "type": "JOIN_REQUEST",
-                "device_id": device_id,
-                "session_id": active['session_id'],
-                "table_id": table_id
-            }
-            await manager.send_to_table(table_id, msg)
-            await manager.broadcast_to_kitchen(msg)
-            return {"status": "waiting_party_approval", "session_id": active['session_id']}
-        return active
+        orders = get_orders_by_session(active['session_id'])
+        return {"status": "active", "session": active, "orders": orders}
 
-    new_session = {
-        "session_id": f"SESS-{uuid.uuid4().hex[:8].upper()}",
-        "store_id": store_id,
-        "table_id": table_id,
+    # 동일 기기 재접속
+    if existing_device == device_id:
+        orders = get_orders_by_session(active['session_id'])
+        return {"status": "active", "session": active, "orders": orders}
+
+    # 다른 기기 → 더치페이 합류 승인 요청
+    msg = {
+        "type": "JOIN_REQUEST",
         "device_id": device_id,
-        "status": data.get("status", "pending"),
-        "checkin_time": datetime.now().isoformat(),
-        "metadata": {}
+        "session_id": active['session_id'],
+        "table_id": table_id
     }
-
-    try:
-        save_session(new_session)
-    except Exception as e:
-        print(f"Save Session DB Error: {e}")
-        raise HTTPException(status_code=500, detail=f"DB 저장 실패: {str(e)}")
-
-    # 세션 개시 알림 브로드캐스트
-    await manager.send_to_table(table_id, {"type": "SESSION_OPENED", "session": new_session})
-    return new_session
+    await manager.send_to_table(table_id, msg)
+    await manager.broadcast_to_kitchen(msg)
+    return {"status": "waiting_approval", "session_id": active['session_id']}
 
 
 @router.post("/api/session/check-in")
@@ -77,21 +65,32 @@ async def open_session_manually(data: Dict):
     if not table_id:
         raise HTTPException(status_code=400, detail="table_id required")
 
-    # 이미 활성 또는 대기 세션이 있는지 확인
+    # 이미 활성 세션이 있으면 그대로 반환 (중복 개설 방지)
     active = get_active_session(store_id, table_id)
     if active:
-        if active['status'] == 'pending':
-            # 대기 중인 세션을 활성화로 업데이트 (승인 처리)
-            from ..database import update_session_status
-            update_session_status(active['session_id'], 'active')
-            active['status'] = 'active'
-            # 테이블에 승인 알림 전송
-            await manager.send_to_table(table_id, {"type": "SESSION_OPENED", "session": active})
         return active
 
-    # 세션이 아예 없으면 새로 생성 (상태는 바로 active)
-    data["status"] = "active"
-    return await check_in(data)
+    # 새 세션 생성 — device_id는 빈 문자열로 설정해 첫 고객 QR 스캔 시 소유권 이전
+    new_session = {
+        "session_id": f"SESS-{uuid.uuid4().hex[:8].upper()}",
+        "store_id": store_id,
+        "table_id": table_id,
+        "device_id": "",
+        "status": "active",
+        "checkin_time": datetime.now().isoformat(),
+        "metadata": {}
+    }
+
+    try:
+        save_session(new_session)
+    except Exception as e:
+        print(f"Save Session DB Error: {e}")
+        raise HTTPException(status_code=500, detail=f"DB 저장 실패: {str(e)}")
+
+    # 테이블 기기(QR 스캔 중인 고객 포함) 및 주방에 SESSION_OPENED 알림
+    await manager.send_to_table(table_id, {"type": "SESSION_OPENED", "session": new_session})
+    await manager.broadcast_to_kitchen({"type": "SESSION_OPENED", "session": new_session})
+    return new_session
 
 
 @router.post("/api/checkin/request")
@@ -125,6 +124,9 @@ async def reset_session(data: Dict):
         raise HTTPException(status_code=400, detail="session_id required")
 
     from ..database import update_session_status, get_orders_by_session, update_order_status
+    session = get_session_by_id(session_id)
+    table_id = session.get('table_id') if session else None
+
     # 1. 세션 종료
     success = update_session_status(session_id, "closed")
     if success:
@@ -133,8 +135,10 @@ async def reset_session(data: Dict):
         for order in orders:
             update_order_status(order['order_id'], "cancelled")
 
-        # 3. 모든 클라이언트에 알림
+        # 3. 주방 및 해당 테이블 기기에 알림
         await manager.broadcast_to_kitchen({"type": "SESSION_CLOSED", "session_id": session_id})
+        if table_id:
+            await manager.send_to_table(table_id, {"type": "SESSION_CLOSED", "session_id": session_id})
         return {"status": "success"}
     return {"status": "failed"}
 
@@ -147,6 +151,8 @@ async def close_session(data: Dict):
         raise HTTPException(status_code=400, detail="session_id required")
 
     from ..database import update_session_status, get_orders_by_session, update_order_status
+    session = get_session_by_id(session_id)
+    table_id = session.get('table_id') if session else None
 
     # 1. 해당 세션의 모든 주문 확인
     orders = get_orders_by_session(session_id)
@@ -171,8 +177,10 @@ async def close_session(data: Dict):
                 if order['status'] != 'cancelled':
                     update_order_status(order['order_id'], "paid")
 
-            # 모든 클라이언트에 알림
+            # 주방 및 해당 테이블 기기에 알림
             await manager.broadcast_to_kitchen({"type": "SESSION_CLOSED", "session_id": session_id})
+            if table_id:
+                await manager.send_to_table(table_id, {"type": "SESSION_CLOSED", "session_id": session_id})
             return {"status": "success", "message": "모든 주문이 정산되어 세션이 종료되었습니다."}
 
     return {"status": "failed"}
