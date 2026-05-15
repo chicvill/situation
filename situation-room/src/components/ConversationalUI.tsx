@@ -318,9 +318,6 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         });
         speak(`${menu.name}을 장바구니에 담았습니다.`);
     };
-
-    const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-
     // 2. Go to Points step
     const handleProceedToPoints = () => {
         setOrderStep('point_guide');
