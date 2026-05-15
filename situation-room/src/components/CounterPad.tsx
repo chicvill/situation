@@ -246,8 +246,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     store_id: targetStoreId,
-                    table_id: tableToOpen,
-                    device_id: 'counter'
+                    table_id: tableToOpen
                 })
             });
             
@@ -606,13 +605,17 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '600' }}>미결제 금액</div>
-                                        <div style={{ 
-                                            fontSize: '1.75rem', 
-                                            fontWeight: '900', 
-                                            color: unpaidTotal > 0 ? '#ef4444' : '#10b981', 
+                                        <div style={{
+                                            fontSize: '1.75rem',
+                                            fontWeight: '900',
+                                            color: unpaidTotal > 0 ? '#ef4444' : '#10b981',
                                             whiteSpace: 'nowrap'
                                         }}>
-                                            {unpaidTotal > 0 ? `${unpaidTotal.toLocaleString()}원` : '결제 완료'}
+                                            {unpaidTotal > 0
+                                                ? `${unpaidTotal.toLocaleString()}원`
+                                                : session.orders.length === 0
+                                                    ? '활성화'
+                                                    : '결제 완료'}
                                         </div>
                                     </div>
                                 </div>
@@ -661,7 +664,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                                                     }}
                                                     style={{ background: 'var(--accent)', border: 'none', color: 'white', padding: '10px 32px', borderRadius: 'var(--radius-sm)', fontWeight: '600', fontSize: '1rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
                                                 >
-                                                    {session.orders.length === 0 ? '활성화' : '결제완료'}
+                                                    {session.orders.length === 0 ? '세션 종료' : '결제완료'}
                                                 </button>
                                             ) : (
                                                 <button 
