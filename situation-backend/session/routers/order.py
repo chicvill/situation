@@ -62,8 +62,8 @@ async def process_order(order_req: OrderRequest):
     new_order = {
         "order_id": order_id,
         "session_id": session_id,
-        "store_id": effective_store_id,
-        "table_id": order_req.table_id,
+        "store_id": store_id_val,
+        "table_id": table_id_val,
         "device_id": order_req.device_id,
         "items": [item.model_dump() for item in order_req.items],
         "total_price": order_req.total_price,
