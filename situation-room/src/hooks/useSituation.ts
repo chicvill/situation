@@ -96,7 +96,6 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                 return;
             }
 
-            // [MQTT 최적화 #2] Payload 중심 업데이트: 
             // 직원 호출(STAFF_CALL) 등 특수 이벤트도 API 폴링 없이 로컬에서 BundleData로 즉시 변환하여 반영
             if (data.type === 'STAFF_CALL') {
                 console.log(`[CHECKPOINT - 매칭] STAFF_CALL 처리됨`);
@@ -116,6 +115,52 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                     const currentPrev = Array.isArray(prev) ? prev : [];
                     return [newCall, ...currentPrev];
                 });
+                return;
+            }
+
+            if (data.type === 'WAITING_REGISTERED') {
+                console.log(`[CHECKPOINT - 매칭] WAITING_REGISTERED 처리됨`);
+                const newWaiting: BundleData = {
+                    id: String(data.waiting_id || Date.now()),
+                    type: 'Waiting',
+                    title: `대기 접수: ${data.phone_number}`,
+                    items: [
+                        { name: '연락처', value: String(data.phone_number || '') },
+                        { name: '인원', value: String(data.party_size || '1') }
+                    ],
+                    timestamp: new Date().toLocaleTimeString(),
+                    status: 'waiting',
+                    store_id: data.store_id ? String(data.store_id) : undefined
+                };
+                setBundles(prev => [newWaiting, ...(Array.isArray(prev) ? prev : [])]);
+                return;
+            }
+
+            if (data.type === 'WAITING_UPDATED') {
+                console.log(`[CHECKPOINT - 매칭] WAITING_UPDATED 처리됨`);
+                setBundles(prev => {
+                    const currentPrev = Array.isArray(prev) ? prev : [];
+                    return currentPrev.map(b => b.id === data.waiting_id ? { ...b, status: data.status } : b);
+                });
+                return;
+            }
+
+            if (data.type === 'PARKING_APPLIED') {
+                console.log(`[CHECKPOINT - 매칭] PARKING_APPLIED 처리됨`);
+                const newParking: BundleData = {
+                    id: String(data.parking_id || Date.now()),
+                    type: 'Log', // 카운터 화면(Log)에 표시하여 깜빡이게 함
+                    title: `🚗 주차 할인: ${data.vehicle_number}`,
+                    items: [
+                        { name: '차량 번호', value: String(data.vehicle_number || '') },
+                        { name: '할인 시간', value: String(data.discount_minutes || '120') + '분' },
+                        { name: '테이블', value: String(data.table_id || 'Self') }
+                    ],
+                    timestamp: new Date().toLocaleTimeString(),
+                    status: 'completed',
+                    store_id: data.store_id ? String(data.store_id) : undefined
+                };
+                setBundles(prev => [newParking, ...(Array.isArray(prev) ? prev : [])]);
                 return;
             }
 

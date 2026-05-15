@@ -40,8 +40,10 @@ export const ParkingManager = ({ storeId }: ParkingManagerProps) => {
     useEffect(() => {
         fetchParkings();
 
-        // MQTT situation/kitchen 구독으로 실시간 주차 등록 수신
-        const unsubscribe = subscribeTopic('situation/kitchen', (data) => {
+        // MQTT 구독으로 실시간 주차 등록 수신
+        const topic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : `store/+/kitchen`;
+        
+        const messageHandler = (data: any) => {
             if (data.type === 'PARKING_APPLIED') {
                 if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
                     return;
@@ -59,9 +61,15 @@ export const ParkingManager = ({ storeId }: ParkingManagerProps) => {
                     }, ...prev];
                 });
             }
-        });
+        };
 
-        return unsubscribe;
+        const unsubscribe1 = subscribeTopic(topic, messageHandler);
+        const unsubscribe2 = topic !== 'store/+/kitchen' ? subscribeTopic('store/broadcast/kitchen', messageHandler) : () => {};
+
+        return () => {
+            unsubscribe1();
+            unsubscribe2();
+        };
     }, [storeId]);
 
     const filteredParkings = useMemo(() => {
