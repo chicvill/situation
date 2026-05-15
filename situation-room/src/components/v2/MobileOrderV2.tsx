@@ -1229,6 +1229,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
         </div>
         <ConversationalUI
           bundles={bundles}
+          storeId={storeId}
           storeName={storeName}
           sessionPreApproved={true}
           onNavigate={(tab) => {

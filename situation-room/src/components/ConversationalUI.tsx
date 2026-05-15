@@ -5,16 +5,17 @@ import { API_BASE } from '../config';
 
 export interface ConversationalUIProps {
     bundles: BundleData[];
+    storeId: string;
     storeName: string;
     onNavigate?: (tab: string) => void;
     sessionPreApproved?: boolean; // MobileOrderV2에서 임베드 시 이미 세션 확인됨 → 내부 체크 스킵
 }
 
-export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, storeName, onNavigate, sessionPreApproved = false }) => {
+export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, storeId, storeName, onNavigate, sessionPreApproved = false }) => {
     // Parse table and store parameters from URL
     const params = new URLSearchParams(window.location.search);
     const tableNo = params.get('table') || '3';
-    const storeId = params.get('store_id') || params.get('storeId') || 'default_store';
+    // storeId는 이제 prop으로 직접 받음
     const initialPaymentSuccess = params.get('payment_success') === 'true';
     const initialAmount = params.get('amount') || '12,000';
 
@@ -127,10 +128,12 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         
         return menuBundle.items.map((item: any) => ({
             name: String(item.name || '').trim(),
-            price: typeof item.value === 'number' ? item.value : (parseInt(String(item.value || '').replace(/[^0-9]/g, '')) || 0),
+            price: typeof item.price === 'number' ? item.price : (parseInt(String(item.value || item.price || '0').replace(/[^0-9]/g, '')) || 0),
             category: item.category || '기타',
-            desc: item.description || '',
-            image: item.icon && (item.icon.startsWith('http://') || item.icon.startsWith('https://')) ? item.icon : ''
+            desc: item.description || item.desc || '',
+            image: (item.icon || item.image) ? 
+                   ((item.icon || item.image).startsWith('http') ? (item.icon || item.image) : (item.icon || item.image)) : 
+                   'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&h=200&fit=cover'
         })).filter((m: any) => m.name);
     })();
 
@@ -639,25 +642,31 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
 
                         {/* Menu Selection Carousel */}
                         {msg.isMenuCarousel && orderStep === 'menu_selection' && (
-                            <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', padding: '12px 0 5px', width: '100%', scrollbarWidth: 'none' }} className="no-scrollbar">
-                                {menus.map((item, idx) => (
-                                    <div key={idx} style={{
-                                        width: '160px', flexShrink: 0, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px'
-                                    }}>
-                                        {item.image && <img src={item.image} style={{ width: '100%', height: '90px', objectFit: 'cover', borderRadius: '10px' }} alt={item.name} />}
-                                        <div style={{ fontWeight: 800, fontSize: '13px', color: '#1e293b' }}>{item.name}</div>
-                                        <div style={{ fontSize: '10px', color: '#64748b', height: '30px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{item.desc}</div>
-                                        <div style={{ fontWeight: 900, fontSize: '12px', color: '#f97316' }}>{item.price.toLocaleString()}원</div>
-                                        <button 
-                                            onClick={() => handleAddCart(item)}
-                                            style={{
-                                                width: '100%', padding: '6px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '11px', cursor: 'pointer'
-                                            }}
-                                        >
-                                            + 담기
-                                        </button>
-                                    </div>
-                                ))}
+                            <div style={{ marginTop: '10px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '11px', color: '#f97316', fontWeight: 800 }}>👈 좌우로 밀어서 메뉴를 선택하세요 👉</span>
+                                    <span style={{ fontSize: '10px', color: '#94a3b8' }}>총 {menus.length}개</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', padding: '5px 0 15px', width: '100%', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }} className="no-scrollbar">
+                                    {menus.map((item, idx) => (
+                                        <div key={idx} style={{
+                                            width: '160px', flexShrink: 0, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px'
+                                        }}>
+                                            {item.image && <img src={item.image} style={{ width: '100%', height: '90px', objectFit: 'cover', borderRadius: '10px' }} alt={item.name} />}
+                                            <div style={{ fontWeight: 800, fontSize: '13px', color: '#1e293b' }}>{item.name}</div>
+                                            <div style={{ fontSize: '10px', color: '#64748b', height: '30px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{item.desc}</div>
+                                            <div style={{ fontWeight: 900, fontSize: '12px', color: '#f97316' }}>{item.price.toLocaleString()}원</div>
+                                            <button 
+                                                onClick={() => handleAddCart(item)}
+                                                style={{
+                                                    width: '100%', padding: '6px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '11px', cursor: 'pointer'
+                                                }}
+                                            >
+                                                + 담기
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
