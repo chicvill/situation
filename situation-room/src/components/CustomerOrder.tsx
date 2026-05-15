@@ -90,7 +90,6 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
               alert("일행이 합류를 거절했습니다.");
               window.location.href = "/";
             }
-            }
           }
         }
       } catch (e) {
