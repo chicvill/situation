@@ -35,7 +35,7 @@ export const KitchenDisplay: React.FC = () => {
                     setVirtualOrders(prev => [
                         {
                             order_id: data.parking_id,
-                            table_id: '98',
+                            table_id: 'T98',
                             session_id: 'SESS-PARK-98',
                             order_seq: 1,
                             timestamp: new Date().toISOString(),
@@ -47,7 +47,7 @@ export const KitchenDisplay: React.FC = () => {
                     setVirtualOrders(prev => [
                         {
                             order_id: data.waiting_id,
-                            table_id: '99',
+                            table_id: 'T99',
                             session_id: 'SESS-WAIT-99',
                             order_seq: 1,
                             timestamp: new Date().toISOString(),

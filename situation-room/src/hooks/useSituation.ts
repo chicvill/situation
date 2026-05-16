@@ -128,7 +128,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                     id: String(data.waiting_id || Date.now()),
                     type: 'Orders', // Orders 타입으로 설정하여 주방/카운터 목록에 노출
                     title: `[대기 접수] ${data.phone_number}`,
-                    table_id: '99', // 대기는 99번 테이블로 고정
+                    table_id: 'T99', // 대기는 99번 테이블로 고정
                     session_id: `SESS-WAIT-99`,
                     items: [
                         { name: '연락처', value: String(data.phone_number || '') },
@@ -157,7 +157,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                     id: String(data.parking_id || Date.now()),
                     type: 'Orders', // 카운터/주방 모니터에서 즉시 눈에 띄게 Orders 타입 사용
                     title: `[주차 할인] ${data.vehicle_number}`,
-                    table_id: '98', // 주차는 98번 테이블로 고정
+                    table_id: 'T98', // 주차는 98번 테이블로 고정
                     session_id: `SESS-PARK-98`,
                     items: [
                         { name: '차량 번호', value: String(data.vehicle_number || '') },
