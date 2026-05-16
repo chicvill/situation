@@ -8,13 +8,15 @@ interface Call {
     call_type: string;
     status: string;
     timestamp: string;
+    device_id?: string;
 }
 
 interface CallManagerProps {
     storeId?: string;
+    bundles?: any[];
 }
 
-export const CallManager: React.FC<CallManagerProps> = ({ storeId }) => {
+export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] }) => {
     const [calls, setCalls] = useState<Call[]>([]);
 
     const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
@@ -50,6 +52,29 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId }) => {
         }
     };
 
+    const handleApproveJoin = async (tableId: string, sessionId: string, deviceId: string, approved: boolean, callId: string) => {
+        try {
+            const apiUrl = getApiUrl();
+            const res = await fetch(`${apiUrl}/api/session/approve-join`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    device_id: deviceId,
+                    table_id: tableId,
+                    approved
+                })
+            });
+            if (!res.ok) throw new Error('Approval failed');
+            
+            // 승인 성공 시 로컬 상태에서 즉시 제거
+            setCalls(prev => prev.filter(c => c.call_id !== callId));
+        } catch (e) {
+            console.error('Join Approval Error:', e);
+            alert('승인 처리 중 오류가 발생했습니다.');
+        }
+    };
+
     useEffect(() => {
         fetchCalls();
 
@@ -75,15 +100,83 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId }) => {
                     audio.volume = 0.5;
                     audio.play();
                 } catch (_) {}
+            } else if (['JOIN_REQUEST', 'JOIN_CHECKIN', 'CHECKIN_REQUEST', 'JOIN_SESSION'].includes(data.type)) {
+                if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) return;
+                
+                let tid = String(data.table_id || "").toUpperCase();
+                if (!tid.startsWith('T')) tid = `T${tid.padStart(2, '0')}`;
+                else if (tid.length === 2) tid = `T${tid.substring(1).padStart(2, '0')}`;
+
+                setCalls(prev => {
+                    const callId = `JOIN-${data.session_id}-${data.device_id}`;
+                    if (prev.some(c => c.call_id === callId)) return prev;
+                    return [...prev, {
+                        call_id: callId,
+                        table_id: tid,
+                        session_id: data.session_id || 'SESS-NONE',
+                        device_id: data.device_id,
+                        call_type: '기기 합류 요청',
+                        status: 'pending',
+                        timestamp: new Date().toISOString()
+                    }];
+                });
+                try {
+                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-600.wav');
+                    audio.volume = 0.5;
+                    audio.play();
+                } catch (_) {}
             } else if (data.type === 'CALL_STATUS_UPDATED') {
                 if (data.status === 'completed' || data.status === 'cancelled') {
                     setCalls(prev => prev.filter(c => c.call_id !== data.call_id));
                 }
+            } else if (data.type === 'JOIN_RESPONSE') {
+                const callIdMatch = `JOIN-${data.session_id}-${data.device_id}`;
+                setCalls(prev => prev.filter(c => c.call_id !== callIdMatch));
             }
         });
 
         return unsubscribe;
     }, [storeId]);
+
+    useEffect(() => {
+        // bundles에서 pending 상태인 합류 요청(Checkins)을 추출하여 호출 리스트에 표시
+        const joinRequests = bundles.filter(b => 
+            (b.type === 'Checkins' || b.type === 'PersonalInfos') && 
+            b.status === 'pending' && 
+            (b.id.startsWith('join-') || b.id.startsWith('SESS-'))
+        );
+        
+        if (joinRequests.length > 0) {
+            setCalls(prev => {
+                const newCalls = [...prev];
+                let added = false;
+                
+                joinRequests.forEach(b => {
+                    let tid = String(b.table_id || "").toUpperCase();
+                    if (!tid.startsWith('T')) tid = `T${tid.padStart(2, '0')}`;
+                    else if (tid.length === 2) tid = `T${tid.substring(1).padStart(2, '0')}`;
+                    
+                    const deviceId = b.items?.find((i: any) => i.name === '기기ID' || i.name === '요청 기기')?.value;
+                    const callId = `JOIN-${b.session_id}-${deviceId}`;
+                    
+                    if (!newCalls.some(c => c.call_id === callId) && deviceId) {
+                        newCalls.push({
+                            call_id: callId,
+                            table_id: tid,
+                            session_id: b.session_id || 'SESS-NONE',
+                            device_id: deviceId,
+                            call_type: '기기 합류 요청',
+                            status: 'pending',
+                            timestamp: b.timestamp ? new Date(b.timestamp).toISOString() : new Date().toISOString()
+                        });
+                        added = true;
+                    }
+                });
+                
+                return added ? newCalls : prev;
+            });
+        }
+    }, [bundles]);
 
     return (
         <div className="admin-page animate-fade-in" style={{ padding: '24px', background: 'var(--bg-main)' }}>
@@ -157,26 +250,49 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId }) => {
                                     🔔 {call.call_type}
                                 </div>
                             </div>
-                            <button
-                                onClick={() => handleCompleteCall(call.call_id)}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px',
-                                    background: 'var(--primary)',
-                                    border: 'none',
-                                    borderRadius: '10px',
-                                    color: 'white',
-                                    fontWeight: 700,
-                                    fontSize: '0.9rem',
-                                    cursor: 'pointer',
-                                    boxShadow: '0 4px 12px rgba(30, 41, 59, 0.15)',
-                                    transition: 'all 0.2s'
-                                }}
-                                onMouseEnter={(e) => (e.currentTarget.style.background = '#0f172a')}
-                                onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--primary)')}
-                            >
-                                서비스 처리 완료
-                            </button>
+                            {call.call_type === '기기 합류 요청' ? (
+                                <button
+                                    onClick={() => handleApproveJoin(call.table_id, call.session_id, call.device_id!, true, call.call_id)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px',
+                                        background: '#ef4444',
+                                        border: 'none',
+                                        borderRadius: '10px',
+                                        color: 'white',
+                                        fontWeight: 700,
+                                        fontSize: '1rem',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                                >
+                                    ✅ 합류 승인하기
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => handleCompleteCall(call.call_id)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '12px',
+                                        background: 'var(--primary)',
+                                        border: 'none',
+                                        borderRadius: '10px',
+                                        color: 'white',
+                                        fontWeight: 700,
+                                        fontSize: '0.9rem',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 4px 12px rgba(30, 41, 59, 0.15)',
+                                        transition: 'all 0.2s'
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.background = '#0f172a')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--primary)')}
+                                >
+                                    서비스 처리 완료
+                                </button>
+                            )}
                         </div>
                     );
                 })}

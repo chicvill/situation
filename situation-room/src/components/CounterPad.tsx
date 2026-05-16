@@ -470,24 +470,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                         )}
                                     </div>
                                     
-                                    {/* 합류 요청 알림 (기존 위치 유지 또는 유사 레이아웃) */}
-                                    {(pendingJoins[session.table_id] || []).length > 0 && (
-                                        <div style={{ 
-                                            background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: '12px', padding: '15px',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '15px'
-                                        }}>
-                                            {/* ... (합류 요청 UI 생략 - 이전 유지) ... */}
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
-                                                <div>
-                                                    <div style={{ fontWeight: '700', color: '#991b1b', fontSize: '0.9rem' }}>새로운 기기 합류 요청</div>
-                                                </div>
-                                            </div>
-                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                <button onClick={() => handleApproveJoin(session.table_id, session.session_id, pendingJoins[session.table_id][0].device_id, true)} style={{ background: '#ef4444', border: 'none', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600' }}>승인</button>
-                                            </div>
-                                        </div>
-                                    )}
+                                    {/* 합류 요청 승인은 이제 [호출] 탭(CallManager)에서 일괄 처리됩니다. */}
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

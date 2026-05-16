@@ -413,7 +413,7 @@ function App() {
             onLogout={handleLogout}
           />
         );
-      case 'call': return <CallManager storeId={storeId} />;
+      case 'call': return <CallManager storeId={storeId} bundles={bundles} />;
       case 'inventory': return <LogicInventory />;
       case 'manual': return <StoreManualEditor storeId={storeId} user={user} />;
       case 'hr': return <HRManager bundles={bundles} user={user} storeDetails={storeDetails} />;
