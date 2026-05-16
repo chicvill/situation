@@ -139,7 +139,7 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
             }
         };
 
-        return subscribeToStore(storeId, handleMessage);
+        return subscribeToStore(storeId || '', handleMessage);
     }, [storeId]);
 
     useEffect(() => {
