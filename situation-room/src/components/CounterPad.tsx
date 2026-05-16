@@ -25,7 +25,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId, bu
         return import.meta.env.VITE_API_URL || `http://${host}:8000`;
     };
 
-    const fetchSessions = async () => {
+    const fetchSessions = React.useCallback(async () => {
         try {
             const apiUrl = getApiUrl();
             const res = await fetch(`${apiUrl}/api/counter/sessions?store_id=${storeId || "Total"}`);
@@ -39,7 +39,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId, bu
             console.error('Counter Fetch Error:', e);
             setSessions([]);
         }
-    };
+    }, [storeId]); // storeId 의존성 추가
 
     useEffect(() => {
         // 1. 초기 로드
@@ -93,12 +93,12 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId, bu
             unsubscribe2();
             unsubscribe3();
         };
-    }, [storeId]);
+    }, [storeId, fetchSessions]); // fetchSessions 의존성 추가
 
     useEffect(() => {
         // Refetch detailed sessions whenever global bundles update (fallback for MQTT misses)
         fetchSessions();
-    }, [bundles]);
+    }, [bundles, fetchSessions]); // fetchSessions 의존성 추가
 
 
     useEffect(() => {
