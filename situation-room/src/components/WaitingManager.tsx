@@ -18,7 +18,6 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
     const [regCount, setRegCount] = React.useState('2');
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [isRegistered, setIsRegistered] = React.useState(false);
-    const [myWaitingId, setMyWaitingId] = React.useState<string | null>(null);
     const [hasCalled, setHasCalled] = React.useState(false);
     const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
@@ -33,17 +32,36 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
         setIsSubmitting(true);
         try {
             const cleanPhone = regPhone.replace(/[^0-9]/g, '');
-            const tempId = `WAIT-${cleanPhone}-${Date.now()}`;
             const message = `${regName || '손님'} ${cleanPhone} ${regCount}명 대기 등록`;
             onSendMessage(message, storeId, storeName);
             
-            setMyWaitingId(tempId);
             setIsRegistered(true);
             // alert 대신 UI 전환으로 대응
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    const triggerEntryAlert = React.useCallback(() => {
+        setHasCalled(true);
+        // 소리 재생
+        if (audioRef.current) {
+            audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+        }
+        // 탭 제목 깜빡이기
+        let blink = true;
+        const originTitle = document.title;
+        const interval = setInterval(() => {
+            document.title = blink ? "🔔 [입장 요청] 🔔" : "!!! 지금 입장하세요 !!!";
+            blink = !blink;
+        }, 500);
+        
+        // 10초 후 타이틀 복구
+        setTimeout(() => {
+            clearInterval(interval);
+            document.title = originTitle;
+        }, 10000);
+    }, []); // audioRef는 ref이므로 안정적임
 
     // 실시간 상태 감시 (호출 및 입장 체크)
     React.useEffect(() => {
@@ -71,28 +89,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
                 }
             }
         }
-    }, [bundles, isRegistered, regPhone, hasCalled]);
-
-    const triggerEntryAlert = () => {
-        setHasCalled(true);
-        // 소리 재생
-        if (audioRef.current) {
-            audioRef.current.play().catch(e => console.log('Audio play failed:', e));
-        }
-        // 탭 제목 깜빡이기
-        let blink = true;
-        const originTitle = document.title;
-        const interval = setInterval(() => {
-            document.title = blink ? "🔔 [입장 요청] 🔔" : "!!! 지금 입장하세요 !!!";
-            blink = !blink;
-        }, 500);
-        
-        // 10초 후 타이틀 복구
-        setTimeout(() => {
-            clearInterval(interval);
-            document.title = originTitle;
-        }, 10000);
-    };
+    }, [bundles, isRegistered, regPhone, hasCalled, triggerEntryAlert]);
 
     if (isRegistrationMode) {
         return (
