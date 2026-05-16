@@ -266,7 +266,7 @@ def complete_parking(parking_id: str) -> bool:
     try:
         cur = conn.cursor()
         cur.execute(
-            "UPDATE table_parkings SET status = 'completed' WHERE parking_id = %(parking_id)s",
+            "DELETE FROM table_parkings WHERE parking_id = %(parking_id)s",
             {'parking_id': parking_id}
         )
         conn.commit()
