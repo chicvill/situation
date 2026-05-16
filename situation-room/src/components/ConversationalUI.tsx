@@ -161,7 +161,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
             return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&h=200&fit=crop';
         };
 
-        return menuBundle.items.map((item: any) => {
+        return menuBundle.items?.map((item: any) => {
             const imgPath = item.icon || item.image || '';
             const isUrl = typeof imgPath === 'string' && imgPath.startsWith('http');
             

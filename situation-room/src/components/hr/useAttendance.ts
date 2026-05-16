@@ -36,7 +36,7 @@ export const useAttendance = ({
   const handleForceAttendance = async (ev: React.MouseEvent, emp: Bundle, actionType: 'check-in' | 'check-out') => {
     ev.stopPropagation();
     const actionText = actionType === 'check-in' ? '출근' : '퇴근';
-    const empName = emp.items.find((i) => i.name === '이름')?.value || '-';
+    const empName = emp.items?.find((i) => i.name === '이름')?.value || '-';
 
     if (!window.confirm(`⚠️ 점주 예외 권한으로 ${empName} 사원의 ${actionText}을(를) 강제 기록하시겠습니까?\n이 작업은 5분 스케줄 제한을 무시하고 즉시 처리됩니다.`)) return;
 
@@ -49,7 +49,7 @@ export const useAttendance = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          staff_id: emp.items.find((i) => i.name === '아이디')?.value || emp.id,
+          staff_id: emp.items?.find((i) => i.name === '아이디')?.value || emp.id,
           store_id: storeId === 'Total' ? 'store-korean' : storeId,
           device_id: deviceId,
           force: true
@@ -123,7 +123,7 @@ export const useAttendance = ({
     if (!cleanPhone) return alert('전화번호를 정확히 입력해 주세요.');
 
     const emp = employees.find(e => {
-      const phone = e.items.find((i) => i.name === '아이디')?.value;
+      const phone = e.items?.find((i) => i.name === '아이디')?.value;
       return phone && phone.replace(/[^0-9]/g, '') === cleanPhone;
     });
 
@@ -138,7 +138,7 @@ export const useAttendance = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          staff_id: emp.items.find((i) => i.name === '아이디')?.value || emp.id,
+          staff_id: emp.items?.find((i) => i.name === '아이디')?.value || emp.id,
           store_id: storeId === 'Total' ? 'store-korean' : storeId,
           device_id: deviceId
         })
@@ -149,7 +149,7 @@ export const useAttendance = ({
       if (!response.ok) {
         alert(`🚨 출퇴근 시간 제한 에러!\n\n${result.detail || '5분 범위에 근로 스케줄이 없습니다.'}`);
       } else {
-        const empName = emp.items.find((i) => i.name === '이름')?.value || '-';
+        const empName = emp.items?.find((i) => i.name === '이름')?.value || '-';
         if (actionType === 'check-in') {
           alert(`🏃 출근 완료!\n\n${empName}님, ${result.tardy ? '⚠️ 지각 출근입니다!' : '✨ 정상 출근 처리되었습니다.'}\n기록 시각: ${new Date(result.check_in_time).toLocaleTimeString()}`);
         } else {

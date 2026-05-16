@@ -344,7 +344,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
              {filteredItems.map(item => {
                const cartQty = cart[item.id] || 0;
                const orderedQty = myOrders.reduce((total, order) => {
-                 const matchItem = order.items.find(i => i.name.includes(item.name) || item.name.includes(i.name));
+                 const matchItem = order.items?.find(i => i.name.includes(item.name) || item.name.includes(i.name));
                  if (matchItem) {
                    const val = (matchItem as any).value ? String((matchItem as any).value).match(/\d+/) : null;
                    return total + (val ? parseInt(val[0]) : 0);

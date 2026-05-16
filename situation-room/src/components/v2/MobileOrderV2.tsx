@@ -181,7 +181,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
     if (!menuBundle) return [];
     
-    return menuBundle.items.map((item: any) => {
+    return menuBundle.items?.map((item: any) => {
         const priceNum = typeof item.value === 'number'
             ? item.value
             : (parseInt(String(item.value || '').replace(/[^0-9]/g, '')) || 0);
@@ -869,7 +869,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
                         </span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        {order.items.map((item: any, i: number) => (
+                        {order.items?.map((item: any, i: number) => (
                           <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#cbd5e1' }}>
                             <span>{item.name}</span>
                             <span style={{ fontWeight: 600 }}>{item.quantity || item.qty}개 | {((item.price || 0) * (item.quantity || item.qty || 1)).toLocaleString()}원</span>

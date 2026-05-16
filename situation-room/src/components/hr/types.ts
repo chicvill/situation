@@ -10,7 +10,7 @@ export interface Bundle {
   store?: string;
   store_id?: string;
   status?: string;
-  items: BundleItem[];
+  items?: BundleItem[];
   timestamp?: string;
 }
 

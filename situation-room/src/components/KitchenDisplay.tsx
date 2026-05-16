@@ -193,7 +193,7 @@ export const KitchenDisplay: React.FC = () => {
                                         </div>
                                         
                                         <div style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '20px', color: 'var(--text-main)', lineHeight: 1.3 }}>
-                                            {order.items.map((item: any) => `${item.name} x${item.quantity || item.qty}`).join(', ')}
+                                            {order.items?.map((item: any) => `${item.name} x${item.quantity || item.qty}`).join(', ')}
                                         </div>
 
                                         <button 

@@ -30,7 +30,7 @@ export const DisplayBoard: React.FC<DisplayBoardProps> = ({ bundles }) => {
         if (order.title.includes('포장')) return '포장';
 
         // 3. items에서 검색
-        const tableItem = order.items.find(i => i.name === '테이블' || i.name === 'table');
+        const tableItem = order.items?.find(i => i.name === '테이블' || i.name === 'table');
         if (tableItem) return `${tableItem.value}번 테이블`;
         
         return '일반 주문';

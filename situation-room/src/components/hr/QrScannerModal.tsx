@@ -108,9 +108,9 @@ export const QrScannerModal: React.FC<QrScannerModalProps> = ({
             >
               <option value="">사원을 선택해 주세요</option>
               {employees.map(emp => {
-                const name = emp.items.find((i) => i.name === '이름')?.value || '-';
-                const id = emp.items.find((i) => i.name === '아이디')?.value || emp.id;
-                const role = emp.items.find((i) => i.name === '직책')?.value || '점원';
+                const name = emp.items?.find((i) => i.name === '이름')?.value || '-';
+                const id = emp.items?.find((i) => i.name === '아이디')?.value || emp.id;
+                const role = emp.items?.find((i) => i.name === '직책')?.value || '점원';
                 return (
                   <option key={id} value={id}>{name} ({role})</option>
                 );

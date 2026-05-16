@@ -36,16 +36,16 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   onResignEmployee,
   onOpenPayroll,
 }) => {
-  const name = bundle.items.find((i) => i.name === '이름')?.value || '-';
-  const id = bundle.items.find((i) => i.name === '아이디')?.value || bundle.id;
-  const role = bundle.items.find((i) => i.name === '직책')?.value || '점원';
-  const wage = bundle.items.find((i) => i.name === '시급')?.value || '10,000';
-  const hours = bundle.items.find((i) => i.name === '누적시간')?.value || '0.0';
-  const cumulativeWage = bundle.items.find((i) => i.name === '누적임금')?.value || '0';
-  const paidWage = bundle.items.find((i) => i.name === '지불된임금')?.value || '0';
-  const unpaidWage = bundle.items.find((i) => i.name === '미지급임금')?.value || '0';
-  const contractStr = bundle.items.find((i) => i.name === '계약정보')?.value || '{}';
-  const scheduleStr = bundle.items.find((i) => i.name === '스케줄')?.value || '[]';
+  const name = bundle.items?.find((i) => i.name === '이름')?.value || '-';
+  const id = bundle.items?.find((i) => i.name === '아이디')?.value || bundle.id;
+  const role = bundle.items?.find((i) => i.name === '직책')?.value || '점원';
+  const wage = bundle.items?.find((i) => i.name === '시급')?.value || '10,000';
+  const hours = bundle.items?.find((i) => i.name === '누적시간')?.value || '0.0';
+  const cumulativeWage = bundle.items?.find((i) => i.name === '누적임금')?.value || '0';
+  const paidWage = bundle.items?.find((i) => i.name === '지불된임금')?.value || '0';
+  const unpaidWage = bundle.items?.find((i) => i.name === '미지급임금')?.value || '0';
+  const contractStr = bundle.items?.find((i) => i.name === '계약정보')?.value || '{}';
+  const scheduleStr = bundle.items?.find((i) => i.name === '스케줄')?.value || '[]';
 
   const handleRowClick = () => {
     onSelect({

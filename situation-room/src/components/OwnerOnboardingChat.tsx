@@ -232,7 +232,7 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
 
         const isDuplicate = bundles.some(b => 
             b.type === 'PersonalInfos' && 
-            b.items.find((i: any) => i.name === '아이디')?.value === idToCheck
+            b.items?.some((i: any) => i.name === '아이디' && i.value === idToCheck)
         );
 
         setIsCheckingId(false);

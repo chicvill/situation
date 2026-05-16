@@ -11,7 +11,7 @@ export interface BundleData {
   id: string;
   type: BundleType;
   title: string;
-  items: BundleItem[];
+  items?: BundleItem[];
   timestamp: string;
   status?: 'pending' | 'cooking' | 'ready' | 'served' | 'archived' | 'canceled' | 'paid' | 'approved' | 'confirmed' | 'finished' | 'seated' | 'called';
   order_code?: string;
