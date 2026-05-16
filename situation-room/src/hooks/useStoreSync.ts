@@ -194,6 +194,10 @@ export const useStoreSync = (storeId: string) => {
     });
   }, []);
 
+  const decrementCall = useCallback(() => {
+    setCallCount(prev => Math.max(0, prev - 1));
+  }, []);
+
   const decrementParking = useCallback(() => {
     setParkingCount(prev => Math.max(0, prev - 1));
   }, []);
@@ -207,6 +211,7 @@ export const useStoreSync = (storeId: string) => {
     waitingFlashing,
     parkingFlashing,
     resetFlash,
+    decrementCall,
     decrementParking,
     syncInitial: checkInitialStates
   };

@@ -14,9 +14,10 @@ interface Call {
 interface CallManagerProps {
     storeId?: string;
     bundles?: any[];
+    onComplete?: () => void;
 }
 
-export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] }) => {
+export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [], onComplete }) => {
     const [calls, setCalls] = useState<Call[]>([]);
 
     const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
@@ -52,8 +53,8 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
                 body: JSON.stringify({ call_id: callId, status: 'completed' })
             });
             if (res.ok) {
-                // UI에서 즉시 피드백 제공하기 위해 로컬 상태에서 제거
                 setCalls(prev => prev.filter(c => c.call_id !== callId));
+                onComplete?.();
             }
         } catch (e) {
             console.error('Complete call error:', e);

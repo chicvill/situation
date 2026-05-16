@@ -37,7 +37,7 @@ type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 
 function App() {
   const { storeId, storeName: initialStoreName, updateStore } = useStoreFilter();
   const { bundles, handleSendMessage } = useSituation(storeId, initialStoreName);
-  const { flashingTabs, callCount, waitingCount, parkingCount, callFlashing, waitingFlashing, parkingFlashing, resetFlash, decrementParking } = useStoreSync(storeId);
+  const { flashingTabs, callCount, waitingCount, parkingCount, callFlashing, waitingFlashing, parkingFlashing, resetFlash, decrementCall, decrementParking } = useStoreSync(storeId);
 
   const [user, setUser] = useState<any>(null);
   const [selectedAdminStore, setSelectedAdminStore] = useState<string | null>(() => {
@@ -418,7 +418,7 @@ function App() {
             onLogout={handleLogout}
           />
         );
-      case 'call': return <CallManager storeId={storeId} bundles={bundles} />;
+      case 'call': return <CallManager storeId={storeId} bundles={bundles} onComplete={decrementCall} />;
       case 'inventory': return <LogicInventory />;
       case 'manual': return <StoreManualEditor storeId={storeId} user={user} />;
       case 'hr': return <HRManager bundles={bundles} user={user} storeDetails={storeDetails} />;
