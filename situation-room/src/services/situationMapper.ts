@@ -1,4 +1,4 @@
-import { BundleData } from '../types';
+import type { BundleData } from '../types';
 
 /**
  * 전용 테이블 번호 정의
