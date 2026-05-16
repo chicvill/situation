@@ -76,7 +76,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
     const menuBundle = safeBundles.find(b => b.type === 'Menus' && (b.store_id === storeId || !b.store_id));
     if (!menuBundle) return [];
     
-    return menuBundle.items?.map((item: any) => {
+    return (menuBundle.items || []).map((item: any) => {
         const priceNum = typeof item.value === 'number'
             ? item.value
             : (parseInt(String(item.value || '').replace(/[^0-9]/g, '')) || 0);
@@ -101,7 +101,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
     });
   }, [bundles, storeId]);
 
-  const categories = useMemo(() => ['전체', ...new Set(menus.map(m => m.category))], [menus]);
+  const categories = useMemo(() => ['전체', ...new Set((menus || []).map(m => m.category))], [menus]);
   const totalPrice = useMemo(() => cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0), [cart]);
   const sessionTotal = useMemo(() => myOrders.reduce((sum, order: Order) => sum + order.total_price, 0), [myOrders]);
 
@@ -588,7 +588,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
     return (
       <>
         <div className="menu-grid">
-          {menus.filter(m => activeCategory === '전체' || m.category === activeCategory).map((item, idx) => {
+          {(menus || []).filter(m => activeCategory === '전체' || m.category === activeCategory).map((item, idx) => {
             const cartItem = cart.find(c => c.name === item.name);
             return (
               <div key={idx} className="menu-item-card" onClick={() => addToCart(item)}>
