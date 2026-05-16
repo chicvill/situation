@@ -56,15 +56,29 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
                 fetchSessions();
             }
             if (data.type === 'JOIN_REQUEST') {
-                setPendingJoins(prev => ({
-                    ...prev,
-                    [data.table_id]: [...(prev[data.table_id] || []), data]
-                }));
+                // Normalize table_id (e.g. "3" -> "T03", "T3" -> "T03")
+                let tid = String(data.table_id || "").toUpperCase();
+                if (tid) {
+                    if (!tid.startsWith('T')) {
+                        tid = `T${tid.padStart(2, '0')}`;
+                    } else if (tid.length === 2) {
+                        tid = `T${tid.substring(1).padStart(2, '0')}`;
+                    }
+                    
+                    setPendingJoins(prev => ({
+                        ...prev,
+                        [tid]: [...(prev[tid] || []), data]
+                    }));
+                }
             }
             if (data.type === 'JOIN_RESPONSE') {
+                let tid = String(data.table_id || "").toUpperCase();
+                if (!tid.startsWith('T')) tid = `T${tid.padStart(2, '0')}`;
+                else if (tid.length === 2) tid = `T${tid.substring(1).padStart(2, '0')}`;
+
                 setPendingJoins(prev => {
-                    const tableRequests = (prev[data.table_id] || []).filter(r => r.device_id !== data.device_id);
-                    return { ...prev, [data.table_id]: tableRequests };
+                    const tableRequests = (prev[tid] || []).filter(r => r.device_id !== data.device_id);
+                    return { ...prev, [tid]: tableRequests };
                 });
             }
         };
