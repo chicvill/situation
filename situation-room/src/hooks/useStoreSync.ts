@@ -171,8 +171,6 @@ export const useStoreSync = (storeId: string) => {
       if (prev[key] === false) return prev;
       return { ...prev, [key]: false };
     });
-    if (tab === 'call') setCallCount(0);
-    if (tab === 'waiting') setWaitingCount(0);
   }, []);
 
   const decrementParking = useCallback(() => {
