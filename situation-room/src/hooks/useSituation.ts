@@ -174,11 +174,15 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
 
             if (data.type === 'JOIN_REQUEST') {
                 console.log(`[CHECKPOINT - 매칭] JOIN_REQUEST 처리됨`);
+                let tid = String(data.table_id || "").toUpperCase();
+                if (!tid.startsWith('T')) tid = `T${tid.padStart(2, '0')}`;
+                else if (tid.length === 2) tid = `T${tid.substring(1).padStart(2, '0')}`;
+
                 const newJoin: BundleData = {
                     id: `SESS-${data.session_id}-${Date.now()}`,
                     type: 'Orders', // Orders 타입으로 설정하여 주방/카운터 목록에 노출
-                    title: `합류 승인 대기 (${data.table_id})`,
-                    table_id: data.table_id,
+                    title: `👥 [합류 요청] 테이블 ${tid}`,
+                    table_id: tid,
                     session_id: data.session_id,
                     timestamp: new Date().toLocaleTimeString(),
                     items: [

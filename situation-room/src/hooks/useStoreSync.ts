@@ -7,6 +7,7 @@ export interface NotificationStates {
   reserve: boolean;
   parking: boolean;
   points: boolean;
+  counter: boolean;
 }
 
 export const useStoreSync = (storeId: string) => {
@@ -16,6 +17,7 @@ export const useStoreSync = (storeId: string) => {
     reserve: false,
     parking: false,
     points: false,
+    counter: false,
   });
   const [callCount, setCallCount] = useState(0);
   const [waitingCount, setWaitingCount] = useState(0);
@@ -66,7 +68,7 @@ export const useStoreSync = (storeId: string) => {
     checkInitialStates();
 
     // 2. MQTT situation/kitchen 구독으로 모든 탭 아이콘 실시간 동기화
-    const unsubscribe = subscribeTopic('situation/kitchen', (data) => {
+    const handleMessage = (data: any) => {
       try {
         if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
           return;
@@ -117,6 +119,10 @@ export const useStoreSync = (storeId: string) => {
           case 'POINTS_UPDATED':
             setFlashingTabs(prev => ({ ...prev, points: true }));
             break;
+          
+          case 'JOIN_REQUEST':
+            setFlashingTabs(prev => ({ ...prev, counter: true }));
+            break;
 
           default:
             break;
@@ -124,14 +130,21 @@ export const useStoreSync = (storeId: string) => {
       } catch (err) {
         console.error('Store Notification MQTT Parsing Error:', err);
       }
-    });
+    };
 
-    return unsubscribe;
+    const unsubscribe1 = subscribeTopic('situation/kitchen', handleMessage);
+    const storeTopic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : `store/+/kitchen`;
+    const unsubscribe2 = subscribeTopic(storeTopic, handleMessage);
+
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+    };
   }, [storeId, checkInitialStates]);
 
   // 3. 특정 탭 클릭 이동 시 해당 알림 깜빡임 즉시 초기화(Reset)
   const resetFlash = useCallback((tab: string) => {
-    const validKeys: (keyof NotificationStates)[] = ['call', 'waiting', 'reserve', 'parking', 'points'];
+    const validKeys: (keyof NotificationStates)[] = ['call', 'waiting', 'reserve', 'parking', 'points', 'counter'];
     const key = tab as keyof NotificationStates;
     if (!validKeys.includes(key)) return;
 
