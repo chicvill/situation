@@ -40,14 +40,14 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
   const pendingOwners = useMemo(() => {
     return bundles.filter(b => {
       if (b.type !== 'PersonalInfos' || b.status === 'approved') return false;
-      const role = b.items.find((i: any) => i.name === '권한')?.value;
+      const role = b.items?.find((i: any) => i.name === '권한')?.value;
       return role === 'owner';
     });
   }, [bundles]);
 
   // 가입 승인 핸들러
   const handleApproveAndRegister = async (bundle: any) => {
-    const ownerName = bundle.items.find((i: any) => i.name === '이름')?.value || '';
+    const ownerName = bundle.items?.find((i: any) => i.name === '이름')?.value || '';
     if (!window.confirm(`✨ ${ownerName} 사장님의 가입 신청을 최종 승인하시겠습니까?\n승인 완료 후 해당 사장님이 본인의 계정으로 직접 본인의 매장(집)을 새로 등록 및 개설하게 됩니다.`)) return;
     
     setIsLoading(true);
@@ -364,10 +364,10 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
               {pendingOwners.map(b => {
-                const name = b.items.find((i: any) => i.name === '이름')?.value || '-';
-                const id = b.items.find((i: any) => i.name === '아이디')?.value || '-';
-                const bizNo = b.items.find((i: any) => i.name === '사업자번호')?.value || '-';
-                const openDate = b.items.find((i: any) => i.name === '개업일자')?.value || '-';
+                const name = b.items?.find((i: any) => i.name === '이름')?.value || '-';
+                const id = b.items?.find((i: any) => i.name === '아이디')?.value || '-';
+                const bizNo = b.items?.find((i: any) => i.name === '사업자번호')?.value || '-';
+                const openDate = b.items?.find((i: any) => i.name === '개업일자')?.value || '-';
                 const storeName = b.store || '-';
                 
                 return (

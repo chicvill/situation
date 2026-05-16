@@ -59,7 +59,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         if (b.type !== 'PersonalInfos' || b.status === 'approved') return false;
         if (user.role === 'owner' && (storeId !== 'Total' && b.store_id !== storeId)) return false;
 
-        const role = b.items.find((i: any) => i.name === '권한')?.value;
+        const role = b.items?.find((i: any) => i.name === '권한')?.value;
         if (user.role === 'admin') return role === 'owner';
         if (user.role === 'owner') return role === 'manager' || role === 'staff';
         return false;
@@ -405,8 +405,8 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                         <h3 style={{ color: 'var(--accent-orange)', margin: '0 0 15px 0' }}>⚠️ 가입 승인 대기</h3>
                         <div className="pending-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
                             {pendingAccounts.map(b => {
-                                const name = b.items.find((i: any) => i.name === '이름')?.value || '-';
-                                const role = b.items.find((i: any) => i.name === '권한')?.value || '-';
+                                const name = b.items?.find((i: any) => i.name === '이름')?.value || '-';
+                                const role = b.items?.find((i: any) => i.name === '권한')?.value || '-';
                                 return (
                                     <div key={b.id} style={{ background: 'rgba(249, 115, 22, 0.05)', padding: '16px', borderRadius: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(249, 115, 22, 0.15)' }}>
                                         <div>
@@ -491,7 +491,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                                     <EmployeeCard
                                         key={e.id}
                                         bundle={e}
-                                        isSelected={selectedEmployee?.id === e.items.find((i: any) => i.name === '아이디')?.value || selectedEmployee?.id === e.id}
+                                        isSelected={selectedEmployee?.id === e.items?.find((i: any) => i.name === '아이디')?.value || selectedEmployee?.id === e.id}
                                         userRole={user.role}
                                         editingWageId={editingWage?.id ?? null}
                                         editingPhoneId={editingPhone?.id ?? null}

@@ -45,9 +45,9 @@ export const PendingApprovals: React.FC<PendingApprovalsProps> = ({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {userRole === 'owner' && pendingStaffList.map(b => {
-          const staffName = b.items.find((i) => i.name === '이름')?.value || '-';
-          const requestedRole = b.items.find((i) => i.name === '권한')?.value === 'manager' ? '점장' : '점원';
-          const signupId = b.items.find((i) => i.name === '아이디')?.value || '-';
+          const staffName = b.items?.find((i) => i.name === '이름')?.value || '-';
+          const requestedRole = b.items?.find((i) => i.name === '권한')?.value === 'manager' ? '점장' : '점원';
+          const signupId = b.items?.find((i) => i.name === '아이디')?.value || '-';
 
           return (
             <div
@@ -100,9 +100,9 @@ export const PendingApprovals: React.FC<PendingApprovalsProps> = ({
         })}
 
         {userRole === 'admin' && pendingOwnerList.map(b => {
-          const ownerNameVal = b.items.find((i) => i.name === '이름')?.value || '-';
-          const signupId = b.items.find((i) => i.name === '아이디')?.value || '-';
-          const businessNo = b.items.find((i) => i.name === '사업자번호')?.value || '-';
+          const ownerNameVal = b.items?.find((i) => i.name === '이름')?.value || '-';
+          const signupId = b.items?.find((i) => i.name === '아이디')?.value || '-';
+          const businessNo = b.items?.find((i) => i.name === '사업자번호')?.value || '-';
 
           return (
             <div
