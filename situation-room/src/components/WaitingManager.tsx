@@ -134,7 +134,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
                 alignItems: 'center',
                 transition: 'background 0.5s ease'
             }}>
-                <style>{`
+                <style dangerouslySetInnerHTML={{ __html: `
                     @keyframes flash-bg {
                         0% { background-color: #ff4d4d; }
                         50% { background-color: #ffffff; }
@@ -143,7 +143,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
                     .entry-flash {
                         animation: flash-bg 0.8s infinite;
                     }
-                `}</style>
+                ` }} />
 
                 <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '40px 30px', borderRadius: '30px', textAlign: 'center', border: '2px solid var(--premium-orange)', boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}>
                     {!hasCalled ? (
