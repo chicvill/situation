@@ -195,7 +195,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                 // 🔔 [긴급 알림 강화] 합류 요청을 '직원 호출'로도 등록하여 호출 아이콘이 깜빡이게 함
                 const joinCall: BundleData = {
                     id: `CALL-JOIN-${data.session_id}-${Date.now()}`,
-                    type: 'StaffCall',
+                    type: 'Log', // StaffCall은 존재하지 않으므로 Log 타입 사용
                     title: `🛎️ [합류요청] ${tid}번 테이블`,
                     table_id: tid,
                     session_id: data.session_id,
