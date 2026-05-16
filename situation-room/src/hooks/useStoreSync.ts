@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { subscribeToStore } from '../services/notifications';
 
 export interface NotificationStates {
@@ -21,6 +21,9 @@ export const useStoreSync = (storeId: string) => {
   });
   const [callCount, setCallCount] = useState(0);
   const [waitingCount, setWaitingCount] = useState(0);
+  const [parkingCount, setParkingCount] = useState(0);
+  const [parkingFlashing, setParkingFlashing] = useState(false);
+  const parkingFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 
@@ -58,6 +61,13 @@ export const useStoreSync = (storeId: string) => {
         if (Array.isArray(data)) {
           setFlashingTabs(prev => ({ ...prev, reserve: data.length > 0 }));
         }
+      }
+
+      // 주차 건수 초기 조회
+      const parkingRes = await fetch(`${apiUrl}/api/parking/active${storeParam}`);
+      if (parkingRes.ok) {
+        const data = await parkingRes.json();
+        if (Array.isArray(data)) setParkingCount(data.length);
       }
     } catch (e) {
       console.error('Failed to sync initial store state alerts:', e);
@@ -110,7 +120,10 @@ export const useStoreSync = (storeId: string) => {
             break;
 
           case 'PARKING_APPLIED':
-            setFlashingTabs(prev => ({ ...prev, counter: true }));
+            setParkingCount(prev => prev + 1);
+            setParkingFlashing(true);
+            if (parkingFlashTimer.current) clearTimeout(parkingFlashTimer.current);
+            parkingFlashTimer.current = setTimeout(() => setParkingFlashing(false), 3000);
             break;
 
           case 'POINTS_UPDATED':
@@ -160,12 +173,19 @@ export const useStoreSync = (storeId: string) => {
     });
     if (tab === 'call') setCallCount(0);
     if (tab === 'waiting') setWaitingCount(0);
+    if (tab === 'counter') {
+      setParkingCount(0);
+      setParkingFlashing(false);
+      if (parkingFlashTimer.current) clearTimeout(parkingFlashTimer.current);
+    }
   }, []);
 
   return {
     flashingTabs,
     callCount,
     waitingCount,
+    parkingCount,
+    parkingFlashing,
     resetFlash,
     syncInitial: checkInitialStates
   };
