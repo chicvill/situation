@@ -379,9 +379,9 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId, bu
                 <PaymentModal 
                     totalPrice={selectedOrderForPay 
                         ? selectedOrderForPay.total_price 
-                        : selectedSessionForPay.orders
+                        : (selectedSessionForPay?.orders || [])
                             .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
-                            .reduce((sum: number, o: any) => sum + o.total_price, 0)
+                            .reduce((sum: number, o: any) => sum + (o.total_price || 0), 0)
                     }
                     onClose={() => {
                         setSelectedSessionForPay(null);
