@@ -187,11 +187,26 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                     timestamp: new Date().toLocaleTimeString(),
                     items: [
                         { name: '요청 기기', value: String(data.device_id || '') },
-                        { name: '테이블 번호', value: String(data.table_id || '') }
+                        { name: '테이블 번호', value: String(tid || '') }
                     ],
                     status: 'pending'
                 };
-                setBundles(prev => [newJoin, ...(Array.isArray(prev) ? prev : [])]);
+
+                // 🔔 [긴급 알림 강화] 합류 요청을 '직원 호출'로도 등록하여 호출 아이콘이 깜빡이게 함
+                const joinCall: BundleData = {
+                    id: `CALL-JOIN-${data.session_id}-${Date.now()}`,
+                    type: 'StaffCall',
+                    title: `🛎️ [합류요청] ${tid}번 테이블`,
+                    table_id: tid,
+                    session_id: data.session_id,
+                    timestamp: new Date().toLocaleTimeString(),
+                    status: 'pending',
+                    items: [
+                        { name: '메시지', value: `${tid}번 테이블 합류 요청` }
+                    ]
+                };
+
+                setBundles(prev => [newJoin, joinCall, ...(Array.isArray(prev) ? prev : [])]);
                 return;
             }
 
