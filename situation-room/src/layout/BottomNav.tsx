@@ -28,7 +28,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           (item.tab === 'call'    && flashingTabs.call    && activeTab !== 'call')    ||
           (item.tab === 'waiting' && flashingTabs.waiting && activeTab !== 'waiting') ||
           (item.tab === 'reserve' && flashingTabs.reserve && activeTab !== 'reserve') ||
-          (item.tab === 'parking' && flashingTabs.parking && activeTab !== 'parking') ||
+          (item.tab === 'counter' && flashingTabs.counter && activeTab !== 'counter') ||
           (item.tab === 'points'  && flashingTabs.points  && activeTab !== 'points');
 
         const badge =

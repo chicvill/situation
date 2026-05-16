@@ -110,7 +110,7 @@ export const useStoreSync = (storeId: string) => {
             break;
 
           case 'PARKING_APPLIED':
-            setFlashingTabs(prev => ({ ...prev, parking: true }));
+            setFlashingTabs(prev => ({ ...prev, counter: true }));
             break;
 
           case 'POINTS_UPDATED':
