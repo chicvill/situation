@@ -10,9 +10,9 @@ export const AdminDashboard = ({ bundles, storeDetails }: { bundles: any[], stor
     const orderCount = bundles.filter(b => b.type === 'Orders' && b.status !== 'archived' && b.status !== 'canceled' && (storeId === 'Total' || b.store_id === storeId || !b.store_id)).length;
     const employeeCount = bundles.filter(b => b.type === 'Employee' && (storeId === 'Total' || b.store_id === storeId || !b.store_id)).length;
     const todaySales = bundles
-        .filter(b => b.type === 'Orders' && b.timestamp.startsWith(todayStr) && b.status !== 'canceled' && (storeId === 'Total' || b.store_id === storeId || !b.store_id))
+        .filter(b => b.type === 'Orders' && b.timestamp?.startsWith(todayStr) && b.status !== 'canceled' && (storeId === 'Total' || b.store_id === storeId || !b.store_id))
         .reduce((acc, b) => {
-            const orderTotal = b.items.reduce((sum: number, item: any) => {
+            const orderTotal = (b.items || []).reduce((sum: number, item: any) => {
                 // Find matching menu in knowledge pool to get its price
                 const menuInfo = bundles
                     .filter(kb => kb.type === 'Menus' && (storeId === 'Total' || kb.store_id === storeId || !kb.store_id))
@@ -185,8 +185,8 @@ export const AdminDashboard = ({ bundles, storeDetails }: { bundles: any[], stor
                     </h3>
                     <div className="store-status-list">
                         {bundles.filter(b => b.type === 'StoreConfig').map(store => {
-                            const name = store.items.find((i: any) => i.name === '상호명')?.value || '알 수 없는 매장';
-                            const payStatus = store.items.find((i: any) => i.name === '납부상태')?.value || '정상';
+                            const name = store.items?.find((i: any) => i.name === '상호명')?.value || '알 수 없는 매장';
+                            const payStatus = store.items?.find((i: any) => i.name === '납부상태')?.value || '정상';
                             const isHealthy = payStatus !== '미납';
                             
                             return (

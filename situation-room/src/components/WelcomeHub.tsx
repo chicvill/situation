@@ -76,13 +76,13 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
   const userBundle = bundles.find(
     (b) =>
       b.type === 'PersonalInfos' &&
-      b.items.find((i: any) => i.name === '아이디')?.value === user?.id
+      b.items?.find((i: any) => i.name === '아이디')?.value === user?.id
   );
 
   // Initialize fields on modal open
   useEffect(() => {
     if (showEditModal && userBundle) {
-      const currentName = userBundle.items.find((i: any) => i.name === '이름')?.value || user.name || '';
+      const currentName = userBundle.items?.find((i: any) => i.name === '이름')?.value || user.name || '';
       setName(currentName);
       setPassword('');
       setEditedStoreName(userBundle.store || storeName || '');
@@ -92,9 +92,9 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
   // Pre-populate "내 집 짓기" form using Owner's signup data
   useEffect(() => {
     if (user?.role === 'owner' && userBundle && !storeDetails) {
-      const pOwnerName = userBundle.items.find((i: any) => i.name === '이름')?.value || user.name || '';
-      const pBizNo = userBundle.items.find((i: any) => i.name === '사업자번호')?.value || '';
-      const pOpenDate = userBundle.items.find((i: any) => i.name === '개업일자')?.value || '';
+      const pOwnerName = userBundle.items?.find((i: any) => i.name === '이름')?.value || user.name || '';
+      const pBizNo = userBundle.items?.find((i: any) => i.name === '사업자번호')?.value || '';
+      const pOpenDate = userBundle.items?.find((i: any) => i.name === '개업일자')?.value || '';
 
       setNewStoreId(userBundle.store_id || `store-${user.id}`);
       setNewStoreName(userBundle.store || '');
@@ -221,10 +221,10 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
 
     try {
       const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-      const currentHashedPw = userBundle.items.find((i: any) => i.name === '비밀번호')?.value || '';
+      const currentHashedPw = userBundle.items?.find((i: any) => i.name === '비밀번호')?.value || '';
       const finalHashedPw = password.trim() ? await hashPassword(password) : currentHashedPw;
 
-      const updatedItems = userBundle.items.map((item: any) => {
+      const updatedItems = userBundle.items?.map((item: any) => {
         if (item.name === '이름') return { ...item, value: name };
         if (item.name === '비밀번호') return { ...item, value: finalHashedPw };
         return item;
@@ -271,7 +271,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
     return bundles.filter(b => {
       if (b.type !== 'PersonalInfos' || b.status === 'approved') return false;
       if (b.store_id !== user.storeId) return false;
-      const role = b.items.find((i: any) => i.name === '권한')?.value;
+      const role = b.items?.find((i: any) => i.name === '권한')?.value;
       return role === 'manager' || role === 'staff';
     });
   }, [bundles, user]);
@@ -281,13 +281,13 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
     if (user?.role !== 'admin') return [];
     return bundles.filter(b => {
       if (b.type !== 'PersonalInfos' || b.status === 'approved') return false;
-      const role = b.items.find((i: any) => i.name === '권한')?.value;
+      const role = b.items?.find((i: any) => i.name === '권한')?.value;
       return role === 'owner';
     });
   }, [bundles, user]);
 
   const handleApproveStaff = async (bundle: any) => {
-    const staffName = bundle.items.find((i: any) => i.name === '이름')?.value || '-';
+    const staffName = bundle.items?.find((i: any) => i.name === '이름')?.value || '-';
     if (!window.confirm(`✨ ${staffName} 사원의 가입 신청을 승인하시겠습니까?`)) return;
 
     setIsProcessing(true);
@@ -319,7 +319,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
   };
 
   const handleApproveOwner = async (bundle: any) => {
-    const ownerName = bundle.items.find((i: any) => i.name === '이름')?.value || '-';
+    const ownerName = bundle.items?.find((i: any) => i.name === '이름')?.value || '-';
     if (!window.confirm(`✨ ${ownerName} 사장님의 가입 신청을 최종 승인하시겠습니까?\n승인 완료 후 해당 사장님이 본인의 계정으로 직접 로그인하여 매장을 개설 및 설정하게 됩니다.`)) return;
 
     setIsProcessing(true);
@@ -400,7 +400,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
   const isStep4Done = isStep1Done && bundles.some(
     b => b.type === 'PersonalInfos' &&
     b.store_id === user?.storeId &&
-    b.items.find((i: any) => i.name === '권한')?.value !== 'owner'
+    b.items?.find((i: any) => i.name === '권한')?.value !== 'owner'
   );
 
   let completedCount = 0;
