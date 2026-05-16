@@ -5,8 +5,8 @@ import type { BundleData } from '../types';
  */
 export const SYSTEM_TABLES = {
     CALL: 'T101',      // 일반 호출
-    WAITING: 'T102',   // 대기
-    PARKING: 'T103',   // 주차
+    PARKING: 'T102',   // 주차
+    WAITING: 'T103',   // 대기
     POINT: 'T104',     // 포인트
     JOIN: 'T105',      // 합류 요청 (시스템 알림용)
 } as const;
@@ -47,8 +47,8 @@ export const mapMqttToBundles = (data: any): BundleData[] => {
             id: String(data.waiting_id || `WAIT-${Date.now()}`),
             type: 'Orders',
             title: `[대기 접수] ${data.phone_number}`,
-            table_id: SYSTEM_TABLES.WAITING, // T102 적용
-            session_id: `SESS-WAIT-102`,
+            table_id: SYSTEM_TABLES.WAITING, // T103 적용
+            session_id: `SESS-WAIT-103`,
             items: [
                 { name: '연락처', value: String(data.phone_number || '') },
                 { name: '인원', value: String(data.party_size || '1') + '명' }
@@ -65,8 +65,8 @@ export const mapMqttToBundles = (data: any): BundleData[] => {
             id: String(data.parking_id || `PARK-${Date.now()}`),
             type: 'Orders',
             title: `[주차 할인] ${data.vehicle_number}`,
-            table_id: SYSTEM_TABLES.PARKING, // T103 적용
-            session_id: `SESS-PARK-103`,
+            table_id: SYSTEM_TABLES.PARKING, // T102 적용
+            session_id: `SESS-PARK-102`,
             items: [
                 { name: '차량 번호', value: String(data.vehicle_number || '') },
                 { name: '할인 시간', value: String(data.discount_minutes || '120') + '분' },
