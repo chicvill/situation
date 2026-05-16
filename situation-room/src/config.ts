@@ -6,10 +6,10 @@ const getApiBase = () => {
     const host = window.location.hostname;
     const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
     const isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.');
-    if (isLocal) {
-        return `${protocol}://${host}:8000`;
-    }
+    if (isLocal) return `${protocol}://${host}:8000`;
     if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+    // Production (same origin): no port needed
+    if (!host.match(/^\d+\.\d+\.\d+\.\d+$/)) return `${protocol}://${host}`;
     return `${protocol}://${host}:8000`;
 };
 

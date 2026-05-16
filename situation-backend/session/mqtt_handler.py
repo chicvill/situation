@@ -102,11 +102,13 @@ async def run_mqtt_client(ws_manager):
         print("[MQTT] aiomqtt 미설치 - MQTT 서비스를 시작할 수 없습니다.")
         return
 
+    retry_count = 0
     while True:
         try:
             print(f"[MQTT] 브로커 연결 시도: {MQTT_HOST}:{MQTT_PORT}")
             async with aiomqtt.Client(MQTT_HOST, MQTT_PORT) as client:
                 _mqtt_client = client
+                retry_count = 0
                 print(f"[MQTT] 브로커 연결 성공: {MQTT_HOST}:{MQTT_PORT}")
 
                 await client.subscribe("store/+/call")
@@ -118,7 +120,6 @@ async def run_mqtt_client(ws_manager):
                         payload = json.loads(message.payload)
                         print(f"[MQTT 수신 - 백엔드] topic={topic} | {str(payload)[:150]}")
 
-                        # store/{store_id}/call 파싱
                         parts = topic.split("/")
                         if len(parts) == 3 and parts[0] == "store" and parts[2] == "call":
                             store_id = parts[1]
@@ -131,7 +132,16 @@ async def run_mqtt_client(ws_manager):
                         print(f"[MQTT 수신 오류] topic={topic} error={e}")
 
         except Exception as e:
-            print(f"[MQTT] 연결 끊김 또는 오류: {e}. 5초 후 재연결...")
+            retry_count += 1
             _mqtt_client = None
+            # 브로커가 없는 환경(Render 등)에서 무한 로그 방지: 5회 실패 후 60초 간격으로 전환
+            if retry_count <= 5:
+                print(f"[MQTT] 연결 끊김 또는 오류: {e}. 5초 후 재연결... ({retry_count}/5)")
+                await asyncio.sleep(5)
+            else:
+                if retry_count == 6:
+                    print(f"[MQTT] 브로커 없음 — 60초 간격으로 재시도합니다. (MQTT_BROKER_HOST={MQTT_HOST})")
+                await asyncio.sleep(60)
+            continue
 
         await asyncio.sleep(5)
