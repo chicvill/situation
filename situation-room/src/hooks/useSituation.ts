@@ -293,7 +293,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [storeId, storeName]); // storeId, storeName 의존성 추가
 
     return {
         messages,

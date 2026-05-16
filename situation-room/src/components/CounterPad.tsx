@@ -103,7 +103,11 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId, bu
 
     useEffect(() => {
         // Sync pending joins from bundles (persisted data)
-        const joinRequests = bundles.filter(b => b.type === 'PersonalInfos' && b.status === 'pending' && b.id.startsWith('join-'));
+        const joinRequests = bundles.filter(b => 
+            (b.type === 'Checkins' || b.type === 'PersonalInfos') && 
+            b.status === 'pending' && 
+            (b.id.startsWith('join-') || b.id.startsWith('SESS-'))
+        );
         const newJoins: Record<string, any[]> = {};
         
         joinRequests.forEach(b => {
