@@ -242,7 +242,6 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
     try {
       const currentCart = [...cart];
       
-      
       // 1. 주문 생성 요청
       const res = await fetch(`${API_BASE}/api/order/direct`, {
         method: 'POST',
