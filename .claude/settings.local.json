@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(git push *)",
+      "Bash(New-NetFirewallRule -DisplayName \"Mosquitto MQTT WebSocket 9001\" -Direction Inbound -Protocol TCP -LocalPort 9001 -Action Allow)",
+      "Bash(Select-Object DisplayName, Enabled, Action)",
+      "PowerShell(New-NetFirewallRule *)",
+      "PowerShell(Get-NetFirewallRule *)",
+      "Bash(npx tsc *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'fix: CallManager subscribeToStore storeId undefined type error causing build failure *)"
+    ]
+  }
+}
