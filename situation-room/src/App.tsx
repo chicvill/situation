@@ -21,6 +21,7 @@ import { ParkingManager } from './components/ParkingManager';
 import { PointsManager } from './components/PointsManager';
 import MobileOrderV2 from './components/v2/MobileOrderV2';
 import { AdminStoreManager } from './components/AdminStoreManager';
+import { NotificationToast } from './components/NotificationToast';
 import { WelcomeHub } from './components/WelcomeHub';
 import { useSituation } from './hooks/useSituation';
 import { useStoreFilter } from './hooks/useStoreFilter';
@@ -487,6 +488,13 @@ function App() {
           waitingCount={waitingCount}
           onNavigate={(tab) => navigateTo(tab as MainTab)}
           onVoice={startVoiceRecognition}
+        />
+      )}
+
+      {!isCustomerMode && user && (
+        <NotificationToast
+          storeId={storeId}
+          onNavigate={(tab) => navigateTo(tab as MainTab)}
         />
       )}
     </div>

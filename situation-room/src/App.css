@@ -1007,6 +1007,12 @@ tr:hover td { background: var(--surface-hover); }
 }
 .blink-call-bell { animation: blink-call-icon 0.9s cubic-bezier(0.4,0,0.2,1) infinite; }
 
+@keyframes notif-slide-in {
+  from { opacity: 0; transform: translateX(120%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.notif-toast-card { animation: notif-slide-in 0.3s cubic-bezier(0.16,1,0.3,1); }
+
 .nav-badge {
   position: absolute;
   top: -6px;
