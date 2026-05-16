@@ -33,33 +33,6 @@ export const KitchenDisplay: React.FC = () => {
         const messageHandler = (data: any) => {
             if (refreshTypes.includes(data.type)) {
                 fetchKitchenOrders();
-                
-                // 가상 테이블 처리 (주차: 98, 대기: 99)
-                if (data.type === 'PARKING_APPLIED') {
-                    setVirtualOrders(prev => [
-                        {
-                            order_id: data.parking_id,
-                            table_id: 'T98',
-                            session_id: 'SESS-PARK-98',
-                            order_seq: 1,
-                            timestamp: new Date().toISOString(),
-                            items: [{ name: `[주차] ${data.vehicle_number}`, quantity: 1 }]
-                        },
-                        ...prev
-                    ]);
-                } else if (data.type === 'WAITING_REGISTERED') {
-                    setVirtualOrders(prev => [
-                        {
-                            order_id: data.waiting_id,
-                            table_id: 'T99',
-                            session_id: 'SESS-WAIT-99',
-                            order_seq: 1,
-                            timestamp: new Date().toISOString(),
-                            items: [{ name: `[대기] ${data.phone_number}`, quantity: data.party_size || 1 }]
-                        },
-                        ...prev
-                    ]);
-                }
             }
         };
 
@@ -73,12 +46,6 @@ export const KitchenDisplay: React.FC = () => {
     }, [storeId]);
 
     const markAsDone = async (orderId: string) => {
-        // 가상 주문인지 확인
-        if (virtualOrders.some(vo => vo.order_id === orderId)) {
-            setVirtualOrders(prev => prev.filter(vo => vo.order_id !== orderId));
-            return;
-        }
-
         try {
             const apiUrl = API_BASE;
             const res = await fetch(`${apiUrl}/api/order/status`, {
@@ -93,12 +60,9 @@ export const KitchenDisplay: React.FC = () => {
         }
     };
 
-    // 가상 테이블(98, 99) 및 실시간 가상 주문 상태 관리
-    const [virtualOrders, setVirtualOrders] = useState<any[]>([]);
-    
     // 주문을 테이블(세션)별로 그룹화
     const groupedOrders = useMemo(() => {
-        const acc = bundles.reduce((acc, order: any) => {
+        return bundles.reduce((acc, order: any) => {
             const key = order.session_id || 'no-session';
             if (!acc[key]) {
                 acc[key] = {
@@ -109,23 +73,7 @@ export const KitchenDisplay: React.FC = () => {
             acc[key].orders.push(order);
             return acc;
         }, {} as Record<string, { table: string, orders: any[] }>);
-
-        // 가상 주문(주차/대기) 병합
-        virtualOrders.forEach(vo => {
-            const key = vo.session_id;
-            if (!acc[key]) {
-                acc[key] = {
-                    table: vo.table_id,
-                    orders: []
-                };
-            }
-            if (!acc[key].orders.some((o: any) => o.order_id === vo.order_id)) {
-                acc[key].orders.push(vo);
-            }
-        });
-        
-        return acc;
-    }, [bundles, virtualOrders]);
+    }, [bundles]);
 
     return (
         <div className="kitchen-display-v2" style={{ padding: '40px', background: 'var(--bg-main)', minHeight: '100vh', color: 'var(--text-main)' }}>
@@ -152,19 +100,19 @@ export const KitchenDisplay: React.FC = () => {
                         {/* 테이블 헤더 */}
                         <div style={{ 
                             padding: '20px', 
-                            background: group.table === '포장' ? 'var(--warning)' : 
-                                       group.table === '98' ? 'var(--accent-orange)' : 
-                                       group.table === '99' ? 'var(--accent)' : 'var(--primary)',
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
+                            background: group.table === '포장' ? 'var(--warning)' :
+                                       group.table === 'T102' ? 'var(--accent-orange)' :
+                                       group.table === 'T103' ? 'var(--accent)' : 'var(--primary)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
                             alignItems: 'center',
                             color: 'white',
-                            animation: (group.table === '98' || group.table === '99') ? 'pulse-glow 2s infinite' : 'none'
+                            animation: (group.table === 'T102' || group.table === 'T103') ? 'pulse-glow 2s infinite' : 'none'
                         }}>
                             <span style={{ fontSize: '1.2rem', fontWeight: '700' }}>
-                                {group.table === '포장' ? '포장 주문' : 
-                                 group.table === '98' ? '🚗 주차 할인' :
-                                 group.table === '99' ? '🛎️ 대기 접수' : 
+                                {group.table === '포장' ? '포장 주문' :
+                                 group.table === 'T102' ? '🚗 주차 할인' :
+                                 group.table === 'T103' ? '🛎️ 대기 접수' :
                                  (() => {
                                      const num = parseInt(group.table.replace('T', ''));
                                      const cap = !isNaN(num) ? ((num <= 4) ? 4 : (num <= 8) ? 2 : (num <= 10) ? 6 : 4) : null;

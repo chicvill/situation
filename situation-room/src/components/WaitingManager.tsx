@@ -178,7 +178,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
     
     // 대기 번들 중 진짜 활성화된(취소/완료되지 않은) 목록만 필터링 (역사적 사건 로그 제외)
     const waitingList = bundles.filter(b => {
-        if (b.type !== 'Waiting' && !(b.type === 'Orders' && b.table_id === 'T99')) return false;
+        if (b.type !== 'Waiting' && !(b.type === 'Orders' && b.table_id === 'T103')) return false;
         
         // 1. 매장 필터링
         const storeMatch = storeId === 'Total' || b.store_id === storeId || !b.store_id;
