@@ -173,11 +173,10 @@ export const useStoreSync = (storeId: string) => {
     });
     if (tab === 'call') setCallCount(0);
     if (tab === 'waiting') setWaitingCount(0);
-    if (tab === 'counter') {
-      setParkingCount(0);
-      setParkingFlashing(false);
-      if (parkingFlashTimer.current) clearTimeout(parkingFlashTimer.current);
-    }
+  }, []);
+
+  const decrementParking = useCallback(() => {
+    setParkingCount(prev => Math.max(0, prev - 1));
   }, []);
 
   return {
@@ -187,6 +186,7 @@ export const useStoreSync = (storeId: string) => {
     parkingCount,
     parkingFlashing,
     resetFlash,
+    decrementParking,
     syncInitial: checkInitialStates
   };
 };

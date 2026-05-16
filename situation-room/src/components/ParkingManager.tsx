@@ -13,9 +13,10 @@ interface Parking {
 
 interface ParkingManagerProps {
     storeId?: string;
+    onComplete?: () => void;
 }
 
-export const ParkingManager = ({ storeId }: ParkingManagerProps) => {
+export const ParkingManager = ({ storeId, onComplete }: ParkingManagerProps) => {
     const [parkings, setParkings] = useState<Parking[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [completing, setCompleting] = useState<string | null>(null);
@@ -66,6 +67,7 @@ export const ParkingManager = ({ storeId }: ParkingManagerProps) => {
             });
             if (res.ok) {
                 setParkings(prev => prev.filter(p => p.parking_id !== parkingId));
+                onComplete?.();
             }
         } catch (e) {
             console.error('Complete parking error:', e);

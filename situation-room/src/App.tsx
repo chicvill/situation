@@ -37,7 +37,7 @@ type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 
 function App() {
   const { storeId, storeName: initialStoreName, updateStore } = useStoreFilter();
   const { bundles, handleSendMessage } = useSituation(storeId, initialStoreName);
-  const { flashingTabs, callCount, waitingCount, parkingCount, parkingFlashing, resetFlash } = useStoreSync(storeId);
+  const { flashingTabs, callCount, waitingCount, parkingCount, parkingFlashing, resetFlash, decrementParking } = useStoreSync(storeId);
 
   const [user, setUser] = useState<any>(null);
   const [selectedAdminStore, setSelectedAdminStore] = useState<string | null>(() => {
@@ -424,7 +424,7 @@ function App() {
       case 'hr': return <HRManager bundles={bundles} user={user} storeDetails={storeDetails} />;
       case 'waiting': return <WaitingManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'waiting', sId, sName)} />;
       case 'reserve': return <ReservationManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'reserve', sId, sName)} />;
-      case 'parking': return <ParkingManager storeId={storeId} />;
+      case 'parking': return <ParkingManager storeId={storeId} onComplete={decrementParking} />;
       case 'points': return <PointsManager storeId={storeId} />;
       default: return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} isCustomerMode={isCustomerMode} />;
     }
