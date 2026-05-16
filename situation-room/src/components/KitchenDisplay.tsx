@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import type { BundleData } from '../types';
 import { API_BASE } from '../config';
 import { subscribeTopic } from '../services/mqttClient';

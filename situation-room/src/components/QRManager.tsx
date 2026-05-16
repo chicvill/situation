@@ -38,7 +38,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                     return {
                         num: parseInt(match[1]),
                         label: `Table ${match[1]}`,
-                        seats: match[2].trim()
+                        seats: match[2] ? match[2].trim() : '4'
                     };
                 }
                 if (clean.includes(':')) {
@@ -48,7 +48,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                         return {
                             num: parsedNum,
                             label: `Table ${parsedNum}`,
-                            seats: right.trim()
+                            seats: right ? right.trim() : '4'
                         };
                     }
                 }

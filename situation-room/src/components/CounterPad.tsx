@@ -75,8 +75,6 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
         return () => {
             unsubscribe1();
             unsubscribe2();
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-            clearInterval(pollInterval);
         };
     }, [storeId]);
 

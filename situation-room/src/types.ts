@@ -1,6 +1,6 @@
 // Build trigger: 2026-05-01 V2 Update
 export type ViewMode = 'admin' | 'kitchen' | 'customer' | 'display' | 'store' | 'hr' | 'menu' | 'stats' | 'counter' | 'waiting' | 'qr';
-export type BundleType = 'Menus' | 'PersonalInfos' | 'Orders' | 'Log' | 'Analysis' | 'StoreConfig' | 'Employee' | 'Attendance' | 'Waiting' | 'Checkins' | 'Reservations';
+export type BundleType = 'Menus' | 'PersonalInfos' | 'Orders' | 'Log' | 'Analysis' | 'StoreConfig' | 'Employee' | 'Attendance' | 'Waiting' | 'Checkins' | 'Reservations' | 'Settlement';
 
 export interface BundleItem {
   name: string;
