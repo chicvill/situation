@@ -5,9 +5,10 @@ import { subscribeTopic } from '../services/mqttClient';
 
 interface CounterPadProps {
     storeId?: string;
+    bundles?: any[];
 }
 
-export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) => {
+export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId, bundles = [] }) => {
     const { storeId: filterStoreId } = useStoreFilter();
     const storeId = propStoreId || filterStoreId;
     const [sessions, setSessions] = useState<any[]>([]);
@@ -92,6 +93,26 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId }) 
         };
     }, [storeId]);
 
+
+    useEffect(() => {
+        // Sync pending joins from bundles (persisted data)
+        const joinRequests = bundles.filter(b => b.type === 'PersonalInfos' && b.status === 'pending' && b.id.startsWith('join-'));
+        const newJoins: Record<string, any[]> = {};
+        
+        joinRequests.forEach(b => {
+            let tid = String(b.table_id || "").toUpperCase();
+            if (tid) {
+                if (!tid.startsWith('T')) tid = `T${tid.padStart(2, '0')}`;
+                else if (tid.length === 2) tid = `T${tid.substring(1).padStart(2, '0')}`;
+                
+                const deviceId = b.items?.find((i: any) => i.name === '기기ID')?.value;
+                if (!newJoins[tid]) newJoins[tid] = [];
+                newJoins[tid].push({ table_id: tid, device_id: deviceId, session_id: b.session_id });
+            }
+        });
+        
+        setPendingJoins(prev => ({ ...prev, ...newJoins }));
+    }, [bundles]);
 
     const handleStatusUpdate = async (orderId: string, status: string) => {
         try {

@@ -389,7 +389,7 @@ function App() {
       case 'guide': 
       case 'orderV2': return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} isCustomerMode={isCustomerMode} />;
       case 'kitchen': return <KitchenDisplay />;
-      case 'counter': return <CounterPad storeId={storeId} />;
+      case 'counter': return <CounterPad storeId={storeId} bundles={bundles} />;
       case 'display': return <DisplayBoard bundles={bundles} />;
       case 'menu': return <MenuManager bundles={bundles} onNavigate={navigateTo as any} />;
       case 'settings': return <StoreManager bundles={bundles} user={user} onNavigate={navigateTo as any} />;
