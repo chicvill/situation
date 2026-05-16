@@ -179,6 +179,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                     type: 'Orders', // Orders 타입으로 설정하여 주방/카운터 목록에 노출
                     title: `합류 승인 대기 (${data.table_id})`,
                     table_id: data.table_id,
+                    session_id: data.session_id,
                     timestamp: new Date().toLocaleTimeString(),
                     items: [
                         { name: '요청 기기', value: String(data.device_id || '') },
