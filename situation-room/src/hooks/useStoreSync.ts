@@ -121,7 +121,11 @@ export const useStoreSync = (storeId: string) => {
             break;
           
           case 'JOIN_REQUEST':
-            setFlashingTabs(prev => ({ ...prev, counter: true }));
+          case 'JOIN_CHECKIN':
+          case 'CHECKIN_REQUEST':
+          case 'JOIN_SESSION':
+            setFlashingTabs(prev => ({ ...prev, counter: true, call: true }));
+            setCallCount(prev => prev + 1); // 뱃지 카운트도 1 올려서 확실한 인지 유도
             break;
 
           default:
