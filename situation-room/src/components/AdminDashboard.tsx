@@ -16,7 +16,7 @@ export const AdminDashboard = ({ bundles, storeDetails }: { bundles: any[], stor
                 // Find matching menu in knowledge pool to get its price
                 const menuInfo = bundles
                     .filter(kb => kb.type === 'Menus' && (storeId === 'Total' || kb.store_id === storeId || !kb.store_id))
-                    .flatMap(kb => kb.items)
+                    .flatMap(kb => kb.items || [])
                     .find(ki => ki.name.includes(item.name));
                 
                 const price = menuInfo
