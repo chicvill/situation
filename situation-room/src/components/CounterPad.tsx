@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { PaymentModal } from './PaymentModal';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 import { subscribeTopic } from '../services/mqttClient';
@@ -25,7 +25,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId, bu
         return import.meta.env.VITE_API_URL || `http://${host}:8000`;
     };
 
-    const fetchSessions = React.useCallback(async () => {
+    const fetchSessions = useCallback(async () => {
         try {
             const apiUrl = getApiUrl();
             const res = await fetch(`${apiUrl}/api/counter/sessions?store_id=${storeId || "Total"}`);
@@ -39,7 +39,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId, bu
             console.error('Counter Fetch Error:', e);
             setSessions([]);
         }
-    }, [storeId]); // storeId 의존성 추가
+    }, [storeId]); 
 
     useEffect(() => {
         // 1. 초기 로드
