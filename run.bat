@@ -14,6 +14,7 @@ taskkill /F /FI "WINDOWTITLE eq SITUATION-FRONTEND" /T 2>nul
 taskkill /F /IM python.exe /T 2>nul
 taskkill /F /IM node.exe /T 2>nul
 taskkill /F /IM mosquitto.exe /T 2>nul
+net stop mosquitto 2>nul
 timeout /t 3 /nobreak >nul
 echo Old servers closed.
 echo.

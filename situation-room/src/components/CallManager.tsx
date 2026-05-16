@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { subscribeTopic } from '../services/mqttClient';
+import { subscribeToStore, VIRTUAL_TABLE_LABEL } from '../services/notifications';
 
 interface Call {
     call_id: string;
@@ -28,7 +28,15 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
             const res = await fetch(`${apiUrl}/api/call/active${queryParam}`);
             const data = await res.json();
             if (Array.isArray(data)) {
-                setCalls(data);
+                // 합류 요청의 device_id는 call_id에서 파싱: "JOIN-{session_id}-{device_id}"
+                const processed = data.map((c: any) => {
+                    if (c.call_type === '기기 합류 요청' && c.call_id?.startsWith('JOIN-') && c.session_id) {
+                        const prefix = `JOIN-${c.session_id}-`;
+                        return { ...c, device_id: c.call_id.startsWith(prefix) ? c.call_id.slice(prefix.length) : '' };
+                    }
+                    return c;
+                });
+                setCalls(processed);
             }
         } catch (e) {
             console.error('Fetch active calls error:', e);
@@ -79,10 +87,8 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
         fetchCalls();
 
         const handleMessage = (data: any) => {
+            // store_id 필터는 subscribeToStore 에서 처리됨
             if (data.type === 'STAFF_CALL') {
-                if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
-                    return;
-                }
                 setCalls(prev => {
                     if (prev.some(c => c.call_id === data.call_id)) return prev;
                     return [...prev, {
@@ -100,7 +106,6 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
                     audio.play();
                 } catch (_) {}
             } else if (['JOIN_REQUEST', 'JOIN_CHECKIN', 'CHECKIN_REQUEST', 'JOIN_SESSION'].includes(data.type)) {
-                if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) return;
 
                 let tid = String(data.table_id || "").toUpperCase();
                 if (!tid.startsWith('T')) tid = `T${tid.padStart(2, '0')}`;
@@ -134,12 +139,7 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
             }
         };
 
-        // situation/kitchen 과 store 토픽 모두 구독 (JOIN_REQUEST는 store 토픽으로 발행됨)
-        const unsubscribe1 = subscribeTopic('situation/kitchen', handleMessage);
-        const storeTopic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : `store/+/kitchen`;
-        const unsubscribe2 = subscribeTopic(storeTopic, handleMessage);
-
-        return () => { unsubscribe1(); unsubscribe2(); };
+        return subscribeToStore(storeId, handleMessage);
     }, [storeId]);
 
     useEffect(() => {
@@ -171,7 +171,7 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
                             device_id: deviceId,
                             call_type: '기기 합류 요청',
                             status: 'pending',
-                            timestamp: b.timestamp ? new Date(b.timestamp).toISOString() : new Date().toISOString()
+                            timestamp: (() => { try { const d = new Date(b.timestamp); return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString(); } catch { return new Date().toISOString(); } })()
                         });
                         added = true;
                     }
@@ -205,7 +205,8 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
                 gap: '20px'
             }}>
                 {calls.map((call, idx) => {
-                    const timeElapsed = Math.max(0, Math.floor((new Date().getTime() - new Date(call.timestamp).getTime()) / 1000 / 60));
+                    const tsMs = new Date(call.timestamp).getTime();
+                    const timeElapsed = isNaN(tsMs) ? 0 : Math.max(0, Math.floor((new Date().getTime() - tsMs) / 1000 / 60));
                     
                     return (
                         <div key={call.call_id} className="animate-pop-in" style={{
@@ -229,7 +230,7 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
                                         fontWeight: 900,
                                         color: 'var(--text-main)'
                                     }}>
-                                        {call.table_id.startsWith('T') ? `TABLE ${parseInt(call.table_id.substring(1))}` : `TABLE ${call.table_id}`}
+                                        {VIRTUAL_TABLE_LABEL[call.table_id] ?? (call.table_id.startsWith('T') ? `TABLE ${parseInt(call.table_id.substring(1))}` : `TABLE ${call.table_id}`)}
                                     </span>
                                     <span style={{
                                         fontSize: '0.75rem',

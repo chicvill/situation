@@ -83,8 +83,10 @@ async def staff_call(data: Dict):
 
     # 현재 활성 세션 가져와서 호출 기록을 세션에 종속시키기
     from ..database import get_active_session, save_call
-    store_id = data.get("store_id") or data.get("storeId") or "Total"
-    active = get_active_session(store_id, table_id)
+    req_store_id = data.get("store_id") or data.get("storeId") or "Total"
+    active = get_active_session(req_store_id, table_id)
+    # 세션이 있으면 세션의 실제 store_id 사용 (요청의 store_id 가 다를 수 있음)
+    store_id = (active.get('store_id') if active else None) or req_store_id
     session_id = active['session_id'] if active else "SESS-NONE"
 
     call_id = f"CALL-{uuid.uuid4().hex[:4].upper()}"
@@ -110,12 +112,6 @@ async def staff_call(data: Dict):
         # 기존 WebSocket 브로드캐스트 (하위 호환 유지)
         await manager.broadcast_to_kitchen(msg)
         await manager.send_to_table(table_id, msg)
-        # MQTT 브로드캐스트 (카운터/주방으로 병행 발행)
-        try:
-            from ..mqtt_handler import mqtt_publish
-            await mqtt_publish(f"store/{store_id}/call/broadcast", msg)
-        except Exception as e:
-            print(f"[MQTT 브로드캐스트 오류] HTTP /api/call 경로: {e}")
         return call_data
 
     print(f"[DB 저장 상태] 실패 - call_id={call_id}, table={table_id}")

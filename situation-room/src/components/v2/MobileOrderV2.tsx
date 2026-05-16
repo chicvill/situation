@@ -3,6 +3,7 @@ import './MobileOrderV2.css';
 import type { BundleData } from '../../types';
 import { API_BASE } from '../../config';
 import { subscribeTopic } from '../../services/mqttClient';
+import { sendNotify } from '../../services/notifications';
 import { PaymentModal } from '../PaymentModal';
 import { PaymentService } from '../../services/paymentService';
 import { ConversationalUI } from '../ConversationalUI';
@@ -147,20 +148,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   }, []);
 
   const handleStaffCall = async () => {
-    try {
-      await fetch(`${API_BASE}/api/call`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_id: tableId,
-          call_type: '직원호출',
-          store_id: storeId
-        })
-      });
-      alert('🔔 카운터로 호출 신호를 보냈습니다. 잠시만 기다려 주세요!');
-    } catch (e) {
-      alert('직원을 호출했습니다. 곧 가겠습니다!');
-    }
+    await sendNotify('STAFF_CALL', { table_id: tableId, store_id: storeId, call_type: '직원호출' });
+    alert('🔔 카운터로 호출 신호를 보냈습니다. 잠시만 기다려 주세요!');
   };
 
   const menus = useMemo(() => {
@@ -464,20 +453,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
   const requestStaffCall = useCallback(async (callType: string = "직원호출") => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-      const res = await fetch(`${apiUrl}/api/call`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_id: tableId,
-          call_type: callType,
-          store_id: storeId // 다중 매장 완벽 분리 지원
-        })
-      });
-      if (res.ok) {
-        setVoiceToast(`🔔 직원을 호출했습니다: [${callType}]`);
-        setTimeout(() => setVoiceToast(null), 3000);
-      }
+      await sendNotify('STAFF_CALL', { table_id: tableId, store_id: storeId, call_type: callType });
+      setVoiceToast(`🔔 직원을 호출했습니다: [${callType}]`);
+      setTimeout(() => setVoiceToast(null), 3000);
     } catch (err) {
       console.error("Staff call error:", err);
       setVoiceToast("❌ 호출 전송 실패. 카운터로 직접 문의해 주세요.");
@@ -1330,11 +1308,27 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           <span className="nav-label">음성주문</span>
         </button>
 
-        {/* 4. 주문금액 */}
-        <div className="nav-amount-box">
-          <span className="nav-amount-label">주문금액</span>
-          <span className="nav-amount-value">{totalPrice.toLocaleString()}원</span>
-        </div>
+        {/* 4. 더치페이 */}
+        <button
+          onClick={async () => {
+            if (!sessionIdRef.current) {
+              setVoiceToast('⚠️ 활성 세션이 없습니다. 먼저 주문해 주세요.');
+              setTimeout(() => setVoiceToast(null), 3000);
+              return;
+            }
+            await sendNotify('MERGE', {
+              table_id: tableId,
+              store_id: storeId,
+              session_id: sessionIdRef.current,
+              call_type: '더치페이 요청',
+            });
+            setVoiceToast('🤝 더치페이 요청을 전송했습니다. 카운터를 확인해 주세요!');
+            setTimeout(() => setVoiceToast(null), 4000);
+          }}
+        >
+          <span className="nav-icon">🤝</span>
+          <span className="nav-label">더치페이</span>
+        </button>
 
         {/* 5. 바로결제 */}
         <button

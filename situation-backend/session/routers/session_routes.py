@@ -15,53 +15,75 @@ router = APIRouter()
 
 
 async def check_in(data: Dict):
-    store_id = data.get("store_id", "default_store")
+    store_id = data.get("store_id") or "default_store"
     table_id = data.get("table_id")
     device_id = data.get("device_id") or data.get("deviceId") or ""
 
     if not table_id:
         raise HTTPException(status_code=400, detail="table_id required")
 
-    # 1. 활성 세션 확인 (유연한 매칭)
+    # 활성 세션 조회 (store_id fallback 포함)
     active = get_active_session(store_id, table_id)
     if not active:
-        # Fallback logic for cross-store session linking (e.g., default_store vs specific store ID)
-        alt_store_id = "default_store" if store_id != "default_store" else "Total"
-        active = get_active_session(alt_store_id, table_id)
-        if not active:
-            return {"status": "no_session"}
-        print(f"🔗 [Session Linked] Found active session via fallback in check_in: {alt_store_id}")
+        alt = "default_store" if store_id != "default_store" else "Total"
+        active = get_active_session(alt, table_id)
 
-    # 현재 세션의 전체 주문 내역 조회
+    # ① 세션 없음 → 새 주문
+    if not active:
+        print(f"[check_in] {table_id} 세션 없음 → no_session")
+        return {"status": "no_session"}
+
     orders = get_orders_by_session(active['session_id'])
+    session_store_id = active.get('store_id') or store_id
+    first_device = active.get('device_id') or ''
 
-    existing_device = active.get('device_id') or ''
+    print(f"[check_in] {table_id} 세션={active['session_id']} 주문수={len(orders)} first_device={first_device!r} 요청기기={device_id!r}")
 
-    # [핵심 로직] 동일 기기 재접속 OR 이미 해당 세션에 주문 이력이 있는 기기라면 즉시 active 판정
-    # (합류 승인을 받았거나 이미 주문을 마친 손님이 새로고침했을 때 '대기 중'에 갇히는 현상 방지)
-    device_has_orders = any(str(o.get('device_id')) == str(device_id) for o in orders)
+    # ② 주문 없는 테이블 → 무조건 통과 (보호할 주문 없음)
+    if not orders:
+        if device_id and not first_device:
+            update_session_device_id(active['session_id'], device_id)
+        print(f"[check_in] 주문 없음 → active")
+        return {"status": "active", "session": active, "orders": orders}
 
-    # 카운터 승인으로 허가된 기기인지 확인 (approve_join이 metadata에 저장)
+    # ③ 주문 있는 테이블, 같은 디바이스 → 2차/3차 주문
+    if not first_device or first_device == device_id:
+        print(f"[check_in] 동일 기기 → active")
+        return {"status": "active", "session": active, "orders": orders}
+
+    # 승인된 기기 확인 (합류 후 폴링 중인 2번째 폰)
     try:
         raw_meta = active.get('metadata') or {}
         metadata = json.loads(raw_meta) if isinstance(raw_meta, str) else dict(raw_meta)
     except Exception:
         metadata = {}
-    device_is_approved = device_id in metadata.get('approved_devices', [])
-
-    if existing_device == '' or existing_device == device_id or device_has_orders or device_is_approved:
-        if existing_device == '' and device_id:
-            update_session_device_id(active['session_id'], device_id)
+    if device_id in metadata.get('approved_devices', []):
+        print(f"[check_in] 승인된 기기 → active")
         return {"status": "active", "session": active, "orders": orders}
 
-    # 다른 기기 → 더치페이 합류 승인 요청 (store_id 포함해야 올바른 MQTT 토픽으로 전달됨)
+    # ④ 주문 있는 테이블, 다른 디바이스 → 합류 승인 요청
+    join_call_id = f"JOIN-{active['session_id']}-{device_id}"
     msg = {
         "type": "JOIN_REQUEST",
+        "call_id": join_call_id,
         "device_id": device_id,
         "session_id": active['session_id'],
         "table_id": table_id,
-        "store_id": store_id
+        "store_id": session_store_id,
     }
+    print(f"[check_in] 다른 기기 → JOIN_REQUEST store={session_store_id!r} table={table_id!r}")
+
+    # DB에 저장: CallManager가 탭 전환 후 마운트되어도 fetchCalls로 복구 가능
+    from ..database import save_call
+    save_call({
+        "call_id": join_call_id,
+        "table_id": table_id,
+        "session_id": active['session_id'],
+        "call_type": "기기 합류 요청",
+        "status": "pending",
+        "timestamp": datetime.now().isoformat(),
+    })
+
     await manager.send_to_table(table_id, msg)
     await manager.broadcast_to_kitchen(msg)
     return {"status": "waiting_approval", "session_id": active['session_id']}
@@ -239,6 +261,11 @@ async def approve_join(data: Dict):
                     except Exception as e:
                         print(f"approve_join metadata update error: {e}")
 
+    # DB에서 합류 요청 call 제거
+    join_call_id = f"JOIN-{session_id}-{target_device_id}"
+    from ..database import update_call_status
+    update_call_status(join_call_id, 'completed')
+
     msg = {
         "type": "JOIN_RESPONSE",
         "device_id": target_device_id,
@@ -246,9 +273,7 @@ async def approve_join(data: Dict):
         "session_id": session_id,
         "table_id": table_id
     }
-    # 해당 테이블의 모든 기기에 결과 전송
     await manager.send_to_table(table_id, msg)
-    # 주방/카운터에도 알림 전송하여 대기 목록에서 제거되도록 함
     await manager.broadcast_to_kitchen(msg)
     return {"status": "success"}
 

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { API_BASE } from '../config';
 
 interface Props {
   bundles: any[];
@@ -9,7 +10,19 @@ interface Props {
 export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initialStoreName }) => {
     const [wifiSSID, setWifiSSID] = useState('MQnet_Wifi');
     const [wifiPass, setWifiPass] = useState('12345678');
-    const [printMode, setPrintMode] = useState<'single' | 'a4' | 'grid'>('single'); // 디폴트는 'single' (A4 한 장에 전체 배치)
+    const [printMode, setPrintMode] = useState<'single' | 'a4' | 'grid'>('single');
+    const [lanIp, setLanIp] = useState<string | null>(null);
+
+    useEffect(() => {
+        const host = window.location.hostname;
+        const isLocal = host === 'localhost' || host === '127.0.0.1';
+        if (isLocal) {
+            fetch(`${API_BASE}/api/local-ip`)
+                .then(r => r.json())
+                .then(d => setLanIp(d.ip))
+                .catch(() => setLanIp(null));
+        }
+    }, []);
     
     // 매장 정보 추출
     const safeBundles = Array.isArray(bundles) ? bundles : [];
@@ -64,8 +77,17 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
         }
     })();
 
-    // 폰으로 스캔 테스트를 위해 로컬 환경(localhost)에서도 무조건 실제 프로덕션 도메인을 가리키도록 고정합니다.
-    const baseUrl = `https://situation.chicvill.store`;
+    // localhost → 백엔드에서 가져온 LAN IP 사용 (폰이 접속 가능하도록)
+    // LAN IP 직접 접속 → 현재 호스트 사용
+    // 외부 도메인 → 프로덕션 URL 사용
+    const host = window.location.hostname;
+    const isLanAccess = host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.');
+    const isLocal = host === 'localhost' || host === '127.0.0.1';
+    const baseUrl = isLanAccess
+        ? `http://${host}:5173`
+        : isLocal && lanIp
+            ? `http://${lanIp}:5173`
+            : `https://situation.chicvill.store`;
 
     const qrItems = [
         {

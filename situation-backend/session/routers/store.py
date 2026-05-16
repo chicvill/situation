@@ -8,6 +8,20 @@ from ..models import StoreCreateRequest, StoreUpdateRequest
 router = APIRouter()
 
 
+@router.get("/api/local-ip")
+async def get_local_ip():
+    """로컬 개발 환경에서 QR 코드 생성 시 LAN IP를 반환"""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        ip = "localhost"
+    return {"ip": ip}
+
+
 @router.get("/api/stores")
 async def get_stores():
     return get_stores_db()

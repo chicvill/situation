@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { subscribeTopic } from '../services/mqttClient';
+import { subscribeToStore } from '../services/notifications';
 
 interface Parking {
     parking_id: string;
@@ -40,14 +40,8 @@ export const ParkingManager = ({ storeId }: ParkingManagerProps) => {
     useEffect(() => {
         fetchParkings();
 
-        // MQTT 구독으로 실시간 주차 등록 수신
-        const topic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : `store/+/kitchen`;
-        
         const messageHandler = (data: any) => {
             if (data.type === 'PARKING_APPLIED') {
-                if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
-                    return;
-                }
                 setParkings(prev => {
                     if (prev.some(p => p.parking_id === data.parking_id)) return prev;
                     return [{
@@ -63,13 +57,7 @@ export const ParkingManager = ({ storeId }: ParkingManagerProps) => {
             }
         };
 
-        const unsubscribe1 = subscribeTopic(topic, messageHandler);
-        const unsubscribe2 = topic !== 'store/+/kitchen' ? subscribeTopic('store/broadcast/kitchen', messageHandler) : () => {};
-
-        return () => {
-            unsubscribe1();
-            unsubscribe2();
-        };
+        return subscribeToStore(storeId || '', messageHandler);
     }, [storeId]);
 
     const filteredParkings = useMemo(() => {

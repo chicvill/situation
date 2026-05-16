@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { subscribeTopic } from '../services/mqttClient';
+import { subscribeToStore } from '../services/notifications';
 
 interface CustomerPoint {
     phone: string;
@@ -36,12 +36,8 @@ export const PointsManager = ({ storeId }: PointsManagerProps) => {
     useEffect(() => {
         fetchPoints();
 
-        // MQTT situation/kitchen 구독으로 실시간 포인트 적립 수신
-        const unsubscribe = subscribeTopic('situation/kitchen', (data) => {
+        const unsubscribe = subscribeToStore(storeId || '', (data) => {
             if (data.type === 'POINTS_UPDATED') {
-                if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
-                    return;
-                }
                 setPoints(prev => {
                     const exists = prev.find(p => p.phone === data.phone);
                     if (exists) {

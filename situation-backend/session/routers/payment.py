@@ -47,10 +47,6 @@ async def confirm_payment(data: Dict):
     msg_update = {"type": "STATUS_UPDATE", "order_id": order_id, "status": "cooking", "payment_status": "paid"}
     await manager.broadcast_to_kitchen(msg_update)
 
-    for table_id in manager.active_connections:
-        await manager.send_to_table(table_id, msg_confirmed)
-        await manager.send_to_table(table_id, msg_update)
-
     return {"status": "success", "order_id": order_id}
 
 

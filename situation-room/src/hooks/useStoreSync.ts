@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { subscribeTopic } from '../services/mqttClient';
+import { subscribeToStore } from '../services/notifications';
 
 export interface NotificationStates {
   call: boolean;
@@ -70,10 +70,7 @@ export const useStoreSync = (storeId: string) => {
     // 2. MQTT situation/kitchen 구독으로 모든 탭 아이콘 실시간 동기화
     const handleMessage = (data: any) => {
       try {
-        if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
-          return;
-        }
-
+        // store_id 필터는 subscribeToStore 에서 처리됨
         switch (data.type) {
           case 'STAFF_CALL':
             setCallCount(prev => prev + 1);
@@ -125,7 +122,19 @@ export const useStoreSync = (storeId: string) => {
           case 'CHECKIN_REQUEST':
           case 'JOIN_SESSION':
             setFlashingTabs(prev => ({ ...prev, counter: true, call: true }));
-            setCallCount(prev => prev + 1); // 뱃지 카운트도 1 올려서 확실한 인지 유도
+            setCallCount(prev => prev + 1);
+            break;
+
+          case 'JOIN_RESPONSE':
+            fetch(`${getApiUrl()}/api/call/active${storeId !== 'Total' ? `?store_id=${storeId}` : ''}`)
+              .then(res => res.json())
+              .then(calls => {
+                if (Array.isArray(calls)) {
+                  setCallCount(calls.length);
+                  setFlashingTabs(prev => ({ ...prev, call: calls.length > 0 }));
+                }
+              })
+              .catch(err => console.error('Failed to refresh call status after join response:', err));
             break;
 
           default:
@@ -136,14 +145,7 @@ export const useStoreSync = (storeId: string) => {
       }
     };
 
-    const unsubscribe1 = subscribeTopic('situation/kitchen', handleMessage);
-    const storeTopic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : `store/+/kitchen`;
-    const unsubscribe2 = subscribeTopic(storeTopic, handleMessage);
-
-    return () => {
-      unsubscribe1();
-      unsubscribe2();
-    };
+    return subscribeToStore(storeId, handleMessage);
   }, [storeId, checkInitialStates]);
 
   // 3. 특정 탭 클릭 이동 시 해당 알림 깜빡임 즉시 초기화(Reset)

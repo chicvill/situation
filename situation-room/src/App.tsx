@@ -386,8 +386,12 @@ function App() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'guide': 
-      case 'orderV2': return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} isCustomerMode={isCustomerMode} />;
+      case 'guide':
+      case 'orderV2': {
+        const urlStoreId = new URLSearchParams(window.location.search).get('storeId');
+        const effectiveStoreId = storeId || urlStoreId || '';
+        return <MobileOrderV2 bundles={bundles} storeId={effectiveStoreId} storeName={storeName} onNavigate={navigateTo as any} isCustomerMode={isCustomerMode} />;
+      }
       case 'kitchen': return <KitchenDisplay />;
       case 'counter': return <CounterPad storeId={storeId} bundles={bundles} />;
       case 'display': return <DisplayBoard bundles={bundles} />;
