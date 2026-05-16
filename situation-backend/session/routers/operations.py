@@ -247,6 +247,16 @@ async def validate_parking(data: Dict):
     raise HTTPException(status_code=500, detail="Failed to save parking registration")
 
 
+@router.post("/api/parking/complete")
+async def complete_parking_endpoint(data: Dict):
+    parking_id = data.get("parking_id")
+    if not parking_id:
+        raise HTTPException(status_code=400, detail="parking_id required")
+    from ..database import complete_parking
+    if complete_parking(parking_id):
+        return {"status": "ok", "parking_id": parking_id}
+    raise HTTPException(status_code=500, detail="Failed to complete parking")
+
 @router.get("/api/parking/session/{session_id}")
 async def get_parking_by_session_endpoint(session_id: str):
     from ..database import get_parking_by_session

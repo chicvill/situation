@@ -60,6 +60,7 @@ from .db.operations_db import (
     get_active_reservations,
     update_reservation_status,
     save_parking,
+    complete_parking,
     get_parking_by_session,
     get_active_parkings_db,
 )
@@ -126,6 +127,7 @@ __all__ = [
     "get_active_reservations",
     "update_reservation_status",
     "save_parking",
+    "complete_parking",
     "get_parking_by_session",
     "get_active_parkings_db",
     # points

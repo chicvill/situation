@@ -18,6 +18,7 @@ interface ParkingManagerProps {
 export const ParkingManager = ({ storeId }: ParkingManagerProps) => {
     const [parkings, setParkings] = useState<Parking[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [completing, setCompleting] = useState<string | null>(null);
 
     const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 
@@ -54,6 +55,24 @@ export const ParkingManager = ({ storeId }: ParkingManagerProps) => {
         };
         return subscribeToStore(storeId || '', messageHandler);
     }, [storeId]);
+
+    const handleComplete = async (parkingId: string) => {
+        setCompleting(parkingId);
+        try {
+            const res = await fetch(`${getApiUrl()}/api/parking/complete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ parking_id: parkingId }),
+            });
+            if (res.ok) {
+                setParkings(prev => prev.filter(p => p.parking_id !== parkingId));
+            }
+        } catch (e) {
+            console.error('Complete parking error:', e);
+        } finally {
+            setCompleting(null);
+        }
+    };
 
     const filteredParkings = useMemo(() =>
         parkings.filter(p =>
@@ -180,22 +199,27 @@ export const ParkingManager = ({ storeId }: ParkingManagerProps) => {
                                     <Row label="경과" value={mins === 0 ? '방금 전' : `${mins}분 전`} />
                                 </div>
 
-                                {/* 정산번호 + 상태 */}
+                                {/* 정산번호 + 완료 버튼 */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
                                         #{p.parking_id}
                                     </span>
-                                    <span style={{
-                                        background: 'rgba(16,185,129,0.1)',
-                                        border: '1px solid rgba(16,185,129,0.25)',
-                                        color: '#10b981',
-                                        padding: '3px 10px',
-                                        borderRadius: '20px',
-                                        fontSize: '0.78rem',
-                                        fontWeight: 800,
-                                    }}>
-                                        정산완료
-                                    </span>
+                                    <button
+                                        onClick={() => handleComplete(p.parking_id)}
+                                        disabled={completing === p.parking_id}
+                                        style={{
+                                            background: completing === p.parking_id ? 'rgba(16,185,129,0.05)' : 'rgba(16,185,129,0.1)',
+                                            border: '1px solid rgba(16,185,129,0.35)',
+                                            color: '#10b981',
+                                            padding: '5px 14px',
+                                            borderRadius: '20px',
+                                            fontSize: '0.78rem',
+                                            fontWeight: 800,
+                                            cursor: completing === p.parking_id ? 'default' : 'pointer',
+                                        }}
+                                    >
+                                        {completing === p.parking_id ? '처리 중...' : '✓ 정산완료'}
+                                    </button>
                                 </div>
                             </div>
                         );

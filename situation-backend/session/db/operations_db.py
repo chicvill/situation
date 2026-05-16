@@ -260,6 +260,23 @@ def save_parking(park_data: dict):
         print(f"Save Parking Error: {e}")
         return False
 
+def complete_parking(parking_id: str) -> bool:
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "UPDATE table_parkings SET status = 'completed' WHERE parking_id = %(parking_id)s",
+            {'parking_id': parking_id}
+        )
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Complete Parking Error: {e}")
+        return False
+
 def get_parking_by_session(session_id: str):
     conn = get_db_conn()
     if not conn: return None
