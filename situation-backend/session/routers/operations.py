@@ -254,6 +254,10 @@ async def complete_parking_endpoint(data: Dict):
         raise HTTPException(status_code=400, detail="parking_id required")
     from ..database import complete_parking
     if complete_parking(parking_id):
+        await manager.broadcast_to_kitchen({
+            "type": "PARKING_COMPLETED",
+            "parking_id": parking_id,
+        })
         return {"status": "ok", "parking_id": parking_id}
     raise HTTPException(status_code=500, detail="Failed to complete parking")
 

@@ -3,7 +3,7 @@ import './MobileOrderV2.css';
 import type { BundleData } from '../../types';
 import { API_BASE } from '../../config';
 import { subscribeTopic } from '../../services/mqttClient';
-import { sendNotify } from '../../services/notifications';
+import { sendNotify, subscribeToStore } from '../../services/notifications';
 import { PaymentModal } from '../PaymentModal';
 import { PaymentService } from '../../services/paymentService';
 import { ConversationalUI } from '../ConversationalUI';
@@ -108,6 +108,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const [showParkingModal, setShowParkingModal] = useState(false);
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [parkingApplied, setParkingApplied] = useState(false);
+  const [callOverlay, setCallOverlay] = useState<{ status: 'pending' | 'completed'; callId: string; callType: string } | null>(null);
+  const [parkingOverlay, setParkingOverlay] = useState<{ status: 'pending' | 'completed'; parkingId: string } | null>(null);
   const [userPhone] = useState('');
   const [aiStoryContent, setAiStoryContent] = useState({ title: '', body: '', icon: '🍽️' });
   const [showDelayedHelp, setShowDelayedHelp] = useState(false);
@@ -453,9 +455,19 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
   const requestStaffCall = useCallback(async (callType: string = "직원호출") => {
     try {
-      await sendNotify('STAFF_CALL', { table_id: tableId, store_id: storeId, call_type: callType });
-      setVoiceToast(`🔔 직원을 호출했습니다: [${callType}]`);
-      setTimeout(() => setVoiceToast(null), 3000);
+      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const res = await fetch(`${apiUrl}/api/call`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table_id: tableId, store_id: storeId, call_type: callType }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCallOverlay({ status: 'pending', callId: data.call_id, callType });
+      } else {
+        setVoiceToast("❌ 호출 전송 실패. 카운터로 직접 문의해 주세요.");
+        setTimeout(() => setVoiceToast(null), 3000);
+      }
     } catch (err) {
       console.error("Staff call error:", err);
       setVoiceToast("❌ 호출 전송 실패. 카운터로 직접 문의해 주세요.");
@@ -503,13 +515,11 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
         })
       });
       if (res.ok) {
+        const data = await res.json();
         setParkingApplied(true);
-        setVoiceToast("🚗 무료 주차 2시간 등록이 완료되었습니다!");
-        setTimeout(() => setVoiceToast(null), 3000);
-        setTimeout(() => {
-          setShowParkingModal(false);
-          setVehicleNumber('');
-        }, 2000);
+        setShowParkingModal(false);
+        setVehicleNumber('');
+        setParkingOverlay({ status: 'pending', parkingId: data.parking_id });
       } else {
         const errData = await res.json();
         setVoiceToast(errData.detail || "주차 등록에 실패했습니다. 다시 시도해 주세요.");
@@ -685,6 +695,28 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
     rec.start();
   }, [isListening, parseVoiceCommand]);
+
+  // --- 고객 알림 오버레이: MQTT 구독 ---
+  useEffect(() => {
+    if (!callOverlay && !parkingOverlay) return;
+    const playDingDong = () => {
+      try {
+        const audio = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2014/09/Ding-dong.mp3');
+        audio.volume = 0.8;
+        audio.play().catch(() => {});
+      } catch (_) {}
+    };
+    return subscribeToStore(storeId, (data) => {
+      if (callOverlay && data.type === 'CALL_STATUS_UPDATED' && data.call_id === callOverlay.callId) {
+        setCallOverlay(prev => prev ? { ...prev, status: 'completed' } : null);
+        playDingDong();
+      }
+      if (parkingOverlay && data.type === 'PARKING_COMPLETED' && data.parking_id === parkingOverlay.parkingId) {
+        setParkingOverlay(prev => prev ? { ...prev, status: 'completed' } : null);
+        playDingDong();
+      }
+    });
+  }, [storeId, callOverlay?.callId, parkingOverlay?.parkingId]);
 
   // --- Android/Browser Back Button Handling ---
   useEffect(() => {
@@ -1490,6 +1522,55 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           whiteSpace: 'nowrap'
         }} className="animate-pop-in">
           <span>🔔</span> {voiceToast}
+        </div>
+      )}
+
+      {/* 호출 고객 알림 오버레이 */}
+      {callOverlay && (
+        <div style={{ position: 'fixed', inset: 0, background: callOverlay.status === 'completed' ? '#1a1a2e' : 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+          className={callOverlay.status === 'completed' ? 'entry-flash' : ''}>
+          <style dangerouslySetInnerHTML={{ __html: `@keyframes flash-bg { 0%{background:#1a1a2e} 50%{background:#16213e} 100%{background:#1a1a2e} } .entry-flash{animation:flash-bg 0.8s infinite}` }} />
+          <div style={{ background: 'var(--surface)', borderRadius: '24px', padding: '40px 32px', maxWidth: '360px', width: '100%', textAlign: 'center', border: `2px solid ${callOverlay.status === 'completed' ? '#22c55e' : 'var(--border)'}` }}>
+            {callOverlay.status === 'pending' ? (
+              <>
+                <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🔔</div>
+                <h2 style={{ fontSize: '1.6rem', fontWeight: 900, marginBottom: '10px' }}>직원 호출 완료!</h2>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>{callOverlay.callType} 요청을 보냈습니다.<br />잠시만 기다려주세요.</p>
+                <button onClick={() => setCallOverlay(null)} style={{ padding: '12px 28px', borderRadius: '12px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontWeight: 700, cursor: 'pointer' }}>닫기</button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: '4rem', marginBottom: '16px' }}>✅</div>
+                <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#22c55e', marginBottom: '10px' }}>처리 완료!</h2>
+                <p style={{ color: 'var(--text-main)', marginBottom: '24px' }}>직원이 방문하겠습니다.<br />잠시만 기다려주세요.</p>
+                <button onClick={() => setCallOverlay(null)} style={{ padding: '14px 32px', borderRadius: '12px', border: 'none', background: '#22c55e', color: '#fff', fontWeight: 900, fontSize: '1rem', cursor: 'pointer' }}>확인</button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 주차 고객 알림 오버레이 */}
+      {parkingOverlay && (
+        <div style={{ position: 'fixed', inset: 0, background: parkingOverlay.status === 'completed' ? '#1a2e1a' : 'rgba(0,0,0,0.85)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--surface)', borderRadius: '24px', padding: '40px 32px', maxWidth: '360px', width: '100%', textAlign: 'center', border: `2px solid ${parkingOverlay.status === 'completed' ? '#10b981' : 'var(--border)'}` }}>
+            {parkingOverlay.status === 'pending' ? (
+              <>
+                <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🚗</div>
+                <h2 style={{ fontSize: '1.6rem', fontWeight: 900, marginBottom: '10px' }}>주차 등록 완료!</h2>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '8px' }}>2시간 무료 주차가 등록되었습니다.</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '24px' }}>직원이 정산 처리하면 알림이 울립니다.</p>
+                <button onClick={() => setParkingOverlay(null)} style={{ padding: '12px 28px', borderRadius: '12px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontWeight: 700, cursor: 'pointer' }}>닫기</button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: '4rem', marginBottom: '16px' }}>✅</div>
+                <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#10b981', marginBottom: '10px' }}>정산 완료!</h2>
+                <p style={{ color: 'var(--text-main)', marginBottom: '24px' }}>주차 할인이 정상 처리되었습니다.</p>
+                <button onClick={() => setParkingOverlay(null)} style={{ padding: '14px 32px', borderRadius: '12px', border: 'none', background: '#10b981', color: '#fff', fontWeight: 900, fontSize: '1rem', cursor: 'pointer' }}>확인</button>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
