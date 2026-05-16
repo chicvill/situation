@@ -9,6 +9,8 @@ interface BottomNavProps {
   callCount: number;
   waitingCount: number;
   parkingCount: number;
+  callFlashing: boolean;
+  waitingFlashing: boolean;
   parkingFlashing: boolean;
   onNavigate: (tab: string) => void;
   onVoice: () => void;
@@ -21,6 +23,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   callCount,
   waitingCount,
   parkingCount,
+  callFlashing,
+  waitingFlashing,
   parkingFlashing,
   onNavigate,
   onVoice,
@@ -29,8 +33,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     <nav className="bottom-nav-bar-9">
       {navItems.map((item, idx) => {
         const shouldBlink =
-          (item.tab === 'call'    && flashingTabs.call    && activeTab !== 'call')    ||
-          (item.tab === 'waiting' && flashingTabs.waiting && activeTab !== 'waiting') ||
+          (item.tab === 'call'    && (callFlashing || flashingTabs.call)       && activeTab !== 'call')    ||
+          (item.tab === 'waiting' && (waitingFlashing || flashingTabs.waiting) && activeTab !== 'waiting') ||
           (item.tab === 'reserve' && flashingTabs.reserve && activeTab !== 'reserve') ||
           (item.tab === 'counter' && (flashingTabs.counter || parkingFlashing) && activeTab !== 'counter') ||
           (item.tab === 'points'  && flashingTabs.points  && activeTab !== 'points');

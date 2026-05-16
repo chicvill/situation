@@ -100,11 +100,6 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
                         timestamp: new Date().toISOString()
                     }];
                 });
-                try {
-                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-600.wav');
-                    audio.volume = 0.5;
-                    audio.play();
-                } catch (_) {}
             } else if (['JOIN_REQUEST', 'JOIN_CHECKIN', 'CHECKIN_REQUEST', 'JOIN_SESSION'].includes(data.type)) {
 
                 let tid = String(data.table_id || "").toUpperCase();
@@ -124,11 +119,6 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
                         timestamp: new Date().toISOString()
                     }];
                 });
-                try {
-                    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-600.wav');
-                    audio.volume = 0.5;
-                    audio.play();
-                } catch (_) {}
             } else if (data.type === 'CALL_STATUS_UPDATED') {
                 if (data.status === 'completed' || data.status === 'cancelled') {
                     setCalls(prev => prev.filter(c => c.call_id !== data.call_id));

@@ -37,7 +37,7 @@ type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 
 function App() {
   const { storeId, storeName: initialStoreName, updateStore } = useStoreFilter();
   const { bundles, handleSendMessage } = useSituation(storeId, initialStoreName);
-  const { flashingTabs, callCount, waitingCount, parkingCount, parkingFlashing, resetFlash, decrementParking } = useStoreSync(storeId);
+  const { flashingTabs, callCount, waitingCount, parkingCount, callFlashing, waitingFlashing, parkingFlashing, resetFlash, decrementParking } = useStoreSync(storeId);
 
   const [user, setUser] = useState<any>(null);
   const [selectedAdminStore, setSelectedAdminStore] = useState<string | null>(() => {
@@ -487,6 +487,8 @@ function App() {
           callCount={callCount}
           waitingCount={waitingCount}
           parkingCount={parkingCount}
+          callFlashing={callFlashing}
+          waitingFlashing={waitingFlashing}
           parkingFlashing={parkingFlashing}
           onNavigate={(tab) => navigateTo(tab as MainTab)}
           onVoice={startVoiceRecognition}

@@ -22,8 +22,20 @@ export const useStoreSync = (storeId: string) => {
   const [callCount, setCallCount] = useState(0);
   const [waitingCount, setWaitingCount] = useState(0);
   const [parkingCount, setParkingCount] = useState(0);
+  const [callFlashing, setCallFlashing] = useState(false);
+  const [waitingFlashing, setWaitingFlashing] = useState(false);
   const [parkingFlashing, setParkingFlashing] = useState(false);
+  const callFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const waitingFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const parkingFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const playDingDong = () => {
+    try {
+      const audio = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2014/09/Ding-dong.mp3');
+      audio.volume = 0.6;
+      audio.play().catch(() => {});
+    } catch (_) {}
+  };
 
   const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 
@@ -85,6 +97,10 @@ export const useStoreSync = (storeId: string) => {
           case 'STAFF_CALL':
             setCallCount(prev => prev + 1);
             setFlashingTabs(prev => ({ ...prev, call: true }));
+            setCallFlashing(true);
+            playDingDong();
+            if (callFlashTimer.current) clearTimeout(callFlashTimer.current);
+            callFlashTimer.current = setTimeout(() => setCallFlashing(false), 3000);
             break;
           case 'CALL_STATUS_UPDATED':
             fetch(`${getApiUrl()}/api/call/active${storeId !== 'Total' ? `?store_id=${storeId}` : ''}`)
@@ -101,6 +117,10 @@ export const useStoreSync = (storeId: string) => {
           case 'WAITING_REGISTERED':
             setWaitingCount(prev => prev + 1);
             setFlashingTabs(prev => ({ ...prev, waiting: true }));
+            setWaitingFlashing(true);
+            playDingDong();
+            if (waitingFlashTimer.current) clearTimeout(waitingFlashTimer.current);
+            waitingFlashTimer.current = setTimeout(() => setWaitingFlashing(false), 3000);
             break;
           case 'WAITING_STATUS_CHANGED':
           case 'WAITING_UPDATED':
@@ -122,6 +142,7 @@ export const useStoreSync = (storeId: string) => {
           case 'PARKING_APPLIED':
             setParkingCount(prev => prev + 1);
             setParkingFlashing(true);
+            playDingDong();
             if (parkingFlashTimer.current) clearTimeout(parkingFlashTimer.current);
             parkingFlashTimer.current = setTimeout(() => setParkingFlashing(false), 3000);
             break;
@@ -182,6 +203,8 @@ export const useStoreSync = (storeId: string) => {
     callCount,
     waitingCount,
     parkingCount,
+    callFlashing,
+    waitingFlashing,
     parkingFlashing,
     resetFlash,
     decrementParking,
