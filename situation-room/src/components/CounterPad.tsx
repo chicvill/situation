@@ -8,7 +8,7 @@ interface CounterPadProps {
     bundles?: any[];
 }
 
-export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId, bundles = [] }) => {
+export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadProps) => {
     const { storeId: filterStoreId } = useStoreFilter();
     const storeId = propStoreId || filterStoreId;
     const [sessions, setSessions] = useState<any[]>([]);
