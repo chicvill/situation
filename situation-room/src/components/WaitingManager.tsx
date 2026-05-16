@@ -71,7 +71,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
         const cleanPhone = regPhone.replace(/[^0-9]/g, '');
         // 내 전화번호가 포함된 대기 번들 찾기
         const myBundle = bundles.find(b => 
-            (b.type === 'Waiting' || (b.type === 'Orders' && b.table_id === 'T102')) && 
+            (b.type === 'Waiting' || (b.type === 'Orders' && b.table_id === 'T103')) &&
             b.items?.some(i => i.value?.toString().includes(cleanPhone))
         );
 

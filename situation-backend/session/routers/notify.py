@@ -18,6 +18,8 @@ VIRTUAL_TABLE = {
     "STAFF_CALL":         "T101",   # 직원 호출 (입구 등 테이블 미지정)
     "PARKING_APPLIED":    "T102",   # 주차 할인 신청
     "WAITING_REGISTERED": "T103",   # 대기 등록 (착석 전)
+    "POINT_EVENT":        "T104",   # 포인트 적립
+    "JOIN_REQUEST":       "T105",   # 합류 요청 (table_id 없을 때 안전망)
 }
 
 

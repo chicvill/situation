@@ -17,6 +17,8 @@ export const VIRTUAL_TABLE = {
     STAFF_CALL: 'T101',         // 직원 호출 (입구 등 테이블 미지정)
     PARKING:    'T102',         // 주차 할인 신청
     WAITING:    'T103',         // 대기 등록 (착석 전)
+    POINT:      'T104',         // 포인트 적립
+    JOIN:       'T105',         // 합류 요청 (table_id 없을 때 안전망)
 } as const;
 
 /** CallManager 에서 가상 테이블을 사람이 읽기 좋은 이름으로 표시 */
@@ -24,6 +26,8 @@ export const VIRTUAL_TABLE_LABEL: Record<string, string> = {
     T101: '직원호출 (입구)',
     T102: '주차 할인',
     T103: '대기 등록',
+    T104: '포인트 적립',
+    T105: '합류 요청',
 };
 
 export interface NotifyEvent {
@@ -81,7 +85,9 @@ export async function sendNotify(
     const fallback =
         type === 'STAFF_CALL'         ? VIRTUAL_TABLE.STAFF_CALL :
         type === 'PARKING_APPLIED'    ? VIRTUAL_TABLE.PARKING :
-        type === 'WAITING_REGISTERED' ? VIRTUAL_TABLE.WAITING : '';
+        type === 'WAITING_REGISTERED' ? VIRTUAL_TABLE.WAITING :
+        type === 'POINT_EVENT'        ? VIRTUAL_TABLE.POINT :
+        type === 'JOIN_REQUEST'       ? VIRTUAL_TABLE.JOIN : '';
 
     const body: NotifyEvent = {
         type,
