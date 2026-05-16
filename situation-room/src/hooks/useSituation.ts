@@ -247,7 +247,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             unsubscribe2();
             unsubscribe3();
         };
-    }, [storeId, fetchInitialData, storeName]); // 필수 의존성 통합
+    }, [storeId, fetchInitialData]); // 필수 의존성 통합
 
     // API Situation Handler
     const handleSendMessage = useCallback(async (text: string, targetId?: string, context?: string, overrideStoreId?: string, overrideStoreName?: string) => {

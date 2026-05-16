@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { PaymentModal } from './PaymentModal';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 import { subscribeTopic } from '../services/mqttClient';
@@ -8,6 +8,15 @@ interface CounterPadProps {
     bundles?: any[];
 }
 
+const getApiUrl = () => {
+    const host = window.location.hostname;
+    const isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.');
+    if (isLocal) {
+        return `http://${host}:8000`;
+    }
+    return import.meta.env.VITE_API_URL || `http://${host}:8000`;
+};
+
 export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadProps) => {
     const { storeId: filterStoreId } = useStoreFilter();
     const storeId = propStoreId || filterStoreId;
@@ -15,15 +24,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const [selectedSessionForPay, setSelectedSessionForPay] = useState<any | null>(null);
     const [selectedOrderForPay, setSelectedOrderForPay] = useState<any | null>(null);
     const [pendingJoins, setPendingJoins] = useState<Record<string, any[]>>({});
-
-    const getApiUrl = () => {
-        const host = window.location.hostname;
-        const isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.');
-        if (isLocal) {
-            return `http://${host}:8000`;
-        }
-        return import.meta.env.VITE_API_URL || `http://${host}:8000`;
-    };
 
     const fetchSessions = useCallback(async () => {
         try {
