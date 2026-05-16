@@ -6,10 +6,11 @@ import { useStoreFilter } from '../hooks/useStoreFilter';
 interface WaitingManagerProps {
     bundles: BundleData[];
     onSendMessage: (text: string, store_id: string, storeName: string) => void;
+    onComplete?: () => void;
 }
 
 
-export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendMessage }) => {
+export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendMessage, onComplete }) => {
     const { storeId, storeName } = useStoreFilter();
     const params = new URLSearchParams(window.location.search);
     const isRegistrationMode = params.get('mode') === 'waiting' && params.get('action') === 'register';
@@ -231,6 +232,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
                 body: JSON.stringify({ ...bundle, status: 'finished', store: storeName, store_id: storeId }),
             });
             onSendMessage(`${cleanNo} 입장 완료`, storeId, storeName);
+            onComplete?.();
         } catch (err) {
             console.error("Failed to enter waiting:", err);
         }
@@ -246,6 +248,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendM
                 body: JSON.stringify({ ...bundle, status: 'canceled', store: storeName, store_id: storeId }),
             });
             onSendMessage(`${cleanNo} 취소`, storeId, storeName);
+            onComplete?.();
         } catch (err) {
             console.error("Failed to cancel waiting:", err);
         }
