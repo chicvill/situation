@@ -21,7 +21,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
   useEffect(() => {
     const storeBundle = bundles.find(b => b.type === 'StoreConfig' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
     if (storeBundle) {
-      const findValue = (keys: string[]) => storeBundle.items.find((i: any) => keys.some(k => i.name.includes(k)))?.value || '';
+      const findValue = (keys: string[]) => storeBundle?.items?.find((i: any) => keys.some(k => i.name.includes(k)))?.value || '';
       setStoreData({
         brand:    findValue(['상호', '브랜드', 'brand']),
         regNo:    findValue(['사업자', '번호', 'reg']),
@@ -39,12 +39,12 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
       // 가입 대기/승인 정보(PersonalInfos) 중 현재 매장주(owner)의 입력 정보를 찾아 자동으로 가져옵니다. (중복 작성 방지!)
       const ownerSignupBundle = bundles.find(b => 
         b.type === 'PersonalInfos' && 
-        b.items.find((i: any) => i.name === '권한')?.value === 'owner' &&
-        (b.items.find((i: any) => i.name === '아이디')?.value === user?.id || b.store_id === storeId)
+        b.items?.find((i: any) => i.name === '권한')?.value === 'owner' &&
+        (b.items?.find((i: any) => i.name === '아이디')?.value === user?.id || b.store_id === storeId)
       );
 
       if (ownerSignupBundle) {
-        const rawRegNo = ownerSignupBundle.items.find((i: any) => i.name === '사업자번호')?.value || '';
+        const rawRegNo = ownerSignupBundle.items?.find((i: any) => i.name === '사업자번호')?.value || '';
         const cleanRegNo = rawRegNo.replace(/[^0-9]/g, '');
         const formattedRegNo = cleanRegNo.length === 10 
           ? `${cleanRegNo.slice(0, 3)}-${cleanRegNo.slice(3, 5)}-${cleanRegNo.slice(5)}`
@@ -54,11 +54,11 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
           brand:    ownerSignupBundle.store || storeName || '',
           regNo:    formattedRegNo,
           address:  '',
-          owner:    ownerSignupBundle.items.find((i: any) => i.name === '이름')?.value || user?.name || '',
+          owner:    ownerSignupBundle.items?.find((i: any) => i.name === '이름')?.value || user?.name || '',
           bankName: '',
           accountNo: '',
           accountHolder: ownerSignupBundle.store || '',
-          openDate: ownerSignupBundle.items.find((i: any) => i.name === '개업일자')?.value || '',
+          openDate: ownerSignupBundle.items?.find((i: any) => i.name === '개업일자')?.value || '',
           isVerified: true, // 관리자가 승인한 점주 가입건이므로 국세청 검증을 이미 마친 신뢰 상태로 자동 마킹합니다.
           bundleId: `store-config-${storeId}`
         });

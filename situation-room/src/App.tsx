@@ -76,7 +76,7 @@ function App() {
   
   // 지식 번들에서 상호명을 찾아 storeName 업데이트 (필요한 경우)
   const storeBundle = safeBundles.find(b => b.type === 'StoreConfig' && (b.store_id === storeId || !b.store_id));
-  const resolvedStoreName = storeBundle?.items.find(i => i.name === '상호명' || i.name === 'brand')?.value || initialStoreName || '우리식당';
+  const resolvedStoreName = storeBundle?.items?.find(i => i.name === '상호명' || i.name === 'brand')?.value || initialStoreName || '우리식당';
 
   // storeName이 변경되었으면 동기화
   useEffect(() => {

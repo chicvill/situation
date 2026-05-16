@@ -41,9 +41,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   // 매장 계좌 정보
   const storeBundle = bundles?.find(b => b.type === 'StoreConfig');
   const bankInfo = {
-    name:    storeBundle?.items.find(i => i.name === '은행명')?.value    || '국민은행',
-    account: storeBundle?.items.find(i => i.name === '계좌번호')?.value  || '123-456789-01-012',
-    holder:  storeBundle?.items.find(i => i.name === '예금주')?.value    || '매장',
+    name:    storeBundle?.items?.find(i => i.name === '은행명')?.value    || '국민은행',
+    account: storeBundle?.items?.find(i => i.name === '계좌번호')?.value  || '123-456789-01-012',
+    holder:  storeBundle?.items?.find(i => i.name === '예금주')?.value    || '매장',
   };
 
   // 부모 동기화

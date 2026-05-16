@@ -127,7 +127,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     }
     const safeBundles = Array.isArray(bundles) ? bundles : [];
     const storeBundle = safeBundles.find(b => b.type === 'StoreConfig' && (b.store_id === storeId || !b.store_id));
-    const resolved = storeBundle?.items.find((i: any) => i.name === '상호명' || i.name === 'brand')?.value;
+    const resolved = storeBundle?.items?.find((i: any) => i.name === '상호명' || i.name === 'brand')?.value;
     return resolved || initialStoreName || '우리식당';
   }, [bundles, storeId, initialStoreName]);
 
