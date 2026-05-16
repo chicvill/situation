@@ -330,7 +330,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                     </div>
                 ) : (
                     Array.isArray(sessions) && sessions.map((session) => {
-                        const activeOrders = session.orders.filter((o: any) => o.status !== 'cancelled');
+                        const activeOrders = (session.orders || []).filter((o: any) => o.status !== 'cancelled');
                         const sessionTotal = activeOrders.reduce((sum: number, o: any) => sum + o.total_price, 0);
                         const unpaidTotal = activeOrders
                             .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
@@ -375,7 +375,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                 승인 대기 중
                                             </span>
                                         )}
-                                        {session.orders.some((o: any) => o.status === 'ready') && (
+                                        {(session.orders || []).some((o: any) => o.status === 'ready') && (
                                             <span style={{ 
                                                 width: 'fit-content',
                                                 background: 'linear-gradient(135deg, #10b981, #059669)', 
@@ -399,7 +399,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                    {session.orders.filter((order: any) => order.status !== 'cancelled').map((order: any) => (
+                                    {(session.orders || []).filter((order: any) => order.status !== 'cancelled').map((order: any) => (
                                         <div key={order.order_id} style={{ 
                                             background: 'var(--primary-soft)', 
                                             borderRadius: 'var(--radius-md)', 
@@ -564,7 +564,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                         }}>
                                             {unpaidTotal > 0
                                                 ? `${unpaidTotal.toLocaleString()}원`
-                                                : session.orders.length === 0
+                                                : (session.orders || []).length === 0
                                                     ? '활성화'
                                                     : '결제 완료'}
                                         </div>
@@ -590,7 +590,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                             {isAllPrepaid ? (
                                                 <button 
                                                     onClick={async () => {
-                                                        const confirmMsg = session.orders.length > 0 
+                                                        const confirmMsg = (session.orders || []).length > 0 
                                                             ? '모든 주문의 결제가 완료되었습니다. 테이블 세션을 종료하고 초기화하시겠습니까?' 
                                                             : '주문 내역이 없는 테이블입니다. 세션을 종료하고 초기화하시겠습니까?';
                                                         if (window.confirm(confirmMsg)) {
@@ -615,7 +615,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                     }}
                                                     style={{ background: 'var(--accent)', border: 'none', color: 'white', padding: '10px 32px', borderRadius: 'var(--radius-sm)', fontWeight: '600', fontSize: '1rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
                                                 >
-                                                    {session.orders.length === 0 ? '세션 종료' : '결제완료'}
+                                                    {(session.orders || []).length === 0 ? '세션 종료' : '결제완료'}
                                                 </button>
                                             ) : (
                                                 <button 

@@ -13,7 +13,11 @@ export const KitchenDisplay: React.FC = () => {
             const apiUrl = API_BASE;
             const res = await fetch(`${apiUrl}/api/kitchen/orders?store_id=${storeId || "Total"}`);
             const data = await res.json();
-            setBundles(data); // data는 이미 필터링된 주문 리스트임
+            if (Array.isArray(data)) {
+                setBundles(data);
+            } else {
+                setBundles([]);
+            }
         } catch (e) {
             console.error('Kitchen Fetch Error:', e);
         }

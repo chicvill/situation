@@ -181,7 +181,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
     if (!menuBundle) return [];
     
-    return menuBundle.items?.map((item: any) => {
+    return (menuBundle.items || []).map((item: any) => {
         const priceNum = typeof item.value === 'number'
             ? item.value
             : (parseInt(String(item.value || '').replace(/[^0-9]/g, '')) || 0);
@@ -250,7 +250,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     });
   }, [bundles, storeId, storeName]);
 
-  const categories = useMemo(() => ['전체', ...new Set(menus.map(m => m.category))], [menus]);
+  const categories = useMemo(() => ['전체', ...new Set((menus || []).map(m => m.category))], [menus]);
   const totalPrice = useMemo(() => cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0), [cart]);
 
   // --- Session State Machine ---
@@ -1118,7 +1118,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
         </div>
 
         <div className="menu-grid-v2">
-          {menus.filter(m => activeCategory === '전체' || m.category === activeCategory).map((item, idx) => {
+          {(menus || []).filter(m => activeCategory === '전체' || m.category === activeCategory).map((item, idx) => {
             const cartItem = cart.find(c => c.name === item.name);
             return (
               <div key={idx} className="menu-card-v2" onClick={() => addToCart(item)}>

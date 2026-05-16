@@ -43,7 +43,7 @@ export const DisplayBoard: React.FC<DisplayBoardProps> = ({ bundles }) => {
 
     // 주문에서 유효한 메뉴 목록만 추출하는 헬퍼 함수
     const getMenuItems = (order: BundleData) => {
-        return order.items.filter(item => {
+        return (order.items || []).filter(item => {
             const lowerName = item.name.toLowerCase();
             const excludeKeywords = [
                 '결제수단', '테이블', 'table', 'brand', '상호명', 
