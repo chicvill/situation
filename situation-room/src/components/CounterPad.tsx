@@ -56,7 +56,7 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId, bu
             ].includes(data.type)) {
                 fetchSessions();
             }
-            if (data.type === 'JOIN_REQUEST') {
+            if (data.type === 'JOIN_REQUEST' || data.type === 'JOIN_CHECKIN' || data.type === 'CHECKIN_REQUEST' || data.type === 'JOIN_SESSION') {
                 // Normalize table_id (e.g. "3" -> "T03", "T3" -> "T03")
                 let tid = String(data.table_id || "").toUpperCase();
                 if (tid) {

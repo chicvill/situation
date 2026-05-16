@@ -172,7 +172,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                 return;
             }
 
-            if (data.type === 'JOIN_REQUEST') {
+            if (data.type === 'JOIN_REQUEST' || data.type === 'JOIN_CHECKIN' || data.type === 'CHECKIN_REQUEST' || data.type === 'JOIN_SESSION') {
                 console.log(`[CHECKPOINT - 매칭] JOIN_REQUEST 처리됨`);
                 let tid = String(data.table_id || "").toUpperCase();
                 if (!tid.startsWith('T')) tid = `T${tid.padStart(2, '0')}`;
@@ -180,7 +180,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
 
                 const newJoin: BundleData = {
                     id: `SESS-${data.session_id}-${Date.now()}`,
-                    type: 'Orders', // Orders 타입으로 설정하여 주방/카운터 목록에 노출
+                    type: 'Checkins', // 합류 전용 타입으로 설정하여 일반 주문과 구분
                     title: `👥 [합류 요청] 테이블 ${tid}`,
                     table_id: tid,
                     session_id: data.session_id,
@@ -214,17 +214,24 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             console.warn(`[CHECKPOINT - 🚨 누락 경고 🚨] 어떤 조건에도 맞지 않아 화면에 반영되지 않은 메시지!`, data);
         };
 
-        const unsubscribe1 = subscribeTopic(topic, messageHandler);
+        const handleMessage = (data: any) => {
+            if (data.store_id && storeId && storeId !== 'Total' && data.store_id !== storeId) return;
+            messageHandler(data);
+        };
+
+        const unsubscribe1 = subscribeTopic(topic, handleMessage);
+        const unsubscribe3 = subscribeTopic('situation/kitchen', handleMessage);
         let unsubscribe2 = () => {};
         
         // 특정 매장 구독인 경우, store_id가 누락된 공통 브로드캐스트 메시지도 놓치지 않도록 추가 구독
-        if (topic !== 'store/+/kitchen') {
-            unsubscribe2 = subscribeTopic('store/broadcast/kitchen', messageHandler);
+        if (storeId && storeId !== 'Total') {
+            unsubscribe2 = subscribeTopic('store/broadcast/kitchen', handleMessage);
         }
 
         return () => {
             unsubscribe1();
             unsubscribe2();
+            unsubscribe3();
         };
     }, []);
 

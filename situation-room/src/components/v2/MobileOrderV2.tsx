@@ -1210,10 +1210,10 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     const statusMsg = sessionPhase === 'loading'
       ? '연결 확인 중...'
       : sessionPhase === 'waiting_approval'
-      ? '합류 승인 대기 중...'
+      ? '일행 확인 중...'
       : '카운터 테이블 활성화 대기 중...';
     const subText = sessionPhase === 'waiting_approval'
-      ? '카운터 또는 일행의 승인 후 주문이 가능합니다.'
+      ? '기존 이용 중인 일행의 합류 승인을 기다리고 있습니다. 잠시만 기다려 주세요!'
       : '좌석 확인이 완료되면 자동으로 메뉴판이 활성화됩니다.';
     return (
       <div className="mobile-v2-container flex-center">
