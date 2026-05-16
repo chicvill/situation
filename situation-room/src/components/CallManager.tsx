@@ -78,8 +78,7 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
     useEffect(() => {
         fetchCalls();
 
-        // MQTT situation/kitchen 구독으로 직원 호출 실시간 수신
-        const unsubscribe = subscribeTopic('situation/kitchen', (data) => {
+        const handleMessage = (data: any) => {
             if (data.type === 'STAFF_CALL') {
                 if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) {
                     return;
@@ -102,7 +101,7 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
                 } catch (_) {}
             } else if (['JOIN_REQUEST', 'JOIN_CHECKIN', 'CHECKIN_REQUEST', 'JOIN_SESSION'].includes(data.type)) {
                 if (storeId && storeId !== 'Total' && data.store_id && data.store_id !== storeId) return;
-                
+
                 let tid = String(data.table_id || "").toUpperCase();
                 if (!tid.startsWith('T')) tid = `T${tid.padStart(2, '0')}`;
                 else if (tid.length === 2) tid = `T${tid.substring(1).padStart(2, '0')}`;
@@ -133,9 +132,14 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [] 
                 const callIdMatch = `JOIN-${data.session_id}-${data.device_id}`;
                 setCalls(prev => prev.filter(c => c.call_id !== callIdMatch));
             }
-        });
+        };
 
-        return unsubscribe;
+        // situation/kitchen 과 store 토픽 모두 구독 (JOIN_REQUEST는 store 토픽으로 발행됨)
+        const unsubscribe1 = subscribeTopic('situation/kitchen', handleMessage);
+        const storeTopic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : `store/+/kitchen`;
+        const unsubscribe2 = subscribeTopic(storeTopic, handleMessage);
+
+        return () => { unsubscribe1(); unsubscribe2(); };
     }, [storeId]);
 
     useEffect(() => {

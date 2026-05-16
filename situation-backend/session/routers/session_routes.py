@@ -34,24 +34,33 @@ async def check_in(data: Dict):
 
     # 현재 세션의 전체 주문 내역 조회
     orders = get_orders_by_session(active['session_id'])
-    
+
     existing_device = active.get('device_id') or ''
-    
+
     # [핵심 로직] 동일 기기 재접속 OR 이미 해당 세션에 주문 이력이 있는 기기라면 즉시 active 판정
     # (합류 승인을 받았거나 이미 주문을 마친 손님이 새로고침했을 때 '대기 중'에 갇히는 현상 방지)
     device_has_orders = any(str(o.get('device_id')) == str(device_id) for o in orders)
 
-    if existing_device == '' or existing_device == device_id or device_has_orders:
+    # 카운터 승인으로 허가된 기기인지 확인 (approve_join이 metadata에 저장)
+    try:
+        raw_meta = active.get('metadata') or {}
+        metadata = json.loads(raw_meta) if isinstance(raw_meta, str) else dict(raw_meta)
+    except Exception:
+        metadata = {}
+    device_is_approved = device_id in metadata.get('approved_devices', [])
+
+    if existing_device == '' or existing_device == device_id or device_has_orders or device_is_approved:
         if existing_device == '' and device_id:
             update_session_device_id(active['session_id'], device_id)
         return {"status": "active", "session": active, "orders": orders}
 
-    # 다른 기기 → 더치페이 합류 승인 요청
+    # 다른 기기 → 더치페이 합류 승인 요청 (store_id 포함해야 올바른 MQTT 토픽으로 전달됨)
     msg = {
         "type": "JOIN_REQUEST",
         "device_id": device_id,
         "session_id": active['session_id'],
-        "table_id": table_id
+        "table_id": table_id,
+        "store_id": store_id
     }
     await manager.send_to_table(table_id, msg)
     await manager.broadcast_to_kitchen(msg)
@@ -202,6 +211,33 @@ async def approve_join(data: Dict):
 
     if not session_id or not target_device_id or not table_id:
         raise HTTPException(status_code=400, detail="Missing required fields")
+
+    # 승인된 경우 DB에 기기 ID 저장 → 이후 check-in 폴링에서도 active 반환되도록 함
+    if approved:
+        session = get_session_by_id(session_id)
+        if session:
+            try:
+                raw_meta = session.get('metadata') or {}
+                metadata = json.loads(raw_meta) if isinstance(raw_meta, str) else dict(raw_meta)
+            except Exception:
+                metadata = {}
+            approved_devices = metadata.get('approved_devices', [])
+            if target_device_id not in approved_devices:
+                approved_devices.append(target_device_id)
+                metadata['approved_devices'] = approved_devices
+                conn = get_db_conn()
+                if conn:
+                    try:
+                        cur = conn.cursor()
+                        cur.execute(
+                            "UPDATE table_sessions SET metadata = %s WHERE session_id = %s",
+                            (json.dumps(metadata), session_id)
+                        )
+                        conn.commit()
+                        cur.close()
+                        conn.close()
+                    except Exception as e:
+                        print(f"approve_join metadata update error: {e}")
 
     msg = {
         "type": "JOIN_RESPONSE",
