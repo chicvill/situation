@@ -720,21 +720,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                             </div>
                         )}
                         
-                        <div style={{ color: '#0f172a', fontWeight: msg.sender === 'user' ? 600 : 500 }}>
-                            {msg.sender === 'ai'
-                                ? msg.text.split('\n').map((line: string, i: number, arr: string[]) => {
-                                    const isOption = /^\s*\d+[.)]\s/.test(line);
-                                    return (
-                                        <span key={i}>
-                                            {isOption
-                                                ? <strong style={{ color: '#ca8a04', fontWeight: 800 }}>{line}</strong>
-                                                : line}
-                                            {i < arr.length - 1 && '\n'}
-                                        </span>
-                                    );
-                                })
-                                : msg.text}
-                        </div>
+                        <div style={{ color: '#0f172a', fontWeight: msg.sender === 'user' ? 600 : 500 }}>{msg.text}</div>
 
                         {/* --- Dynamic Conversational Elements --- */}
 
