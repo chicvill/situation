@@ -238,7 +238,6 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
         const unsubscribe3 = subscribeTopic('situation/kitchen', handleMessage);
         let unsubscribe2 = () => {};
         
-        // 특정 매장 구독인 경우, store_id가 누락된 공통 브로드캐스트 메시지도 놓치지 않도록 추가 구독
         if (storeId && storeId !== 'Total') {
             unsubscribe2 = subscribeTopic('store/broadcast/kitchen', handleMessage);
         }
@@ -248,7 +247,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             unsubscribe2();
             unsubscribe3();
         };
-    }, []);
+    }, [storeId, fetchInitialData]); // storeId 의존성 추가
 
     // API Situation Handler
     const handleSendMessage = useCallback(async (text: string, targetId?: string, context?: string, overrideStoreId?: string, overrideStoreName?: string) => {
