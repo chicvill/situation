@@ -161,8 +161,11 @@ def update_call_status(call_id: str, status: str):
     if not conn: return False
     try:
         cur = conn.cursor()
-        cur.execute("UPDATE table_calls SET status = %(status)s WHERE call_id = %(call_id)s",
-                   {'status': status, 'call_id': call_id})
+        if status in ('completed', 'cancelled'):
+            cur.execute("DELETE FROM table_calls WHERE call_id = %(call_id)s", {'call_id': call_id})
+        else:
+            cur.execute("UPDATE table_calls SET status = %(status)s WHERE call_id = %(call_id)s",
+                       {'status': status, 'call_id': call_id})
         conn.commit()
         cur.close()
         conn.close()
