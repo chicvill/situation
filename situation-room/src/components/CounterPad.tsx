@@ -23,7 +23,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const [sessions, setSessions] = useState<any[]>([]);
     const [selectedSessionForPay, setSelectedSessionForPay] = useState<any | null>(null);
     const [selectedOrderForPay, setSelectedOrderForPay] = useState<any | null>(null);
-    const [pendingJoins, setPendingJoins] = useState<Record<string, any[]>>({});
 
     const fetchSessions = useCallback(async () => {
         try {
@@ -56,32 +55,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             ].includes(data.type)) {
                 fetchSessions();
             }
-            if (data.type === 'JOIN_REQUEST' || data.type === 'JOIN_CHECKIN' || data.type === 'CHECKIN_REQUEST' || data.type === 'JOIN_SESSION') {
-                // Normalize table_id (e.g. "3" -> "T03", "T3" -> "T03")
-                let tid = String(data.table_id || "").toUpperCase();
-                if (tid) {
-                    if (!tid.startsWith('T')) {
-                        tid = `T${tid.padStart(2, '0')}`;
-                    } else if (tid.length === 2) {
-                        tid = `T${tid.substring(1).padStart(2, '0')}`;
-                    }
-                    
-                    setPendingJoins(prev => ({
-                        ...prev,
-                        [tid]: [...(prev[tid] || []), data]
-                    }));
-                }
-            }
-            if (data.type === 'JOIN_RESPONSE') {
-                let tid = String(data.table_id || "").toUpperCase();
-                if (!tid.startsWith('T')) tid = `T${tid.padStart(2, '0')}`;
-                else if (tid.length === 2) tid = `T${tid.substring(1).padStart(2, '0')}`;
-
-                setPendingJoins(prev => {
-                    const tableRequests = (prev[tid] || []).filter(r => r.device_id !== data.device_id);
-                    return { ...prev, [tid]: tableRequests };
-                });
-            }
         };
 
         const unsubscribe1 = subscribeTopic(topic, messageHandler);
@@ -101,29 +74,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     }, [bundles, fetchSessions]); // fetchSessions 의존성 추가
 
 
-    useEffect(() => {
-        // Sync pending joins from bundles (persisted data)
-        const joinRequests = bundles.filter(b => 
-            (b.type === 'Checkins' || b.type === 'PersonalInfos') && 
-            b.status === 'pending' && 
-            (b.id.startsWith('join-') || b.id.startsWith('SESS-'))
-        );
-        const newJoins: Record<string, any[]> = {};
-        
-        joinRequests.forEach(b => {
-            let tid = String(b.table_id || "").toUpperCase();
-            if (tid) {
-                if (!tid.startsWith('T')) tid = `T${tid.padStart(2, '0')}`;
-                else if (tid.length === 2) tid = `T${tid.substring(1).padStart(2, '0')}`;
-                
-                const deviceId = b.items?.find((i: any) => i.name === '기기ID')?.value;
-                if (!newJoins[tid]) newJoins[tid] = [];
-                newJoins[tid].push({ table_id: tid, device_id: deviceId, session_id: b.session_id });
-            }
-        });
-        
-        setPendingJoins(prev => ({ ...prev, ...newJoins }));
-    }, [bundles]);
 
     const handleStatusUpdate = async (orderId: string, status: string) => {
         try {
@@ -139,31 +89,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         }
     };
 
-    const handleApproveJoin = async (tableId: string, sessionId: string, deviceId: string, approved: boolean) => {
-        try {
-            const apiUrl = getApiUrl();
-            const res = await fetch(`${apiUrl}/api/session/approve-join`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    session_id: sessionId,
-                    device_id: deviceId,
-                    table_id: tableId,
-                    approved
-                })
-            });
-            if (!res.ok) throw new Error('Approval failed');
-            
-            // 승인 성공 시 로컬 상태에서 즉시 제거 (즉각적인 UI 반응 제공)
-            setPendingJoins(prev => {
-                const tableRequests = (prev[tableId] || []).filter(r => r.device_id !== deviceId);
-                return { ...prev, [tableId]: tableRequests };
-            });
-        } catch (e) {
-            console.error('Join Approval Error:', e);
-            alert('승인 처리 중 오류가 발생했습니다.');
-        }
-    };
 
     const handleCloseSession = async (sessionId: string) => {
         try {
