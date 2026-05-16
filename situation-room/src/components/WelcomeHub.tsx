@@ -394,7 +394,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
     b => b.type === 'Menus' &&
     (b.store_id === user?.storeId || b.store === storeName) &&
     Array.isArray(b.items) &&
-    b.items.length > 0
+    (b.items?.length || 0) > 0
   );
 
   const isStep4Done = isStep1Done && bundles.some(

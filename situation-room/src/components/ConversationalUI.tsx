@@ -139,7 +139,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
             return [];
         }
 
-        console.log(`ConversationalUI: Found ${menuBundle.items.length} menu items for ${menuBundle.store}`);
+        console.log(`ConversationalUI: Found ${menuBundle.items?.length || 0} menu items for ${menuBundle.store}`);
         
         const getFallbackImage = (item: any) => {
             const cat = String(item.category || '').toLowerCase();

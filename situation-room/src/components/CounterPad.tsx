@@ -418,7 +418,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                 </div>
                                             </div>
                                             <div style={{ fontSize: '1.05rem', fontWeight: '500', marginBottom: '15px', color: 'var(--text-main)', lineHeight: 1.5 }}>
-                                                {order.items.map((item: any, i: number) => (
+                                                {(order.items || []).map((item: any, i: number) => (
                                                     <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                                         <span>{item.name}</span>
                                                         {(order.payment_status === 'prepaid' || order.payment_status === 'paid') ? (
@@ -437,7 +437,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--border)' }}>
                                                                 <button 
                                                                     onClick={() => {
-                                                                        const newItems = [...order.items];
+                                                                        const newItems = [...(order.items || [])];
                                                                         newItems[i] = { ...item, quantity: Math.max(0, (item.quantity || item.qty || 0) - 1) };
                                                                         handleUpdateOrderItem(order.order_id, newItems);
                                                                     }}
@@ -446,7 +446,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                                 <span style={{ fontWeight: '700', minWidth: '20px', textAlign: 'center' }}>{item.quantity || item.qty}</span>
                                                                 <button 
                                                                     onClick={() => {
-                                                                        const newItems = [...order.items];
+                                                                        const newItems = [...(order.items || [])];
                                                                         newItems[i] = { ...item, quantity: (item.quantity || item.qty || 0) + 1 };
                                                                         handleUpdateOrderItem(order.order_id, newItems);
                                                                     }}
@@ -454,7 +454,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                                 >+</button>
                                                                 <button 
                                                                     onClick={() => {
-                                                                        const newItems = order.items.filter((_: any, idx: number) => idx !== i);
+                                                                        const newItems = (order.items || []).filter((_: any, idx: number) => idx !== i);
                                                                         handleUpdateOrderItem(order.order_id, newItems);
                                                                     }}
                                                                     style={{ marginLeft: '4px', background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: '12px' }}

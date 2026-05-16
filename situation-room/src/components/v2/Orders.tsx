@@ -76,7 +76,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
     const menuBundle = safeBundles.find(b => b.type === 'Menus' && (b.store_id === storeId || !b.store_id));
     if (!menuBundle) return [];
     
-    return menuBundle.items.map((item: any) => {
+    return menuBundle.items?.map((item: any) => {
         const priceNum = typeof item.value === 'number'
             ? item.value
             : (parseInt(String(item.value || '').replace(/[^0-9]/g, '')) || 0);
@@ -473,7 +473,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
                   <span style={{ color: borderColor, fontWeight: 800 }}>{order.order_seq}차 주문 {isPaid && ' (결제완료)'}</span>
                   <span style={{ color: borderColor, fontWeight: 900 }}>{order.status === 'cooking' ? '🔥 조리중' : '✅ 서빙완료'}</span>
                 </div>
-                {order.items.map((item: OrderItem, i: number) => {
+                {order.items?.map((item: OrderItem, i: number) => {
                   const qty = item.quantity || item.qty || 0;
                   const isPending = order.status === 'pending' || order.status === 'pending_payment';
                   return (
@@ -485,18 +485,18 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
                       {isPending ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '8px' }}>
                           <button onClick={() => {
-                            const newItems = [...order.items];
+                            const newItems = [...(order.items || [])];
                             newItems[i] = { ...item, quantity: Math.max(0, qty - 1) };
                             handleUpdateOrderItem(order.order_id, newItems);
                           }} style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '14px' }}>-</button>
                           <span style={{ fontWeight: 800, minWidth: '15px', textAlign: 'center' }}>{qty}</span>
                           <button onClick={() => {
-                            const newItems = [...order.items];
+                            const newItems = [...(order.items || [])];
                             newItems[i] = { ...item, quantity: qty + 1 };
                             handleUpdateOrderItem(order.order_id, newItems);
                           }} style={{ background: 'none', border: 'none', color: '#f97316', fontSize: '14px' }}>+</button>
                           <button onClick={() => {
-                            const newItems = order.items.filter((_: OrderItem, idx: number) => idx !== i);
+                            const newItems = (order.items || []).filter((_: OrderItem, idx: number) => idx !== i);
                             handleUpdateOrderItem(order.order_id, newItems);
                           }} style={{ marginLeft: '5px', background: 'none', border: 'none', color: '#ef4444', fontSize: '10px' }}>✕</button>
                         </div>

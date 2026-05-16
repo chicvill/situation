@@ -45,7 +45,7 @@ export const BucketManager: React.FC<Props> = ({ bundles }) => {
               <span className="bucket-time">{bundle.timestamp}</span>
             </div>
             <div className="bucket-content">
-              {bundle.items.map((item, index) => (
+              {bundle.items?.map((item, index) => (
                 <div key={index} className="bundle-item">
                   <span className="item-name">{item.name || JSON.stringify(item)}</span>
                   {item.value && <span className="item-value">{item.value}</span>}

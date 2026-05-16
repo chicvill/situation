@@ -21,7 +21,7 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate, onN
         const menuBundle = bundles.find(b => b.type === 'Menus' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
         if (menuBundle) {
             setBundleId(menuBundle.id);
-            setMenuItems(menuBundle.items.map(item => ({
+            setMenuItems((menuBundle.items || []).map(item => ({
                 ...item,
                 value: typeof item.value === 'number' ? String(item.value) : String(item.value || '').replace(/원/g, '').trim(), // '원' 중복 노출 방지를 위해 제거
                 icon: (item as any).icon || '🍴',

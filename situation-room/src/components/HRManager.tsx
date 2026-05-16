@@ -82,7 +82,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         setIsProcessing(true);
         try {
             const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-            const updatedItems = bundle.items.map((i) =>
+            const updatedItems = (bundle.items || []).map((i) =>
                 i.name === '시급' ? { ...i, value: newWage.replace(/[^0-9]/g, '') } : i
             );
             await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
@@ -101,7 +101,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         try {
             const cleanPhone = newPhone.replace(/[^0-9-]/g, '').trim();
             const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-            const updatedItems = bundle.items.map((i) =>
+            const updatedItems = (bundle.items || []).map((i) =>
                 i.name === '아이디' ? { ...i, value: cleanPhone } : i
             );
             if (!updatedItems.find((i) => i.name === '아이디')) {
