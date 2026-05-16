@@ -47,7 +47,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
         const messageHandler = (data: any) => {
             console.log(`[CHECKPOINT - 수신] MQTT 메시지 도착 (type: ${data.type}):`, data);
             
-            const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins'];
+            const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins', 'Reservations', 'Analysis'];
             
             if (data.id && typeof data.type === 'string' && bundleTypes.includes(data.type)) {
                 console.log(`[CHECKPOINT - 매칭] 기존 bundleTypes로 처리됨: ${data.type}`);
@@ -169,6 +169,24 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
                     store_id: data.store_id ? String(data.store_id) : undefined
                 };
                 setBundles(prev => [newParking, ...(Array.isArray(prev) ? prev : [])]);
+                return;
+            }
+
+            if (data.type === 'JOIN_REQUEST') {
+                console.log(`[CHECKPOINT - 매칭] JOIN_REQUEST 처리됨`);
+                const newJoin: BundleData = {
+                    id: `SESS-${data.session_id}-${Date.now()}`,
+                    type: 'Orders', // Orders 타입으로 설정하여 주방/카운터 목록에 노출
+                    title: `합류 승인 대기 (${data.table_id})`,
+                    table_id: data.table_id,
+                    timestamp: new Date().toLocaleTimeString(),
+                    items: [
+                        { name: '요청 기기', value: String(data.device_id || '') },
+                        { name: '테이블 번호', value: String(data.table_id || '') }
+                    ],
+                    status: 'pending'
+                };
+                setBundles(prev => [newJoin, ...(Array.isArray(prev) ? prev : [])]);
                 return;
             }
 

@@ -20,6 +20,8 @@ export interface BundleData {
   device_id?: string;
   store_id?: string;
   store?: string;
+  table_id?: string;
+  session_id?: string;
 }
 
 export interface Message {

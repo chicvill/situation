@@ -82,12 +82,12 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
         {
             title: "🛎️ 웨이팅 등록",
             label: "WT",
-            data: `${baseUrl}/?mode=waiting&action=register&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
+            data: `${baseUrl}/?mode=waiting&action=register&table=99&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
         },
         {
             title: "📅 실시간 예약 신청",
             label: "RS",
-            data: `${baseUrl}/?mode=reserve&action=register&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
+            data: `${baseUrl}/?mode=reserve&action=register&table=98&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
         },
         {
             title: "👥 직원 출퇴근",
@@ -379,7 +379,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                             <div className="qr-image-wrapper-v2" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: printMode === 'single' ? '4px' : '10px', width: printMode === 'single' ? '90px' : '160px', height: printMode === 'single' ? '90px' : '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <img src={getQRUri(`${baseUrl}/?mode=customer&table=${item.num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`)} alt={`${item.label} QR`} style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }} />
                             </div>
-                            <div className="qr-badge-v2" style={{ background: 'var(--accent-orange)', color: 'white', borderRadius: '50px', padding: printMode === 'single' ? '2px 8px' : '4px 15px', fontSize: printMode === 'single' ? '0.65rem' : '0.85rem', fontWeight: '900', marginTop: printMode === 'single' ? '8px' : '15px', letterSpacing: '0.5px' }}>{`T${String(item.num).padStart(2, '0')}`}</div>
+                            <div className="qr-badge-v2" style={{ background: 'var(--accent-orange)', color: 'white', borderRadius: '50px', padding: printMode === 'single' ? '2px 8px' : '4px 15px', fontSize: printMode === 'single' ? '0.65rem' : '0.85rem', fontWeight: '900', marginTop: printMode === 'single' ? '8px' : '15px', letterSpacing: '0.5px' }}>{`T${String(item.num).padStart(2, '0')}[${item.seats.replace(/[^0-9]/g, '')}]`}</div>
                             {printMode !== 'single' && <div className="qr-url-text" style={{ fontSize: '0.7rem', color: '#64748b', wordBreak: 'break-all', marginTop: '12px', fontFamily: 'monospace', maxWidth: '200px' }}>{`${baseUrl}/?mode=customer&table=${item.num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`}</div>}
                         </div>
                     ))}
