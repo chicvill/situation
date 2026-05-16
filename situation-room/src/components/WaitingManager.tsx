@@ -8,6 +8,7 @@ interface WaitingManagerProps {
     onSendMessage: (text: string, store_id: string, storeName: string) => void;
 }
 
+
 export const WaitingManager: React.FC<WaitingManagerProps> = ({ bundles, onSendMessage }) => {
     const { storeId, storeName } = useStoreFilter();
     const params = new URLSearchParams(window.location.search);
