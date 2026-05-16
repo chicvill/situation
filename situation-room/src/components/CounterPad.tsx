@@ -50,9 +50,9 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId, bu
         
         const messageHandler = (data: any) => {
             if ([
-                'NEW_ORDER', 'STATUS_UPDATE', 'ORDER_UPDATED',
+                'NEW_ORDER', 'STATUS_UPDATE', 'ORDER_UPDATED', 'ORDER_PLACED', 'NEW_ORDER_DIRECT',
                 'SESSION_CLOSED', 'PAYMENT_CONFIRMED', 'PARTIAL_SETTLEMENT',
-                'STAFF_CALL', 'PARKING_APPLIED', 'WAITING_REGISTERED'
+                'STAFF_CALL', 'PARKING_APPLIED', 'WAITING_REGISTERED', 'SESSION_OPENED'
             ].includes(data.type)) {
                 fetchSessions();
             }
@@ -85,13 +85,20 @@ export const CounterPad: React.FC<CounterPadProps> = ({ storeId: propStoreId, bu
         };
 
         const unsubscribe1 = subscribeTopic(topic, messageHandler);
-        const unsubscribe2 = (storeId && storeId !== 'Total') ? subscribeTopic('store/broadcast/kitchen', messageHandler) : () => {};
+        const unsubscribe2 = subscribeTopic('situation/kitchen', messageHandler);
+        const unsubscribe3 = (storeId && storeId !== 'Total') ? subscribeTopic('store/broadcast/kitchen', messageHandler) : () => {};
 
         return () => {
             unsubscribe1();
             unsubscribe2();
+            unsubscribe3();
         };
     }, [storeId]);
+
+    useEffect(() => {
+        // Refetch detailed sessions whenever global bundles update (fallback for MQTT misses)
+        fetchSessions();
+    }, [bundles]);
 
 
     useEffect(() => {
