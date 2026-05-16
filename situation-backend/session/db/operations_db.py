@@ -59,8 +59,11 @@ def update_waiting_status(waiting_id: str, status: str):
     if not conn: return False
     try:
         cur = conn.cursor()
-        cur.execute("UPDATE table_waitings SET status = %(status)s WHERE waiting_id = %(waiting_id)s",
-                   {'status': status, 'waiting_id': waiting_id})
+        if status in ('finished', 'cancelled', 'canceled'):
+            cur.execute("DELETE FROM table_waitings WHERE waiting_id = %(waiting_id)s", {'waiting_id': waiting_id})
+        else:
+            cur.execute("UPDATE table_waitings SET status = %(status)s WHERE waiting_id = %(waiting_id)s",
+                       {'status': status, 'waiting_id': waiting_id})
         conn.commit()
         cur.close()
         conn.close()
