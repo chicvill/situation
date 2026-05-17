@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch } from '../utils/apiFetch';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 import type { Bundle, EmployeeDetail, PayrollInfo } from './hr/types';
 import { useAttendance } from './hr/useAttendance';
@@ -67,13 +68,11 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         if (!newWage) return setEditingWage(null);
         setIsProcessing(true);
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
             const updatedItems = (bundle.items || []).map((i) =>
                 i.name === '시급' ? { ...i, value: newWage.replace(/[^0-9]/g, '') } : i
             );
-            await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
+            await apiFetch(`/api/bundle/${bundle.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...bundle, items: updatedItems, store: storeName, store_id: storeId }),
             });
             setEditingWage(null);
@@ -86,16 +85,14 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         setIsProcessing(true);
         try {
             const cleanPhone = newPhone.replace(/[^0-9-]/g, '').trim();
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
             const updatedItems = (bundle.items || []).map((i) =>
                 i.name === '아이디' ? { ...i, value: cleanPhone } : i
             );
             if (!updatedItems.find((i) => i.name === '아이디')) {
                 updatedItems.push({ name: '아이디', value: cleanPhone });
             }
-            await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
+            await apiFetch(`/api/bundle/${bundle.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...bundle, items: updatedItems, store: storeName, store_id: storeId }),
             });
             setEditingPhone(null);
@@ -109,8 +106,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         if (!window.confirm('이 근태 기록을 삭제하시겠습니까? (삭제 시 복구할 수 없으며 타임라인과 DB 모두에서 제거됩니다.)')) return;
 
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-            const response = await fetch(`${apiUrl}/api/bundle/${bundleId}`, {
+            const response = await apiFetch(`/api/bundle/${bundleId}`, {
                 method: 'DELETE'
             });
             if (!response.ok) {
@@ -125,10 +121,8 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         if (!window.confirm(`${bundle.title} 사원의 퇴사 처리를 진행하시겠습니까? 로그인 권한이 즉시 차단됩니다.`)) return;
         setIsProcessing(true);
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-            await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
+            await apiFetch(`/api/bundle/${bundle.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...bundle, status: 'resigned', store: storeName, store_id: storeId }),
             });
             alert('🚫 퇴사 처리가 완료되었습니다.');
@@ -139,10 +133,8 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         if (!window.confirm(`${bundle.title} 계정을 승인하시겠습니까?`)) return;
         setIsProcessing(true);
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-            await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
+            await apiFetch(`/api/bundle/${bundle.id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...bundle, status: 'approved', store: storeName, store_id: storeId }),
             });
             alert('✅ 계정이 승인되었습니다.');
@@ -153,10 +145,8 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         if (!window.confirm(`💰 ${name} 사원에게 쌓인 모든 미지급 임금을 정상 지급 완료 처리하시겠습니까?`)) return;
         setIsProcessing(true);
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-            const response = await fetch(`${apiUrl}/api/attendance/pay/${staffId}`, {
+            const response = await apiFetch(`/api/attendance/pay/${staffId}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
             });
             if (response.ok) {
                 alert(`✨ ${name} 사원의 급여 지급 및 정산이 완료되었습니다! 미지급 잔액이 0원으로 조정됩니다.`);
@@ -198,10 +188,8 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                     end_time: val.end
                 }));
 
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-            const response = await fetch(`${apiUrl}/api/staff/direct-register`, {
+            const response = await apiFetch(`/api/staff/direct-register`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     store_id: storeId === 'Total' ? 'store-korean' : storeId,
                     store_name: storeName || '시크빌',

@@ -50,15 +50,42 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        
+
         const hashedPw = await hashPassword(pw);
-        
-        // 지식 풀에서 사용자 정보 검색 (PersonalInfos 타입)
+
+        // 1. 서버에서 JWT 발급 (자격증명 검증 + 토큰 발급)
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const res = await fetch(`${apiUrl}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, password: hashedPw }),
+            });
+
+            if (res.ok) {
+                const { token, role, store_id, name: userName } = await res.json();
+                localStorage.setItem('mqnet_token', token);
+                const matchedBundle = bundles.find(b => b.type === 'PersonalInfos' && b.store_id === store_id);
+                onLogin({ id, name: userName, role, storeId: store_id, storeName: matchedBundle?.store ?? '' });
+                return;
+            }
+
+            const err = await res.json().catch(() => ({}));
+            // 403 = 승인 대기
+            if (res.status === 403) {
+                setError(err.detail || '승인 대기 중인 계정입니다.');
+                return;
+            }
+        } catch {
+            // 서버 미응답 시 로컬 번들로 폴백
+        }
+
+        // 2. 폴백: 서버 연결 실패 시 번들에서 로컬 검증
         const userBundle = bundles.find(b => {
             if (b.type !== 'PersonalInfos') return false;
             const bId = b.items?.find((i: any) => i.name === '아이디')?.value;
             const bPw = b.items?.find((i: any) => i.name === '비밀번호')?.value;
-                return bId === id && (bPw === hashedPw || bPw === pw);
+            return bId === id && (bPw === hashedPw || bPw === pw);
         });
 
         if (userBundle) {
@@ -67,11 +94,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
             const userName = userBundle.items?.find((i: any) => i.name === '이름')?.value || id;
 
             if (status !== 'approved' && userRole !== 'admin') {
-                if (userRole === 'owner') {
-                    setError('점주 계정은 시스템 관리자(Admin)의 승인이 필요합니다.');
-                } else {
-                    setError('점장/점원 계정은 매장 점주(Owner)의 승인이 필요합니다.');
-                }
+                setError(userRole === 'owner'
+                    ? '점주 계정은 시스템 관리자(Admin)의 승인이 필요합니다.'
+                    : '점장/점원 계정은 매장 점주(Owner)의 승인이 필요합니다.');
                 return;
             }
 

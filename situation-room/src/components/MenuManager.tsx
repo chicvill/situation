@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/apiFetch';
 import { useImageScan, ScanningOverlay, ScanChoiceModal } from '../hooks/useImageScan';
 import type { BundleData } from '../types';
 
@@ -105,10 +106,8 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate, onN
         setIsSaving(true);
         
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-            const response = await fetch(`${apiUrl}/api/bundle/${idToUse}`, {
+            const response = await apiFetch(`/api/bundle/${idToUse}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     items: menuItems.map(item => ({ 
                         name: item.name, 

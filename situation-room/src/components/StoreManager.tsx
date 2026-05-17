@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/apiFetch';
 import type { BundleData } from '../types';
 import { useImageScan, ScanningOverlay, ScanChoiceModal } from '../hooks/useImageScan';
 
@@ -96,10 +97,8 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
     const bundleId = activeData.bundleId || `store-config-${storeId}`;
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-      const response = await fetch(`${apiUrl}/api/bundle/${bundleId}`, {
+      const response = await apiFetch(`/api/bundle/${bundleId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           items, 
           type: 'StoreConfig', 
@@ -210,8 +209,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
   const handleResetPool = async () => {
     if (window.confirm("⚠️ 지식창고를 초기화하시겠습니까?\n이 작업은 모든 메뉴, 주문, 로그 데이터를 영구적으로 삭제하며 되돌릴 수 없습니다.")) {
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-            await fetch(`${apiUrl}/api/pool?store_id=${encodeURIComponent(storeId)}`, { method: 'DELETE' });
+            await apiFetch(`/api/pool?store_id=${encodeURIComponent(storeId)}`, { method: 'DELETE' });
             alert('✅ 지식창고가 초기화되었습니다.');
             window.location.reload();
         } catch {

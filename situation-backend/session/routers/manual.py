@@ -1,5 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from ..database import get_db_conn
+from ..auth import verify_token
 
 router = APIRouter()
 
@@ -16,8 +17,9 @@ async def get_manual(store_id: str = "store-1"):
 
 
 @router.post("/api/store/manual")
-async def update_manual(data: dict):
-    store_id = data.get("store_id", "store-1")
+async def update_manual(data: dict, user: dict = Depends(verify_token)):
+    # store_id는 토큰에서 추출 — 요청 본문의 store_id는 무시
+    store_id = user["store_id"]
     manual = data.get("manual", "")
     conn = get_db_conn()
     cur = conn.cursor()

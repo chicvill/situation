@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, type FormEvent } from 'react';
-import { API_BASE } from '../config';
+import { apiFetch } from '../utils/apiFetch';
 import { OwnerOnboardingChat } from './OwnerOnboardingChat';
 
 interface Store {
@@ -54,12 +54,9 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
     
     setIsLoading(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-      
       // 1. 점주 승인 (PUT /api/bundle/{id} with status: 'approved')
-      const res = await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
+      const res = await apiFetch(`/api/bundle/${bundle.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...bundle, status: 'approved' }),
       });
       
@@ -80,7 +77,7 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
   const fetchStores = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/stores`);
+      const res = await apiFetch(`/api/stores`);
       if (res.ok) {
         const data = await res.json();
         setStores(data);
@@ -153,13 +150,13 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
     };
 
     try {
-      const url = editingStore 
-        ? `${API_BASE}/api/stores/${formStoreId}`
-        : `${API_BASE}/api/stores`;
-      
+      const path = editingStore
+        ? `/api/stores/${formStoreId}`
+        : `/api/stores`;
+
       const method = editingStore ? 'PUT' : 'POST';
 
-      const bodyPayload = editingStore 
+      const bodyPayload = editingStore
         ? {
             store_name: formStoreName,
             owner_name: formOwnerName,
@@ -170,9 +167,8 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
           }
         : payload;
 
-      const res = await fetch(url, {
+      const res = await apiFetch(path, {
         method,
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bodyPayload)
       });
 
@@ -194,7 +190,7 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
     }
 
     try {
-      const res = await fetch(`${API_BASE}/api/stores/${storeId}`, {
+      const res = await apiFetch(`/api/stores/${storeId}`, {
         method: 'DELETE'
       });
       if (res.ok) {

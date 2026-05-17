@@ -13,6 +13,7 @@ from .state import manager, load_pool, save_pool, POOL_FILE  # noqa: F401 — re
 from .models import OrderItem, OrderRequest, StatusUpdate, StoreCreateRequest, StoreUpdateRequest  # noqa: F401
 
 from .routers import store, pool, session_routes, payment, order, operations, staff, chat, manual, notify
+from .routers import auth_router
 from .mqtt_handler import run_mqtt_client
 
 
@@ -100,6 +101,7 @@ async def serve_index():
 
 
 # --- Include Routers ---
+app.include_router(auth_router.router)
 app.include_router(store.router)
 app.include_router(pool.router)
 app.include_router(session_routes.router)
