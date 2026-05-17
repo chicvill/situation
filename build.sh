@@ -7,7 +7,7 @@ echo "🔎 Node.js: $(node --version), npm: $(npm --version)"
 # 1. 프론트엔드 빌드
 echo "🔨 Building frontend..."
 cd situation-room
-npm ci
+npm install
 npm run build
 echo "✅ Frontend built successfully."
 

@@ -22,8 +22,7 @@ RUN pip install --no-cache-dir -r ./situation-backend/requirements.txt
 # 백엔드 소스 복사
 COPY situation-backend/ ./situation-backend/
 
-# .env 파일 복사 (있을 경우)
-COPY .env* ./
+# .env는 Render 대시보드의 Environment Variables로 주입됨 (git에 미포함)
 
 EXPOSE 8000
 
