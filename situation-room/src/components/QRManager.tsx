@@ -8,8 +8,7 @@ interface Props {
 
 export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initialStoreName }) => {
     const [printMode, setPrintMode] = useState<'single' | 'a4' | 'grid'>('single');
-    
-    // 매장 정보 추출
+
     const safeBundles = Array.isArray(bundles) ? bundles : [];
     const storeBundle = (storeId && safeBundles.find(b => b.type === 'StoreConfig' && (b.store_id === storeId || b.id === storeId)))
         || safeBundles.find(b => b.type === 'StoreConfig');
@@ -17,7 +16,6 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
     const resolvedStoreId = storeBundle?.store_id || storeBundle?.id || 'default_store';
     const storeName = safeItems.find((i: any) => i.name === '상호명' || i.name === 'brand')?.value || initialStoreName || '우리식당';
 
-    // 테이블설정 파싱 ("1번: 4인석, 2번: 2인석" 등)
     const tablesItem = safeItems.find((i: any) => i.name === '테이블설정')?.value;
     const parsedTables = (() => {
         if (!tablesItem) {
@@ -27,247 +25,139 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                 seats: '4인석'
             }));
         }
-        
         try {
             return String(tablesItem).split(',').map(part => {
                 const clean = part.trim();
                 const match = clean.match(/(\d+)(?:번)?\s*:\s*(.*)/);
                 if (match) {
-                    return {
-                        num: parseInt(match[1]),
-                        label: `Table ${match[1]}`,
-                        seats: match[2] ? match[2].trim() : '4'
-                    };
+                    return { num: parseInt(match[1]), label: `Table ${match[1]}`, seats: match[2] ? match[2].trim() : '4' };
                 }
                 if (clean.includes(':')) {
                     const [left, right] = clean.split(':');
                     const parsedNum = parseInt(left.replace(/[^0-9]/g, ''));
                     if (!isNaN(parsedNum)) {
-                        return {
-                            num: parsedNum,
-                            label: `Table ${parsedNum}`,
-                            seats: right ? right.trim() : '4'
-                        };
+                        return { num: parsedNum, label: `Table ${parsedNum}`, seats: right ? right.trim() : '4' };
                     }
                 }
                 return null;
             }).filter(Boolean) as any[];
         } catch (e) {
-            console.error("Failed to parse table configs in QRManager:", e);
-            return [1, 2, 3, 4, 5, 6, 7, 8].map(num => ({
-                num,
-                label: `Table ${num}`,
-                seats: '4인석'
-            }));
+            return [1, 2, 3, 4, 5, 6, 7, 8].map(num => ({ num, label: `Table ${num}`, seats: '4인석' }));
         }
     })();
 
     const baseUrl = 'https://situation.chicvill.store';
 
     const qrItems = [
-        {
-            title: "🛎️ 웨이팅 등록",
-            label: "WT",
-            data: `${baseUrl}/?mode=waiting&action=register&table=99&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
-        },
-        {
-            title: "📅 실시간 예약 신청",
-            label: "RS",
-            data: `${baseUrl}/?mode=reserve&action=register&table=98&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
-        },
-        {
-            title: "👥 직원 출퇴근",
-            label: "AB",
-            data: `${baseUrl}/?mode=hr&action=checkin&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
-        },
-        {
-            title: "📚 사용자 매뉴얼",
-            label: "MU",
-            data: `${baseUrl}/?mode=manual&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
-        },
-        {
-            title: "💳 자리에서 결제",
-            label: "PY",
-            data: `${baseUrl}/?mode=customer&action=pay&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`
-        }
+        { title: "🛎️ 웨이팅 등록",       label: "WT", data: `${baseUrl}/?mode=waiting&action=register&table=99&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
+        { title: "📅 실시간 예약 신청",   label: "RS", data: `${baseUrl}/?mode=reserve&action=register&table=98&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
+        { title: "👥 직원 출퇴근",        label: "AB", data: `${baseUrl}/?mode=hr&action=checkin&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
+        { title: "📚 사용자 매뉴얼",      label: "MU", data: `${baseUrl}/?mode=manual&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
+        { title: "💳 자리에서 결제",      label: "PY", data: `${baseUrl}/?mode=customer&action=pay&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
     ];
 
-    // 인쇄 시 깨짐 방지를 위해 해상도 동적 설정 (모아찍기는 200x200, 낱장 A4는 500x500)
-    // 구글 차트 API의 서비스 종료(접속 불가) 문제로 인해, 더 빠르고 안정적인 QR Server API로 교체 적용합니다.
-    const getQRUri = (data: string) => `https://api.qrserver.com/v1/create-qr-code/?size=${printMode === 'a4' ? '500x500' : '200x200'}&data=${encodeURIComponent(data)}`;
+    const getQRUri = (data: string, size = 200) =>
+        `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
+
+    const handlePrint = () => {
+        const allCards = [
+            ...qrItems.map(item => ({
+                title: item.title,
+                badge: item.label,
+                badgeColor: '#0f172a',
+                url: item.data,
+            })),
+            ...parsedTables.map(item => ({
+                title: `${item.label} (${item.seats})`,
+                badge: `T${String(item.num).padStart(2, '0')}[${item.seats.replace(/[^0-9]/g, '')}]`,
+                badgeColor: '#f97316',
+                url: `${baseUrl}/?mode=customer&table=${item.num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`,
+            })),
+        ];
+
+        const isSingle = printMode === 'single';
+        const isA4 = printMode === 'a4';
+        const qrSize = isA4 ? 400 : 160;
+
+        const cardStyle = isA4
+            ? `display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;page-break-after:always;background:white;padding:40px;box-sizing:border-box;`
+            : isSingle
+            ? `display:flex;flex-direction:column;align-items:center;padding:8px;border:1.5px dashed #94a3b8;border-radius:8px;background:white;box-sizing:border-box;break-inside:avoid;`
+            : `display:flex;flex-direction:column;align-items:center;padding:14px;border:1px solid #e2e8f0;border-radius:10px;background:white;box-sizing:border-box;break-inside:avoid;`;
+
+        const gridStyle = isA4
+            ? `display:block;`
+            : isSingle
+            ? `display:grid;grid-template-columns:repeat(6,1fr);gap:8px;width:100%;`
+            : `display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;`;
+
+        const titleStyle = isA4
+            ? `font-size:2rem;font-weight:900;color:#0f172a;margin:0 0 30px;text-align:center;`
+            : isSingle
+            ? `font-size:0.72rem;font-weight:800;color:#0f172a;margin:0 0 6px;text-align:center;`
+            : `font-size:1rem;font-weight:800;color:#0f172a;margin:0 0 10px;text-align:center;`;
+
+        const imgBoxStyle = isA4
+            ? `width:${qrSize}px;height:${qrSize}px;border:3px solid #000;border-radius:16px;padding:12px;background:white;`
+            : `width:${qrSize}px;height:${qrSize}px;border:1px solid #e2e8f0;border-radius:8px;padding:4px;background:white;`;
+
+        const badgeStyle = (color: string) => isA4
+            ? `margin-top:28px;background:${color};color:white;border-radius:50px;padding:10px 36px;font-size:1.4rem;font-weight:900;`
+            : `margin-top:6px;background:${color};color:white;border-radius:50px;padding:2px 10px;font-size:0.65rem;font-weight:800;`;
+
+        const cardsHtml = allCards.map(card => `
+            <div style="${cardStyle}">
+                <div style="${titleStyle}">${card.title}</div>
+                <div style="${imgBoxStyle}">
+                    <img src="${getQRUri(card.url, qrSize)}" style="width:100%;height:100%;display:block;" />
+                </div>
+                <div style="${badgeStyle(card.badgeColor)}">${card.badge}</div>
+                ${isA4 ? `<div style="margin-top:20px;font-size:0.8rem;color:#64748b;font-family:monospace;word-break:break-all;max-width:500px;text-align:center;">${card.url}</div>` : ''}
+            </div>
+        `).join('');
+
+        const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>QR 인쇄 - ${storeName}</title>
+<style>
+  @page { size: A4 portrait; margin: 8mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 0; background: white; font-family: system-ui, sans-serif; }
+  img { display: block; }
+</style>
+</head>
+<body>
+  <div style="${gridStyle}">
+    ${cardsHtml}
+  </div>
+</body>
+</html>`;
+
+        const win = window.open('', '_blank', 'width=900,height=700');
+        if (!win) { alert('팝업이 차단되었습니다. 팝업을 허용해주세요.'); return; }
+        win.document.write(html);
+        win.document.close();
+        // 이미지 로딩 완료 후 인쇄 다이얼로그 열기
+        win.onload = () => {
+            const imgs = win.document.querySelectorAll('img');
+            let loaded = 0;
+            const tryPrint = () => { loaded++; if (loaded >= imgs.length) { win.focus(); win.print(); } };
+            if (imgs.length === 0) { win.focus(); win.print(); }
+            else { imgs.forEach(img => { if (img.complete) tryPrint(); else { img.onload = tryPrint; img.onerror = tryPrint; } }); }
+        };
+    };
 
     return (
         <div className="qr-manager-container animate-fade-in" style={{ padding: '20px' }}>
-            {/* 동적으로 인쇄 스타일 가로채기 주입 */}
-            <style>
-                {`
-                @media print {
-                    @page {
-                        size: A4 portrait;
-                        margin: 8mm !important;
-                    }
-                    
-                    /* 상단바, 하단 네비게이션, 인쇄 제어 UI 숨김 */
-                    .sidebar,
-                    .premium-top-bar,
-                    .bottom-nav-bar-9,
-                    .page-header,
-                    .no-print,
-                    button,
-                    header {
-                        display: none !important;
-                    }
-
-                    /* 실제 DOM 클래스명 기준으로 부모 컨테이너 백지 전환 */
-                    body, html, #root, .saas-container, .saas-main-full, .view-content, .qr-manager-container {
-                        background: white !important;
-                        background-color: white !important;
-                        border: none !important;
-                        box-shadow: none !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        width: 100% !important;
-                        height: auto !important;
-                        overflow: visible !important;
-                        display: block !important;
-                    }
-                    
-                    /* QR 출력 레이아웃이 A4 용지를 완벽하게 가득 채우도록 규격 설정 */
-                    .qr-print-layout {
-                        display: block !important;
-                        width: 100% !important;
-                        max-width: 194mm !important;
-                        margin: 0 auto !important;
-                        padding: 0 !important;
-                        border: none !important;
-                        background: white !important;
-                        box-sizing: border-box !important;
-                    }
-                    
-                    .no-print {
-                        display: none !important;
-                    }
-                    
-                    ${printMode === 'single' ? `
-                    /* A4 용지 딱 1장 안에 전체 17개 타이트하게 밀착 배치 규칙 */
-                    .qr-grid {
-                        display: grid !important;
-                        grid-template-columns: repeat(6, 1fr) !important;
-                        gap: 8px !important;
-                        width: 100% !important;
-                        box-sizing: border-box !important;
-                    }
-                    .qr-card-v2 {
-                        break-inside: avoid !important;
-                        border: 1.5px dashed #94a3b8 !important; /* 깔끔한 가위 오려내기 점선 */
-                        border-radius: 8px !important;
-                        padding: 6px !important;
-                        background: white !important;
-                        box-shadow: none !important;
-                        display: flex !important;
-                        flex-direction: column !important;
-                        align-items: center !important;
-                        justify-content: space-between !important;
-                        box-sizing: border-box !important;
-                        height: 85mm !important; /* 정확히 3줄 세로높이(255mm) 맞춤으로 오버플로우 방지 */
-                    }
-                    .qr-title-v2 {
-                        font-size: 0.75rem !important;
-                        font-weight: 800 !important;
-                        color: #0f172a !important;
-                        margin: 0 0 4px 0 !important;
-                    }
-                    .qr-image-wrapper-v2 {
-                        width: 75px !important;
-                        height: 75px !important;
-                        border: 1px solid #cbd5e1 !important;
-                        border-radius: 6px !important;
-                        padding: 2px !important;
-                        background: white !important;
-                    }
-                    .qr-badge-v2 {
-                        font-size: 0.65rem !important;
-                        padding: 2px 8px !important;
-                        margin-top: 4px !important;
-                        border-radius: 4px !important;
-                        font-weight: 800 !important;
-                    }
-                    .qr-url-text {
-                        display: none !important; /* 공간 절약을 위해 URL 텍스트 숨김 */
-                    }
-                    ` : printMode === 'a4' ? `
-                    /* A4 용지 1장 가득 채우는 개별 페이지 출력 규칙 */
-                    .qr-grid {
-                        display: block !important;
-                    }
-                    .qr-card-v2 {
-                        page-break-after: always !important;
-                        break-inside: avoid !important;
-                        height: 100vh !important;
-                        display: flex !important;
-                        flex-direction: column !important;
-                        justify-content: center !important;
-                        align-items: center !important;
-                        border: none !important;
-                        padding: 0 !important;
-                        margin: 0 !important;
-                        box-shadow: none !important;
-                        background: white !important;
-                    }
-                    .qr-title-v2 {
-                        font-size: 2.5rem !important;
-                        margin-bottom: 40px !important;
-                        font-weight: 900 !important;
-                        color: #0f172a !important;
-                    }
-                    .qr-image-wrapper-v2 {
-                        width: 380px !important;
-                        height: 380px !important;
-                        border: 3px solid #000 !important;
-                        border-radius: 20px !important;
-                        padding: 15px !important;
-                        background: white !important;
-                    }
-                    .qr-badge-v2 {
-                        font-size: 1.6rem !important;
-                        padding: 10px 40px !important;
-                        margin-top: 40px !important;
-                        background: #000 !important;
-                        color: #fff !important;
-                        border-radius: 50px !important;
-                        font-weight: 900 !important;
-                    }
-                    .qr-url-text {
-                        font-size: 0.95rem !important;
-                        margin-top: 30px !important;
-                        max-width: 500px !important;
-                        color: #475569 !important;
-                        font-family: monospace !important;
-                    }
-                    ` : `
-                    /* 모아찍기 컴팩트 스티커 규칙 (3열 그리드) */
-                    .qr-grid {
-                        display: grid !important;
-                        grid-template-columns: repeat(3, 1fr) !important;
-                        gap: 20px !important;
-                    }
-                    .qr-card-v2 {
-                        break-inside: avoid !important;
-                        border: 1px solid #e2e8f0 !important;
-                        background: white !important;
-                        box-shadow: none !important;
-                    }
-                    `}
-                }
-                `}
-            </style>
-
-            <header className="page-header no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)', padding: '25px', borderRadius: '16px', border: '1px solid var(--border)', marginBottom: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
-                <div>
+            <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)', padding: '25px', borderRadius: '16px', border: '1px solid var(--border)', marginBottom: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                     <h2 style={{ fontSize: '1.6rem', fontWeight: '900', color: 'var(--text-main)', margin: 0 }}>🔳 QR 마스터 인쇄 센터</h2>
-                    <p style={{ color: 'var(--text-muted)', margin: '5px 0 0', fontSize: '0.9rem' }}>매장명: <strong style={{ color: 'var(--accent-orange)' }}>{storeName}</strong> (ID: {resolvedStoreId})</p>
-                    
-                    {/* 인쇄 스타일 셀렉터 */}
+                    <p style={{ color: 'var(--text-muted)', margin: '5px 0 0', fontSize: '0.9rem' }}>
+                        매장명: <strong style={{ color: 'var(--accent-orange)' }}>{storeName}</strong> (ID: {resolvedStoreId})
+                    </p>
+
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px' }}>
                         {([
                             { mode: 'single', icon: '📄', label: 'A4 전체 모아찍기', sub: '기본값' },
@@ -297,58 +187,47 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                         ))}
                     </div>
                 </div>
-                
-                <button className="premium-btn" onClick={() => window.print()} style={{ padding: '12px 30px', fontSize: '1.05rem', boxShadow: '0 4px 15px rgba(249, 115, 22, 0.2)' }}>
+
+                <button className="premium-btn" onClick={handlePrint} style={{ padding: '12px 30px', fontSize: '1.05rem', boxShadow: '0 4px 15px rgba(249, 115, 22, 0.2)', flexShrink: 0 }}>
                     🖨️ 인쇄하기 (Ctrl + P)
                 </button>
             </header>
 
-            <div className="qr-print-layout" style={{ background: 'white', padding: '25px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                <div className="qr-grid" style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: printMode === 'single' ? 'repeat(6, 1fr)' : printMode === 'a4' ? 'repeat(auto-fill, minmax(280px, 1fr))' : 'repeat(3, 1fr)', 
-                    gap: printMode === 'single' ? '12px' : '25px' 
+            {/* 미리보기 */}
+            <div style={{ background: 'white', padding: '25px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: printMode === 'single' ? 'repeat(6, 1fr)' : printMode === 'a4' ? 'repeat(auto-fill, minmax(280px, 1fr))' : 'repeat(3, 1fr)',
+                    gap: printMode === 'single' ? '12px' : '25px',
                 }}>
                     {qrItems.map((item, idx) => (
-                        <div key={idx} className="qr-card-v2" style={{ 
-                            border: printMode === 'single' ? '1.5px dashed #cbd5e1' : '1px solid #f1f5f9', 
-                            background: '#fafafa', 
-                            borderRadius: '12px', 
-                            padding: printMode === 'single' ? '10px' : '20px', 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            alignItems: 'center', 
-                            textAlign: 'center' 
+                        <div key={idx} style={{
+                            border: printMode === 'single' ? '1.5px dashed #cbd5e1' : '1px solid #f1f5f9',
+                            background: '#fafafa', borderRadius: '12px',
+                            padding: printMode === 'single' ? '10px' : '20px',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
                         }}>
-                            <h3 className="qr-title-v2" style={{ margin: '0 0 10px 0', fontSize: printMode === 'single' ? '0.85rem' : '1.15rem', fontWeight: '900', color: '#1e293b' }}>{item.title}</h3>
-                            <div className="qr-image-wrapper-v2" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: printMode === 'single' ? '4px' : '10px', width: printMode === 'single' ? '90px' : '160px', height: printMode === 'single' ? '90px' : '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <img src={getQRUri(item.data)} alt="QR Code" style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }} />
+                            <h3 style={{ margin: '0 0 10px', fontSize: printMode === 'single' ? '0.75rem' : '1rem', fontWeight: '900', color: '#1e293b' }}>{item.title}</h3>
+                            <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '4px', width: printMode === 'single' ? '80px' : '140px', height: printMode === 'single' ? '80px' : '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <img src={getQRUri(item.data)} alt="QR" style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }} />
                             </div>
-                            <div className="qr-badge-v2" style={{ background: '#0f172a', color: 'white', borderRadius: '50px', padding: printMode === 'single' ? '2px 8px' : '4px 15px', fontSize: printMode === 'single' ? '0.65rem' : '0.85rem', fontWeight: '900', marginTop: printMode === 'single' ? '8px' : '15px', letterSpacing: '0.5px' }}>{item.label}</div>
-                            {printMode !== 'single' && <div className="qr-url-text" style={{ fontSize: '0.7rem', color: '#64748b', wordBreak: 'break-all', marginTop: '12px', fontFamily: 'monospace', maxWidth: '200px' }}>{item.data}</div>}
-                            {(item as any).fields}
+                            <div style={{ background: '#0f172a', color: 'white', borderRadius: '50px', padding: printMode === 'single' ? '2px 8px' : '4px 15px', fontSize: printMode === 'single' ? '0.6rem' : '0.8rem', fontWeight: '900', marginTop: '8px' }}>{item.label}</div>
                         </div>
                     ))}
-                    
                     {parsedTables.map((item, idx) => (
-                        <div key={idx} className="qr-card-v2" style={{ 
-                            border: printMode === 'single' ? '1.5px dashed #cbd5e1' : '1px solid #f1f5f9', 
-                            background: '#fafafa', 
-                            borderRadius: '12px', 
-                            padding: printMode === 'single' ? '10px' : '20px', 
-                            display: 'flex', 
-                            flexDirection: 'column', 
-                            alignItems: 'center', 
-                            textAlign: 'center' 
+                        <div key={idx} style={{
+                            border: printMode === 'single' ? '1.5px dashed #cbd5e1' : '1px solid #f1f5f9',
+                            background: '#fafafa', borderRadius: '12px',
+                            padding: printMode === 'single' ? '10px' : '20px',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
                         }}>
-                            <h3 className="qr-title-v2" style={{ margin: '0 0 10px 0', fontSize: printMode === 'single' ? '0.85rem' : '1.15rem', fontWeight: '900', color: '#1e293b' }}>
-                                {item.label} <span style={{ fontSize: printMode === 'single' ? '10px' : '14px', color: 'var(--accent-orange)', fontWeight: 'bold' }}>({item.seats})</span>
+                            <h3 style={{ margin: '0 0 10px', fontSize: printMode === 'single' ? '0.75rem' : '1rem', fontWeight: '900', color: '#1e293b' }}>
+                                {item.label} <span style={{ fontSize: printMode === 'single' ? '10px' : '13px', color: 'var(--accent-orange)' }}>({item.seats})</span>
                             </h3>
-                            <div className="qr-image-wrapper-v2" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: printMode === 'single' ? '4px' : '10px', width: printMode === 'single' ? '90px' : '160px', height: printMode === 'single' ? '90px' : '160px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '4px', width: printMode === 'single' ? '80px' : '140px', height: printMode === 'single' ? '80px' : '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <img src={getQRUri(`${baseUrl}/?mode=customer&table=${item.num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`)} alt={`${item.label} QR`} style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }} />
                             </div>
-                            <div className="qr-badge-v2" style={{ background: 'var(--accent-orange)', color: 'white', borderRadius: '50px', padding: printMode === 'single' ? '2px 8px' : '4px 15px', fontSize: printMode === 'single' ? '0.65rem' : '0.85rem', fontWeight: '900', marginTop: printMode === 'single' ? '8px' : '15px', letterSpacing: '0.5px' }}>{`T${String(item.num).padStart(2, '0')}[${item.seats.replace(/[^0-9]/g, '')}]`}</div>
-                            {printMode !== 'single' && <div className="qr-url-text" style={{ fontSize: '0.7rem', color: '#64748b', wordBreak: 'break-all', marginTop: '12px', fontFamily: 'monospace', maxWidth: '200px' }}>{`${baseUrl}/?mode=customer&table=${item.num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`}</div>}
+                            <div style={{ background: 'var(--accent-orange)', color: 'white', borderRadius: '50px', padding: printMode === 'single' ? '2px 8px' : '4px 15px', fontSize: printMode === 'single' ? '0.6rem' : '0.8rem', fontWeight: '900', marginTop: '8px' }}>{`T${String(item.num).padStart(2, '0')}[${item.seats.replace(/[^0-9]/g, '')}]`}</div>
                         </div>
                     ))}
                 </div>
