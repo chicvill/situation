@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './OwnerOnboardingChat.css';
+import { useImageScan, ScanningOverlay, ScanChoiceModal } from '../hooks/useImageScan';
+import { QRManager } from './QRManager';
 
 interface OwnerOnboardingChatProps {
     onClose: () => void;
@@ -12,7 +14,7 @@ interface Message {
     sender: 'ai' | 'user';
     text: string;
     timestamp: string;
-    formType?: 'name' | 'auth' | 'phone' | 'business' | 'bank' | 'summary' | 'menu-registration' | 'staff-registration' | 'qr-center';
+    formType?: 'name' | 'auth' | 'phone' | 'business' | 'bank' | 'tables' | 'summary' | 'menu-registration' | 'staff-registration' | 'qr-center';
 }
 
 const hashPassword = async (password: string): Promise<string> => {
@@ -52,14 +54,21 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
     // Menu registration states
     const [menuItems, setMenuItems] = useState<{name: string; value: string; icon: string; category: string; description: string;}[]>(() => {
         const saved = localStorage.getItem('mqonboard_menu_items');
-        return saved ? JSON.parse(saved) : [
-            { name: '명품 한우 숯불구이', value: '35000', icon: '🥩', category: '식사', description: '최고급 1++ 등급 한우를 참숯으로 부드럽게 구워낸 명품 시그니처 구이' },
-            { name: '시골 순두부찌개', value: '9000', icon: '🍲', category: '식사', description: '매일 아침 직접 만든 순두부와 신선한 바지락으로 국물 맛을 낸 얼큰 찌개' },
-            { name: '프리미엄 콜드브루 커피', value: '4500', icon: '☕', category: '음료', description: '스페셜티 에티오피아 원두를 18시간 동안 저온 추출한 고소한 아로마' }
-        ];
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    // Table configuration states
+    const [tableCount, setTableCount] = useState<number>(() => {
+        const saved = localStorage.getItem('mqonboard_table_count');
+        return saved ? parseInt(saved, 10) : 4;
+    });
+    const [tableSizes, setTableSizes] = useState<number[]>(() => {
+        const saved = localStorage.getItem('mqonboard_table_sizes');
+        return saved ? JSON.parse(saved) : [4, 4, 4, 4];
     });
 
     // Staff registration states
+    const [registeredStaff, setRegisteredStaff] = useState<{ name: string; role: string; wage: number }[]>([]);
     const [regName, setRegName] = useState(() => localStorage.getItem('mqonboard_reg_name') || '');
     const [regPhone, setRegPhone] = useState(() => localStorage.getItem('mqonboard_reg_phone') || '');
     const [regRole, setRegRole] = useState(() => localStorage.getItem('mqonboard_reg_role') || 'staff');
@@ -78,7 +87,7 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
     });
 
     // Flow Steps
-    // 0: Init, 1: Name, 2: Auth, 3: Phone, 4: Business, 5: Bank, 6: Summary/Build, 7: Menu-Reg, 8: Staff-Reg, 9: QR/Ops Center
+    // 0: Init, 1: Name, 2: Auth, 3: Phone, 4: Business, 5: Bank, 6: Tables, 7: Summary/Build, 8: Menu-Reg, 9: Staff-Reg, 10: QR/Ops Center
     const [currentStep, setCurrentStep] = useState(() => {
         const saved = localStorage.getItem('mqonboard_current_step');
         return saved ? parseInt(saved, 10) : 0;
@@ -93,6 +102,34 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
     const [isIdChecked, setIsIdChecked] = useState(() => localStorage.getItem('mqonboard_is_id_checked') === 'true');
 
     const chatEndRef = useRef<HTMLDivElement>(null);
+
+    // 메뉴판 사진 스캔 훅
+    const {
+        isScanning: isMenuScanning,
+        showChoiceModal: showMenuChoiceModal,
+        setShowChoiceModal: setShowMenuChoiceModal,
+        fileInputRef: menuScanFileRef,
+        startScanFlow: startMenuScan,
+        proceedToPickFile: proceedMenuScan,
+        handleFileChange: handleMenuScanFile,
+    } = useImageScan({
+        docType: 'menu',
+        onSuccess: (result, overwrite) => {
+            const rawItems = result.menus || result.items || [];
+            const newItems = rawItems.map((i: any) => ({
+                name: i.name || '',
+                value: String(i.price || i.value || '0').replace(/[^0-9]/g, '').trim(),
+                icon: '🍴',
+                category: '추천',
+                description: i.description || 'AI 스캔으로 등록된 메뉴입니다.',
+            }));
+            if (newItems.length === 0) {
+                alert('⚠️ 이미지에서 메뉴 정보를 추출하지 못했습니다. 더 선명한 사진으로 다시 시도해 주세요.');
+                return;
+            }
+            setMenuItems(overwrite ? newItems : (prev) => [...prev, ...newItems]);
+        },
+    });
 
     // 🌟 상태 변화 발생 시 localStorage에 최신 온보딩 진행과정을 자동으로 기억 및 저장합니다.
     useEffect(() => {
@@ -114,12 +151,14 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
         
         // New onboarding persistent caches
         localStorage.setItem('mqonboard_menu_items', JSON.stringify(menuItems));
+        localStorage.setItem('mqonboard_table_count', String(tableCount));
+        localStorage.setItem('mqonboard_table_sizes', JSON.stringify(tableSizes));
         localStorage.setItem('mqonboard_reg_name', regName);
         localStorage.setItem('mqonboard_reg_phone', regPhone);
         localStorage.setItem('mqonboard_reg_role', regRole);
         localStorage.setItem('mqonboard_reg_wage', regWage);
         localStorage.setItem('mqonboard_reg_schedules', JSON.stringify(regSchedules));
-    }, [messages, showChat, ownerName, ownerId, ownerPw, phoneNo, storeName, storeId, bizNo, openDate, bankName, accountNo, currentStep, isBizVerified, isIdChecked, menuItems, regName, regPhone, regRole, regWage, regSchedules]);
+    }, [messages, showChat, ownerName, ownerId, ownerPw, phoneNo, storeName, storeId, bizNo, openDate, bankName, accountNo, currentStep, isBizVerified, isIdChecked, menuItems, tableCount, tableSizes, regName, regPhone, regRole, regWage, regSchedules]);
 
     // TTS Voice synthesis helper
     const speakText = (text: string) => {
@@ -450,20 +489,46 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
 
         setTimeout(() => {
             setIsTyping(false);
-            const nextMsg = "✨ 정말 훌륭하십니다, 대표님!\n\n신청서를 바탕으로 생성될 스마트 매장 정식 제안서와 면허를 확인하시고 하단의 '🏠 내 매장 최종 개설하기' 버튼을 클릭해 주세요!";
+            const nextMsg = "🪑 거의 다 왔습니다, 대표님!\n\n마지막으로 홀의 테이블 수와 각 테이블의 좌석 수를 설정해 주세요. 나중에도 변경 가능합니다.";
             setMessages(prev => [...prev, {
                 id: `ai-step6`,
                 sender: 'ai',
                 text: nextMsg,
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                formType: 'summary'
+                formType: 'tables'
             }]);
             speakText(nextMsg);
             setCurrentStep(6);
         }, 1100);
     };
 
-    // Submit Step 6: Final Construction & DB Integration
+    // Submit Step 6: Table Configuration
+    const handleTablesSubmit = () => {
+        const userMsg: Message = {
+            id: `user-tables-${Date.now()}`,
+            sender: 'user',
+            text: `🪑 테이블 구성: ${tableSizes.slice(0, tableCount).map((s, i) => `${i + 1}번 ${s}인석`).join(', ')} (총 ${tableCount}개 / ${tableSizes.slice(0, tableCount).reduce((a, b) => a + b, 0)}석)`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages(prev => [...prev, userMsg]);
+        setIsTyping(true);
+
+        setTimeout(() => {
+            setIsTyping(false);
+            const nextMsg = "✨ 정말 훌륭하십니다, 대표님!\n\n신청서를 바탕으로 생성될 스마트 매장 정식 제안서와 면허를 확인하시고 하단의 '🏠 내 매장 최종 개설하기' 버튼을 클릭해 주세요!";
+            setMessages(prev => [...prev, {
+                id: `ai-step7`,
+                sender: 'ai',
+                text: nextMsg,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                formType: 'summary'
+            }]);
+            speakText(nextMsg);
+            setCurrentStep(7);
+        }, 1000);
+    };
+
+    // Submit Step 7: Final Construction & DB Integration
     const handleBuildStoreAction = async () => {
         setIsTyping(true);
 
@@ -511,7 +576,7 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                     { name: '개업일자', value: openDate },
                     { name: '정산계좌', value: `${bankName} ${accountNo}` },
                     { name: '연락처', value: phoneNo },
-                    { name: '테이블설정', value: '1번: 4인석, 2번: 2인석, 3번: 4인석, 4번: 4인석, 5번: 2인석, 6번: 6인석' }
+                    { name: '테이블설정', value: tableSizes.slice(0, tableCount).map((seats, i) => `${i + 1}번: ${seats}인석`).join(', ') }
                 ]
             };
 
@@ -551,19 +616,19 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
 
             if (!userRes.ok) throw new Error('Owner credentials bundle registration failed');
 
-            // Success Transition to Step 7: Menu Onboarding!
+            // Success Transition to Step 8: Menu Onboarding!
             setIsTyping(false);
-            const menuOnboardMsg = `🎉 축하합니다, 대표님! '${storeName}' 매장 가맹 개설 및 등록이 정상적으로 완공되었습니다!\n\n두 번째 스마트 단계로 우리 가게의 대표 먹거리들을 담은 **[디지털 메뉴판 구축]**을 신속히 진행해 볼까요? 🍳\n\n원격 AI 대화식으로 손쉽게 추가/삭제할 수 있는 메뉴 교정 패널을 가동했습니다. 가장 인기 있는 기본 메뉴들로 예시를 구성해 두었으니, 원하는 시그니처 상차림으로 알맞게 수정하신 뒤 하단의 '메뉴판 등록 완료' 버튼을 클릭해 주세요!`;
-            
+            const menuOnboardMsg = `🎉 축하합니다, 대표님! '${storeName}' 매장 가맹 개설 및 등록이 정상적으로 완공되었습니다!\n\n두 번째 스마트 단계로 우리 가게의 대표 먹거리들을 담은 **[디지털 메뉴판 구축]**을 신속히 진행해 볼까요? 🍳\n\n메뉴판 사진을 스캔하거나 직접 추가하여 시그니처 상차림을 완성해 주세요!`;
+
             setMessages(prev => [...prev, {
-                id: `ai-step7`,
+                id: `ai-step8`,
                 sender: 'ai',
                 text: menuOnboardMsg,
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 formType: 'menu-registration'
             }]);
             speakText(menuOnboardMsg);
-            setCurrentStep(7);
+            setCurrentStep(8);
 
         } catch (err: any) {
             setIsTyping(false);
@@ -604,7 +669,7 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
 
             if (!response.ok) throw new Error('Failed to save menu bundle');
 
-            // Success Transition to Step 8: Staff Onboarding!
+            // Success Transition to Step 9: Staff Onboarding!
             setIsTyping(false);
             const userMsg: Message = {
                 id: `user-menus-${Date.now()}`,
@@ -613,21 +678,21 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
             setMessages(prev => [...prev, userMsg]);
-            
+
             setIsTyping(true);
             setTimeout(() => {
                 setIsTyping(false);
                 const staffOnboardMsg = `🍳 정말 멋진 상차림이네요! 등록하신 메뉴 데이터가 매장 주방 모니터 및 스마트 장바구니로 3초 만에 실시간 기입되었습니다.\n\n세 번째 핵심 스마트 단계로 우리 매장을 함께 이끌어갈 **[첫 번째 직원(점원) 직접 채용]**을 진행하겠습니다! 👥\n\n직원의 실명, 아이디로 사용될 연락처, 계약 시급, 그리고 요일별 근무 일정을 아래 안전 카드에서 기입해 주세요. 등록 즉시 별도의 대기 없이 임시 비밀번호 '1212'로 로그인 및 기용이 승인 처리됩니다!`;
-                
+
                 setMessages(prev => [...prev, {
-                    id: `ai-step8`,
+                    id: `ai-step9`,
                     sender: 'ai',
                     text: staffOnboardMsg,
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     formType: 'staff-registration'
                 }]);
                 speakText(staffOnboardMsg);
-                setCurrentStep(8);
+                setCurrentStep(9);
             }, 1000);
 
         } catch (err: any) {
@@ -675,36 +740,46 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                 throw new Error(errResult.detail || '직원 등록 실패');
             }
 
-            // Success Transition to Step 9: QR Code Printing Center!
-            setIsTyping(false);
-            const userMsg: Message = {
-                id: `user-staff-${Date.now()}`,
-                sender: 'user',
-                text: `👤 사원 등록 완료: ${regName} (${regRole === 'manager' ? '점장' : '점원'}), 시급: ${parseInt(regWage).toLocaleString()}원`,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-            setMessages(prev => [...prev, userMsg]);
-
-            setIsTyping(true);
-            setTimeout(() => {
-                setIsTyping(false);
-                const finalQrMsg = `👥 완벽합니다, 대표님! ${regName} 사원의 채용 및 출퇴근 스케줄 연동이 무결하게 성사되어 급여 정산 장부에 즉시 반영되었습니다.\n\n🎉 이로써 회원가입 ➔ 매장 개설 ➔ 메뉴 구성 ➔ 직원 직접 채용까지 모든 온보딩 과정을 단 하나의 대화식 흐름으로 완전 정복하셨습니다!\n\n이제 홀 이나 주방, 카운터에 부착해 바로 실제 영업과 스태프 출퇴근에 활용하실 수 있는 **[6대 만능 스마트 QR 코드 인쇄 마스터 센터]**를 최종 가동합니다! 목적에 맞게 인쇄해 편리하게 영업에 활용해 보세요! 👍`;
-                
-                setMessages(prev => [...prev, {
-                    id: `ai-step9`,
-                    sender: 'ai',
-                    text: finalQrMsg,
-                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    formType: 'qr-center'
-                }]);
-                speakText(finalQrMsg);
-                setCurrentStep(9);
-            }, 1000);
+            // 목록에 추가하고 폼 초기화 (다음 단계로는 넘어가지 않음)
+            setRegisteredStaff(prev => [...prev, { name: regName.trim(), role: regRole, wage: parseInt(regWage.replace(/[^0-9]/g, '') || '10500') }]);
+            setRegName('');
+            setRegPhone('');
 
         } catch (err: any) {
-            setIsTyping(false);
             alert(`❌ 직원 등록 오류: ${err.message}`);
+        } finally {
+            setIsTyping(false);
         }
+    };
+
+    const handleProceedToQR = () => {
+        const staffSummary = registeredStaff.length > 0
+            ? `총 ${registeredStaff.length}명(${registeredStaff.map(s => s.name).join(', ')})의 채용 및 출퇴근 스케줄 연동이 완료되었습니다.`
+            : '직원 등록 없이';
+        const userMsg: Message = {
+            id: `user-staff-done-${Date.now()}`,
+            sender: 'user',
+            text: registeredStaff.length > 0
+                ? `👥 직원 등록 완료: ${registeredStaff.map(s => `${s.name}(${s.role === 'manager' ? '점장' : '점원'})`).join(', ')}`
+                : '⏭️ 직원 등록 건너뛰기',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        setMessages(prev => [...prev, userMsg]);
+
+        setIsTyping(true);
+        setTimeout(() => {
+            setIsTyping(false);
+            const finalQrMsg = `👥 완벽합니다, 대표님! ${staffSummary}\n\n🎉 이로써 회원가입 ➔ 매장 개설 ➔ 메뉴 구성 ➔ 직원 직접 채용까지 모든 온보딩 과정을 단 하나의 대화식 흐름으로 완전 정복하셨습니다!\n\n이제 홀 이나 주방, 카운터에 부착해 바로 실제 영업과 스태프 출퇴근에 활용하실 수 있는 **[6대 만능 스마트 QR 코드 인쇄 마스터 센터]**를 최종 가동합니다! 목적에 맞게 인쇄해 편리하게 영업에 활용해 보세요! 👍`;
+            setMessages(prev => [...prev, {
+                id: `ai-step10`,
+                sender: 'ai',
+                text: finalQrMsg,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                formType: 'qr-center'
+            }]);
+            speakText(finalQrMsg);
+            setCurrentStep(10);
+        }, 1000);
     };
     // Auto-mute on component unmount
     useEffect(() => {
@@ -727,6 +802,41 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
 
     return (
         <div className="onboarding-overlay">
+            {/* 메뉴 스캔 오버레이 & 모달 (전역 레이어) */}
+            <ScanningOverlay isScanning={isMenuScanning} docType="menu" />
+            <ScanChoiceModal
+                show={showMenuChoiceModal}
+                onClose={() => setShowMenuChoiceModal(false)}
+                onChoice={proceedMenuScan}
+                title="메뉴판 사진 분석"
+                docType="menu"
+            />
+            <input type="file" ref={menuScanFileRef} style={{ display: 'none' }} accept="image/*" onChange={handleMenuScanFile} />
+
+            {/* Step 10: QR Center — rendered fullscreen outside chat so window.print() works correctly */}
+            {currentStep === 10 && (
+                <div style={{ position: 'absolute', inset: 0, zIndex: 50, overflowY: 'auto', background: '#0f172a', display: 'flex', flexDirection: 'column' }}>
+                    <style>{`
+                        @media print {
+                            .onboarding-container { display: none !important; }
+                            .onboarding-overlay { position: static !important; background: transparent !important; }
+                        }
+                    `}</style>
+                    <div style={{ flex: 1 }}>
+                        <QRManager bundles={bundles} storeId={storeId} storeName={storeName} />
+                    </div>
+                    <div style={{ padding: '0 20px 20px' }} className="no-print">
+                        <button
+                            className="form-action-btn"
+                            style={{ width: '100%', fontSize: '1rem', padding: '16px', fontWeight: 'bold', background: 'linear-gradient(135deg, #ea580c, #ea580c)' }}
+                            onClick={handleEnterDashboard}
+                        >
+                            🏠 지능형 매장 통합 상황실로 입장하기 ➔
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="onboarding-container">
                 
                 {/* Pre-Screen: Preparation Checklist */}
@@ -971,10 +1081,74 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                                                     </>
                                                 )}
 
-                                                {/* Step 6 Form: Summary Contract */}
-                                                {msg.formType === 'summary' && currentStep === 6 && (
+                                                {/* Step 6 Form: Table Configuration */}
+                                                {msg.formType === 'tables' && currentStep === 6 && (
                                                     <div style={{ padding: '10px 0' }}>
-                                                        <div style={{ background: '#FFFBEB', border: '1px solid #FEF3C7', padding: '16px', borderRadius: '12px', fontSize: '0.82rem', color: '#78350F', marginBottom: '15px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                                                            <h4 style={{ margin: 0, fontSize: '1rem', color: '#60a5fa', fontWeight: 800 }}>
+                                                                🪑 홀 테이블 구성
+                                                            </h4>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>테이블 수</span>
+                                                                <input
+                                                                    type="number"
+                                                                    min={1}
+                                                                    max={30}
+                                                                    value={tableCount}
+                                                                    onChange={(e) => {
+                                                                        const n = Math.max(1, Math.min(30, parseInt(e.target.value) || 1));
+                                                                        setTableCount(n);
+                                                                        setTableSizes(prev => {
+                                                                            const next = [...prev];
+                                                                            while (next.length < n) next.push(4);
+                                                                            return next.slice(0, n);
+                                                                        });
+                                                                    }}
+                                                                    style={{ width: '52px', padding: '5px 6px', borderRadius: '7px', border: '1px solid rgba(96,165,250,0.4)', background: '#0f172a', color: '#93c5fd', fontWeight: 700, fontSize: '0.9rem', textAlign: 'center' }}
+                                                                />
+                                                                <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>개</span>
+                                                            </div>
+                                                        </div>
+
+                                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(115px, 1fr))', gap: '8px', marginBottom: '14px' }}>
+                                                            {Array.from({ length: tableCount }, (_, i) => (
+                                                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '9px', padding: '7px 10px' }}>
+                                                                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700, whiteSpace: 'nowrap' }}>{i + 1}번</span>
+                                                                    <select
+                                                                        value={tableSizes[i] ?? 4}
+                                                                        onChange={(e) => {
+                                                                            const m = [...tableSizes];
+                                                                            m[i] = parseInt(e.target.value);
+                                                                            setTableSizes(m);
+                                                                        }}
+                                                                        style={{ flex: 1, padding: '4px 4px', borderRadius: '6px', background: '#0f172a', border: '1px solid rgba(96,165,250,0.3)', color: '#93c5fd', fontSize: '0.8rem', fontWeight: 700 }}
+                                                                    >
+                                                                        {[1, 2, 3, 4, 5, 6, 7, 8, 10, 12].map(n => (
+                                                                            <option key={n} value={n}>{n}인석</option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        <p style={{ margin: '0 0 14px 0', fontSize: '0.78rem', color: '#64748b', textAlign: 'right' }}>
+                                                            총 {tableSizes.slice(0, tableCount).reduce((a, b) => a + b, 0)}석 · {tableCount}개 테이블
+                                                        </p>
+
+                                                        <button
+                                                            className="form-action-btn"
+                                                            style={{ width: '100%', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', fontSize: '0.92rem' }}
+                                                            onClick={handleTablesSubmit}
+                                                        >
+                                                            🪑 테이블 설정 완료 ➔
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {/* Step 7 Form: Summary Contract */}
+                                                {msg.formType === 'summary' && currentStep === 7 && (
+                                                    <div style={{ padding: '10px 0' }}>
+                                                        <div style={{ background: '#FFFBEB', border: '1px solid #FEF3C7', padding: '16px', borderRadius: '12px', fontSize: '0.82rem', color: '#78350F', marginBottom: '14px' }}>
                                                             <h5 style={{ margin: '0 0 10px 0', fontSize: '0.9rem', fontWeight: '800' }}>📄 MQnet 스마트 가맹 가입 증명서</h5>
                                                             <ul style={{ margin: 0, paddingLeft: '15px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                                                 <li><strong>점주 대표자:</strong> {ownerName}</li>
@@ -982,11 +1156,12 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                                                                 <li><strong>개설 상호명:</strong> {storeName} (가맹점 ID: {storeId})</li>
                                                                 <li><strong>사업자등록번호:</strong> {bizNo}</li>
                                                                 <li><strong>정산 지급 계좌:</strong> {bankName} {accountNo}</li>
+                                                                <li><strong>🪑 테이블 구성:</strong> {tableCount}개 / 총 {tableSizes.slice(0, tableCount).reduce((a, b) => a + b, 0)}석</li>
                                                                 <li><strong>계약 지원 월 수수료:</strong> 월 50,000원 (정상)</li>
                                                             </ul>
                                                         </div>
-                                                        <button 
-                                                            className="form-action-btn" 
+                                                        <button
+                                                            className="form-action-btn"
                                                             style={{ width: '100%', background: 'linear-gradient(135deg, #10B981, #059669)', fontSize: '0.95rem' }}
                                                             onClick={handleBuildStoreAction}
                                                         >
@@ -995,117 +1170,129 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                                                     </div>
                                                 )}
 
-                                                {/* Step 7 Form: Menu Registration */}
-                                                {msg.formType === 'menu-registration' && currentStep === 7 && (
+                                                {/* Step 8 Form: Menu Registration */}
+                                                {msg.formType === 'menu-registration' && currentStep === 8 && (
                                                     <div style={{ padding: '15px 0' }}>
-                                                        <h4 style={{ margin: '0 0 15px 0', fontSize: '1.05rem', color: '#10b981', fontWeight: 800 }}>🍳 대표 메뉴판 직접 구성 및 가격 교정</h4>
-                                                        
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', maxHeight: '350px', overflowY: 'auto', paddingRight: '5px' }}>
-                                                            {menuItems.map((menu, idx) => (
-                                                                <div key={idx} style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '12px', padding: '12px 15px' }}>
-                                                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
-                                                                        <span style={{ fontSize: '1.4rem' }}>{menu.icon}</span>
-                                                                        <input 
-                                                                            type="text" 
-                                                                            value={menu.name} 
-                                                                            onChange={(e) => {
-                                                                                const newMenus = [...menuItems];
-                                                                                newMenus[idx].name = e.target.value;
-                                                                                setMenuItems(newMenus);
-                                                                            }}
-                                                                            placeholder="메뉴명"
-                                                                            style={{ flex: 1.5, padding: '8px 10px', borderRadius: '8px', background: '#000', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.85rem' }}
-                                                                        />
-                                                                        <input 
-                                                                            type="text" 
-                                                                            value={menu.value} 
-                                                                            onChange={(e) => {
-                                                                                const newMenus = [...menuItems];
-                                                                                newMenus[idx].value = e.target.value.replace(/[^0-9]/g, '');
-                                                                                setMenuItems(newMenus);
-                                                                            }}
-                                                                            placeholder="가격"
-                                                                            style={{ flex: 0.8, padding: '8px 10px', borderRadius: '8px', background: '#000', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '0.85rem', fontWeight: 'bold', textAlign: 'right' }}
-                                                                        />
-                                                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>원</span>
-                                                                        <button 
-                                                                            type="button" 
-                                                                            onClick={() => {
-                                                                                setMenuItems(menuItems.filter((_, i) => i !== idx));
-                                                                            }}
-                                                                            style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '1.1rem', cursor: 'pointer', padding: '5px' }}
-                                                                            title="삭제"
-                                                                        >
-                                                                            🗑️
-                                                                        </button>
-                                                                    </div>
-                                                                    
-                                                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                                                        <select 
-                                                                            value={menu.category} 
-                                                                            onChange={(e) => {
-                                                                                const newMenus = [...menuItems];
-                                                                                newMenus[idx].category = e.target.value;
-                                                                                setMenuItems(newMenus);
-                                                                            }}
-                                                                            style={{ padding: '6px 10px', borderRadius: '6px', background: '#000', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.75rem' }}
-                                                                        >
-                                                                            <option value="식사">식사</option>
-                                                                            <option value="주메뉴">주메뉴</option>
-                                                                            <option value="주류">주류</option>
-                                                                            <option value="음료">음료</option>
-                                                                            <option value="사이드">사이드</option>
-                                                                        </select>
-                                                                        
-                                                                        <input 
-                                                                            type="text" 
-                                                                            value={menu.description} 
-                                                                            onChange={(e) => {
-                                                                                const newMenus = [...menuItems];
-                                                                                newMenus[idx].description = e.target.value;
-                                                                                setMenuItems(newMenus);
-                                                                            }}
-                                                                            placeholder="상세 설명 (예: 참숯으로 조리해 깊은 아로마...)"
-                                                                            style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', background: '#000', border: '1px solid rgba(255,255,255,0.1)', color: '#bbb', fontSize: '0.75rem' }}
-                                                                        />
-                                                                    </div>
+                                                        {/* 헤더: 제목 + 스캔 버튼 */}
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                                                            <h4 style={{ margin: 0, fontSize: '1rem', color: '#10b981', fontWeight: 800 }}>
+                                                                🍳 메뉴판 구성 <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>({menuItems.length}개)</span>
+                                                            </h4>
+                                                            <button
+                                                                type="button"
+                                                                onClick={startMenuScan}
+                                                                style={{ padding: '8px 14px', borderRadius: '8px', background: '#1e40af', border: 'none', color: '#fff', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                                                            >
+                                                                📸 사진 스캔
+                                                            </button>
+                                                        </div>
+
+                                                        {/* 컬럼 헤더 */}
+                                                        {menuItems.length > 0 && (
+                                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '0 10px 6px', fontSize: '0.7rem', color: '#64748b', fontWeight: 700 }}>
+                                                                <span style={{ width: '32px', textAlign: 'center' }}>아이콘</span>
+                                                                <span style={{ width: '75px' }}>분류</span>
+                                                                <span style={{ flex: 1 }}>메뉴명</span>
+                                                                <span style={{ width: '85px', textAlign: 'right' }}>가격(원)</span>
+                                                                <span style={{ width: '24px' }}></span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* 메뉴 목록 */}
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '14px', maxHeight: '320px', overflowY: 'auto', paddingRight: '2px' }}>
+                                                            {menuItems.length === 0 ? (
+                                                                <div style={{ padding: '40px 20px', textAlign: 'center', color: '#475569', fontSize: '0.88rem', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '10px' }}>
+                                                                    <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📋</div>
+                                                                    메뉴가 없습니다.<br />
+                                                                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>사진을 스캔하거나 직접 추가해 주세요.</span>
+                                                                </div>
+                                                            ) : menuItems.map((menu, idx) => (
+                                                                <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '8px 10px' }}>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={menu.icon}
+                                                                        onChange={(e) => { const m = [...menuItems]; m[idx].icon = e.target.value; setMenuItems(m); }}
+                                                                        style={{ width: '32px', textAlign: 'center', fontSize: '1.2rem', border: 'none', background: 'transparent', color: '#fff', padding: 0 }}
+                                                                    />
+                                                                    <select
+                                                                        value={menu.category}
+                                                                        onChange={(e) => { const m = [...menuItems]; m[idx].category = e.target.value; setMenuItems(m); }}
+                                                                        style={{ width: '75px', padding: '5px 4px', borderRadius: '6px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.12)', color: '#cbd5e1', fontSize: '0.72rem' }}
+                                                                    >
+                                                                        <option value="식사">식사</option>
+                                                                        <option value="주메뉴">주메뉴</option>
+                                                                        <option value="주류">주류</option>
+                                                                        <option value="음료">음료</option>
+                                                                        <option value="사이드">사이드</option>
+                                                                        <option value="디저트">디저트</option>
+                                                                        <option value="추천">추천</option>
+                                                                        <option value="기타">기타</option>
+                                                                    </select>
+                                                                    <input
+                                                                        type="text"
+                                                                        value={menu.name}
+                                                                        onChange={(e) => { const m = [...menuItems]; m[idx].name = e.target.value; setMenuItems(m); }}
+                                                                        placeholder="메뉴명"
+                                                                        style={{ flex: 1, padding: '6px 8px', borderRadius: '6px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.12)', color: '#f1f5f9', fontSize: '0.85rem', fontWeight: 600 }}
+                                                                    />
+                                                                    <input
+                                                                        type="text"
+                                                                        value={menu.value}
+                                                                        onChange={(e) => { const m = [...menuItems]; m[idx].value = e.target.value.replace(/[^0-9]/g, ''); setMenuItems(m); }}
+                                                                        placeholder="0"
+                                                                        style={{ width: '85px', padding: '6px 8px', borderRadius: '6px', background: '#0f172a', border: '1px solid rgba(255,255,255,0.12)', color: '#f97316', fontSize: '0.85rem', fontWeight: 700, textAlign: 'right' }}
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setMenuItems(menuItems.filter((_, i) => i !== idx))}
+                                                                        style={{ background: 'transparent', border: 'none', color: '#ef4444', fontSize: '1.1rem', cursor: 'pointer', padding: '0 2px', lineHeight: 1 }}
+                                                                    >×</button>
                                                                 </div>
                                                             ))}
                                                         </div>
-                                                        
-                                                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => {
-                                                                    const icons = ['🍲', '🥩', '🍗', '🍺', '☕', '🍛', '🍱', '🍤', '🍕', '🍔'];
-                                                                    const randomIcon = icons[Math.floor(Math.random() * icons.length)];
-                                                                    setMenuItems([
-                                                                        ...menuItems, 
-                                                                        { name: '신규 인기 메뉴', value: '10000', icon: randomIcon, category: '식사', description: '매장에서 정성껏 준비한 당일 한정 수제 메뉴' }
-                                                                    ]);
-                                                                }}
+
+                                                        {/* 액션 버튼 */}
+                                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setMenuItems([...menuItems, { name: '', value: '', icon: '🍴', category: '식사', description: '' }])}
                                                                 className="form-action-btn"
-                                                                style={{ background: '#334155', fontSize: '0.82rem', padding: '10px 15px' }}
+                                                                style={{ background: '#334155', fontSize: '0.82rem', padding: '10px 14px', flex: 1 }}
                                                             >
-                                                                ➕ 새 메뉴 추가
+                                                                ➕ 직접 추가
                                                             </button>
-                                                            <button 
-                                                                type="button" 
+                                                            <button
+                                                                type="button"
                                                                 onClick={handleMenuSubmit}
                                                                 className="form-action-btn success-green"
-                                                                style={{ fontSize: '0.85rem', padding: '10px 24px', fontWeight: 'bold' }}
+                                                                style={{ fontSize: '0.85rem', padding: '10px 18px', fontWeight: 'bold', flex: 2 }}
                                                             >
-                                                                🍳 메뉴판 지식 전송 및 등록 완료 ➔
+                                                                🍳 메뉴판 등록 완료 ➔
                                                             </button>
                                                         </div>
                                                     </div>
                                                 )}
 
-                                                {/* Step 8 Form: Staff Onboarding */}
-                                                {msg.formType === 'staff-registration' && currentStep === 8 && (
-                                                    <form onSubmit={handleStaffSubmit} style={{ padding: '15px 0' }}>
+                                                {/* Step 9 Form: Staff Onboarding */}
+                                                {msg.formType === 'staff-registration' && currentStep === 9 && (
+                                                    <div style={{ padding: '15px 0' }}>
                                                         <h4 style={{ margin: '0 0 15px 0', fontSize: '1.05rem', color: 'var(--accent-orange)', fontWeight: 800 }}>👥 스태프 신규 채용 및 근무 스케줄 일괄 매핑</h4>
-                                                        
+
+                                                        {/* 등록된 직원 목록 */}
+                                                        {registeredStaff.length > 0 && (
+                                                            <div style={{ marginBottom: '16px', background: 'rgba(234,88,12,0.06)', border: '1px solid rgba(234,88,12,0.2)', borderRadius: '10px', padding: '12px' }}>
+                                                                <p style={{ margin: '0 0 8px 0', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 'bold' }}>✅ 등록 완료 ({registeredStaff.length}명)</p>
+                                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                                                    {registeredStaff.map((s, i) => (
+                                                                        <span key={i} style={{ background: 'rgba(234,88,12,0.15)', border: '1px solid rgba(234,88,12,0.3)', borderRadius: '20px', padding: '4px 12px', fontSize: '0.8rem', color: '#fff' }}>
+                                                                            👤 {s.name} <span style={{ opacity: 0.6 }}>({s.role === 'manager' ? '점장' : '점원'} · {s.wage.toLocaleString()}원)</span>
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        <form onSubmit={handleStaffSubmit}>
                                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
                                                             <div className="form-row">
                                                                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>직원 성함</label>
@@ -1206,183 +1393,34 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                                                             </div>
                                                         </div>
 
-                                                        <button 
-                                                            type="submit" 
+                                                        <button
+                                                            type="submit"
                                                             className="form-action-btn premium-orange"
                                                             style={{ width: '100%', fontSize: '0.9rem', padding: '12px', fontWeight: 'bold' }}
+                                                            disabled={isTyping}
                                                         >
-                                                            👥 사원 근로 요건 즉시 승인 및 채용 완료 ➔
+                                                            {isTyping ? '등록 중...' : '👥 사원 등록 추가 ➔'}
                                                         </button>
-                                                    </form>
+                                                        </form>
+
+                                                        {/* 완료 / 건너뛰기 버튼 */}
+                                                        <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                                                            <button
+                                                                onClick={handleProceedToQR}
+                                                                className="form-action-btn premium-orange"
+                                                                style={{ flex: 1, fontSize: '0.9rem', padding: '12px', fontWeight: 'bold' }}
+                                                                disabled={isTyping}
+                                                            >
+                                                                {registeredStaff.length > 0 ? `✅ 직원 등록 완료 (${registeredStaff.length}명) → QR 센터` : '⏭️ 건너뛰고 QR 센터로'}
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 )}
 
-                                                {/* Step 9 View: The Operations & QR Printing Center */}
+                                                {/* Step 10: qr-center message — actual QR content is in the fullscreen overlay above */}
                                                 {msg.formType === 'qr-center' && (
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                                        
-                                                        {/* Operating Instructions Block */}
-                                                        <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '12px', textAlign: 'left' }}>
-                                                            <h4 style={{ color: '#0F172A', fontWeight: 900, marginBottom: '8px' }}>🌾 가맹점 초정밀 3단계 핵심 운영법</h4>
-                                                            <ol style={{ margin: 0, paddingLeft: '20px', fontSize: '0.78rem', color: '#334155', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                                <li>
-                                                                    <strong>디지털 메뉴 구축 (1분)</strong>:
-                                                                    로그인 후 홈화면에서 <strong>대표 메뉴판/빌지 실물 이미지</strong>를 스캔 업로드하시면 AI가 메뉴 이름과 가격을 판독하여 3초 만에 디지털 메뉴판을 자동 생성합니다.
-                                                                </li>
-                                                                <li>
-                                                                    <strong>직원(점원) 가입 및 시급 세팅</strong>:
-                                                                    직원들이 '점원' 역할로 가입 신청을 넣으면 점주님 POS화면 홈에서 클릭 한 번으로 승인됩니다. 승인 시 해당 직원의 요일별 스케줄과 근로계약서, 기본 시급을 지정할 수 있습니다.
-                                                                </li>
-                                                                <li>
-                                                                    <strong>출퇴근 QR 스캔 통제</strong>:
-                                                                    직원들은 카운터에 부착된 출퇴근 QR을 출퇴근 예정 10분 전후로만 찍을 수 있습니다. 무단 체류나 허위 등록 시 자동 차단되며 조기 출근/지각 시 자동으로 근태 로그에 남습니다.
-                                                                </li>
-                                                            </ol>
-                                                        </div>
-
-                                                        {/* QR Code Cards Grid */}
-                                                        <h4 style={{ color: '#0F172A', fontWeight: 900, borderBottom: '2px solid #E2E8F0', paddingBottom: '8px', margin: '15px 0 0 0' }}>🔳 매장 필수 6대 스마트 QR 마스터 인쇄지</h4>
-                                                        
-                                                        <div className="qr-preview-grid">
-                                                            
-                                                            {/* 1. Queue QR */}
-                                                            <div className="qr-card-printable">
-                                                                <span className="qr-card-badge">입점 대기</span>
-                                                                <div className="qr-card-title">🚶 입구 대기 신청 QR</div>
-                                                                <div className="qr-card-desc">매장 입구 대기선이나 배너에 부착하세요. 만석 시 손님이 줄 서지 않고 대기 순서를 셀프로 접수합니다.</div>
-                                                                <div className="qr-card-code-box">
-                                                                    <svg width="140" height="140" style={{ background: 'white' }}>
-                                                                        <rect x="0" y="0" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="100" y="0" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="0" y="100" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="40" y="40" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="80" y="80" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="60" y="20" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="20" y="60" width="20" height="20" fill="#1A202C" />
-                                                                    </svg>
-                                                                </div>
-                                                                <div className="qr-card-placement-tip">💡 추천 위치: 가게 유리창 안쪽 or 스탠딩 거치대</div>
-                                                                <div className="qr-card-staff-tip">🧑‍🍳 스태프 교육 가이드: 손님이 스캔해 등록하면 카운터 패드에 알림음이 울립니다. 점장님은 순서에 맞춰 카운터에서 [대기 호출] 버튼을 클릭해 안내해 주시면 됩니다.</div>
-                                                            </div>
-
-                                                            {/* 2. Order QR */}
-                                                            <div className="qr-card-printable">
-                                                                <span className="qr-card-badge">식사 주문</span>
-                                                                <div className="qr-card-title">📱 실시간 테이블 오더 QR</div>
-                                                                <div className="qr-card-desc">각 식사 테이블 측면이나 번호판에 부착하세요. 손님이 앉은 자리에서 직원을 부르지 않고 실시간 주문을 전달합니다.</div>
-                                                                <div className="qr-card-code-box">
-                                                                    <svg width="140" height="140" style={{ background: 'white' }}>
-                                                                        <rect x="0" y="0" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="100" y="0" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="0" y="100" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="60" y="60" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="20" y="40" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="80" y="40" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="40" y="80" width="20" height="20" fill="#1A202C" />
-                                                                    </svg>
-                                                                </div>
-                                                                <div className="qr-card-placement-tip">💡 추천 위치: 각 식탁 구석 번호 스티커 옆</div>
-                                                                <div className="qr-card-staff-tip">🧑‍🍳 스태프 교육 가이드: 손님 오더 완료 즉시 주방 전용 KDS 모니터로 번호판 카드와 조리 목록이 실시간으로 전송 및 깜빡이기 시작하니 직관적인 조리를 준비하세요.</div>
-                                                            </div>
-
-                                                            {/* 3. Payment QR */}
-                                                            <div className="qr-card-printable">
-                                                                <span className="qr-card-badge">테이블 결제</span>
-                                                                <div className="qr-card-title">💳 즉석 간편 테이블 결제 QR</div>
-                                                                <div className="qr-card-desc">선불 매장용 테이블 혹은 카운터 부착용. 손님이 스마트폰에서 직접 카드로 결제하고 빌지를 대조합니다.</div>
-                                                                <div className="qr-card-code-box">
-                                                                    <svg width="140" height="140" style={{ background: 'white' }}>
-                                                                        <rect x="0" y="0" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="100" y="0" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="0" y="100" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="60" y="20" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="20" y="80" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="80" y="60" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="80" y="100" width="20" height="20" fill="#1A202C" />
-                                                                    </svg>
-                                                                </div>
-                                                                <div className="qr-card-placement-tip">💡 추천 위치: 수저통 뚜껑 위 또는 카운터 앞 안내판</div>
-                                                                <div className="qr-card-staff-tip">🧑‍🍳 스태프 교육 가이드: 선불 결제 확인 즉시 '결제완료' 플래그가 주방판에 동기화되며, 후불 매장은 손님이 나갈 때 카운터 패드에 합산 정산 확인 시 퇴실 조치합니다.</div>
-                                                            </div>
-
-                                                            {/* 4. WiFi QR */}
-                                                            <div className="qr-card-printable">
-                                                                <span className="qr-card-badge">Wi-Fi 프리</span>
-                                                                <div className="qr-card-title">📶 와이파이 자동연결 프리 QR</div>
-                                                                <div className="qr-card-desc">벽면에 부착하세요. 손님들이 비밀번호를 물어보는 번거로움 없이 카메라 스캔 단 한 번으로 와이파이에 자동 접속됩니다.</div>
-                                                                <div className="qr-card-code-box">
-                                                                    <svg width="140" height="140" style={{ background: 'white' }}>
-                                                                        <rect x="0" y="0" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="100" y="0" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="0" y="100" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="40" y="20" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="80" y="20" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="20" y="60" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="60" y="80" width="20" height="20" fill="#1A202C" />
-                                                                    </svg>
-                                                                </div>
-                                                                <div className="qr-card-placement-tip">💡 추천 위치: 기둥 기와 벽면 눈높이 위치</div>
-                                                                <div className="qr-card-staff-tip">🧑‍🍳 스태프 교육 가이드: 와이파이 비밀번호를 손님이 복잡하게 기입하여 물어보실 때, 친절히 '벽면 와이파이 QR코드를 비춰만 주세요' 하고 대처해 홀의 동선 피로감을 줄이세요.</div>
-                                                            </div>
-
-                                                            {/* 5. Attendance QR */}
-                                                            <div className="qr-card-printable">
-                                                                <span className="qr-card-badge">근태 통제</span>
-                                                                <div className="qr-card-title">⏰ 직원 출퇴근 전용 보안 QR</div>
-                                                                <div className="qr-card-desc">직원 전용 구역에 부착하세요. 부정 대리 출석이 완전 불가능하며 근계 스케줄 기준 10분 전후 타임가드를 제공합니다.</div>
-                                                                <div className="qr-card-code-box">
-                                                                    <svg width="140" height="140" style={{ background: 'white' }}>
-                                                                        <rect x="0" y="0" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="100" y="0" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="0" y="100" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="40" y="60" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="60" y="40" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="80" y="60" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="60" y="100" width="20" height="20" fill="#1A202C" />
-                                                                    </svg>
-                                                                </div>
-                                                                <div className="qr-card-placement-tip">💡 추천 위치: 카운터 포스 뒤쪽 스태프 보드</div>
-                                                                <div className="qr-card-staff-tip">🧑‍🍳 스태프 교육 가이드: 본인 스케줄 기준 출퇴근 전후 10분 외엔 스캔이 원천 거절되니 시간엄수를 꼭 교육하세요. 지각 시 근태표에 지각 플래그가 자동 기입됩니다.</div>
-                                                            </div>
-
-                                                            {/* 6. Manual QR */}
-                                                            <div className="qr-card-printable">
-                                                                <span className="qr-card-badge">운영 매뉴얼</span>
-                                                                <div className="qr-card-title">📖 직원 전용 운영가이드 QR</div>
-                                                                <div className="qr-card-desc">새로 근무하게 된 아르바이트생과 신입 사원이 수시로 접속해 가게 운영 규칙과 청소 매뉴얼, 편의시설 가이드를 정독합니다.</div>
-                                                                <div className="qr-card-code-box">
-                                                                    <svg width="140" height="140" style={{ background: 'white' }}>
-                                                                        <rect x="0" y="0" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="100" y="0" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="0" y="100" width="40" height="40" fill="#1A202C" />
-                                                                        <rect x="40" y="40" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="60" y="60" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="80" y="40" width="20" height="20" fill="#1A202C" />
-                                                                        <rect x="20" y="20" width="20" height="20" fill="#1A202C" />
-                                                                    </svg>
-                                                                </div>
-                                                                <div className="qr-card-placement-tip">💡 추천 위치: 주방 스태프 보드판 또는 락커 룸 문</div>
-                                                                <div className="qr-card-staff-tip">🧑‍🍳 스태프 교육 가이드: 신입 점원이 투입되면 말로 복잡하게 반복 설명하지 말고, 이 매뉴얼 QR을 스캔 정독하게끔 하여 자율 교육 환경을 이끌어내세요.</div>
-                                                            </div>
-
-                                                        </div>
-
-                                                        <div style={{ display: 'flex', gap: '15px', marginTop: '25px' }}>
-                                                            <button 
-                                                                className="form-action-btn" 
-                                                                style={{ flex: 1, background: '#2D3E4F', gap: '8px' }}
-                                                                onClick={() => window.print()}
-                                                            >
-                                                                🖨️ 목적별 QR 마스터지 인쇄하기
-                                                            </button>
-                                                            <button 
-                                                                className="form-action-btn" 
-                                                                style={{ flex: 1, background: 'linear-gradient(135deg, #ea580c, #ea580c)', gap: '8px' }}
-                                                                onClick={handleEnterDashboard}
-                                                            >
-                                                                🏠 지능형 매장 통합 상황실로 입장하기 ➔
-                                                            </button>
-                                                        </div>
-
+                                                    <div style={{ padding: '10px', background: 'rgba(234,88,12,0.08)', border: '1px solid rgba(234,88,12,0.2)', borderRadius: '10px', fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center' }}>
+                                                        🔳 QR 마스터 인쇄 센터가 위에 열려 있습니다
                                                     </div>
                                                 )}
 
@@ -1406,7 +1444,7 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                         </div>
 
                         {/* Text input footer (Muted in summary / QR center to focus on actions) */}
-                        {currentStep < 7 && (
+                        {currentStep < 8 && (
                             <div className="chat-room-input-bar">
                                 <input 
                                     className="chat-input-field" 

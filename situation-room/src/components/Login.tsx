@@ -8,6 +8,7 @@ interface LoginProps {
 }
 
 const hashPassword = async (password: string): Promise<string> => {
+    if (!crypto?.subtle) return password; // HTTP(비보안) 환경 폴백: 평문 그대로 반환
     const msgUint8 = new TextEncoder().encode(password);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -35,35 +36,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
     const [isVerified, setIsVerified] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
 
-    // 지식 풀(bundles) 및 플랫폼 기본 제공 9대 프랜차이즈 매장 통합 추출 (현재 사용중인 모든 매장명 기본제공)
+    // bundles에서 동적으로 매장 목록 수집
     const availableStores = React.useMemo(() => {
         const storesMap = new Map<string, string>(); // storeName -> storeId
-        
-        // 1. 플랫폼 고유의 9대 가맹점 기본 탑재
-        storesMap.set('대장금 수라간', 'store-korean');
-        storesMap.set('그레이스 하이테크 커피', 'store-coffee');
-        storesMap.set('대관령 황금 한우', 'store-beef');
-        storesMap.set('한옥마을 수제 초당순두부', 'store-tofu');
-        storesMap.set('우정 전주 돌솥비빔밥', 'store-bibim');
-        storesMap.set('취홍루', 'store-chinese');
-        storesMap.set('미도리 스시', 'store-japanese');
-        storesMap.set('시크앤프레시', 'store-1');
-        storesMap.set('라 벨라 이탈리아', 'store-western');
-
-        // 2. StoreConfig 번들에서 동적 수집된 데이터 병합 (가장 최신 데이터 덮어쓰기)
-        bundles.forEach(b => {
-            if (b.type === 'StoreConfig' && b.store && b.store !== 'Total' && b.store_id) {
-                storesMap.set(b.store, b.store_id);
-            }
-        });
-        
-        // 3. 기타 가용 정보에서도 추가 수집
         bundles.forEach(b => {
             if (b.store && b.store !== 'Total' && b.store_id) {
                 storesMap.set(b.store, b.store_id);
             }
         });
-
         return Array.from(storesMap.entries()).map(([name, id]) => ({ name, id }));
     }, [bundles]);
 

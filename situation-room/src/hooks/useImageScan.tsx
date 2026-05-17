@@ -78,40 +78,8 @@ export const useImageScan = ({ docType, onSuccess }: UseImageScanOptions) => {
             onSuccess(result, overwriteMode);
             
         } catch (err: any) {
-            logger.warn(`[Scan] AI 1차 분석 장애 감지 (${err.message}). 초정밀 로컬 오프라인 복구 엔진으로 즉시 대체 기동합니다.`);
-            
-            // 🌟 예외 상황에서도 점주님이 기대하시는 3.8초의 분석 연출 시간을 100% 보장합니다.
-            const elapsed = Date.now() - startTime;
-            if (elapsed < 3800) {
-                await new Promise(resolve => setTimeout(resolve, 3800 - elapsed));
-            }
-
-            // 🌟 로컬 오프라인 매핑 엔진 가동
-            if (docType === 'menu') {
-                const mockMenuResult = {
-                    items: [
-                        { name: "☕ 시크 아메리카노", price: 4500, category: "커피 / 음료", description: "시크빌만의 엄선된 원두로 내린 부드럽고 깊은 풍미의 시그니처 아메리카노" },
-                        { name: "🥛 크림 바닐라 라떼", price: 5500, category: "커피 / 음료", description: "천연 바닐라 빈과 수제 크림이 고급스럽게 블렌딩된 라떼" },
-                        { name: "🍊 수제 자몽 에이드", price: 6000, category: "커피 / 음료", description: "매장에서 매일 직접 담그는 생과일 자몽 청과 시원한 탄산수의 하모니" },
-                        { name: "🍕 클래식 마르게리타 피자", price: 16500, category: "요리 안주", description: "생 바질, 마스카포네/모짜렐라 치즈, 토마토 소스를 가득 얹은 나폴리식 피자" },
-                        { name: "🍤 매콤 감바스 알 아히요", price: 18000, category: "요리 안주", description: "엑스트라 버진 오일에 알새우, 편마늘, 방울토마토가 끓어오르는 스페인 대표 파티 요리" },
-                        { name: "🥗 리코타 생과일 샐러드", price: 13000, category: "사이드", description: "매일 아침 수제로 내리는 신선한 리코타 치즈와 새콤달콤 제철 생과일 샐러드" },
-                        { name: "🍰 꾸덕 뉴욕 치즈케이크", price: 6500, category: "디저트", description: "크림치즈 함량이 높아 혀끝에서 녹아내리는 오리지널 진한 조각 케이크" }
-                    ]
-                };
-                onSuccess(mockMenuResult, overwriteMode);
-                alert("✨ [로컬 오프라인 OCR 복구 완료]\n\n네트워크 지연 상태를 우회하여, 고품질 오프라인 이미지 판독 처리를 완료했습니다!\n\n상호명 '시크빌' 맞춤 시그니처 추천 메뉴 7종이 완벽히 스캔 등록되었습니다.");
-            } else {
-                const mockRegResult = {
-                    brand: "시크빌",
-                    regNo: "5871301146",
-                    address: "울산광역시 중구 성남동",
-                    owner: "김종심",
-                    openDate: "20191216"
-                };
-                onSuccess(mockRegResult, overwriteMode);
-                alert("✨ [로컬 오프라인 OCR 복구 완료]\n\n네트워크 지연 상태를 우회하여, 고품질 오프라인 이미지 판독 처리를 완료했습니다!\n\n- 상호명: 시크빌\n- 사업자번호: 587-13-01146\n- 대표자명: 김종심\n- 개업연월일: 2019년 12월 16일");
-            }
+            logger.error(`[Scan] 이미지 분석 실패: ${err.message}`);
+            alert(`이미지 분석에 실패했습니다.\n\n오류: ${err.message}\n\nOpenAI API 키가 설정되어 있는지 확인해 주세요.`);
         } finally {
             setIsScanning(false);
             if (fileInputRef.current) fileInputRef.current.value = '';

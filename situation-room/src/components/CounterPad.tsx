@@ -23,6 +23,32 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const [sessions, setSessions] = useState<any[]>([]);
     const [selectedSessionForPay, setSelectedSessionForPay] = useState<any | null>(null);
     const [selectedOrderForPay, setSelectedOrderForPay] = useState<any | null>(null);
+    const [seatRequests, setSeatRequests] = useState<{ table_id: string; timestamp: string }[]>([]);
+    const [vipPayerInfo, setVipPayerInfo] = useState<{ phone: string; topPercent: number } | null>(null);
+    const [vipFlashVisible, setVipFlashVisible] = useState(false);
+
+    const playDingDong = () => {
+        try {
+            const audio = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2014/09/Ding-dong.mp3');
+            audio.play().catch(() => {});
+        } catch {}
+    };
+
+    const fetchSeatRequests = useCallback(async () => {
+        try {
+            const apiUrl = getApiUrl();
+            const res = await fetch(`${apiUrl}/api/seat-requests?store_id=${storeId || 'Total'}`);
+            if (!res.ok) return;
+            const data: { table_id: string; timestamp: string }[] = await res.json();
+            setSeatRequests(prev => {
+                const newIds = data.map(r => r.table_id);
+                const prevIds = prev.map(r => r.table_id);
+                const added = newIds.filter(id => !prevIds.includes(id));
+                if (added.length > 0) playDingDong();
+                return data;
+            });
+        } catch {}
+    }, [storeId]);
 
     const fetchSessions = useCallback(async () => {
         try {
@@ -48,10 +74,23 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         const topic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : `store/+/kitchen`;
         
         const messageHandler = (data: any) => {
+            if (data.type === 'SEAT_REQUEST') {
+                setSeatRequests(prev => {
+                    if (prev.some(r => r.table_id === data.table_id)) return prev;
+                    playDingDong();
+                    return [...prev, { table_id: data.table_id, timestamp: data.timestamp }];
+                });
+                return;
+            }
+            if (data.type === 'SESSION_OPENED') {
+                setSeatRequests(prev => prev.filter(r => r.table_id !== data.session?.table_id));
+                fetchSessions();
+                return;
+            }
             if ([
                 'NEW_ORDER', 'STATUS_UPDATE', 'ORDER_UPDATED', 'ORDER_PLACED', 'NEW_ORDER_DIRECT',
                 'SESSION_CLOSED', 'PAYMENT_CONFIRMED', 'PARTIAL_SETTLEMENT',
-                'STAFF_CALL', 'PARKING_APPLIED', 'WAITING_REGISTERED', 'SESSION_OPENED'
+                'STAFF_CALL', 'PARKING_APPLIED', 'WAITING_REGISTERED'
             ].includes(data.type)) {
                 fetchSessions();
             }
@@ -69,9 +108,15 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     }, [storeId, fetchSessions]); // fetchSessions 의존성 추가
 
     useEffect(() => {
-        // Refetch detailed sessions whenever global bundles update (fallback for MQTT misses)
         fetchSessions();
-    }, [bundles, fetchSessions]); // fetchSessions 의존성 추가
+    }, [bundles, fetchSessions]);
+
+    // 좌석 요청 3초 폴링 (MQTT 보완)
+    useEffect(() => {
+        fetchSeatRequests();
+        const interval = setInterval(fetchSeatRequests, 3000);
+        return () => clearInterval(interval);
+    }, [fetchSeatRequests]);
 
 
 
@@ -142,7 +187,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const handleCancelWithRefund = async (order: any) => {
         const isPrepaid = order.payment_status === 'paid' || order.payment_status === 'prepaid';
         const confirmMsg = isPrepaid
-            ? `#${order.order_seq}차 주문(${order.total_price.toLocaleString()}원)은 선불 결제된 주문입니다.\n취소 시 토스 환불 처리를 시도합니다.\n계속하시겠습니까?`
+            ? `#${order.order_seq}차 주문(${(order.total_price ?? order.total ?? 0).toLocaleString()}원)은 선불 결제된 주문입니다.\n취소 시 토스 환불 처리를 시도합니다.\n계속하시겠습니까?`
             : `#${order.order_seq}차 주문을 취소하시겠습니까?\n취소 후에는 되돌릴 수 없습니다.`;
 
         if (!window.confirm(confirmMsg)) return;
@@ -213,6 +258,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             });
             
             if (res.ok) {
+                setSeatRequests(prev => prev.filter(r => r.table_id !== tableToOpen));
                 fetchSessions();
             } else {
                 const errorText = await res.text();
@@ -247,11 +293,55 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
 
     return (
         <div className="counter-pad-premium" style={{ padding: '20px', background: 'var(--bg-main)', minHeight: 'auto' }}>
-            <div style={{ 
-                marginBottom: '40px', 
-                padding: '30px', 
-                background: 'var(--surface)', 
-                borderRadius: 'var(--radius-md)', 
+
+            {seatRequests.length > 0 && (
+                <div style={{
+                    marginBottom: '24px',
+                    padding: '20px 24px',
+                    background: 'linear-gradient(135deg, #fff7ed, #ffedd5)',
+                    border: '2px solid #f97316',
+                    borderRadius: 'var(--radius-md)',
+                    boxShadow: '0 4px 20px rgba(249,115,22,0.15)',
+                }}>
+                    <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#c2410c', marginBottom: '12px' }}>
+                        🔔 좌석 승인 요청 ({seatRequests.length}건)
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                        {seatRequests.map(req => (
+                            <div key={req.table_id} style={{
+                                display: 'flex', alignItems: 'center', gap: '10px',
+                                background: 'white', border: '1px solid #fed7aa',
+                                borderRadius: '10px', padding: '10px 16px',
+                                boxShadow: '0 2px 8px rgba(249,115,22,0.1)'
+                            }}>
+                                <span style={{ fontWeight: '700', fontSize: '1rem', color: '#ea580c' }}>
+                                    TABLE {req.table_id}
+                                </span>
+                                <span style={{ fontSize: '0.78rem', color: '#9a3412' }}>
+                                    {new Date(req.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                                <button
+                                    onClick={() => handleOpenSession(req.table_id)}
+                                    style={{
+                                        background: '#f97316', color: 'white',
+                                        border: 'none', borderRadius: '8px',
+                                        padding: '6px 14px', fontWeight: '700',
+                                        fontSize: '0.85rem', cursor: 'pointer',
+                                    }}
+                                >
+                                    승인
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <div style={{
+                marginBottom: '40px',
+                padding: '30px',
+                background: 'var(--surface)',
+                borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--border)',
                 display: 'flex',
                 alignItems: 'center',
@@ -301,26 +391,66 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             </div>
 
             {(selectedSessionForPay || selectedOrderForPay) && (
-                <PaymentModal 
-                    totalPrice={selectedOrderForPay 
-                        ? selectedOrderForPay.total_price 
+                <PaymentModal
+                    totalPrice={selectedOrderForPay
+                        ? (selectedOrderForPay.total_price ?? selectedOrderForPay.total ?? 0)
                         : (selectedSessionForPay?.orders || [])
                             .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
-                            .reduce((sum: number, o: any) => sum + (o.total_price || 0), 0)
+                            .reduce((sum: number, o: any) => sum + (o.total_price ?? o.total ?? 0), 0)
                     }
                     onClose={() => {
                         setSelectedSessionForPay(null);
                         setSelectedOrderForPay(null);
                     }}
-                    onSubmit={() => {
+                    onPayerInfo={(phone, topPercent) => setVipPayerInfo({ phone, topPercent })}
+                    onSubmit={async () => {
                         if (selectedOrderForPay) {
-                            return handlePartialPayment(selectedOrderForPay.order_id);
+                            await handlePartialPayment(selectedOrderForPay.order_id);
                         } else {
-                            return handleCloseSession(selectedSessionForPay.session_id);
+                            await handleCloseSession(selectedSessionForPay.session_id);
+                        }
+                        if (vipPayerInfo && vipPayerInfo.topPercent <= 10) {
+                            setVipFlashVisible(true);
+                            setTimeout(() => {
+                                setVipFlashVisible(false);
+                                setVipPayerInfo(null);
+                            }, 3000);
+                        } else {
+                            setVipPayerInfo(null);
                         }
                     }}
                     isCounter={true}
                 />
+            )}
+
+            {vipFlashVisible && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 9999,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    pointerEvents: 'none',
+                }}>
+                    <div style={{
+                        padding: '40px 60px',
+                        borderRadius: '24px',
+                        background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                        border: '3px solid #f59e0b',
+                        boxShadow: '0 20px 60px rgba(245,158,11,0.4)',
+                        textAlign: 'center',
+                        animation: 'vipFlash 0.6s ease-in-out infinite alternate',
+                    }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '8px' }}>👑</div>
+                        <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#92400e', letterSpacing: '0.1em' }}>VIP</div>
+                        <div style={{ fontSize: '1rem', color: '#b45309', fontWeight: 700, marginTop: '8px' }}>
+                            상위 {vipPayerInfo?.topPercent}% 단골 고객
+                        </div>
+                    </div>
+                    <style>{`
+                        @keyframes vipFlash {
+                            from { opacity: 1; transform: scale(1); }
+                            to { opacity: 0.6; transform: scale(1.06); }
+                        }
+                    `}</style>
+                </div>
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
@@ -331,10 +461,10 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 ) : (
                     Array.isArray(sessions) && sessions.map((session) => {
                         const activeOrders = (session.orders || []).filter((o: any) => o.status !== 'cancelled');
-                        const sessionTotal = activeOrders.reduce((sum: number, o: any) => sum + o.total_price, 0);
+                        const sessionTotal = activeOrders.reduce((sum: number, o: any) => sum + (o.total_price ?? o.total ?? 0), 0);
                         const unpaidTotal = activeOrders
                             .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
-                            .reduce((sum: number, o: any) => sum + o.total_price, 0);
+                            .reduce((sum: number, o: any) => sum + (o.total_price ?? o.total ?? 0), 0);
                         const isAllPrepaid = unpaidTotal === 0;
                         const isPending = session.status === 'pending';
 
@@ -465,7 +595,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                 ))}
                                             </div>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px', paddingTop: '15px', borderTop: '1px solid var(--border)' }}>
-                                                <span style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--accent)', whiteSpace: 'nowrap' }}>{order.total_price.toLocaleString()}원</span>
+                                                <span style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--accent)', whiteSpace: 'nowrap' }}>{(order.total_price ?? order.total ?? 0).toLocaleString()}원</span>
                                                 <div style={{ display: 'flex', gap: '10px' }}>
                                                     <button 
                                                         onClick={() => handleCancelWithRefund(order)}

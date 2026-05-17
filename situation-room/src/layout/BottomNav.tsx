@@ -9,6 +9,7 @@ interface BottomNavProps {
   callCount: number;
   waitingCount: number;
   parkingCount: number;
+  reservationCount: number;
   callFlashing: boolean;
   waitingFlashing: boolean;
   parkingFlashing: boolean;
@@ -23,6 +24,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   callCount,
   waitingCount,
   parkingCount,
+  reservationCount,
   callFlashing,
   waitingFlashing,
   parkingFlashing,
@@ -41,9 +43,10 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           (item.tab === 'points'  && flashingTabs.points  && activeTab !== 'points');
 
         const badge =
-          item.tab === 'call'    && callCount > 0    ? callCount :
-          item.tab === 'waiting' && waitingCount > 0 ? waitingCount :
-          item.tab === 'parking' && parkingCount > 0 ? parkingCount : 0;
+          item.tab === 'call'    && callCount > 0       ? callCount :
+          item.tab === 'waiting' && waitingCount > 0    ? waitingCount :
+          item.tab === 'parking' && parkingCount > 0    ? parkingCount :
+          item.tab === 'reserve' && reservationCount > 0 ? reservationCount : 0;
 
         return (
           <div

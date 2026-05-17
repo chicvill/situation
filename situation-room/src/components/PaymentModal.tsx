@@ -10,6 +10,7 @@ interface PaymentModalProps {
   bundles?: BundleData[];
   initialPhone?: string;
   onPhoneChange?: (val: string) => void;
+  onPayerInfo?: (phone: string, topPercentAccumulated: number) => void;
 }
 
 type Step = 'select' | 'points';
@@ -24,12 +25,14 @@ const METHODS: Method[] = [
 export const PaymentModal: React.FC<PaymentModalProps> = ({
   totalPrice, onClose, onSubmit,
   bundles,
-  initialPhone = '', onPhoneChange,
+  initialPhone = '', onPhoneChange, onPayerInfo,
 }) => {
   const [step, setStep] = React.useState<Step>('select');
   const [selectedMethod, setSelectedMethod] = React.useState<Method | null>(null);
   const [phoneForPoints, setPhoneForPoints] = React.useState(initialPhone);
   const [existingPoints, setExistingPoints] = React.useState(0);
+  const [accumulatedPoints, setAccumulatedPoints] = React.useState(0);
+  const [topPercentAccumulated, setTopPercentAccumulated] = React.useState(100);
   const [usePoints, setUsePoints] = React.useState(0);
   const [requestCashReceipt, setRequestCashReceipt] = React.useState(false);
   const [accumulatePoints, setAccumulatePoints] = React.useState(!!initialPhone);
@@ -57,9 +60,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
       const res = await fetch(`${apiUrl}/api/points/${phone}`);
       const data = await res.json();
-      setExistingPoints(data.points || 0);
+      const usable = data.usable_points ?? data.points ?? 0;
+      const accumulated = data.accumulated_points ?? 0;
+      const topPct = data.top_percent_accumulated ?? 100;
+      setExistingPoints(usable);
+      setAccumulatedPoints(accumulated);
+      setTopPercentAccumulated(topPct);
+      if (onPayerInfo) onPayerInfo(phone, topPct);
     } catch {
       setExistingPoints(0);
+      setAccumulatedPoints(0);
+      setTopPercentAccumulated(100);
     }
   };
 
@@ -87,20 +98,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         {METHODS.map(m => (
           <button
             key={m.id}
-            onClick={async () => {
-              if (m.id === 'card' || m.id === 'transfer') {
-                // 카드/계좌이체는 즉시 결제창 호출
-                try {
-                  await onSubmit(m.name, { phone: '', usePoints: 0 });
-                  onClose();
-                } catch (err) {
-                  alert('결제 준비 중 오류가 발생했습니다.');
-                }
-              } else {
-                // 카운터 결제 등은 기존대로 포인트 확인 단계로 이동 가능 (혹은 선택)
-                setSelectedMethod(m);
-                setStep('points');
-              }
+            onClick={() => {
+              setSelectedMethod(m);
+              setStep('points');
             }}
             style={{
               display:'flex', alignItems:'center', gap:'16px', padding:'16px 20px',
@@ -237,18 +237,35 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
             </div>
 
-            <div style={{ 
-              display:'flex', justifyContent:'space-between', padding: '15px', 
-              background: 'white', borderRadius: '12px', border: '1px solid var(--border)' 
+            <div style={{
+              display:'flex', flexDirection: 'column', gap: '10px', padding: '15px',
+              background: 'white', borderRadius: '12px', border: '1px solid var(--border)'
             }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>보유 포인트</span>
-                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>{existingPoints.toLocaleString()} P</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>사용 가능</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-main)' }}>{existingPoints.toLocaleString()} P</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>누적 합계</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#8b5cf6' }}>{accumulatedPoints.toLocaleString()} P</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-end' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>적립 예정</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent-orange)' }}>+{potentialPoints.toLocaleString()} P</span>
+                </div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>적립 예정</span>
-                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent-orange)' }}>+{potentialPoints.toLocaleString()} P</span>
-              </div>
+              {accumulatedPoints > 0 && (
+                <div style={{
+                  textAlign: 'center', padding: '6px 12px', borderRadius: '8px',
+                  background: topPercentAccumulated <= 10 ? 'linear-gradient(135deg, #fef3c7, #fde68a)' : 'rgba(0,0,0,0.03)',
+                  border: topPercentAccumulated <= 10 ? '1px solid #f59e0b' : '1px solid var(--border)',
+                  fontSize: '0.8rem', fontWeight: 700,
+                  color: topPercentAccumulated <= 10 ? '#92400e' : 'var(--text-muted)'
+                }}>
+                  {topPercentAccumulated <= 10 ? `👑 VIP 단골 고객 — 상위 ${topPercentAccumulated}%` : `상위 ${topPercentAccumulated}% 고객`}
+                </div>
+              )}
             </div>
 
             {existingPoints > 0 ? (

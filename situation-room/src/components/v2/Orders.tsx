@@ -103,7 +103,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
 
   const categories = useMemo(() => ['전체', ...new Set((menus || []).map(m => m.category))], [menus]);
   const totalPrice = useMemo(() => cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0), [cart]);
-  const sessionTotal = useMemo(() => myOrders.reduce((sum, order: Order) => sum + order.total_price, 0), [myOrders]);
+  const sessionTotal = useMemo(() => myOrders.reduce((sum, order: Order) => sum + (order.total_price ?? (order as any).total ?? 0), 0), [myOrders]);
 
   // --- Functions ---
   const fetchMySession = useCallback(async () => {
@@ -507,7 +507,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
                   );
                 })}
                 <div style={{ textAlign:'right', marginTop:'8px', borderTop:'1px solid rgba(255,255,255,0.05)', paddingTop:'5px', fontWeight:900 }}>
-                  합계: {order.total_price.toLocaleString()}원
+                  합계: {(order.total_price ?? (order as any).total ?? 0).toLocaleString()}원
                 </div>
               </div>
             );

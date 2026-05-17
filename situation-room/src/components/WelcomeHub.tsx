@@ -367,7 +367,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
   const getQuickLinks = () => {
     const links = [];
 
-    links.push({ label: '📝 실시간 주문 접수', tab: 'orderV2', desc: '고객 주문 상태 및 결제 승인', icon: '🛒' });
+    links.push({ label: '💰 카운터 주문 관리', tab: 'counter', desc: '고객 주문 상태 및 결제 승인', icon: '🛒' });
     links.push({ label: '👨‍🍳 주방 모니터', tab: 'kitchen', desc: '실시간 요리 현황 및 제조 대기', icon: '🍲' });
     links.push({ label: '🔔 매장 호출 접수', tab: 'call', desc: '테이블 벨 및 직원 긴급 호출', icon: '🛎️' });
     links.push({ label: '📜 매장 운영 매뉴얼', tab: 'manual', desc: '편의시설 비번 및 가이드 확인', icon: '📖' });

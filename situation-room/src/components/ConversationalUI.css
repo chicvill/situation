@@ -156,7 +156,7 @@
 }
 .chat-input-area input::placeholder { color: var(--text-placeholder); }
 .chat-input-area input:focus {
-    border-color: var(--accent-orange);
+    border-color: #2563eb;
     background: var(--surface);
 }
 

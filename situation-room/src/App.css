@@ -214,6 +214,14 @@
   border-top: 1px solid rgba(255,255,255,0.06);
   margin: 8px 4px;
 }
+.drawer-section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.28);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 8px 16px 4px;
+}
 
 /* ── Voice Overlay ── */
 .voice-overlay {

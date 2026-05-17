@@ -72,7 +72,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         if (hasSession && !wasApproved.current) {
             wasApproved.current = true;
             if (messages.length > 0 || hasSpokenWelcome.current) {
-                speak("반갑습니다! 자리가 배정되어 대화식 주문창이 정상 활성화되었습니다. 마이크 단추나 키패드로 편하게 주문해 보세요.");
+                speak("자리가 배정되었습니다. 주문을 시작해 주세요.");
             }
         } else if (!hasSession) {
             wasApproved.current = false;
@@ -194,13 +194,13 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                     {
                         id: 1,
                         sender: 'ai',
-                        text: `🎉 성공적으로 ${Number(initialAmount).toLocaleString()}원의 결제가 완료되었습니다!\n주방에 즉시 소중한 주문이 안전하게 전달되었습니다. 🍲🔥\n\n💡 주문하신 메뉴의 특별한 특징을 소개해 드릴게요:\n- 저희 매장의 시그니처 찌개류는 30년 비법 천연 발효 육수로 조리하여 유산균이 풍부하고 속을 매우 편안하게 해주는 효과가 있습니다.\n- 원두 커피류는 당일 로스팅한 스페셜티 생두만 사용하여 고소하고 깊은 아로마를 자랑합니다.`,
+                        text: `결제가 완료되었습니다! 🎉 ${Number(initialAmount).toLocaleString()}원\n주방에 주문이 전달되었습니다.`,
                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                         showFollowUps: true
                     }
                 ]);
                 if (!hasSpokenWelcome.current) {
-                    speak(`성공적으로 ${Number(initialAmount).toLocaleString()}원의 결제가 완료되었습니다! 주방에 소중한 주문이 안전하게 전달되었습니다.`);
+                    speak(`결제가 완료되었습니다. 주방에 주문이 전달되었습니다.`);
                     hasSpokenWelcome.current = true;
                 }
             } else {
@@ -208,12 +208,12 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                     {
                         id: 1,
                         sender: 'ai',
-                        text: `반갑습니다! 😊 ${storeName}의 AI 스마트 비서입니다.\n\n키오스크 앞에서 어려워하실 필요 없이, 저와 친구처럼 편하게 대화하면서 주문을 진행해 보세요.\n\n🎙️ 아래 마이크 버튼을 탭하고 편하게 원하시는 메뉴를 말씀하시거나, 아래의 [📋 음식 주문할게요!] 버튼을 터치해 주세요.`,
+                        text: `안녕하세요! ${storeName} AI 주문 도우미입니다. 😊\n\n원하시는 메뉴를 말씀하시거나, 아래 버튼을 눌러 시작해 주세요.`,
                         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
                     }
                 ]);
                 if (!hasSpokenWelcome.current) {
-                    speak(`반갑습니다! ${storeName}의 에이아이 스마트 비서입니다. 저와 편하게 대화하면서 주문을 진행해 보세요.`);
+                    speak(`안녕하세요! ${storeName} AI 주문 도우미입니다. 메뉴를 말씀하시거나 버튼을 눌러 시작해 주세요.`);
                     hasSpokenWelcome.current = true;
                 }
             }
@@ -228,11 +228,10 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     }, [messages, cart, orderStep, isPaying]);
 
     const handleCloseWindow = () => {
-        addAiMessage(`이용해 주셔서 진심으로 감사합니다. 😊\n곧 스마트 브라우저 대화창이 종료됩니다. 즐거운 하루 되세요! 안녕히 가세요!`);
+        addAiMessage(`이용해 주셔서 감사합니다. 즐거운 시간 되세요! 😊`);
         setTimeout(() => {
             window.close();
-            // 브라우저의 일반 탭 보안(스크립트로 열지 않은 창은 자바스크립트로 직접 닫을 수 없음)을 고려한 안전 안내 장치
-            alert("식사가 안전하게 종료되었습니다. 이제 스마트폰 브라우저 창을 닫으셔도 좋습니다! 🚪👋");
+            alert("창을 닫아 주세요.");
         }, 1500);
     };
 
@@ -304,7 +303,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     // 1. Start Menu Selection Step
     const startOrderingFlow = () => {
         setOrderStep('menu_selection');
-        addAiMessage(`네! 저희 매장의 최고 인기 메뉴들입니다. 😊\n원하시는 메뉴의 [+ 담기]를 클릭하신 후 아래에서 [결제 진행하기] 버튼을 터치해 주세요.`, { isMenuCarousel: true });
+        addAiMessage(`메뉴를 선택해 주세요. 담은 후 결제 버튼을 눌러주세요. 😊`, { isMenuCarousel: true });
     };
 
     // Add to local dialogue cart
@@ -321,7 +320,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     // 2. Go to Points step
     const handleProceedToPoints = () => {
         setOrderStep('point_guide');
-        addAiMessage(`💳 포인트를 적립해 드릴까요?\n\n적립을 위해 휴대폰 번호를 대화창에 입력해 주시거나, 적립을 원하지 않으시면 아래 [적립 건너뛰기]를 터치해 주세요.`, { isPointGuide: true });
+        addAiMessage(`포인트 적립을 원하시면 휴대폰 번호를 입력해 주세요. 건너뛰려면 아래 버튼을 눌러주세요.`, { isPointGuide: true });
     };
 
     // Select point accumulation option
@@ -335,7 +334,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }]);
 
-        addAiMessage(`🧾 현금영수증 발행이 필요하신가요?\n\n소득공제용 번호(휴대폰 번호 등)를 입력하시거나, 발행하지 않으시려면 아래 버튼을 눌러주세요.`, { isCashInvoiceGuide: true });
+        addAiMessage(`현금영수증이 필요하신가요? 아래에서 선택해 주세요.`, { isCashInvoiceGuide: true });
     };
 
     // Select cash receipt option
@@ -348,7 +347,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }]);
 
-        addAiMessage(`💵 결제 수단을 터치해 주세요.\n대화 형식 그대로 안전하게 승인해 드릴게요!`, { isPaymentMethodGuide: true });
+        addAiMessage(`결제 수단을 선택해 주세요.`, { isPaymentMethodGuide: true });
     };
 
     // Select payment method and show card terminal mockup
@@ -361,7 +360,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }]);
 
-        addAiMessage(`안전한 승인을 시작합니다. 아래 단말기 아이콘 영역에 IC 카드를 대거나 [카드 투입] 버튼을 클릭하시면 승인이 완료됩니다!`, { isCardTerminalSim: true });
+        addAiMessage(`아래 단말기에 카드를 삽입하거나 버튼을 눌러 결제를 완료해 주세요.`, { isCardTerminalSim: true });
     };
 
     // Simulate safe checkout card terminal action
@@ -423,7 +422,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             }]);
 
-            const successText = `🎉 성공적으로 ${cartTotal.toLocaleString()}원의 결제가 완료되었습니다!\n주방에 즉시 소중한 주문이 안전하게 전달되었습니다. 🍲🔥\n\n💡 주문하신 메뉴의 특별한 특징과 효과를 설명해 드릴게요:\n${features || '- [주문된 메뉴]: 엄선된 신선한 최고급 재료만 사용하여 건강하고 속이 편안한 풍미를 보장합니다.'}`;
+            const successText = `결제가 완료되었습니다! 🎉 주방에 주문이 전달되었습니다.\n\n${features || ''}`;
             
             addAiMessage(successText, { showFollowUps: true });
             
@@ -456,18 +455,18 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 })
             });
             if (res.ok) {
-                addAiMessage(`🔔 카운터와 직원 웨어러블에 신호를 정상 전송했습니다!\n잠시만 기다려 주세요! 😊`);
+                addAiMessage(`직원을 호출했습니다. 잠시만 기다려 주세요! 🔔`);
             } else {
-                addAiMessage(`벨 호출이 접수되었습니다. 곧 직원이 가겠습니다!`);
+                addAiMessage(`호출이 접수되었습니다. 곧 직원이 가겠습니다.`);
             }
         } catch (e) {
-            addAiMessage(`🔔 직원 벨 신호가 전송되었습니다. 곧 직원이 가겠습니다!`);
+            addAiMessage(`호출 신호를 전송했습니다. 곧 직원이 가겠습니다.`);
         }
     };
 
     // --- PARKING REGISTRATION FLOW ---
     const triggerParkingFlow = () => {
-        addAiMessage(`🚗 고객님의 무료 주차 인증을 도와드릴게요.\n차량번호 뒤 4자리를 아래 입력칸에 기입하고 [등록] 버튼을 선택해 주세요.`, { showParkingCard: true });
+        addAiMessage(`차량번호 뒤 4자리를 입력하고 등록 버튼을 눌러주세요. 🚗`, { showParkingCard: true });
     };
 
     const handleRegisterParkingChat = async (plateNo: string) => {
@@ -489,12 +488,12 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 })
             });
             if (res.ok) {
-                addAiMessage(`✅ 차량번호 [${plateNo}] 등록이 완료되었습니다!\n무료 주차 혜택이 적용되었습니다! 🚙✨`);
+                addAiMessage(`[${plateNo}] 주차 등록이 완료되었습니다. ✅`);
             } else {
-                addAiMessage(`차량 등록 승인이 전송되었습니다. 곧 처리됩니다!`);
+                addAiMessage(`주차 등록 요청이 전송되었습니다.`);
             }
         } catch (e) {
-            addAiMessage(`✅ [${plateNo}] 주차 승인이 안전하게 전송되었습니다. 즐거운 주말 보내세요!`);
+            addAiMessage(`[${plateNo}] 주차 등록 요청이 전송되었습니다.`);
         }
     };
 
@@ -661,66 +660,81 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
 
     return (
         <div className="conversational-ui-container full-width-mode">
-            {/* Soft, beautiful Kakao-style Header */}
+            {/* Premium dark header */}
             <div className="chat-header-banner" style={{
-                background: 'linear-gradient(135deg, #fef08a, #fde047)',
-                padding: '12px 20px',
-                borderBottom: '1px solid #facc15',
+                background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                padding: '13px 18px',
+                borderBottom: 'none',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                boxShadow: '0 4px 10px rgba(0,0,0,0.03)'
+                boxShadow: '0 2px 12px rgba(0,0,0,0.25)'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ fontSize: '22px' }}>🤖</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
+                    <div style={{
+                        width: '38px', height: '38px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '18px',
+                        boxShadow: '0 2px 8px rgba(37,99,235,0.45)',
+                        flexShrink: 0
+                    }}>☕</div>
                     <div>
-                        <div style={{ fontWeight: 800, fontSize: '0.95rem', color: '#1e293b' }}>{storeName} AI비서</div>
-                        <div style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>[Table {tableNo}] 실시간 대화창</div>
+                        <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#f1f5f9' }}>{storeName} AI</div>
+                        <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '1px' }}>
+                            <span style={{
+                                width: '6px', height: '6px', borderRadius: '50%',
+                                background: '#10b981', display: 'inline-block',
+                                animation: 'pulseGreen 1.5s infinite'
+                            }}></span>
+                            Table {tableNo} · 온라인
+                        </div>
                     </div>
                 </div>
-                <button 
+                <button
                     onClick={() => onNavigate && onNavigate('orderV2')}
                     style={{
-                        padding: '6px 12px',
-                        background: 'rgba(0,0,0,0.06)',
-                        border: 'none',
+                        padding: '6px 14px',
+                        background: 'rgba(255,255,255,0.07)',
+                        border: '1px solid rgba(255,255,255,0.12)',
                         borderRadius: '20px',
                         fontSize: '11px',
-                        fontWeight: 800,
-                        color: '#1e293b',
+                        fontWeight: 600,
+                        color: '#94a3b8',
                         cursor: 'pointer'
                     }}
                 >
-                    📋 일반 판형 전환
+                    일반 보기
                 </button>
             </div>
 
             {/* Chat Messages Log */}
-            <div className="chat-content" ref={scrollRef} style={{ background: '#f8fafc', padding: '15px 15px 100px' }}>
+            <div className="chat-content" ref={scrollRef} style={{ background: '#eef1f5', padding: '16px 14px 100px' }}>
                 {messages.map((msg, index) => (
                     <div key={msg.id || index} className={`message-bubble ${msg.sender}`} style={{
                         alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
                         maxWidth: '85%',
                         width: 'auto',
-                        padding: '12px 16px',
-                        borderRadius: msg.sender === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                        background: msg.sender === 'user' ? '#fde047' : '#ffffff',
-                        color: '#1e293b',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                        border: msg.sender === 'user' ? '1px solid #facc15' : '1px solid #e2e8f0',
+                        padding: '11px 15px',
+                        borderRadius: msg.sender === 'user' ? '18px 18px 4px 18px' : '4px 18px 18px 18px',
+                        background: msg.sender === 'user' ? '#2563eb' : '#ffffff',
+                        color: msg.sender === 'user' ? '#ffffff' : '#1e293b',
+                        boxShadow: msg.sender === 'user' ? '0 2px 8px rgba(37,99,235,0.2)' : '0 1px 4px rgba(0,0,0,0.07)',
+                        border: msg.sender === 'user' ? 'none' : '1px solid #e4e8ed',
                         fontSize: '14px',
-                        lineHeight: '1.6',
+                        lineHeight: '1.65',
                         whiteSpace: 'pre-line',
                         marginBottom: '8px'
                     }}>
-                        {/* Sender Avatar */}
+                        {/* Sender label */}
                         {msg.sender === 'ai' && (
-                            <div style={{ display: 'flex', gap: '3px', alignItems: 'center', marginBottom: '4px', fontSize: '11px', fontWeight: 800, color: '#64748b' }}>
-                                ☕ {storeName} AI 점장
+                            <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginBottom: '5px', fontSize: '11px', fontWeight: 600, color: '#94a3b8' }}>
+                                {storeName} AI
                             </div>
                         )}
-                        
-                        <div style={{ color: '#0f172a', fontWeight: msg.sender === 'user' ? 600 : 500 }}>{msg.text}</div>
+
+                        <div style={{ color: msg.sender === 'user' ? '#ffffff' : '#0f172a', fontWeight: msg.sender === 'user' ? 500 : 400 }}>{msg.text}</div>
 
                         {/* --- Dynamic Conversational Elements --- */}
 
@@ -945,18 +959,18 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
 
                          {/* Follow up Action buttons (Always accessible on completed orders) */}
                          {msg.showFollowUps && (
-                             <div style={{ display: 'flex', gap: '6px', marginTop: '12px', flexWrap: 'wrap' }}>
-                                 <button onClick={startOrderingFlow} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: 800, color: '#eab308', cursor: 'pointer' }}>
-                                     ➕ 추가 주문하기
+                             <div style={{ display: 'flex', gap: '6px', marginTop: '14px', flexWrap: 'wrap' }}>
+                                 <button onClick={startOrderingFlow} style={{ flex: 1, padding: '8px 6px', background: '#2563eb', border: 'none', borderRadius: '10px', fontSize: '11px', fontWeight: 600, color: '#fff', cursor: 'pointer' }}>
+                                     ➕ 추가 주문
                                  </button>
-                                 <button onClick={() => triggerStaffCallFlow('직원호출')} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: 800, color: '#ef4444', cursor: 'pointer' }}>
-                                     🔔 직원 호출 벨
+                                 <button onClick={() => triggerStaffCallFlow('직원호출')} style={{ flex: 1, padding: '8px 6px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '11px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                                     🔔 직원 호출
                                  </button>
-                                 <button onClick={triggerParkingFlow} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: 800, color: '#2563eb', cursor: 'pointer' }}>
-                                     🚗 주차 무료 인증
+                                 <button onClick={triggerParkingFlow} style={{ flex: 1, padding: '8px 6px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '11px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                                     🚗 주차 등록
                                  </button>
-                                 <button onClick={handleCloseWindow} style={{ flex: 1, padding: '8px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: 800, color: '#475569', cursor: 'pointer' }}>
-                                     🚪 대화 종료 (닫기)
+                                 <button onClick={handleCloseWindow} style={{ flex: 1, padding: '8px 6px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '11px', fontWeight: 600, color: '#94a3b8', cursor: 'pointer' }}>
+                                     종료
                                  </button>
                              </div>
                          )}
@@ -969,88 +983,85 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
             </div>
 
             {/* Quick action chips above input */}
-            <div className="chat-suggestions-container" style={{ padding: '10px 15px', background: '#f8fafc', borderTop: '1px solid #e2e8f0' }}>
-                <div className="suggestions-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+            <div className="chat-suggestions-container" style={{ padding: '10px 14px 8px', background: '#ffffff', borderTop: '1px solid #e4e8ed' }}>
+                <div className="suggestions-scroll" style={{ display: 'flex', gap: '7px', overflowX: 'auto', scrollbarWidth: 'none' }}>
                     {orderStep === 'welcome' && (
                         <>
-                            <button onClick={startOrderingFlow} className="suggestion-chip special" style={{ border: '1px solid #facc15', background: '#fef9c3', fontWeight: 800, color: '#854d0e', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                📋 음식 주문할게요!
+                            <button onClick={startOrderingFlow} className="suggestion-chip" style={{ background: '#2563eb', color: '#fff', border: 'none', fontWeight: 600, padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                📋 주문하기
                             </button>
-                            <button onClick={() => triggerStaffCallFlow('직원호출')} className="suggestion-chip" style={{ border: '1px solid #fca5a5', background: '#fee2e2', fontWeight: 800, color: '#991b1b', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                🔔 직원 호출 벨
+                            <button onClick={() => triggerStaffCallFlow('직원호출')} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', fontWeight: 600, padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                🔔 직원 호출
                             </button>
-                            <button onClick={triggerParkingFlow} className="suggestion-chip" style={{ border: '1px solid #93c5fd', background: '#dbeafe', fontWeight: 800, color: '#1e40af', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                🚗 주차 할인 등록
+                            <button onClick={triggerParkingFlow} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', fontWeight: 600, padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                🚗 주차 등록
                             </button>
-                            <button onClick={handleCloseWindow} className="suggestion-chip" style={{ border: '1px solid #cbd5e1', background: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                🚪 대화 종료
+                            <button onClick={handleCloseWindow} className="suggestion-chip" style={{ background: '#fff', color: '#94a3b8', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                종료
                             </button>
                         </>
                     )}
                     {orderStep === 'menu_selection' && (
                         <>
                             {cart.length > 0 && (
-                                <button onClick={handleProceedToPoints} className="suggestion-chip special" style={{ border: '1px solid #facc15', background: '#fef9c3', fontWeight: 800, color: '#ea580c', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                    💳 장바구니 확인 및 결제 진행
+                                <button onClick={handleProceedToPoints} className="suggestion-chip" style={{ background: '#2563eb', color: '#fff', border: 'none', fontWeight: 600, padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                    💳 결제 진행 ({cartTotal.toLocaleString()}원)
                                 </button>
                             )}
-                            <button onClick={() => { setOrderStep('welcome'); addAiMessage('처음으로 돌아왔습니다. 무엇을 도와드릴까요?'); }} className="suggestion-chip" style={{ border: '1px solid #cbd5e1', background: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                ⏪ 대화 처음으로
+                            <button onClick={() => { setOrderStep('welcome'); addAiMessage('처음으로 돌아왔습니다. 무엇을 도와드릴까요?'); }} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                ← 처음으로
                             </button>
                         </>
                     )}
                     {orderStep === 'point_guide' && (
                         <>
-                            <button onClick={() => handleSelectPoints('010-1234-5678')} className="suggestion-chip special" style={{ border: '1px solid #facc15', background: '#fef9c3', fontWeight: 800, color: '#1e40af', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                📱 010-1234-5678 (적립)
-                            </button>
-                            <button onClick={() => handleSelectPoints('skip')} className="suggestion-chip" style={{ border: '1px solid #cbd5e1', background: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                적립 안 함 ⏩
+                            <button onClick={() => handleSelectPoints('skip')} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                적립 건너뛰기
                             </button>
                         </>
                     )}
                     {orderStep === 'cash_invoice_guide' && (
                         <>
-                            <button onClick={() => handleSelectCashReceipt('👤 개인소득공제용')} className="suggestion-chip" style={{ border: '1px solid #cbd5e1', background: 'white', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                개인소득공제 👤
+                            <button onClick={() => handleSelectCashReceipt('👤 개인소득공제용')} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                개인소득공제
                             </button>
-                            <button onClick={() => handleSelectCashReceipt('🏢 사업자증빙용')} className="suggestion-chip" style={{ border: '1px solid #cbd5e1', background: 'white', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                사업자증빙용 🏢
+                            <button onClick={() => handleSelectCashReceipt('🏢 사업자증빙용')} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                사업자증빙
                             </button>
-                            <button onClick={() => handleSelectCashReceipt('미발행')} className="suggestion-chip" style={{ border: '1px solid #cbd5e1', background: '#f1f5f9', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                영수증 미발행 ⏩
+                            <button onClick={() => handleSelectCashReceipt('미발행')} className="suggestion-chip" style={{ background: '#fff', color: '#94a3b8', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                미발행
                             </button>
                         </>
                     )}
                     {orderStep === 'payment_method_selection' && (
                         <>
-                            <button onClick={() => handleSelectPaymentMethod('신용카드')} className="suggestion-chip special" style={{ border: '1px solid #10b981', background: '#ecfdf5', color: '#065f46', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                💳 신용카드 결제
+                            <button onClick={() => handleSelectPaymentMethod('신용카드')} className="suggestion-chip" style={{ background: '#2563eb', color: '#fff', border: 'none', fontWeight: 600, padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                💳 카드 결제
                             </button>
-                            <button onClick={() => handleSelectPaymentMethod('토스페이')} className="suggestion-chip special" style={{ border: '1px solid #3b82f6', background: '#eff6ff', color: '#1e40af', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                🔵 토스페이 결제
+                            <button onClick={() => handleSelectPaymentMethod('토스페이')} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                토스페이
                             </button>
-                            <button onClick={() => handleSelectPaymentMethod('카카오페이')} className="suggestion-chip special" style={{ border: '1px solid #facc15', background: '#fef9c3', color: '#854d0e', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                🟡 카카오페이 결제
+                            <button onClick={() => handleSelectPaymentMethod('카카오페이')} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                카카오페이
                             </button>
-                            <button onClick={() => triggerStaffCallFlow('카운터 현금결제')} className="suggestion-chip" style={{ border: '1px solid #cbd5e1', background: '#f1f5f9', color: '#475569', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                🏦 카운터 현금 결제
+                            <button onClick={() => triggerStaffCallFlow('카운터 현금결제')} className="suggestion-chip" style={{ background: '#fff', color: '#94a3b8', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                카운터 결제
                             </button>
                         </>
                     )}
                     {orderStep === 'paid' && (
                         <>
-                            <button onClick={startOrderingFlow} className="suggestion-chip special" style={{ border: '1px solid #facc15', background: '#fef9c3', fontWeight: 800, color: '#a16207', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                ➕ 추가 주문 진행하기
+                            <button onClick={startOrderingFlow} className="suggestion-chip" style={{ background: '#2563eb', color: '#fff', border: 'none', fontWeight: 600, padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                ➕ 추가 주문
                             </button>
-                            <button onClick={() => triggerStaffCallFlow('직원호출')} className="suggestion-chip" style={{ border: '1px solid #fca5a5', background: '#fee2e2', color: '#991b1b', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                🔔 추가 직원 요청
+                            <button onClick={() => triggerStaffCallFlow('직원호출')} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                🔔 직원 호출
                             </button>
-                            <button onClick={triggerParkingFlow} className="suggestion-chip" style={{ border: '1px solid #cbd5e1', background: 'white', color: '#1e40af', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', cursor: 'pointer' }}>
-                                🚗 주차 등록 갱신
+                            <button onClick={triggerParkingFlow} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                🚗 주차 등록
                             </button>
-                            <button onClick={handleCloseWindow} className="suggestion-chip" style={{ border: '1px solid #cbd5e1', background: '#f1f5f9', color: '#ef4444', padding: '6px 12px', borderRadius: '15px', fontSize: '11px', fontWeight: 800, cursor: 'pointer' }}>
-                                🚪 대화 종료
+                            <button onClick={handleCloseWindow} className="suggestion-chip" style={{ background: '#fff', color: '#94a3b8', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                종료
                             </button>
                         </>
                     )}
@@ -1059,16 +1070,16 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
 
             {/* Chat Input Area - Hidden during specific steps */}
             {!['point_guide', 'payment_method_selection', 'cash_invoice_guide', 'paying'].includes(orderStep) && (
-            <div className="chat-input-area" style={{ 
-                padding: '12px 15px calc(12px + env(safe-area-inset-bottom))', 
-                background: 'white', 
-                borderTop: '1px solid #f1f5f9', 
-                display: 'flex', 
+            <div className="chat-input-area" style={{
+                padding: '10px 14px calc(10px + env(safe-area-inset-bottom))',
+                background: 'white',
+                borderTop: '1px solid #e4e8ed',
+                display: 'flex',
                 gap: '8px',
                 position: 'sticky',
                 bottom: 0,
                 zIndex: 1000,
-                boxShadow: '0 -2px 10px rgba(0,0,0,0.05)',
+                boxShadow: '0 -2px 10px rgba(0,0,0,0.04)',
                 alignItems: 'center'
             }}>
                 {/* Voice Microphone Toggle Button */}
@@ -1078,14 +1089,14 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                         width: '42px',
                         height: '42px',
                         borderRadius: '50%',
-                        background: isListening ? '#ef4444' : '#fde047',
+                        background: isListening ? '#ef4444' : '#2563eb',
                         border: 'none',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: '18px',
                         cursor: 'pointer',
-                        boxShadow: isListening ? '0 0 10px rgba(239, 68, 68, 0.4)' : '0 2px 6px rgba(0,0,0,0.1)',
+                        boxShadow: isListening ? '0 0 10px rgba(239,68,68,0.4)' : '0 2px 8px rgba(37,99,235,0.3)',
                         transition: 'all 0.3s'
                     }}
                 >
@@ -1101,11 +1112,11 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                     }
                     style={{
                         flex: 1,
-                        padding: '12px 18px',
-                        border: '1px solid #cbd5e1',
+                        padding: '11px 16px',
+                        border: '1px solid #dde3ea',
                         borderRadius: '24px',
                         fontSize: '14px',
-                        background: '#f8fafc',
+                        background: '#f4f6f9',
                         color: '#1e293b',
                         outline: 'none'
                     }}
