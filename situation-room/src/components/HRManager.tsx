@@ -45,13 +45,18 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
     const attendance: Bundle[] = bundles.filter(b => b.type === 'Attendance' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
 
     // 승인 대기 계정 필터링 (계층적 승인 + 매장 격리)
+    // admin → 점주 승인, owner → 점장·점원 승인, manager → 점원(자기 매장만) 승인
     const pendingAccounts: Bundle[] = bundles.filter(b => {
         if (b.type !== 'PersonalInfos' || b.status === 'approved') return false;
-        if (user.role === 'owner' && (storeId !== 'Total' && b.store_id !== storeId)) return false;
-
-        const role = b.items?.find((i: any) => i.name === '권한')?.value;
-        if (user.role === 'admin') return role === 'owner';
-        if (user.role === 'owner') return role === 'manager' || role === 'staff';
+        const accountRole = b.items?.find((i: any) => i.name === '권한')?.value;
+        if (user.role === 'admin') return accountRole === 'owner';
+        if (user.role === 'owner') {
+            if (storeId !== 'Total' && b.store_id !== storeId) return false;
+            return accountRole === 'manager' || accountRole === 'staff';
+        }
+        if (user.role === 'manager') {
+            return accountRole === 'staff' && b.store_id === storeId;
+        }
         return false;
     });
 
@@ -388,13 +393,15 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                         <h3 style={{ color: 'var(--accent-orange)', margin: '0 0 15px 0' }}>⚠️ 가입 승인 대기</h3>
                         <div className="pending-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
                             {pendingAccounts.map(b => {
-                                const name = b.items?.find((i: any) => i.name === '이름')?.value || '-';
-                                const role = b.items?.find((i: any) => i.name === '권한')?.value || '-';
+                                const accName = b.items?.find((i: any) => i.name === '이름')?.value || '-';
+                                const accRole = b.items?.find((i: any) => i.name === '권한')?.value || '-';
+                                const roleLabel = accRole === 'manager' ? '점장' : accRole === 'staff' ? '점원' : accRole;
                                 return (
                                     <div key={b.id} style={{ background: 'rgba(249, 115, 22, 0.05)', padding: '16px', borderRadius: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(249, 115, 22, 0.15)' }}>
                                         <div>
-                                            <strong style={{ fontSize: '1rem' }}>{name}</strong>
-                                            <span style={{ opacity: 0.7, fontSize: '0.85rem', marginLeft: '6px' }}>({role})</span>
+                                            <strong style={{ fontSize: '1rem' }}>{accName}</strong>
+                                            <span style={{ opacity: 0.7, fontSize: '0.85rem', marginLeft: '6px' }}>({roleLabel})</span>
+                                            {b.store && <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{b.store}</span>}
                                         </div>
                                         <button onClick={() => handleApproveAccount(b)} className="confirm-btn success-green" style={{ padding: '8px 16px', fontSize: '0.85rem' }} disabled={isProcessing}>승인하기</button>
                                     </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Login.css';
 import { OwnerOnboardingChat } from './OwnerOnboardingChat';
 
@@ -36,23 +36,40 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
     const [isVerified, setIsVerified] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
 
-    // 개인정보 동의 (점주 가입용)
+    // 개인정보 동의
     const [consentPrivacy, setConsentPrivacy] = useState(false);
     const [consentTerms, setConsentTerms] = useState(false);
     const [consentMarketing, setConsentMarketing] = useState(false);
     const [showPrivacyDetail, setShowPrivacyDetail] = useState(false);
     const [showTermsDetail, setShowTermsDetail] = useState(false);
 
-    // bundles에서 동적으로 매장 목록 수집
-    const availableStores = React.useMemo(() => {
-        const storesMap = new Map<string, string>(); // storeName -> storeId
-        bundles.forEach(b => {
-            if (b.store && b.store !== 'Total' && b.store_id) {
-                storesMap.set(b.store, b.store_id);
+    // 매장 검색 (직원/점장용)
+    const [storeList, setStoreList] = useState<{ store_id: string; store_name: string }[]>([]);
+    const [storeSearch, setStoreSearch] = useState('');
+    const [selectedStoreId, setSelectedStoreId] = useState('');
+    const [showStoreDropdown, setShowStoreDropdown] = useState(false);
+    const storeDropdownRef = useRef<HTMLDivElement>(null);
+
+    // 매장 목록 로드 (직원/점장 가입 시)
+    useEffect(() => {
+        if (!isSignup || role === 'owner') return;
+        const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+        fetch(`${apiUrl}/api/stores`)
+            .then(r => r.json())
+            .then((data: any[]) => setStoreList(data))
+            .catch(() => setStoreList([]));
+    }, [isSignup, role]);
+
+    // 매장 드롭다운 외부 클릭 시 닫기
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (storeDropdownRef.current && !storeDropdownRef.current.contains(e.target as Node)) {
+                setShowStoreDropdown(false);
             }
-        });
-        return Array.from(storesMap.entries()).map(([name, id]) => ({ name, id }));
-    }, [bundles]);
+        };
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -101,9 +118,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
             const userName = userBundle.items?.find((i: any) => i.name === '이름')?.value || id;
 
             if (status !== 'approved' && userRole !== 'admin') {
-                setError(userRole === 'owner'
-                    ? '점주 계정은 시스템 관리자(Admin)의 승인이 필요합니다.'
-                    : '점장/점원 계정은 매장 점주(Owner)의 승인이 필요합니다.');
+                const msg =
+                    userRole === 'owner'   ? '점주 계정은 시스템 관리자(Admin)의 승인이 필요합니다.' :
+                    userRole === 'manager' ? '점장 계정은 매장 점주의 승인이 필요합니다.' :
+                                            '점원 계정은 매장 점주 또는 점장의 승인이 필요합니다.';
+                setError(msg);
                 return;
             }
 
@@ -191,8 +210,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
             return;
         }
 
-        if (role === 'owner' && (!consentPrivacy || !consentTerms)) {
+        if (!consentPrivacy || !consentTerms) {
             setError('개인정보 수집·이용 동의 및 서비스 이용약관 동의는 필수입니다.');
+            return;
+        }
+
+        if (role !== 'owner' && !selectedStoreId) {
+            setError('소속 매장을 검색하여 선택해 주세요.');
             return;
         }
 
@@ -214,14 +238,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                 return;
             }
 
-            // 선택된 매장의 store_id 정밀 연동 및 대입 (점장/직원 회원가입 매칭)
-            let finalStoreId = '';
-            if (role === 'owner') {
-                finalStoreId = `store-${id}`;
-            } else {
-                const matchedStore = availableStores.find(st => st.name === storeName);
-                finalStoreId = matchedStore ? matchedStore.id : '';
-            }
+            const finalStoreId = role === 'owner' ? `store-${id}` : selectedStoreId;
 
             const hashedSignupPw = await hashPassword(pw);
 
@@ -252,8 +269,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
             if (response.ok) {
                 if (role === 'owner') {
                     alert('🎉 회원가입이 완료되었습니다!\n바로 로그인하여 나만의 매장을 개설(내 집 짓기)하세요.');
+                } else if (role === 'manager') {
+                    alert('✅ 점장 가입 신청이 완료되었습니다.\n매장 점주의 승인 후 로그인이 가능합니다.');
                 } else {
-                    alert('✅ 사원 가입 신청이 완료되었습니다.\n점주님의 최종 승인 후 대시보드 로그인이 가능합니다.');
+                    alert('✅ 점원 가입 신청이 완료되었습니다.\n매장 점주 또는 점장의 승인 후 로그인이 가능합니다.');
                 }
                 setIsSignup(false);
                 setPw('');
@@ -315,42 +334,79 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                         <>
                             <div className="input-group">
                                 <label>계정 권한</label>
-                                <select 
+                                <select
                                     className="role-select"
                                     value={role}
-                                    onChange={(e) => setRole(e.target.value)}
+                                    onChange={(e) => {
+                                        setRole(e.target.value);
+                                        setStoreSearch('');
+                                        setSelectedStoreId('');
+                                        setStoreName('');
+                                        setConsentPrivacy(false);
+                                        setConsentTerms(false);
+                                        setConsentMarketing(false);
+                                    }}
                                 >
-                                    <option value="owner">점주 (Admin 승인)</option>
-                                    <option value="manager">점장 (Owner 승인)</option>
-                                    <option value="staff">점원 (Owner 승인)</option>
+                                    <option value="owner">점주 (관리자 승인)</option>
+                                    <option value="manager">점장 (점주 승인)</option>
+                                    <option value="staff">점원 (점주·점장 승인)</option>
                                 </select>
                             </div>
                             <div className="input-group">
-                                <label>{role === 'owner' ? '신규 매장명' : '소속 매장명'}</label>
+                                <label>{role === 'owner' ? '신규 매장명' : '소속 매장 검색'}</label>
                                 {role === 'owner' ? (
-                                    <input 
-                                        type="text" 
-                                        value={storeName} 
-                                        onChange={(e) => setStoreName(e.target.value)} 
+                                    <input
+                                        type="text"
+                                        value={storeName}
+                                        onChange={(e) => setStoreName(e.target.value)}
                                         placeholder="매장 이름을 직접 입력하세요"
-                                        required 
+                                        required
                                     />
                                 ) : (
-                                    <select
-                                        className="role-select"
-                                        value={storeName}
-                                        onChange={(e) => {
-                                            setStoreName(e.target.value);
-                                        }}
-                                        required
-                                    >
-                                        <option value="">-- 소속 매장을 선택하세요 --</option>
-                                        {availableStores.map((st, idx) => (
-                                            <option key={idx} value={st.name}>
-                                                {st.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div ref={storeDropdownRef} style={{ position: 'relative' }}>
+                                        <input
+                                            type="text"
+                                            value={storeSearch}
+                                            onChange={(e) => {
+                                                setStoreSearch(e.target.value);
+                                                setSelectedStoreId('');
+                                                setStoreName('');
+                                                setShowStoreDropdown(true);
+                                            }}
+                                            onFocus={() => setShowStoreDropdown(true)}
+                                            placeholder="매장명을 입력하여 검색"
+                                            required
+                                            style={{ borderColor: selectedStoreId ? 'var(--success)' : undefined }}
+                                        />
+                                        {selectedStoreId && (
+                                            <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--success)', fontSize: '0.85rem' }}>✅ 선택됨</span>
+                                        )}
+                                        {showStoreDropdown && storeSearch && (
+                                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 100, maxHeight: '180px', overflowY: 'auto', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
+                                                {storeList
+                                                    .filter(s => s.store_name.toLowerCase().includes(storeSearch.toLowerCase()))
+                                                    .map(s => (
+                                                        <div
+                                                            key={s.store_id}
+                                                            onClick={() => {
+                                                                setStoreName(s.store_name);
+                                                                setSelectedStoreId(s.store_id);
+                                                                setStoreSearch(s.store_name);
+                                                                setShowStoreDropdown(false);
+                                                            }}
+                                                            style={{ padding: '10px 14px', cursor: 'pointer', fontSize: '0.9rem' }}
+                                                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-main)')}
+                                                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                                        >
+                                                            {s.store_name}
+                                                        </div>
+                                                    ))}
+                                                {storeList.filter(s => s.store_name.toLowerCase().includes(storeSearch.toLowerCase())).length === 0 && (
+                                                    <div style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>검색 결과 없음</div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
@@ -398,8 +454,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                         </>
                     )}
 
-                    {/* 점주 가입 동의 */}
-                    {isSignup && role === 'owner' && (
+                    {/* 가입 동의 (모든 역할) */}
+                    {isSignup && (
                         <div style={{ margin: '16px 0 8px', padding: '14px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border)' }}>
                             <p style={{ margin: '0 0 10px', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>📜 서비스 이용 동의</p>
 
@@ -424,9 +480,15 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                                 </label>
                                 {showPrivacyDetail && (
                                     <div style={{ marginTop: '6px', padding: '8px', background: 'var(--surface)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
-                                        <strong>수집 항목:</strong> 대표자명, 연락처, 사업자등록번호, 정산 계좌번호<br/>
-                                        <strong>수집 목적:</strong> MQnet 가맹점 서비스 계약 이행 및 매출 정산<br/>
-                                        <strong>보유 기간:</strong> 계약 종료 후 5년 (관련 법령에 따름)<br/>
+                                        {role === 'owner' ? (<>
+                                            <strong>수집 항목:</strong> 대표자명, 연락처, 사업자등록번호, 정산 계좌번호<br/>
+                                            <strong>수집 목적:</strong> MQnet 가맹점 서비스 계약 이행 및 매출 정산<br/>
+                                            <strong>보유 기간:</strong> 계약 종료 후 5년 (관련 법령에 따름)
+                                        </>) : (<>
+                                            <strong>수집 항목:</strong> 이름, 연락처<br/>
+                                            <strong>수집 목적:</strong> 매장 서비스 이용 및 근태·급여 관리<br/>
+                                            <strong>보유 기간:</strong> 고용 종료 후 3년 (관련 법령에 따름)
+                                        </>)}<br/>
                                         ※ 동의 거부 시 서비스 이용이 제한됩니다.
                                     </div>
                                 )}
