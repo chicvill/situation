@@ -238,6 +238,108 @@ def update_reservation_status(res_id: str, status: str):
         return False
 
 
+def _ensure_reservation_columns():
+    conn = get_db_conn()
+    if not conn: return
+    try:
+        cur = conn.cursor()
+        cur.execute("ALTER TABLE table_reservations ADD COLUMN IF NOT EXISTS contact_confirmed_1day BOOLEAN DEFAULT FALSE")
+        cur.execute("ALTER TABLE table_reservations ADD COLUMN IF NOT EXISTS contact_confirmed_3hour BOOLEAN DEFAULT FALSE")
+        cur.execute("ALTER TABLE table_reservations ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT ''")
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"Reservation column migration error: {e}")
+
+_ensure_reservation_columns()
+
+
+def get_all_reservations():
+    conn = get_db_conn()
+    if not conn: return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT * FROM table_reservations ORDER BY reserved_time ASC")
+        results = cur.fetchall()
+        cur.close()
+        conn.close()
+        return [dict(r) for r in results]
+    except Exception as e:
+        print(f"Get All Reservations Error: {e}")
+        return []
+
+
+def update_reservation(res_id: str, data: dict):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE table_reservations SET
+                customer_name = %(customer_name)s,
+                phone_number  = %(phone_number)s,
+                party_size    = %(party_size)s,
+                reserved_time = %(reserved_time)s,
+                table_id      = %(table_id)s,
+                notes         = %(notes)s,
+                status        = %(status)s
+            WHERE reservation_id = %(res_id)s
+        """, {
+            'res_id':        res_id,
+            'customer_name': data.get('customer_name', ''),
+            'phone_number':  data.get('phone_number', ''),
+            'party_size':    data.get('party_size', 1),
+            'reserved_time': data.get('reserved_time', ''),
+            'table_id':      data.get('table_id', ''),
+            'notes':         data.get('notes', ''),
+            'status':        data.get('status', 'confirmed'),
+        })
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Update Reservation Error: {e}")
+        return False
+
+
+def delete_reservation(res_id: str):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM table_reservations WHERE reservation_id = %(res_id)s", {'res_id': res_id})
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Delete Reservation Error: {e}")
+        return False
+
+
+def confirm_reservation_contact(res_id: str, contact_type: str):
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        if contact_type == '3hour':
+            cur.execute("""UPDATE table_reservations
+                SET contact_confirmed_1day = TRUE, contact_confirmed_3hour = TRUE
+                WHERE reservation_id = %(res_id)s""", {'res_id': res_id})
+        else:
+            cur.execute("""UPDATE table_reservations SET contact_confirmed_1day = TRUE
+                WHERE reservation_id = %(res_id)s""", {'res_id': res_id})
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Confirm Contact Error: {e}")
+        return False
+
+
 # --- 5-4. 원클릭 셀프 주차 할인 (Parking) ---
 def save_parking(park_data: dict):
     conn = get_db_conn()

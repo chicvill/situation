@@ -1,9 +1,19 @@
 from typing import Dict
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi.responses import JSONResponse
 from ..database import get_situation_history, get_db_conn
 import ai_engine
 
 router = APIRouter()
+
+
+@router.post("/api/analyze-image")
+async def analyze_image(doc_type: str = "menu", file: UploadFile = File(...)):
+    image_bytes = await file.read()
+    result = ai_engine.analyze_document_image(image_bytes, doc_type)
+    if "error" in result:
+        return JSONResponse(status_code=500, content=result)
+    return result
 
 
 @router.post("/api/chat")

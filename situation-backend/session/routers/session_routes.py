@@ -8,7 +8,7 @@ from psycopg2.extras import RealDictCursor  # type: ignore
 from ..state import manager, load_pool, save_pool
 from ..database import (
     save_session, get_active_session, get_session_by_id,
-    get_orders_by_session, update_order_status, update_session_device_id, get_db_conn
+    get_orders_by_session, update_order_status, update_session_device_id, get_db_conn,
 )
 
 router = APIRouter()
@@ -28,9 +28,20 @@ async def check_in(data: Dict):
         alt = "default_store" if store_id != "default_store" else "Total"
         active = get_active_session(alt, table_id)
 
-    # ① 세션 없음 → 새 주문
+    # ① 세션 없음 → 카운터에 좌석 승인 요청 저장 + 브로드캐스트
     if not active:
-        print(f"[check_in] {table_id} 세션 없음 → no_session")
+        print(f"[check_in] {table_id} 세션 없음 → SEAT_REQUEST")
+        ts = datetime.now().isoformat()
+        manager.add_seat_request(table_id, store_id, ts)
+        seat_req = {
+            "type": "SEAT_REQUEST",
+            "table_id": table_id,
+            "store_id": store_id,
+            "device_id": device_id,
+            "timestamp": ts,
+        }
+        await manager.send_to_table(table_id, seat_req)
+        await manager.broadcast_to_kitchen(seat_req)
         return {"status": "no_session"}
 
     orders = get_orders_by_session(active['session_id'])
@@ -124,7 +135,7 @@ async def open_session_manually(data: Dict):
         print(f"Save Session DB Error: {e}")
         raise HTTPException(status_code=500, detail=f"DB 저장 실패: {str(e)}")
 
-    # 테이블 기기(QR 스캔 중인 고객 포함) 및 주방에 SESSION_OPENED 알림
+    manager.remove_seat_request(table_id)
     await manager.send_to_table(table_id, {"type": "SESSION_OPENED", "session": new_session})
     await manager.broadcast_to_kitchen({"type": "SESSION_OPENED", "session": new_session})
     return new_session
@@ -151,6 +162,11 @@ async def get_kitchen_orders(store_id: str = "Total"):
 async def get_counter_sessions(store_id: str = "Total"):
     from ..database import get_all_active_sessions
     return get_all_active_sessions(store_id)
+
+
+@router.get("/api/seat-requests")
+async def get_seat_requests(store_id: str = "Total"):
+    return manager.get_seat_requests(store_id)
 
 
 @router.post("/api/session/reset")
@@ -344,56 +360,29 @@ async def process_situation(data: Dict):
             table_num = int(table_match.group())
             normalized_table = f"T{table_num:02d}"
 
-            # DB에서 해당 테이블의 'cooking' 상태인 주문 조회
-            conn = get_db_conn()
-            if conn:
-                try:
-                    cur = conn.cursor(cursor_factory=RealDictCursor)
-                    cur.execute("""
-                        SELECT * FROM table_orders
-                        WHERE table_id = %s AND status = 'cooking'
-                        ORDER BY timestamp DESC
-                    """, (normalized_table,))
-                    orders = cur.fetchall()
+            # 세션에서 해당 테이블의 'cooking' 상태인 주문 조회
+            _sess = get_active_session(store_id or 'Total', normalized_table) or \
+                    get_active_session('default_store', normalized_table)
+            target_order = None
+            if _sess:
+                _all_orders = get_orders_by_session(_sess['session_id'])
+                cooking_orders = [o for o in _all_orders if o.get('status') == 'cooking']
 
-                    # 특정 메뉴가 언급되었는지 확인
-                    target_order = None
-                    if orders:
-                        # 언급된 메뉴 추출 (예: 짜장면, 짬뽕 등)
-                        for order in orders:
-                            items_list = []
-                            items_raw = order.get('items')
-                            if isinstance(items_raw, str):
-                                try:
-                                    items_list = json.loads(items_raw)
-                                except Exception:
-                                    pass
-                            elif isinstance(items_raw, list):
-                                items_list = items_raw
-
-                            # 아이템 이름과 비교
-                            for item in items_list:
-                                item_name = item.get('name', '')
-                                if item_name in text:
-                                    target_order = order
-                                    break
-                            if target_order:
-                                break
-
-                        # 매칭된 메뉴가 없으면 가장 최근 cooking 주문 선택
-                        if not target_order:
-                            target_order = orders[0]
-
+                # 언급된 메뉴와 일치하는 주문 우선 선택
+                for order in cooking_orders:
+                    for item in (order.get('items') or []):
+                        if item.get('name', '') in text:
+                            target_order = order
+                            break
                     if target_order:
-                        # 상태를 'ready'로 변경
-                        cur.execute("""
-                            UPDATE table_orders SET status = 'ready'
-                            WHERE order_id = %s
-                        """, (target_order['order_id'],))
-                        conn.commit()
-                finally:
-                    cur.close()
-                    conn.close()
+                        break
+
+                # 매칭 메뉴 없으면 가장 첫 cooking 주문 선택
+                if not target_order and cooking_orders:
+                    target_order = cooking_orders[0]
+
+                if target_order:
+                    update_order_status(target_order['order_id'], 'ready')
 
                 if target_order:
                     # 브로드캐스트 전송
@@ -428,27 +417,15 @@ async def process_situation(data: Dict):
             table_num = int(table_match.group())
             normalized_table = f"T{table_num:02d}"
 
-            # DB에서 해당 테이블의 'ready' 상태인 주문들을 'served'로 변경
-            conn = get_db_conn()
-            if conn:
-                try:
-                    cur = conn.cursor(cursor_factory=RealDictCursor)
-                    cur.execute("""
-                        SELECT * FROM table_orders
-                        WHERE table_id = %s AND status = 'ready'
-                    """, (normalized_table,))
-                    orders = cur.fetchall()
-
-                    if orders:
-                        for order in orders:
-                            cur.execute("""
-                                UPDATE table_orders SET status = 'served'
-                                WHERE order_id = %s
-                            """, (order['order_id'],))
-                        conn.commit()
-                finally:
-                    cur.close()
-                    conn.close()
+            # 세션에서 해당 테이블의 'ready' 상태인 주문들을 'served'로 변경
+            _sess = get_active_session(store_id or 'Total', normalized_table) or \
+                    get_active_session('default_store', normalized_table)
+            orders = []
+            if _sess:
+                _all_orders = get_orders_by_session(_sess['session_id'])
+                orders = [o for o in _all_orders if o.get('status') == 'ready']
+                for order in orders:
+                    update_order_status(order['order_id'], 'served')
 
                 if orders:
                     # 브로드캐스트 전송

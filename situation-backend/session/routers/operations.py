@@ -208,6 +208,50 @@ async def update_reservation_status_endpoint(data: Dict):
     raise HTTPException(status_code=500, detail="Failed to update reservation status")
 
 
+@router.get("/api/reservation/all")
+async def get_all_reservations_endpoint():
+    from ..database import get_all_reservations
+    return get_all_reservations()
+
+
+@router.post("/api/reservation/contact-confirm")
+async def confirm_reservation_contact_endpoint(data: Dict):
+    from ..database import confirm_reservation_contact
+    res_id = data.get("reservation_id")
+    contact_type = data.get("contact_type", "1day")
+    if not res_id:
+        raise HTTPException(status_code=400, detail="reservation_id required")
+    if confirm_reservation_contact(res_id, contact_type):
+        return {"status": "ok"}
+    raise HTTPException(status_code=500, detail="Failed to confirm contact")
+
+
+@router.put("/api/reservation/{reservation_id}")
+async def update_reservation_endpoint(reservation_id: str, data: Dict):
+    from ..database import update_reservation
+    if update_reservation(reservation_id, data):
+        await manager.broadcast_to_kitchen({
+            "type": "RESERVATION_UPDATED",
+            "reservation_id": reservation_id,
+            "status": data.get("status", "confirmed"),
+        })
+        return {"status": "success"}
+    raise HTTPException(status_code=500, detail="Failed to update reservation")
+
+
+@router.delete("/api/reservation/{reservation_id}")
+async def delete_reservation_endpoint(reservation_id: str):
+    from ..database import delete_reservation
+    if delete_reservation(reservation_id):
+        await manager.broadcast_to_kitchen({
+            "type": "RESERVATION_UPDATED",
+            "reservation_id": reservation_id,
+            "status": "deleted",
+        })
+        return {"status": "deleted"}
+    raise HTTPException(status_code=500, detail="Failed to delete reservation")
+
+
 # --- 🚗 5-4. 원클릭 셀프 주차 할인 (Parking) Endpoints ---
 @router.post("/api/parking/validate")
 async def validate_parking(data: Dict):

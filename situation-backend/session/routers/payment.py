@@ -5,7 +5,8 @@ from fastapi import APIRouter, HTTPException
 import httpx  # type: ignore
 from ..state import manager
 from ..database import (
-    update_order_status, update_order_payment_status, get_db_conn
+    update_order_status, update_order_payment_status,
+    update_order_payment_key, get_order_by_id,
 )
 
 router = APIRouter()
@@ -26,19 +27,12 @@ async def confirm_payment(data: Dict):
     update_order_payment_status(order_id, "paid")
     update_order_status(order_id, "cooking")
 
-    # paymentKey를 DB에 저장 (환불 시 필요)
+    # paymentKey를 세션 orders JSONB에 저장 (환불 시 필요)
     if payment_key:
-        try:
-            conn = get_db_conn()
-            cur = conn.cursor()
-            cur.execute("UPDATE table_orders SET payment_key = %(pk)s WHERE order_id = %(oid)s",
-                        {'pk': payment_key, 'oid': order_id})
-            conn.commit()
-            cur.close()
-            conn.close()
+        if update_order_payment_key(order_id, payment_key):
             print(f"🔑 [Payment Key Saved] {order_id}")
-        except Exception as e:
-            print(f"⚠️ Failed to save payment_key: {e}")
+        else:
+            print(f"⚠️ Failed to save payment_key: {order_id}")
 
     # 주방 및 테이블에 결제 완료 알림 전송
     msg_confirmed = {"type": "PAYMENT_CONFIRMED", "order_id": order_id, "status": "paid"}
@@ -59,25 +53,14 @@ async def cancel_payment(data: Dict):
     if not order_id:
         raise HTTPException(status_code=400, detail="order_id required")
 
-    conn = None
-    cur = None
-    try:
-        conn = get_db_conn()
-        cur = conn.cursor()
-        cur.execute("SELECT payment_key, total_price, payment_status, status FROM table_orders WHERE order_id = %s", (order_id,))
-        row = cur.fetchone()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"DB 조회 실패: {e}")
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
-
-    if not row:
+    order = get_order_by_id(order_id)
+    if not order:
         raise HTTPException(status_code=404, detail="주문을 찾을 수 없습니다")
 
-    payment_key, total_price, payment_status, order_status = row
+    payment_key  = order.get("payment_key")
+    total_price  = order.get("total_price", 0)
+    payment_status = order.get("payment_status", "unpaid")
+    order_status = order.get("status", "")
 
     # 1. 중복 취소 차단 (Idempotency 보장)
     if order_status == 'cancelled' or payment_status == 'refunded':
@@ -140,8 +123,22 @@ async def get_points_list_endpoint(store_id: Optional[str] = None):
 @router.get("/api/points/{phone}")
 async def get_points(phone: str, store_id: str = 'store-1'):
     from ..database import get_customer_points
-    points = get_customer_points(phone, store_id)
-    return {"phone": phone, "points": points, "store_id": store_id}
+    data = get_customer_points(phone, store_id)
+    return {"phone": phone, "store_id": store_id, **data}
+
+
+@router.post("/api/points/use")
+async def use_points(data: Dict):
+    from ..database import use_customer_points
+    phone = data.get("phone", "")
+    points = data.get("points", 0)
+    store_id = data.get("store_id", "store-1")
+    if not phone or points <= 0:
+        raise HTTPException(status_code=400, detail="phone and positive points required")
+    ok = use_customer_points(phone, int(points), store_id)
+    if not ok:
+        raise HTTPException(status_code=400, detail="포인트가 부족하거나 사용 처리에 실패했습니다.")
+    return {"status": "ok", "used": points}
 
 
 @router.get("/api/config/toss-key")

@@ -42,6 +42,26 @@ class ConnectionManager:
       situation/table/{table_id}  — 특정 테이블 모바일 대상 메시지
     """
 
+    def __init__(self):
+        # table_id → { table_id, store_id, timestamp } 형태의 대기 중인 좌석 요청
+        self._seat_requests: dict = {}
+
+    def add_seat_request(self, table_id: str, store_id: str, timestamp: str):
+        self._seat_requests[table_id] = {
+            "table_id": table_id,
+            "store_id": store_id,
+            "timestamp": timestamp,
+        }
+
+    def remove_seat_request(self, table_id: str):
+        self._seat_requests.pop(table_id, None)
+
+    def get_seat_requests(self, store_id: Optional[str] = None) -> list:
+        reqs = list(self._seat_requests.values())
+        if store_id and store_id not in ("Total", "default_store"):
+            reqs = [r for r in reqs if r["store_id"] == store_id]
+        return reqs
+
     async def broadcast_to_kitchen(self, message: dict):
         from .mqtt_handler import mqtt_publish
 
