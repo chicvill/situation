@@ -1,2099 +1,272 @@
 [
   {
-    "id": "MENUS_store-korean",
-    "type": "Menus",
-    "title": "메뉴 정보",
-    "store_id": "store-korean",
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-14 10:50:55",
+    "type": "Log",
+    "title": "고객 문의",
     "items": [
       {
-        "name": "수라간 정식",
-        "value": 25000,
-        "icon": "🍱",
-        "category": "식사류",
-        "description": "궁중 요리의 진수를 맛볼 수 있는 정갈한 한 상 정식"
-      },
-      {
-        "name": "떡갈비 구이",
-        "value": 18000,
-        "icon": "🥩",
-        "category": "식사류",
-        "description": "수제 가마솥 방식으로 부드럽게 구워낸 떡갈비"
-      },
-      {
-        "name": "구절판",
-        "value": 35000,
-        "icon": "🎨",
-        "category": "요리류",
-        "description": "아홉 가지 밀전병 쌈 요리"
-      },
-      {
-        "name": "신선로",
-        "value": 45000,
-        "icon": "🍲",
-        "category": "요리류",
-        "description": "화로에 보글보글 끓여 먹는 궁중 신선로 전골"
-      },
-      {
-        "name": "감홍로 전통주",
-        "value": 15000,
-        "icon": "🍶",
-        "category": "주류/음료",
-        "description": "육당 최남선이 꼽은 조선 3대 명주 중 하나"
-      },
-      {
-        "name": "수제 식혜",
-        "value": 3000,
-        "icon": "🥤",
-        "category": "주류/음료",
-        "description": "직접 엿기름을 발효시켜 빚어낸 전통 식혜"
+        "name": "문의 내용",
+        "value": "뭘 할 수 있을까"
       }
-    ]
-  },
-  {
-    "id": "MENUS_store-coffee",
-    "type": "Menus",
-    "title": "메뉴 정보",
-    "store_id": "store-coffee",
-    "store": "그레이스 하이테크 커피",
-    "timestamp": "2026-05-14 10:50:55",
-    "items": [
-      {
-        "name": "스마트 아메리카노",
-        "value": 4500,
-        "icon": "☕",
-        "category": "에스프레소",
-        "description": "정밀 추출 기술로 내린 고소하고 깔끔한 원두커피"
-      },
-      {
-        "name": "벨벳 카페 라떼",
-        "value": 5000,
-        "icon": "🥛",
-        "category": "에스프레소",
-        "description": "실크 같은 마이크로폼 우유와 진한 에스프레소의 조화"
-      },
-      {
-        "name": "하이테크 아인슈페너",
-        "value": 6500,
-        "icon": "🍦",
-        "category": "시그니처",
-        "description": "차가운 더치커피 위에 얹은 달콤하고 묵직한 수제 크림"
-      },
-      {
-        "name": "에메랄드 말차 라떼",
-        "value": 6000,
-        "icon": "🍵",
-        "category": "시그니처",
-        "description": "유기농 보성 말차의 풍미가 살아있는 시그니처 음료"
-      },
-      {
-        "name": "메이플 수플레 팬케이크",
-        "value": 12000,
-        "icon": "🥞",
-        "category": "디저트",
-        "description": "입안에서 사르르 녹는 폭신폭신한 수플레 팬케이크"
-      },
-      {
-        "name": "바스크 탄 치즈케이크",
-        "value": 7000,
-        "icon": "🍰",
-        "category": "디저트",
-        "description": "고온에서 그을려 깊은 스모키 향과 꾸덕함을 품은 치즈케이크"
-      }
-    ]
-  },
-  {
-    "id": "MENUS_store-beef",
-    "type": "Menus",
-    "title": "메뉴 정보",
-    "store_id": "store-beef",
-    "store": "대관령 황금 한우",
-    "timestamp": "2026-05-14 10:50:55",
-    "items": [
-      {
-        "name": "황금 한우 꽃등심",
-        "value": 48000,
-        "icon": "🥩",
-        "category": "한우 구이",
-        "description": "최상급 투플러스 마블링의 극강의 고소함을 담은 등심(150g)"
-      },
-      {
-        "name": "황금 한우 안심",
-        "value": 52000,
-        "icon": "🥩",
-        "category": "한우 구이",
-        "description": "육질이 부드럽고 담백한 명품 안심 부위(150g)"
-      },
-      {
-        "name": "전통 육회",
-        "value": 28000,
-        "icon": "🍳",
-        "category": "한우 구이",
-        "description": "참기름 and 마늘로 맛을 내 배와 함께 즐기는 신선한 생육회"
-      },
-      {
-        "name": "차돌 된장찌개",
-        "value": 8000,
-        "icon": "🍲",
-        "category": "식사류",
-        "description": "고소한 한우 차돌박이가 듬뿍 들어가 국물이 깊은 찌개"
-      },
-      {
-        "name": "평양 물냉면",
-        "value": 9000,
-        "icon": "🍜",
-        "category": "식사류",
-        "description": "순메밀 면발과 육향 가득한 육수로 완성한 정통 평양식 물냉면"
-      },
-      {
-        "name": "지리산 참 복분자주",
-        "value": 12000,
-        "icon": "🍷",
-        "category": "주류",
-        "description": "대관령 소고기의 맛을 극대화해 주는 수제 복분자주"
-      }
-    ]
-  },
-  {
-    "id": "MENUS_store-tofu",
-    "type": "Menus",
-    "title": "메뉴 정보",
-    "store_id": "store-tofu",
-    "store": "한옥마을 수제 초당순두부",
-    "timestamp": "2026-05-14 10:50:55",
-    "items": [
-      {
-        "name": "초당 맑은 순두부",
-        "value": 9000,
-        "icon": "🥣",
-        "category": "순두부류",
-        "description": "국산 콩과 동해 바닷물로 빚어낸 고소하고 담백한 전통 순두부"
-      },
-      {
-        "name": "매콤 짬뽕 순두부",
-        "value": 10500,
-        "icon": "🌶️",
-        "category": "순두부류",
-        "description": "불향 가득한 해물 육수에 몽글몽글한 순두부를 더한 해장 별미"
-      },
-      {
-        "name": "걸쭉 들깨 순두부",
-        "value": 10000,
-        "icon": "🍲",
-        "category": "순두부류",
-        "description": "들깨가루를 듬뿍 넣어 씹을수록 깊고 고소한 순두부"
-      },
-      {
-        "name": "수제 도토리묵무침",
-        "value": 15000,
-        "icon": "🥗",
-        "category": "곁들임",
-        "description": "직접 쑨 쌉싸름한 묵을 새콤달콤 매콤하게 버무린 별미"
-      },
-      {
-        "name": "바삭 메밀전병",
-        "value": 8000,
-        "icon": "🌯",
-        "category": "곁들임",
-        "description": "메밀전 피에 칼칼한 속을 넣어 노릇노릇 부쳐낸 전병"
-      },
-      {
-        "name": "가평 잣 막걸리",
-        "value": 5000,
-        "icon": "🍶",
-        "category": "전통음료",
-        "description": "잣의 고소한 향이 입안에 맴도는 부드러운 전통 탁주"
-      }
-    ]
-  },
-  {
-    "id": "MENUS_store-bibim",
-    "type": "Menus",
-    "title": "메뉴 정보",
-    "store_id": "store-bibim",
-    "store": "우정 전주 돌솥비빔밥",
-    "timestamp": "2026-05-14 10:50:55",
-    "items": [
-      {
-        "name": "전통 전주 돌솥비빔밥",
-        "value": 11000,
-        "icon": "🍚",
-        "category": "비빔밥",
-        "description": "신선한 육회와 온갖 나물이 뜨거운 돌솥에서 지글지글 비벼지는 시그니처"
-      },
-      {
-        "name": "치즈 제육 돌솥비빔밥",
-        "value": 12000,
-        "icon": "🧀",
-        "category": "비빔밥",
-        "description": "매콤하게 볶아낸 제육과 고소한 모짜렐라 치즈의 환상적인 퓨전 돌솥"
-      },
-      {
-        "name": "톡톡 날치알 돌솥비빔밥",
-        "value": 10000,
-        "icon": "🥚",
-        "category": "비빔밥",
-        "description": "톡톡 터지는 날치알과 단무지, 김가루가 어우러진 대중적인 돌솥"
-      },
-      {
-        "name": "노릇 해물파전",
-        "value": 16000,
-        "icon": "🥞",
-        "category": "사이드",
-        "description": "쪽파와 신선한 오징어, 새우를 가득 얹어 튀기듯 구운 해물파전"
-      },
-      {
-        "name": "탄산 사이다",
-        "value": 2000,
-        "icon": "🥤",
-        "category": "음료",
-        "description": "시원하고 청량한 오리지널 칠성사이다"
-      }
-    ]
-  },
-  {
-    "id": "MENUS_store-chinese",
-    "type": "Menus",
-    "title": "메뉴 정보",
-    "store_id": "store-chinese",
-    "store": "취홍루",
-    "timestamp": "2026-05-14 10:50:55",
-    "items": [
-      {
-        "name": "수제 손짜장면",
-        "value": 7500,
-        "icon": "🍜",
-        "category": "식사류",
-        "description": "춘장의 고소함과 쫄깃한 수타면발이 일품인 대표 유니짜장"
-      },
-      {
-        "name": "얼큰 낙지짬뽕",
-        "value": 9500,
-        "icon": "🌶️",
-        "category": "식사류",
-        "description": "신선한 낙지 한 마리와 불향 가득한 해산물 육수의 얼큰함"
-      },
-      {
-        "name": "해물쟁반짜장 (2인)",
-        "value": 18000,
-        "icon": "🍛",
-        "category": "식사류",
-        "description": "오징어, 새우와 면을 춘장에 강한 화력으로 함께 볶아낸 요리"
-      },
-      {
-        "name": "찹쌀 탕수육 (소)",
-        "value": 19000,
-        "icon": "🐖",
-        "category": "요리류",
-        "description": "국내산 등심을 바삭하게 튀겨 쫄깃하고 투명한 소스를 얹은 한 접시"
-      },
-      {
-        "name": "매콤 칠리새우",
-        "value": 26000,
-        "icon": "🍤",
-        "category": "요리류",
-        "description": "새콤매콤 달콤한 특제 소스에 버무린 바삭한 대하 튀김"
-      },
-      {
-        "name": "명품 고추잡채 & 꽃빵",
-        "value": 28000,
-        "icon": "🫓",
-        "category": "요리류",
-        "description": "피망과 돼지고기 채를 고추기름에 볶아 따끈한 꽃빵과 싸 먹는 일품"
-      },
-      {
-        "name": "연태고량주 (중)",
-        "value": 16000,
-        "icon": "🍶",
-        "category": "주류",
-        "description": "파인애플 향이 은은하게 퍼지는 대표 프리미엄 중국 명주"
-      },
-      {
-        "name": "시원한 콜라/사이다",
-        "value": 2000,
-        "icon": "🥤",
-        "category": "음료",
-        "description": "기름진 입맛을 리셋해주는 시원한 청량음료"
-      }
-    ]
+    ],
+    "store": "시크빌",
+    "timestamp": "2026-05-17 20:16:30",
+    "id": "BND-35E45FF9",
+    "store_id": "store-chicvill03"
   },
   {
     "id": "MENUS_store-1",
     "type": "Menus",
     "title": "메뉴 정보",
     "store_id": "store-1",
-    "store": "시크앤프레시",
-    "timestamp": "2026-05-14 10:50:55",
+    "store": "미소 한식당",
+    "timestamp": "2026-05-17 16:32:46",
     "items": [
       {
-        "name": "프리미엄 모듬 바베큐 플레이트",
-        "value": 29000,
-        "icon": "🍖",
-        "category": "대표요리",
-        "description": "등갈비, 삼겹살, 소시지를 훈연 참숯 그릴에 직접 구워낸 플래터"
-      },
-      {
-        "name": "바삭 후라이드 치킨",
-        "value": 19000,
-        "icon": "🍗",
-        "category": "대표요리",
-        "description": "고소한 전용 크리스피 밀가루로 바삭하게 튀겨낸 치킨의 정석"
-      },
-      {
-        "name": "매콤 골뱅이 소면 무침",
-        "value": 18000,
-        "icon": "🐚",
-        "category": "사이드/안주",
-        "description": "새콤달콤 매콤한 소스에 쫄깃한 골뱅이와 야채, 소면을 함께 버무린 별미"
-      },
-      {
-        "name": "시원한 어묵 조개탕",
-        "value": 15000,
+        "name": "된장찌개",
+        "value": 9000,
         "icon": "🍲",
-        "category": "사이드/안주",
-        "description": "맑고 개운한 조개 육수에 모듬 고급 어묵을 끓여낸 소주 안주 최고봉"
+        "category": "찌개류",
+        "description": "국산 된장과 두부, 감자를 넣어 구수하게 끓인 전통 찌개"
       },
       {
-        "name": "살얼음 생맥주 500cc",
-        "value": 4500,
-        "icon": "🍺",
-        "category": "주류",
-        "description": "잔까지 영하로 꽁꽁 얼려 머리가 깨질 듯한 시원함의 오리지널 생맥주"
+        "name": "김치찌개",
+        "value": 9000,
+        "icon": "🌶️",
+        "category": "찌개류",
+        "description": "묵은지와 돼지고기로 깊은 맛을 낸 김치찌개"
       },
       {
-        "name": "코카콜라 / 스프라이트",
-        "value": 2000,
-        "icon": "🥤",
-        "category": "음료",
-        "description": "언제 마셔도 상쾌한 시원한 탄산음료"
+        "name": "제육볶음",
+        "value": 11000,
+        "icon": "🥘",
+        "category": "볶음류",
+        "description": "양념 돼지고기를 파·양파와 함께 볶은 매콤한 제육볶음"
+      },
+      {
+        "name": "불고기 정식",
+        "value": 15000,
+        "icon": "🥩",
+        "category": "정식류",
+        "description": "국내산 소불고기에 밥·국·반찬이 함께 나오는 정식"
+      },
+      {
+        "name": "비빔밥",
+        "value": 10000,
+        "icon": "🍚",
+        "category": "밥류",
+        "description": "계절 나물과 고추장을 넣어 비벼 먹는 건강 비빔밥"
+      },
+      {
+        "name": "돌솥비빔밥",
+        "value": 12000,
+        "icon": "🫕",
+        "category": "밥류",
+        "description": "달궈진 돌솥에 누룽지까지 즐기는 프리미엄 비빔밥"
+      },
+      {
+        "name": "막걸리",
+        "value": 5000,
+        "icon": "🍶",
+        "category": "주류/음료",
+        "description": "국산 쌀로 빚은 생막걸리 (750ml)"
+      },
+      {
+        "name": "보리차",
+        "value": 0,
+        "icon": "☕",
+        "category": "주류/음료",
+        "description": "무료 제공 보리차"
       }
     ]
   },
   {
-    "id": "MENUS_store-chicvill",
+    "id": "MENUS_store-2",
     "type": "Menus",
     "title": "메뉴 정보",
+    "store_id": "store-2",
+    "store": "블루버드 카페",
+    "timestamp": "2026-05-17 16:32:46",
+    "items": [
+      {
+        "name": "아메리카노",
+        "value": 4500,
+        "icon": "☕",
+        "category": "커피",
+        "description": "에티오피아 원두를 사용한 깔끔하고 산뜻한 아메리카노"
+      },
+      {
+        "name": "카페라떼",
+        "value": 5500,
+        "icon": "🥛",
+        "category": "커피",
+        "description": "부드러운 우유 거품과 에스프레소의 조화"
+      },
+      {
+        "name": "카푸치노",
+        "value": 5500,
+        "icon": "☕",
+        "category": "커피",
+        "description": "진한 에스프레소에 풍성한 우유 거품을 얹은 카푸치노"
+      },
+      {
+        "name": "바닐라 라떼",
+        "value": 6000,
+        "icon": "✨",
+        "category": "커피",
+        "description": "달콤한 바닐라 시럽을 가미한 부드러운 라떼"
+      },
+      {
+        "name": "얼그레이 티",
+        "value": 4500,
+        "icon": "🍵",
+        "category": "논커피",
+        "description": "베르가못 향이 가득한 정통 얼그레이 홍차"
+      },
+      {
+        "name": "스무디",
+        "value": 6500,
+        "icon": "🥤",
+        "category": "논커피",
+        "description": "딸기·망고·블루베리 중 선택 가능한 생과일 스무디"
+      },
+      {
+        "name": "크루아상",
+        "value": 4000,
+        "icon": "🥐",
+        "category": "디저트",
+        "description": "매일 아침 직접 구워내는 바삭한 버터 크루아상"
+      },
+      {
+        "name": "치즈 케이크",
+        "value": 6500,
+        "icon": "🍰",
+        "category": "디저트",
+        "description": "뉴욕 스타일의 진하고 크리미한 치즈 케이크"
+      },
+      {
+        "name": "아보카도 토스트",
+        "value": 8500,
+        "icon": "🥑",
+        "category": "푸드",
+        "description": "신선한 아보카도와 수란을 올린 브런치 토스트"
+      }
+    ]
+  },
+  {
+    "id": "MENUS_store-3",
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store_id": "store-3",
+    "store": "나폴리 피자",
+    "timestamp": "2026-05-17 16:32:46",
+    "items": [
+      {
+        "name": "마르게리타",
+        "value": 16000,
+        "icon": "🍕",
+        "category": "피자",
+        "description": "토마토·모짜렐라·바질만으로 완성한 나폴리 정통 피자"
+      },
+      {
+        "name": "페퍼로니",
+        "value": 18000,
+        "icon": "🍕",
+        "category": "피자",
+        "description": "매콤한 페퍼로니를 듬뿍 올린 인기 1위 피자"
+      },
+      {
+        "name": "포카치아",
+        "value": 12000,
+        "icon": "🍕",
+        "category": "피자",
+        "description": "올리브 오일과 로즈마리로 맛을 낸 이탈리아 빵"
+      },
+      {
+        "name": "까르보나라",
+        "value": 14000,
+        "icon": "🍝",
+        "category": "파스타",
+        "description": "판체타·달걀·파르미지아노로 만든 진한 크림 파스타"
+      },
+      {
+        "name": "봉골레",
+        "value": "15000",
+        "icon": "🍝",
+        "category": "파스타",
+        "description": "신선한 바지락과 마늘·화이트와인의 바다 향 파스타"
+      },
+      {
+        "name": "아라비아타",
+        "value": 13000,
+        "icon": "🍝",
+        "category": "파스타",
+        "description": "매콤한 고추와 토마토소스의 단순하지만 강렬한 파스타"
+      },
+      {
+        "name": "티라미수",
+        "value": 8000,
+        "icon": "🍮",
+        "category": "디저트",
+        "description": "에스프레소에 적신 사보이아르디와 마스카르포네 크림"
+      },
+      {
+        "name": "하우스 와인",
+        "value": 9000,
+        "icon": "🍷",
+        "category": "주류/음료",
+        "description": "이탈리아산 하우스 레드·화이트 와인 (잔)"
+      },
+      {
+        "name": "아란치니",
+        "value": 7000,
+        "icon": "🍙",
+        "category": "사이드",
+        "description": "치즈를 넣어 튀긴 이탈리아 쌀 튀김 3개"
+      }
+    ]
+  },
+  {
+    "id": "store-config-store-chicvill",
+    "type": "StoreConfig",
+    "title": "매장 정보",
+    "store": "시크빌",
     "store_id": "store-chicvill",
-    "store": "시크빌",
-    "timestamp": "2026-05-14 10:50:55",
+    "status": "approved",
     "items": [
       {
-        "name": "시그니처 아메리카노",
-        "value": 4500,
-        "icon": "☕",
-        "category": "커피",
-        "description": "과테말라 프리미엄 원두로 깊고 바디감 넘치는 오리지널 블랙"
+        "name": "상호명",
+        "value": "시크빌"
       },
       {
-        "name": "벨벳 카페 라떼",
-        "value": 5000,
-        "icon": "🥛",
-        "category": "커피",
-        "description": "실크처럼 부드러운 스팀밀크와 진한 에스프레소의 아늑한 한 잔"
+        "name": "사업자번호",
+        "value": "5871301146"
       },
       {
-        "name": "에스프레소 마끼아또",
-        "value": 4000,
-        "icon": "☕",
-        "category": "커피",
-        "description": "진한 에스프레소 위에 살포시 얹은 고소한 우유 거품"
+        "name": "대표자",
+        "value": "김종심"
       },
       {
-        "name": "제주 청귤 에이드",
-        "value": 6000,
-        "icon": "🍹",
-        "category": "음료",
-        "description": "새콤달콤한 청귤 청에 톡 쏘는 탄산수를 블렌딩한 시즌 청량음료"
+        "name": "개업일자",
+        "value": "20191216"
       },
       {
-        "name": "메이플 크로플 & 아이스크림",
-        "value": 6500,
-        "icon": "🧇",
-        "category": "디저트",
-        "description": "버터향 가득한 생지를 구워 젤라또 아이스크림과 메이플 시럽을 토핑"
+        "name": "정산계좌",
+        "value": "농협은행 13002752081538"
       },
       {
-        "name": "바스크 치즈케이크",
-        "value": 7000,
-        "icon": "🍰",
-        "category": "디저트",
-        "description": "고온에서 그을려 구워내 스모키한 향과 진한 크림치즈의 텍스처"
+        "name": "연락처",
+        "value": "01082817377"
+      },
+      {
+        "name": "테이블설정",
+        "value": "1번: 4인석, 2번: 2인석, 3번: 4인석, 4번: 4인석, 5번: 2인석, 6번: 6인석"
       }
     ]
   },
   {
-    "id": "MENUS_store-japanese",
-    "type": "Menus",
-    "title": "메뉴 정보",
-    "store_id": "store-japanese",
-    "store": "미도리 스시",
-    "timestamp": "2026-05-14 10:50:55",
-    "items": [
-      {
-        "name": "프리미엄 모듬 바베큐 플레이트",
-        "value": 29000,
-        "icon": "🍖",
-        "category": "대표요리",
-        "description": "등갈비, 삼겹살, 소시지를 훈연 참숯 그릴에 직접 구워낸 플래터"
-      },
-      {
-        "name": "바삭 후라이드 치킨",
-        "value": 19000,
-        "icon": "🍗",
-        "category": "대표요리",
-        "description": "고소한 전용 크리스피 밀가루로 바삭하게 튀겨낸 치킨의 정석"
-      },
-      {
-        "name": "매콤 골뱅이 소면 무침",
-        "value": 18000,
-        "icon": "🐚",
-        "category": "사이드/안주",
-        "description": "새콤달콤 매콤한 소스에 쫄깃한 골뱅이와 야채, 소면을 함께 버무린 별미"
-      },
-      {
-        "name": "시원한 어묵 조개탕",
-        "value": 15000,
-        "icon": "🍲",
-        "category": "사이드/안주",
-        "description": "맑고 개운한 조개 육수에 모듬 고급 어묵을 끓여낸 소주 안주 최고봉"
-      },
-      {
-        "name": "살얼음 생맥주 500cc",
-        "value": 4500,
-        "icon": "🍺",
-        "category": "주류",
-        "description": "잔까지 영하로 꽁꽁 얼려 머리가 깨질 듯한 시원함의 오리지널 생맥주"
-      },
-      {
-        "name": "코카콜라 / 스프라이트",
-        "value": 2000,
-        "icon": "🥤",
-        "category": "음료",
-        "description": "언제 마셔도 상쾌한 시원한 탄산음료"
-      }
-    ]
-  },
-  {
-    "id": "MENUS_store-chicvill02",
-    "type": "Menus",
-    "title": "메뉴 정보",
-    "store_id": "store-chicvill02",
-    "store": "시크빌",
-    "timestamp": "2026-05-14 10:50:55",
-    "items": [
-      {
-        "name": "시그니처 아메리카노",
-        "value": 4500,
-        "icon": "☕",
-        "category": "커피",
-        "description": "과테말라 프리미엄 원두로 깊고 바디감 넘치는 오리지널 블랙"
-      },
-      {
-        "name": "벨벳 카페 라떼",
-        "value": 5000,
-        "icon": "🥛",
-        "category": "커피",
-        "description": "실크처럼 부드러운 스팀밀크와 진한 에스프레소의 아늑한 한 잔"
-      },
-      {
-        "name": "에스프레소 마끼아또",
-        "value": 4000,
-        "icon": "☕",
-        "category": "커피",
-        "description": "진한 에스프레소 위에 살포시 얹은 고소한 우유 거품"
-      },
-      {
-        "name": "제주 청귤 에이드",
-        "value": 6000,
-        "icon": "🍹",
-        "category": "음료",
-        "description": "새콤달콤한 청귤 청에 톡 쏘는 탄산수를 블렌딩한 시즌 청량음료"
-      },
-      {
-        "name": "메이플 크로플 & 아이스크림",
-        "value": 6500,
-        "icon": "🧇",
-        "category": "디저트",
-        "description": "버터향 가득한 생지를 구워 젤라또 아이스크림과 메이플 시럽을 토핑"
-      },
-      {
-        "name": "바스크 치즈케이크",
-        "value": 7000,
-        "icon": "🍰",
-        "category": "디저트",
-        "description": "고온에서 그을려 구워내 스모키한 향과 진한 크림치즈의 텍스처"
-      }
-    ]
-  },
-  {
-    "id": "MENUS_store-western",
-    "type": "Menus",
-    "title": "메뉴 정보",
-    "store_id": "store-western",
-    "store": "라 벨라 이탈리아",
-    "timestamp": "2026-05-14 10:50:55",
-    "items": [
-      {
-        "name": "프리미엄 모듬 바베큐 플레이트",
-        "value": 29000,
-        "icon": "🍖",
-        "category": "대표요리",
-        "description": "등갈비, 삼겹살, 소시지를 훈연 참숯 그릴에 직접 구워낸 플래터"
-      },
-      {
-        "name": "바삭 후라이드 치킨",
-        "value": 19000,
-        "icon": "🍗",
-        "category": "대표요리",
-        "description": "고소한 전용 크리스피 밀가루로 바삭하게 튀겨낸 치킨의 정석"
-      },
-      {
-        "name": "매콤 골뱅이 소면 무침",
-        "value": 18000,
-        "icon": "🐚",
-        "category": "사이드/안주",
-        "description": "새콤달콤 매콤한 소스에 쫄깃한 골뱅이와 야채, 소면을 함께 버무린 별미"
-      },
-      {
-        "name": "시원한 어묵 조개탕",
-        "value": 15000,
-        "icon": "🍲",
-        "category": "사이드/안주",
-        "description": "맑고 개운한 조개 육수에 모듬 고급 어묵을 끓여낸 소주 안주 최고봉"
-      },
-      {
-        "name": "살얼음 생맥주 500cc",
-        "value": 4500,
-        "icon": "🍺",
-        "category": "주류",
-        "description": "잔까지 영하로 꽁꽁 얼려 머리가 깨질 듯한 시원함의 오리지널 생맥주"
-      },
-      {
-        "name": "코카콜라 / 스프라이트",
-        "value": 2000,
-        "icon": "🥤",
-        "category": "음료",
-        "description": "언제 마셔도 상쾌한 시원한 탄산음료"
-      }
-    ]
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 손님 입장",
-    "items": [
-      {
-        "name": "대기 손님 수",
-        "value": 1
-      },
-      {
-        "name": "상황",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:39:39",
-    "id": "BND-545E7C96",
-    "store_id": "store-korean"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1"
-      },
-      {
-        "name": "대기 ID",
-        "value": "A3EF"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:39:06",
-    "id": "BND-835D4882",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 중 주문 취소",
-    "items": [
-      {
-        "name": "대기번호",
-        "value": "1번"
-      },
-      {
-        "name": "주문 ID",
-        "value": "2626"
-      },
-      {
-        "name": "상태",
-        "value": "취소"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:39:02",
-    "id": "BND-A3EF2E20",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번"
-      },
-      {
-        "name": "테이블 번호",
-        "value": "A477"
-      },
-      {
-        "name": "상태",
-        "value": "취소"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:38:58",
-    "id": "BND-2626B8D2",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번"
-      },
-      {
-        "name": "전화 번호",
-        "value": "7627"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:38:45",
-    "id": "BND-A47726F7",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번"
-      },
-      {
-        "name": "테이블 번호",
-        "value": "B56D"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:38:39",
-    "id": "BND-76279379",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번"
-      },
-      {
-        "name": "고객 ID",
-        "value": "1773"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:38:33",
-    "id": "BND-B56DCDD0",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 손님 취소",
-    "items": [
-      {
-        "name": "대기 손님 수",
-        "value": "5"
-      },
-      {
-        "name": "조치 사항",
-        "value": "취소"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:37:06",
-    "id": "BND-17731502",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 손님 취소",
-    "items": [
-      {
-        "name": "대기 손님 수",
-        "value": 5
-      },
-      {
-        "name": "상태",
-        "value": "취소됨"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:35:46",
-    "id": "BND-DAE096FC",
-    "store_id": "store-korean"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 손님 입장",
-    "items": [
-      {
-        "name": "대기 손님 수",
-        "value": 4
-      },
-      {
-        "name": "입장 시간",
-        "value": "2026-05-10 06:35:15"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:35:15",
-    "id": "BND-8EA22E9C",
-    "store_id": "store-korean"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 손님 취소",
-    "items": [
-      {
-        "name": "대기 손님 수",
-        "value": "0"
-      },
-      {
-        "name": "취소된 손님 수",
-        "value": "1"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:35:07",
-    "id": "BND-2CF8CADC",
-    "store_id": "store-korean"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번"
-      },
-      {
-        "name": "고객ID",
-        "value": "F017"
-      },
-      {
-        "name": "상태",
-        "value": "취소"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:34:59",
-    "id": "BND-AC50C4E8",
-    "store_id": "store-korean"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 리스트 업데이트",
-    "items": [
-      {
-        "name": "대기 인원",
-        "value": "1번"
-      },
-      {
-        "name": "테이블 번호",
-        "value": "134F"
-      },
-      {
-        "name": "상태",
-        "value": "취소"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:34:54",
-    "id": "BND-F017A910",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 손님 취소",
-    "items": [
-      {
-        "name": "대기 손님 수",
-        "value": "0"
-      },
-      {
-        "name": "취소된 손님 수",
-        "value": "1"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:34:43",
-    "id": "BND-134FB835",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기번호",
-        "value": "1"
-      },
-      {
-        "name": "고객 ID",
-        "value": "C081"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:34:37",
-    "id": "BND-A61E2225",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번"
-      },
-      {
-        "name": "주문 번호",
-        "value": "[DD31]"
-      },
-      {
-        "name": "상태",
-        "value": "취소"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:34:32",
-    "id": "BND-C081CAD5",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번"
-      },
-      {
-        "name": "테이블 번호",
-        "value": "650C"
-      },
-      {
-        "name": "입장 상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:34:25",
-    "id": "BND-DD3131C3",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      },
-      {
-        "name": "고객 ID",
-        "value": "0DA0"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:34:19",
-    "id": "BND-650C477E",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번"
-      },
-      {
-        "name": "테이블 번호",
-        "value": "840A"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:34:13",
-    "id": "BND-0DA05C65",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 고객 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번"
-      },
-      {
-        "name": "주문 번호",
-        "value": "6B45"
-      },
-      {
-        "name": "상태",
-        "value": "취소"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:34:05",
-    "id": "BND-840A3665",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 번호 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번"
-      },
-      {
-        "name": "고객 번호",
-        "value": "886A"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:33:59",
-    "id": "BND-6B45257E",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 요청 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번"
-      },
-      {
-        "name": "고객 코드",
-        "value": "38DB"
-      },
-      {
-        "name": "상태",
-        "value": "취소"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:33:49",
-    "id": "BND-886A6113",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번"
-      },
-      {
-        "name": "고객 코드",
-        "value": "8AD2"
-      },
-      {
-        "name": "행동",
-        "value": "취소"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:33:41",
-    "id": "BND-38DB99B3",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1번 [97F1]"
-      },
-      {
-        "name": "상태",
-        "value": "취소"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:33:33",
-    "id": "BND-8AD28E9F",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 손님 취소",
-    "items": [
-      {
-        "name": "대기 손님 수",
-        "value": "0"
-      },
-      {
-        "name": "취소된 고객 수",
-        "value": "1"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:33:22",
-    "id": "BND-97F147E0",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 손님 취소",
-    "items": [
-      {
-        "name": "대기 손님 수",
-        "value": "0"
-      },
-      {
-        "name": "취소된 손님",
-        "value": "1"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-10 06:33:16",
-    "id": "BND-A9B2C9DD",
-    "store_id": "store-korean"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1"
-      },
-      {
-        "name": "상황",
-        "value": "취소됨"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:18:01",
-    "id": "BND-B407E5AD",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 1번 입장 완료",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1"
-      },
-      {
-        "name": "입장 상태",
-        "value": "완료"
-      },
-      {
-        "name": "현재 시간",
-        "value": "2026-05-09 11:17:53"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:17:53",
-    "id": "BND-385DBEA4",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 1번 입장 완료",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:17:43",
-    "id": "BND-E6214B75",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 1번 입장 완료",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:17:36",
-    "id": "BND-52D3FF3C",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 입장 완료",
-    "items": [
-      {
-        "name": "상태",
-        "value": "대기 10번 입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:17:31",
-    "id": "BND-FB499881",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 입장 완료",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "10"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:17:25",
-    "id": "BND-9657B1DB",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 10번 입장 완료",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "10"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:17:17",
-    "id": "BND-79F510E4",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 5번 입장 완료",
-    "items": [
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      },
-      {
-        "name": "대기 번호",
-        "value": "5"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:17:12",
-    "id": "BND-34EC81C4",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록 완료",
-    "items": [
-      {
-        "name": "고객명",
-        "value": "홍길동"
-      },
-      {
-        "name": "상황",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:17:07",
-    "id": "BND-45A5BE5B",
-    "store_id": "store-korean"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:16:49",
-    "id": "BND-43EB24F7",
-    "store_id": "store-korean"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1"
-      },
-      {
-        "name": "상태",
-        "value": "취소됨"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:16:42",
-    "id": "BND-735D8EAE",
-    "store_id": "store-korean"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기번호",
-        "value": "1"
-      },
-      {
-        "name": "상황",
-        "value": "취소됨"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:16:37",
-    "id": "BND-3DFC7653",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 1번 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1"
-      },
-      {
-        "name": "상태",
-        "value": "취소"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:16:31",
-    "id": "BND-D73856A0",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 1번 입장 완료",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:16:26",
-    "id": "BND-D8655456",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 1번 입장 완료",
-    "items": [
-      {
-        "name": "상황",
-        "value": "대기 1번 고객이 입장하였습니다."
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:16:21",
-    "id": "BND-CD97A2C1",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록 완료",
-    "items": [
-      {
-        "name": "고객명",
-        "value": "홍길동"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:16:15",
-    "id": "BND-D8C4E7E4",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "10"
-      },
-      {
-        "name": "상태",
-        "value": "취소"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:16:07",
-    "id": "BND-799DD79B",
-    "store_id": "store-korean"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "10"
-      },
-      {
-        "name": "상태",
-        "value": "취소됨"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:15:59",
-    "id": "BND-D9B75401",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "5"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:15:51",
-    "id": "BND-DAABAD17",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 인원 등록",
-    "items": [
-      {
-        "name": "고객 이름",
-        "value": "홍길동"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:15:46",
-    "id": "BND-63711029",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 입장 완료",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "10"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      },
-      {
-        "name": "입장 시간",
-        "value": "2026-05-09 11:15:42"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:15:42",
-    "id": "BND-E063826A",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 번호 입장 완료",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": 10
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:15:39",
-    "id": "BND-163C8661",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 번호 입장 완료",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "10"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:15:36",
-    "id": "BND-6D78A2FA",
-    "store_id": "store-korean"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "10"
-      },
-      {
-        "name": "상태",
-        "value": "취소됨"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:15:33",
-    "id": "BND-853855A6",
-    "store_id": "store-korean"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      },
-      {
-        "name": "타임스탬프",
-        "value": "2026-05-09 11:15:27"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:15:27",
-    "id": "BND-3A4BF1FC",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1"
-      },
-      {
-        "name": "상태",
-        "value": "취소됨"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:15:21",
-    "id": "BND-835CC9C8",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:11:56",
-    "id": "BND-0A68D897",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 번호 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "7"
-      },
-      {
-        "name": "상태",
-        "value": "취소됨"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:11:46",
-    "id": "BND-BC6B971C",
-    "store_id": "store-korean"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록 취소",
-    "items": [
-      {
-        "name": "고객 이름",
-        "value": "홍길동"
-      },
-      {
-        "name": "상태",
-        "value": "취소됨"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:11:39",
-    "id": "BND-9E0D487F",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 5번 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "5"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:11:32",
-    "id": "BND-6DA91003",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 인원 취소",
-    "items": [
-      {
-        "name": "취소된 대기 번호",
-        "value": "5"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:11:27",
-    "id": "BND-7052FF38",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 취소",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "4"
-      },
-      {
-        "name": "상태",
-        "value": "취소"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:11:19",
-    "id": "BND-FE4FD61F",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록",
-    "items": [
-      {
-        "name": "대기 인원",
-        "value": "3번"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:10:47",
-    "id": "BND-204B5153",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 홍길동번 입장 완료",
-    "items": [
-      {
-        "name": "대기 손님",
-        "value": "홍길동"
-      },
-      {
-        "name": "현재 대기 상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:10:38",
-    "id": "BND-9C114BEC",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 1번 손님 호출",
-    "items": [
-      {
-        "name": "대기 번호",
-        "value": "1"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:10:26",
-    "id": "BND-50E879DA",
-    "store_id": "store-korean",
-    "status": "canceled"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 등록 완료",
-    "items": [
-      {
-        "name": "대기자",
-        "value": "홍길동"
-      },
-      {
-        "name": "상태",
-        "value": "입장 완료"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:10:10",
-    "id": "BND-B6DDBF49",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "Waiting",
-    "title": "대기 손님 등록",
-    "items": [
-      {
-        "name": "손님 이름",
-        "value": "홍길동"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 11:05:09",
-    "id": "BND-1A781AA9",
-    "store_id": "store-korean",
-    "status": "finished"
-  },
-  {
-    "type": "stats",
-    "title": "오늘 대장금 매출 정보",
-    "items": [
-      {
-        "name": "오늘 매출",
-        "value": "알려지지 않음"
-      }
-    ],
-    "store": "대장금 수라간",
-    "timestamp": "2026-05-09 08:04:02",
-    "id": "BND-8A03D19D",
-    "store_id": "store-korean"
-  },
-  {
-    "id": "store-korean",
-    "type": "StoreConfig",
-    "title": "매장 정보",
-    "timestamp": "2026.05.09.07:30:00",
-    "items": [
-      {
-        "name": "상호명",
-        "value": "대장금 수라간"
-      },
-      {
-        "name": "사업자번호",
-        "value": "120-12-34567"
-      },
-      {
-        "name": "주소",
-        "value": "서울특별시 종로구 삼청로 30"
-      },
-      {
-        "name": "대표자",
-        "value": "이영희"
-      },
-      {
-        "name": "개업일자",
-        "value": "20200505"
-      },
-      {
-        "name": "은행명",
-        "value": "국민은행"
-      },
-      {
-        "name": "계좌번호",
-        "value": "110-123-456789"
-      },
-      {
-        "name": "예금주",
-        "value": "대장금수라간"
-      },
-      {
-        "name": "납부상태",
-        "value": "정상"
-      }
-    ],
-    "status": "approved",
-    "order_code": null,
-    "store": "대장금 수라간",
-    "store_id": "store-korean",
-    "table": null,
-    "Package": "매장",
-    "payment": null
-  },
-  {
-    "id": "store-chinese",
-    "type": "StoreConfig",
-    "title": "매장 정보",
-    "timestamp": "2026.05.09.07:30:00",
-    "items": [
-      {
-        "name": "상호명",
-        "value": "취홍루"
-      },
-      {
-        "name": "사업자번호",
-        "value": "201-15-98765"
-      },
-      {
-        "name": "주소",
-        "value": "서울특별시 강남구 테헤란로 123"
-      },
-      {
-        "name": "대표자",
-        "value": "장위안"
-      },
-      {
-        "name": "개업일자",
-        "value": "20181111"
-      },
-      {
-        "name": "은행명",
-        "value": "신한은행"
-      },
-      {
-        "name": "계좌번호",
-        "value": "100-222-333444"
-      },
-      {
-        "name": "예금주",
-        "value": "취홍루"
-      },
-      {
-        "name": "납부상태",
-        "value": "정상"
-      }
-    ],
-    "status": "approved",
-    "order_code": null,
-    "store": "취홍루",
-    "store_id": "store-chinese",
-    "table": null,
-    "Package": "매장",
-    "payment": null
-  },
-  {
-    "id": "store-coffee",
-    "type": "StoreConfig",
-    "title": "매장 정보",
-    "timestamp": "2026.05.09.07:30:00",
-    "items": [
-      {
-        "name": "상호명",
-        "value": "블루웨이브 로스터즈"
-      },
-      {
-        "name": "사업자번호",
-        "value": "512-22-11223"
-      },
-      {
-        "name": "주소",
-        "value": "서울특별시 마포구 연남로 45"
-      },
-      {
-        "name": "대표자",
-        "value": "박지훈"
-      },
-      {
-        "name": "개업일자",
-        "value": "20210315"
-      },
-      {
-        "name": "은행명",
-        "value": "우리은행"
-      },
-      {
-        "name": "계좌번호",
-        "value": "1002-123-456789"
-      },
-      {
-        "name": "예금주",
-        "value": "블루웨이브"
-      },
-      {
-        "name": "납부상태",
-        "value": "정상"
-      }
-    ],
-    "status": "approved",
-    "order_code": null,
-    "store": "블루웨이브 로스터즈",
-    "store_id": "store-coffee",
-    "table": null,
-    "Package": "매장",
-    "payment": null
-  },
-  {
-    "id": "store-western",
-    "type": "StoreConfig",
-    "title": "매장 정보",
-    "timestamp": "2026.05.09.07:30:00",
-    "items": [
-      {
-        "name": "상호명",
-        "value": "라 벨라 이탈리아"
-      },
-      {
-        "name": "사업자번호",
-        "value": "330-45-77889"
-      },
-      {
-        "name": "주소",
-        "value": "부산광역시 해운대구 달맞이길 62"
-      },
-      {
-        "name": "대표자",
-        "value": "최성민"
-      },
-      {
-        "name": "개업일자",
-        "value": "20190801"
-      },
-      {
-        "name": "은행명",
-        "value": "하나은행"
-      },
-      {
-        "name": "계좌번호",
-        "value": "333-444-555666"
-      },
-      {
-        "name": "예금주",
-        "value": "라벨라이탈리아"
-      },
-      {
-        "name": "납부상태",
-        "value": "정상"
-      }
-    ],
-    "status": "approved",
-    "order_code": null,
-    "store": "라 벨라 이탈리아",
-    "store_id": "store-western",
-    "table": null,
-    "Package": "매장",
-    "payment": null
-  },
-  {
-    "id": "store-japanese",
-    "type": "StoreConfig",
-    "title": "매장 정보",
-    "timestamp": "2026.05.09.07:30:00",
-    "items": [
-      {
-        "name": "상호명",
-        "value": "미도리 스시"
-      },
-      {
-        "name": "사업자번호",
-        "value": "114-88-23234"
-      },
-      {
-        "name": "주소",
-        "value": "대구광역시 수성구 들안로 98"
-      },
-      {
-        "name": "대표자",
-        "value": "야마모토 켄지"
-      },
-      {
-        "name": "개업일자",
-        "value": "20170515"
-      },
-      {
-        "name": "은행명",
-        "value": "국민은행"
-      },
-      {
-        "name": "계좌번호",
-        "value": "222-333-444555"
-      },
-      {
-        "name": "예금주",
-        "value": "미도리스시"
-      },
-      {
-        "name": "납부상태",
-        "value": "정상"
-      }
-    ],
-    "status": "approved",
-    "order_code": null,
-    "store": "미도리 스시",
-    "store_id": "store-japanese",
-    "table": null,
-    "Package": "매장",
-    "payment": null
-  },
-  {
-    "id": "USER-1778574563984",
+    "id": "USER-1779004862338",
     "type": "PersonalInfos",
-    "title": "점원01님 가입 신청",
-    "items": [
-      {
-        "name": "이름",
-        "value": "점원01"
-      },
-      {
-        "name": "아이디",
-        "value": "worker01"
-      },
-      {
-        "name": "비밀번호",
-        "value": "1212"
-      },
-      {
-        "name": "권한",
-        "value": "staff"
-      },
-      {
-        "name": "사업자번호",
-        "value": ""
-      },
-      {
-        "name": "개업일자",
-        "value": ""
-      }
-    ],
-    "status": "pending",
-    "timestamp": "2026. 5. 12. 오후 5:29:23",
-    "store": "시크빌",
-    "store_id": ""
-  },
-  {
-    "id": "USER-1778584997076",
-    "type": "PersonalInfos",
-    "title": "김종심님 가입 신청",
+    "title": "김종심님 가입 완료 (점주)",
     "items": [
       {
         "name": "이름",
@@ -2118,55 +291,216 @@
       {
         "name": "개업일자",
         "value": "20191216"
+      },
+      {
+        "name": "휴대폰",
+        "value": "01082817377"
       }
     ],
     "status": "approved",
-    "timestamp": "2026. 5. 12. 오후 8:23:17",
+    "timestamp": "2026. 5. 17. 오후 5:01:02",
     "store": "시크빌",
     "store_id": "store-chicvill"
   },
   {
     "items": [
       {
-        "name": "상호명",
-        "value": "시크빌"
+        "name": "명품 한우 숯불구이",
+        "value": "35000",
+        "icon": "🥩",
+        "category": "식사",
+        "description": "최고급 1++ 등급 한우를 참숯으로 부드럽게 구워낸 명품 시그니처 구이"
       },
       {
-        "name": "사업자번호",
-        "value": "5871301146"
+        "name": "시골 순두부찌개",
+        "value": "9000",
+        "icon": "🍲",
+        "category": "식사",
+        "description": "매일 아침 직접 만든 순두부와 신선한 바지락으로 국물 맛을 낸 얼큰 찌개"
       },
       {
-        "name": "주소",
-        "value": "인천 서구 옻우물로26번길 1"
-      },
-      {
-        "name": "대표자",
-        "value": "김종심"
-      },
-      {
-        "name": "개업일자",
-        "value": "20191216"
-      },
-      {
-        "name": "은행명",
-        "value": "농협"
-      },
-      {
-        "name": "계좌번호",
-        "value": "13002752081538"
-      },
-      {
-        "name": "예금주",
-        "value": "민흥식"
+        "name": "프리미엄 콜드브루 커피",
+        "value": "4500",
+        "icon": "☕",
+        "category": "음료",
+        "description": "스페셜티 에티오피아 원두를 18시간 동안 저온 추출한 고소한 아로마"
       }
     ],
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store": "시크빌",
+    "store_id": "store-chicvill",
+    "id": "MENUS_ONBOARD_1779004885969"
+  },
+  {
+    "id": "USER-01011111111",
+    "type": "PersonalInfos",
+    "title": "일잘해님 등록 완료 (직원)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "일잘해"
+      },
+      {
+        "name": "아이디",
+        "value": "01011111111"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "manager"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-17 17:03:12",
+    "store": "시크빌",
+    "store_id": "store-chicvill"
+  },
+  {
+    "items": [
+      {
+        "name": "망고베리스무디",
+        "value": "5.9",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "블루베리스무디",
+        "value": "5.9",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "파인애플스무디",
+        "value": "5.9",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "바나나스무디",
+        "value": "5.9",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "딸기스무디",
+        "value": "5.9",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "호두스무디",
+        "value": "5.0",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "팥빙수 (2인)",
+        "value": "12,0",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "인절미 빙수(2인)",
+        "value": "12,0",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "망고빙수 (2인)",
+        "value": "12,0",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "생망고 빙수",
+        "value": "15.0",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "생딸기망고빙수",
+        "value": "16.5",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "바나나 밀크쉐이크",
+        "value": "6.0",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "블루베리 밀크쉐이크",
+        "value": "6.0",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "디카페 인도네시아 300ml",
+        "value": "10.0",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "디카페 인도네시아 500ml",
+        "value": "17.0",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "드립커피 200g",
+        "value": "21.0",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "드립커피 500g",
+        "value": "34.0",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "아이스커피",
+        "value": "4.0",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      }
+    ],
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store": "시크빌",
+    "store_id": "store-chicvill",
+    "id": "MENUS_1779005106296"
+  },
+  {
+    "id": "store-config-store-chicvill02",
     "type": "StoreConfig",
     "title": "매장 정보",
     "store": "시크빌",
-    "store_id": "store-chicvill",
-    "status": "approved"
-  },
-  {
+    "store_id": "store-chicvill02",
+    "status": "approved",
     "items": [
       {
         "name": "상호명",
@@ -2177,10 +511,6 @@
         "value": "5871301146"
       },
       {
-        "name": "주소",
-        "value": "인천 서구 석남동 507-34"
-      },
-      {
         "name": "대표자",
         "value": "김종심"
       },
@@ -2189,26 +519,21 @@
         "value": "20191216"
       },
       {
-        "name": "은행명",
-        "value": "농협"
+        "name": "정산계좌",
+        "value": "농협은행 13002752081538"
       },
       {
-        "name": "계좌번호",
-        "value": "13002752081538"
+        "name": "연락처",
+        "value": "01082817377"
       },
       {
-        "name": "예금주",
-        "value": "민흥식"
+        "name": "테이블설정",
+        "value": "1번: 4인석, 2번: 2인석, 3번: 4인석, 4번: 4인석, 5번: 2인석, 6번: 6인석"
       }
-    ],
-    "type": "StoreConfig",
-    "title": "매장 정보",
-    "store": "시크빌",
-    "store_id": "store-chicvill02",
-    "status": "approved"
+    ]
   },
   {
-    "id": "USER-1778674850931",
+    "id": "USER-1779005623347",
     "type": "PersonalInfos",
     "title": "김종심님 가입 완료 (점주)",
     "items": [
@@ -2242,12 +567,245 @@
       }
     ],
     "status": "approved",
-    "timestamp": "2026. 5. 13. 오후 9:20:50",
+    "timestamp": "2026. 5. 17. 오후 5:13:43",
     "store": "시크빌",
     "store_id": "store-chicvill02"
   },
   {
-    "id": "USER-01011114444",
+    "items": [
+      {
+        "name": "광어",
+        "value": "30000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "우럭",
+        "value": "30000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "송어",
+        "value": "30000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "연어",
+        "value": "30000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "도다리",
+        "value": "30000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "도다리 세꼬시",
+        "value": "30000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "아나고 세꼬시",
+        "value": "30000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "우럭 세꼬시",
+        "value": "30000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "졸돔 세꼬시",
+        "value": "45000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "명개",
+        "value": "10000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "낙지",
+        "value": "18000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "전복",
+        "value": "15000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "해삼",
+        "value": "20000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "개불",
+        "value": "25000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "가리비회",
+        "value": "25000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "해산물 모듬",
+        "value": "35000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "매운탕",
+        "value": "6000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "생여러탕",
+        "value": "23000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "회모듬",
+        "value": "9000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "명계밥",
+        "value": "8000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "활어초밥",
+        "value": "8000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "광어초밥",
+        "value": "15000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "연어초밥",
+        "value": "15000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "광어+연어초밥",
+        "value": "18000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "새우초밥",
+        "value": "12000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "공기밥",
+        "value": "1000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "미역사리",
+        "value": "1000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "유자차",
+        "value": "2000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "소주",
+        "value": "4000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "맥주",
+        "value": "5000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "막걸리",
+        "value": "5000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "청하",
+        "value": "5000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      }
+    ],
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store": "시크빌",
+    "store_id": "store-chicvill02",
+    "id": "MENUS_ONBOARD_1779005691457"
+  },
+  {
+    "id": "USER-01011221122",
     "type": "PersonalInfos",
     "title": "일잘해님 등록 완료 (직원)",
     "items": [
@@ -2257,34 +815,7 @@
       },
       {
         "name": "아이디",
-        "value": "01011114444"
-      },
-      {
-        "name": "비밀번호",
-        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
-      },
-      {
-        "name": "권한",
-        "value": "staff"
-      }
-    ],
-    "status": "approved",
-    "timestamp": "2026-05-14 06:48:41",
-    "store": "시크빌",
-    "store_id": "store-chicvill02"
-  },
-  {
-    "id": "USER-01044445555",
-    "type": "PersonalInfos",
-    "title": "더잘해님 등록 완료 (직원)",
-    "items": [
-      {
-        "name": "이름",
-        "value": "더잘해"
-      },
-      {
-        "name": "아이디",
-        "value": "01044445555"
+        "value": "01011221122"
       },
       {
         "name": "비밀번호",
@@ -2296,198 +827,300 @@
       }
     ],
     "status": "approved",
-    "timestamp": "2026-05-14 06:50:00",
+    "timestamp": "2026-05-17 17:15:55",
     "store": "시크빌",
     "store_id": "store-chicvill02"
   },
   {
-    "id": "ORD-EE62BCC3",
-    "type": "Orders",
-    "title": "테이블 T02 주문",
-    "store_id": "store-1",
-    "status": "ready",
-    "timestamp": "2026-05-15T04:25:04.517771",
-    "table": "T02",
+    "id": "store-config-store-chicvill03",
+    "type": "StoreConfig",
+    "title": "매장 정보",
+    "store": "시크빌",
+    "store_id": "store-chicvill03",
+    "status": "approved",
     "items": [
       {
-        "name": "프리미엄 모듬 바베큐 플레이트",
-        "value": "1"
+        "name": "상호명",
+        "value": "시크빌"
+      },
+      {
+        "name": "사업자번호",
+        "value": "8671301146"
+      },
+      {
+        "name": "대표자",
+        "value": "김종심"
+      },
+      {
+        "name": "개업일자",
+        "value": "20191216"
+      },
+      {
+        "name": "정산계좌",
+        "value": "농협은행 13002752081538"
+      },
+      {
+        "name": "연락처",
+        "value": "01082817377"
+      },
+      {
+        "name": "테이블설정",
+        "value": "1번: 4인석, 2번: 4인석, 3번: 4인석, 4번: 4인석, 5번: 2인석, 6번: 6인석"
       }
     ]
   },
   {
-    "id": "ORD-BF726FA9",
-    "type": "Orders",
-    "title": "테이블 T04 주문",
-    "store_id": "store-1",
-    "status": "cooking",
-    "timestamp": "2026-05-15T05:21:44.754285",
-    "table": "T04",
+    "id": "USER-1779009256836",
+    "type": "PersonalInfos",
+    "title": "김종심님 가입 완료 (점주)",
     "items": [
       {
-        "name": "바삭 후라이드 치킨",
-        "value": "1"
+        "name": "이름",
+        "value": "김종심"
+      },
+      {
+        "name": "아이디",
+        "value": "chicvill03"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "owner"
+      },
+      {
+        "name": "사업자번호",
+        "value": "8671301146"
+      },
+      {
+        "name": "개업일자",
+        "value": "20191216"
+      },
+      {
+        "name": "휴대폰",
+        "value": "01082817377"
       }
-    ]
+    ],
+    "status": "approved",
+    "timestamp": "2026. 5. 17. 오후 6:14:16",
+    "store": "시크빌",
+    "store_id": "store-chicvill03"
   },
   {
-    "id": "ORD-EE62BCC3",
-    "type": "Orders",
-    "title": "테이블 T02 주문",
-    "store_id": "store-1",
-    "status": "ready",
-    "timestamp": "2026-05-15T04:25:04.517771",
-    "table": "T02",
     "items": [
       {
-        "name": "프리미엄 모듬 바베큐 플레이트",
-        "value": "1"
-      }
-    ]
-  },
-  {
-    "id": "ORD-BF726FA9",
-    "type": "Orders",
-    "title": "테이블 T04 주문",
-    "store_id": "store-1",
-    "status": "cooking",
-    "timestamp": "2026-05-15T05:21:44.754285",
-    "table": "T04",
-    "items": [
+        "name": "광어",
+        "value": "30000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
       {
-        "name": "바삭 후라이드 치킨",
-        "value": "1"
-      }
-    ]
-  },
-  {
-    "id": "ORD-EE62BCC3",
-    "type": "Orders",
-    "title": "테이블 T02 주문",
-    "store_id": "store-1",
-    "status": "ready",
-    "timestamp": "2026-05-15T04:25:04.517771",
-    "table": "T02",
-    "items": [
+        "name": "우럭",
+        "value": "35000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
       {
-        "name": "프리미엄 모듬 바베큐 플레이트",
-        "value": "1"
-      }
-    ]
-  },
-  {
-    "id": "ORD-BF726FA9",
-    "type": "Orders",
-    "title": "테이블 T04 주문",
-    "store_id": "store-1",
-    "status": "cooking",
-    "timestamp": "2026-05-15T05:21:44.754285",
-    "table": "T04",
-    "items": [
+        "name": "송어",
+        "value": "30000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
       {
-        "name": "바삭 후라이드 치킨",
-        "value": "1"
-      }
-    ]
-  },
-  {
-    "id": "ORD-EE62BCC3",
-    "type": "Orders",
-    "title": "테이블 T02 주문",
-    "store_id": "store-1",
-    "status": "ready",
-    "timestamp": "2026-05-15T04:25:04.517771",
-    "table": "T02",
-    "items": [
+        "name": "연어",
+        "value": "30000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
       {
-        "name": "프리미엄 모듬 바베큐 플레이트",
-        "value": "1"
-      }
-    ]
-  },
-  {
-    "id": "ORD-BF726FA9",
-    "type": "Orders",
-    "title": "테이블 T04 주문",
-    "store_id": "store-1",
-    "status": "cooking",
-    "timestamp": "2026-05-15T05:21:44.754285",
-    "table": "T04",
-    "items": [
+        "name": "도다리",
+        "value": "30000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
       {
-        "name": "바삭 후라이드 치킨",
-        "value": "1"
-      }
-    ]
-  },
-  {
-    "id": "ORD-EE62BCC3",
-    "type": "Orders",
-    "title": "테이블 T02 주문",
-    "store_id": "store-1",
-    "status": "ready",
-    "timestamp": "2026-05-15T04:25:04.517771",
-    "table": "T02",
-    "items": [
+        "name": "명개",
+        "value": "10000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
       {
-        "name": "프리미엄 모듬 바베큐 플레이트",
-        "value": "1"
-      }
-    ]
-  },
-  {
-    "id": "ORD-BF726FA9",
-    "type": "Orders",
-    "title": "테이블 T04 주문",
-    "store_id": "store-1",
-    "status": "cooking",
-    "timestamp": "2026-05-15T05:21:44.754285",
-    "table": "T04",
-    "items": [
+        "name": "낙지",
+        "value": "18000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
       {
-        "name": "바삭 후라이드 치킨",
-        "value": "1"
-      }
-    ]
-  },
-  {
-    "id": "ORD-EE62BCC3",
-    "type": "Orders",
-    "title": "테이블 T02 주문",
-    "store_id": "store-1",
-    "status": "ready",
-    "timestamp": "2026-05-15T04:25:04.517771",
-    "table": "T02",
-    "items": [
+        "name": "전복",
+        "value": "15000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
       {
-        "name": "프리미엄 모듬 바베큐 플레이트",
-        "value": "1"
-      }
-    ]
-  },
-  {
-    "id": "ORD-BF726FA9",
-    "type": "Orders",
-    "title": "테이블 T04 주문",
-    "store_id": "store-1",
-    "status": "cooking",
-    "timestamp": "2026-05-15T05:21:44.754285",
-    "table": "T04",
-    "items": [
+        "name": "해삼",
+        "value": "25000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
       {
-        "name": "바삭 후라이드 치킨",
-        "value": "1"
+        "name": "개불",
+        "value": "25000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "가리비",
+        "value": "25000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "해산물 모둠",
+        "value": "35000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "매운탕",
+        "value": "6000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "생선 (1마리)",
+        "value": "23000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "회모듬",
+        "value": "9000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "명개밥",
+        "value": "8000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "활어회밥",
+        "value": "8000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "광어초밥",
+        "value": "15000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "연어초밥",
+        "value": "15000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "광어+연어초밥",
+        "value": "15000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "새우초밥",
+        "value": "12000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "공기밥",
+        "value": "1000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "미역사리",
+        "value": "2000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "소주",
+        "value": "4000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "맥주",
+        "value": "5000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "막걸리",
+        "value": "5000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "청하",
+        "value": "6000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
+      },
+      {
+        "name": "매화수",
+        "value": "2000",
+        "icon": "🍴",
+        "category": "추천",
+        "description": "AI 스캔으로 등록된 메뉴입니다."
       }
-    ]
+    ],
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store": "시크빌",
+    "store_id": "store-chicvill03",
+    "id": "MENUS_ONBOARD_1779009290946"
   },
   {
     "id": "USER-01011112222",
     "type": "PersonalInfos",
-    "title": "홍길동님 등록 완료 (직원)",
+    "title": "일잘해님 등록 완료 (직원)",
     "items": [
       {
         "name": "이름",
-        "value": "홍길동"
+        "value": "일잘해"
       },
       {
         "name": "아이디",
@@ -2499,12 +1132,94 @@
       },
       {
         "name": "권한",
-        "value": "staff"
+        "value": "manager"
       }
     ],
     "status": "approved",
-    "timestamp": "2026-05-15 15:51:29",
-    "store": "시크앤프레시",
-    "store_id": "store-1"
+    "timestamp": "2026-05-17 18:15:54",
+    "store": "시크빌",
+    "store_id": "store-chicvill03"
+  },
+  {
+    "id": "USER-01022223333",
+    "type": "PersonalInfos",
+    "title": "너무해님 등록 완료 (직원)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "너무해"
+      },
+      {
+        "name": "아이디",
+        "value": "01022223333"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "manager"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-17 18:16:51",
+    "store": "시크빌",
+    "store_id": "store-chicvill03"
+  },
+  {
+    "id": "EMP-01011112222",
+    "type": "Employee",
+    "title": "일잘해 사원 정보",
+    "store_id": "store-chicvill03",
+    "status": "approved",
+    "timestamp": "2026-05-17T21:08:59.955207",
+    "items": [
+      {
+        "name": "이름",
+        "value": "일잘해"
+      },
+      {
+        "name": "아이디",
+        "value": "01011112222"
+      },
+      {
+        "name": "직책",
+        "value": "점장"
+      },
+      {
+        "name": "시급",
+        "value": "20000"
+      },
+      {
+        "name": "상태",
+        "value": "approved"
+      },
+      {
+        "name": "누적시간",
+        "value": "0.0"
+      },
+      {
+        "name": "누적임금",
+        "value": "0"
+      },
+      {
+        "name": "지불된임금",
+        "value": "0"
+      },
+      {
+        "name": "미지급임금",
+        "value": "0"
+      },
+      {
+        "name": "계약정보",
+        "value": "{\"end\": \"2029-12-31\", \"start\": \"2026-05-17\"}"
+      },
+      {
+        "name": "스케줄",
+        "value": "[{\"schedule_id\": \"SCHED-F1F7A7\", \"staff_id\": \"01011112222\", \"store_id\": \"store-chicvill03\", \"day_of_week\": 2, \"start_time\": \"09:00\", \"end_time\": \"18:00\"}, {\"schedule_id\": \"SCHED-FA616E\", \"staff_id\": \"01011112222\", \"store_id\": \"store-chicvill03\", \"day_of_week\": 4, \"start_time\": \"09:00\", \"end_time\": \"18:00\"}, {\"schedule_id\": \"SCHED-C1649F\", \"staff_id\": \"01011112222\", \"store_id\": \"store-chicvill03\", \"day_of_week\": 5, \"start_time\": \"09:00\", \"end_time\": \"18:00\"}, {\"schedule_id\": \"SCHED-97A002\", \"staff_id\": \"01011112222\", \"store_id\": \"store-chicvill03\", \"day_of_week\": 6, \"start_time\": \"09:00\", \"end_time\": \"18:00\"}]"
+      }
+    ],
+    "store": "시크빌"
   }
 ]
