@@ -101,6 +101,14 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
     const [isCheckingId, setIsCheckingId] = useState(false);
     const [isIdChecked, setIsIdChecked] = useState(() => localStorage.getItem('mqonboard_is_id_checked') === 'true');
 
+    // 개인정보 동의
+    const [consentPrivacy, setConsentPrivacy] = useState(() => localStorage.getItem('mqonboard_consent_privacy') === 'true');
+    const [consentTerms, setConsentTerms] = useState(() => localStorage.getItem('mqonboard_consent_terms') === 'true');
+    const [consentMarketing, setConsentMarketing] = useState(() => localStorage.getItem('mqonboard_consent_marketing') === 'true');
+    const consentAll = consentPrivacy && consentTerms;
+    const [showPrivacyDetail, setShowPrivacyDetail] = useState(false);
+    const [showTermsDetail, setShowTermsDetail] = useState(false);
+
     const chatEndRef = useRef<HTMLDivElement>(null);
 
     // 메뉴판 사진 스캔 훅
@@ -148,6 +156,9 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
         localStorage.setItem('mqonboard_current_step', String(currentStep));
         localStorage.setItem('mqonboard_is_biz_verified', String(isBizVerified));
         localStorage.setItem('mqonboard_is_id_checked', String(isIdChecked));
+        localStorage.setItem('mqonboard_consent_privacy', String(consentPrivacy));
+        localStorage.setItem('mqonboard_consent_terms', String(consentTerms));
+        localStorage.setItem('mqonboard_consent_marketing', String(consentMarketing));
         
         // New onboarding persistent caches
         localStorage.setItem('mqonboard_menu_items', JSON.stringify(menuItems));
@@ -158,7 +169,7 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
         localStorage.setItem('mqonboard_reg_role', regRole);
         localStorage.setItem('mqonboard_reg_wage', regWage);
         localStorage.setItem('mqonboard_reg_schedules', JSON.stringify(regSchedules));
-    }, [messages, showChat, ownerName, ownerId, ownerPw, phoneNo, storeName, storeId, bizNo, openDate, bankName, accountNo, currentStep, isBizVerified, isIdChecked, menuItems, tableCount, tableSizes, regName, regPhone, regRole, regWage, regSchedules]);
+    }, [messages, showChat, ownerName, ownerId, ownerPw, phoneNo, storeName, storeId, bizNo, openDate, bankName, accountNo, currentStep, isBizVerified, isIdChecked, menuItems, tableCount, tableSizes, regName, regPhone, regRole, regWage, regSchedules, consentPrivacy, consentTerms, consentMarketing]);
 
     // TTS Voice synthesis helper
     const speakText = (text: string) => {
@@ -876,7 +887,102 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                             </div>
                         </div>
 
-                        <button className="start-onboarding-btn" onClick={startChatFlow}>
+                        {/* 개인정보 동의 */}
+                        <div className="checklist-box" style={{ marginTop: '16px' }}>
+                            <div className="checklist-title">📜 서비스 이용 동의</div>
+
+                            {/* 전체 동의 */}
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 0', borderBottom: '1px solid var(--border)', cursor: 'pointer', fontWeight: 700 }}>
+                                <input
+                                    type="checkbox"
+                                    checked={consentPrivacy && consentTerms && consentMarketing}
+                                    onChange={e => { setConsentPrivacy(e.target.checked); setConsentTerms(e.target.checked); setConsentMarketing(e.target.checked); }}
+                                    style={{ width: '18px', height: '18px', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                                />
+                                <span>전체 동의하기</span>
+                            </label>
+
+                            {/* [필수] 개인정보 수집·이용 동의 */}
+                            <div style={{ padding: '8px 0' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={consentPrivacy}
+                                        onChange={e => setConsentPrivacy(e.target.checked)}
+                                        style={{ width: '16px', height: '16px', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                                    />
+                                    <span style={{ fontSize: '0.88rem' }}>
+                                        <span style={{ color: '#ef4444', fontWeight: 700 }}>[필수]</span> 개인정보 수집·이용 동의
+                                    </span>
+                                    <button type="button" onClick={() => setShowPrivacyDetail(v => !v)}
+                                        style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                                        {showPrivacyDetail ? '접기' : '내용보기'}
+                                    </button>
+                                </label>
+                                {showPrivacyDetail && (
+                                    <div style={{ marginTop: '8px', padding: '10px', background: 'var(--bg-main)', borderRadius: '8px', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
+                                        <strong>수집 항목:</strong> 대표자명, 연락처, 사업자등록번호, 정산 계좌번호<br/>
+                                        <strong>수집 목적:</strong> MQnet 가맹점 서비스 계약 이행 및 매출 정산<br/>
+                                        <strong>보유 기간:</strong> 계약 종료 후 5년 (관련 법령에 따름)<br/>
+                                        ※ 동의 거부 시 가맹 서비스 이용이 제한될 수 있습니다.
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* [필수] 서비스 이용약관 동의 */}
+                            <div style={{ padding: '8px 0' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={consentTerms}
+                                        onChange={e => setConsentTerms(e.target.checked)}
+                                        style={{ width: '16px', height: '16px', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                                    />
+                                    <span style={{ fontSize: '0.88rem' }}>
+                                        <span style={{ color: '#ef4444', fontWeight: 700 }}>[필수]</span> MQnet 서비스 이용약관 동의
+                                    </span>
+                                    <button type="button" onClick={() => setShowTermsDetail(v => !v)}
+                                        style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                                        {showTermsDetail ? '접기' : '내용보기'}
+                                    </button>
+                                </label>
+                                {showTermsDetail && (
+                                    <div style={{ marginTop: '8px', padding: '10px', background: 'var(--bg-main)', borderRadius: '8px', fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
+                                        본 서비스는 MQnet이 제공하는 스마트 매장 운영 SaaS입니다.<br/>
+                                        <strong>월정액 구독 서비스</strong>로, 매월 협의된 이용료가 청구됩니다.<br/>
+                                        서비스 해지 시 잔여 기간 환불은 이용약관 제10조에 따릅니다.<br/>
+                                        무단 양도·재판매·역공학 등 서비스 남용 행위는 즉시 계약 해지 사유입니다.
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* [선택] 마케팅 수신 동의 */}
+                            <div style={{ padding: '8px 0' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={consentMarketing}
+                                        onChange={e => setConsentMarketing(e.target.checked)}
+                                        style={{ width: '16px', height: '16px', accentColor: 'var(--primary)', cursor: 'pointer' }}
+                                    />
+                                    <span style={{ fontSize: '0.88rem' }}>
+                                        <span style={{ color: 'var(--text-muted)', fontWeight: 700 }}>[선택]</span> 마케팅 정보 수신 동의 (신규 기능·이벤트 SMS/이메일)
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button
+                            className="start-onboarding-btn"
+                            onClick={() => {
+                                if (!consentAll) {
+                                    alert('개인정보 수집·이용 동의 및 서비스 이용약관 동의는 필수입니다.');
+                                    return;
+                                }
+                                startChatFlow();
+                            }}
+                            style={{ opacity: consentAll ? 1 : 0.45 }}
+                        >
                             💬 준비 완료! AI 비서와 개설방 입장하기
                         </button>
                     </div>

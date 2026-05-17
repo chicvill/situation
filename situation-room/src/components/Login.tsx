@@ -36,6 +36,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
     const [isVerified, setIsVerified] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
 
+    // 개인정보 동의 (점주 가입용)
+    const [consentPrivacy, setConsentPrivacy] = useState(false);
+    const [consentTerms, setConsentTerms] = useState(false);
+    const [consentMarketing, setConsentMarketing] = useState(false);
+    const [showPrivacyDetail, setShowPrivacyDetail] = useState(false);
+    const [showTermsDetail, setShowTermsDetail] = useState(false);
+
     // bundles에서 동적으로 매장 목록 수집
     const availableStores = React.useMemo(() => {
         const storesMap = new Map<string, string>(); // storeName -> storeId
@@ -180,8 +187,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
         e.preventDefault();
 
         if (role === 'owner' && !isVerified) {
-            console.error("Signup blocked: Business not verified");
             setError('점주 가입을 위해 먼저 사업자 진위 확인을 완료해 주세요.');
+            return;
+        }
+
+        if (role === 'owner' && (!consentPrivacy || !consentTerms)) {
+            setError('개인정보 수집·이용 동의 및 서비스 이용약관 동의는 필수입니다.');
             return;
         }
 
@@ -386,9 +397,73 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                             )}
                         </>
                     )}
-                    
+
+                    {/* 점주 가입 동의 */}
+                    {isSignup && role === 'owner' && (
+                        <div style={{ margin: '16px 0 8px', padding: '14px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                            <p style={{ margin: '0 0 10px', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>📜 서비스 이용 동의</p>
+
+                            {/* 전체 동의 */}
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingBottom: '8px', borderBottom: '1px solid var(--border)', marginBottom: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem' }}>
+                                <input type="checkbox" checked={consentPrivacy && consentTerms && consentMarketing}
+                                    onChange={e => { setConsentPrivacy(e.target.checked); setConsentTerms(e.target.checked); setConsentMarketing(e.target.checked); }}
+                                    style={{ width: '16px', height: '16px', accentColor: 'var(--primary)', cursor: 'pointer' }} />
+                                전체 동의
+                            </label>
+
+                            {/* [필수] 개인정보 */}
+                            <div style={{ marginBottom: '6px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                                    <input type="checkbox" checked={consentPrivacy} onChange={e => setConsentPrivacy(e.target.checked)}
+                                        style={{ width: '15px', height: '15px', accentColor: 'var(--primary)', cursor: 'pointer' }} />
+                                    <span><span style={{ color: '#ef4444', fontWeight: 700 }}>[필수]</span> 개인정보 수집·이용 동의</span>
+                                    <button type="button" onClick={() => setShowPrivacyDetail(v => !v)}
+                                        style={{ marginLeft: 'auto', fontSize: '0.72rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                                        {showPrivacyDetail ? '접기' : '내용보기'}
+                                    </button>
+                                </label>
+                                {showPrivacyDetail && (
+                                    <div style={{ marginTop: '6px', padding: '8px', background: 'var(--surface)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
+                                        <strong>수집 항목:</strong> 대표자명, 연락처, 사업자등록번호, 정산 계좌번호<br/>
+                                        <strong>수집 목적:</strong> MQnet 가맹점 서비스 계약 이행 및 매출 정산<br/>
+                                        <strong>보유 기간:</strong> 계약 종료 후 5년 (관련 법령에 따름)<br/>
+                                        ※ 동의 거부 시 서비스 이용이 제한됩니다.
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* [필수] 이용약관 */}
+                            <div style={{ marginBottom: '6px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                                    <input type="checkbox" checked={consentTerms} onChange={e => setConsentTerms(e.target.checked)}
+                                        style={{ width: '15px', height: '15px', accentColor: 'var(--primary)', cursor: 'pointer' }} />
+                                    <span><span style={{ color: '#ef4444', fontWeight: 700 }}>[필수]</span> MQnet 서비스 이용약관 동의</span>
+                                    <button type="button" onClick={() => setShowTermsDetail(v => !v)}
+                                        style={{ marginLeft: 'auto', fontSize: '0.72rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                                        {showTermsDetail ? '접기' : '내용보기'}
+                                    </button>
+                                </label>
+                                {showTermsDetail && (
+                                    <div style={{ marginTop: '6px', padding: '8px', background: 'var(--surface)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
+                                        본 서비스는 MQnet이 제공하는 스마트 매장 운영 SaaS입니다.<br/>
+                                        <strong>월정액 구독 서비스</strong>로, 매월 협의된 이용료가 청구됩니다.<br/>
+                                        서비스 해지 시 잔여 기간 환불은 이용약관 제10조에 따릅니다.<br/>
+                                        무단 양도·재판매 등 남용 행위는 즉시 계약 해지 사유입니다.
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* [선택] 마케팅 */}
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                                <input type="checkbox" checked={consentMarketing} onChange={e => setConsentMarketing(e.target.checked)}
+                                    style={{ width: '15px', height: '15px', accentColor: 'var(--primary)', cursor: 'pointer' }} />
+                                <span><span style={{ color: 'var(--text-muted)', fontWeight: 700 }}>[선택]</span> 마케팅 정보 수신 동의</span>
+                            </label>
+                        </div>
+                    )}
+
                     {error && <div className="login-error">{error}</div>}
-                    
+
                     <button type="submit" className="login-btn" disabled={isProcessing}>
                         {isProcessing ? '처리 중...' : (isSignup ? '회원 가입 신청' : '로그인')}
                     </button>
