@@ -23,16 +23,50 @@ async def confirm_payment(data: Dict):
 
     if not order_id or not isinstance(order_id, str):
         raise HTTPException(status_code=400, detail="orderId is required and must be a string")
+    if not payment_key:
+        raise HTTPException(status_code=400, detail="paymentKey is required")
+    if amount is None:
+        raise HTTPException(status_code=400, detail="amount is required")
 
+    # 1. DB의 실제 주문 금액과 클라이언트가 보낸 금액 비교 (금액 위조 방지)
+    order = get_order_by_id(order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="주문을 찾을 수 없습니다")
+    expected_amount = order.get("total_price", 0)
+    if int(amount) != int(expected_amount):
+        print(f"🚨 [Payment Tamper] Order: {order_id}, Expected: {expected_amount}, Got: {amount}")
+        raise HTTPException(status_code=400, detail=f"결제 금액 불일치 (예상: {expected_amount}원)")
+
+    # 2. Toss Payments 서버 측 결제 승인 API 호출 (실제 결제 확정)
+    toss_secret_key = os.getenv("TOSS_SECRET_KEY") or os.getenv("VITE_TOSS_SECRET_KEY", "")
+    if toss_secret_key:
+        auth = base64.b64encode(f"{toss_secret_key}:".encode()).decode()
+        try:
+            async with httpx.AsyncClient() as client:
+                res = await client.post(
+                    "https://api.tosspayments.com/v1/payments/confirm",
+                    headers={"Authorization": f"Basic {auth}", "Content-Type": "application/json"},
+                    json={"paymentKey": payment_key, "orderId": order_id, "amount": int(expected_amount)},
+                )
+            if res.status_code != 200:
+                error_data = res.json()
+                print(f"❌ [Toss Confirm Failed] {error_data}")
+                raise HTTPException(status_code=400, detail=f"Toss 결제 승인 실패: {error_data.get('message', '알 수 없는 오류')}")
+            print(f"✅ [Toss Confirm OK] Order: {order_id}")
+        except httpx.RequestError as e:
+            raise HTTPException(status_code=503, detail=f"Toss API 연결 실패: {e}")
+    else:
+        # 시크릿 키 미설정 시 (개발/테스트 환경) 경고만 출력
+        print(f"⚠️ [Payment Confirm] TOSS_SECRET_KEY 미설정 — Toss 서버 승인 생략 (개발 모드)")
+
+    # 3. DB 상태 업데이트
     update_order_payment_status(order_id, "paid")
     update_order_status(order_id, "cooking")
 
-    # paymentKey를 세션 orders JSONB에 저장 (환불 시 필요)
-    if payment_key:
-        if update_order_payment_key(order_id, payment_key):
-            print(f"🔑 [Payment Key Saved] {order_id}")
-        else:
-            print(f"⚠️ Failed to save payment_key: {order_id}")
+    if update_order_payment_key(order_id, payment_key):
+        print(f"🔑 [Payment Key Saved] {order_id}")
+    else:
+        print(f"⚠️ Failed to save payment_key: {order_id}")
 
     # 주방 및 테이블에 결제 완료 알림 전송
     msg_confirmed = {"type": "PAYMENT_CONFIRMED", "order_id": order_id, "status": "paid"}
