@@ -107,18 +107,19 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                         margin: 8mm !important;
                     }
                     
-                    /* ⚠️ 브라우저 이미지 그리기 누락 버그 방지를 위해 visibility: hidden 대신 안전한 display: none 선택자를 사용합니다. */
-                    .sidebar, 
-                    .premium-top-bar, 
-                    .page-header, 
-                    .no-print, 
-                    button, 
+                    /* 상단바, 하단 네비게이션, 인쇄 제어 UI 숨김 */
+                    .sidebar,
+                    .premium-top-bar,
+                    .bottom-nav-bar-9,
+                    .page-header,
+                    .no-print,
+                    button,
                     header {
                         display: none !important;
                     }
-                    
-                    /* 부모 컨테이너들을 테두리/여백 없는 전체화면 백지로 전환 */
-                    body, html, #root, .app-container, .saas-main, .main-content, .qr-manager-container {
+
+                    /* 실제 DOM 클래스명 기준으로 부모 컨테이너 백지 전환 */
+                    body, html, #root, .saas-container, .saas-main-full, .view-content, .qr-manager-container {
                         background: white !important;
                         background-color: white !important;
                         border: none !important;
@@ -267,52 +268,33 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                     <p style={{ color: 'var(--text-muted)', margin: '5px 0 0', fontSize: '0.9rem' }}>매장명: <strong style={{ color: 'var(--accent-orange)' }}>{storeName}</strong> (ID: {resolvedStoreId})</p>
                     
                     {/* 인쇄 스타일 셀렉터 */}
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                        <button 
-                            onClick={() => setPrintMode('single')} 
-                            style={{ 
-                                padding: '8px 16px', 
-                                borderRadius: '8px', 
-                                border: printMode === 'single' ? '2px solid var(--accent-orange)' : '1px solid var(--border)', 
-                                background: printMode === 'single' ? '#f9731615' : 'white', 
-                                color: printMode === 'single' ? 'var(--accent-orange)' : 'var(--text-main)',
-                                fontWeight: '800', 
-                                fontSize: '0.85rem',
-                                cursor: 'pointer' 
-                            }}
-                        >
-                            📄 A4 1장에 전체 모아찍기 (기본값)
-                        </button>
-                        <button 
-                            onClick={() => setPrintMode('a4')} 
-                            style={{ 
-                                padding: '8px 16px', 
-                                borderRadius: '8px', 
-                                border: printMode === 'a4' ? '2px solid var(--accent-orange)' : '1px solid var(--border)', 
-                                background: printMode === 'a4' ? '#f9731615' : 'white', 
-                                color: printMode === 'a4' ? 'var(--accent-orange)' : 'var(--text-main)',
-                                fontWeight: '800', 
-                                fontSize: '0.85rem',
-                                cursor: 'pointer' 
-                            }}
-                        >
-                            📐 A4 1장에 1개씩 크게 인쇄
-                        </button>
-                        <button 
-                            onClick={() => setPrintMode('grid')} 
-                            style={{ 
-                                padding: '8px 16px', 
-                                borderRadius: '8px', 
-                                border: printMode === 'grid' ? '2px solid var(--accent-orange)' : '1px solid var(--border)', 
-                                background: printMode === 'grid' ? '#f9731615' : 'white', 
-                                color: printMode === 'grid' ? 'var(--accent-orange)' : 'var(--text-main)',
-                                fontWeight: '800', 
-                                fontSize: '0.85rem',
-                                cursor: 'pointer' 
-                            }}
-                        >
-                            🔳 스티커 모아찍기 (3열 그리드)
-                        </button>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px' }}>
+                        {([
+                            { mode: 'single', icon: '📄', label: 'A4 전체 모아찍기', sub: '기본값' },
+                            { mode: 'a4',     icon: '📐', label: 'A4 낱장 크게',    sub: '1개씩' },
+                            { mode: 'grid',   icon: '🔳', label: '스티커 모아찍기', sub: '3열 그리드' },
+                        ] as const).map(({ mode, icon, label, sub }) => (
+                            <button
+                                key={mode}
+                                onClick={() => setPrintMode(mode)}
+                                style={{
+                                    padding: '8px 14px',
+                                    borderRadius: '8px',
+                                    border: printMode === mode ? '2px solid var(--accent-orange)' : '1px solid var(--border)',
+                                    background: printMode === mode ? '#f9731615' : 'white',
+                                    color: printMode === mode ? 'var(--accent-orange)' : 'var(--text-main)',
+                                    fontWeight: '800',
+                                    fontSize: '0.82rem',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap',
+                                    lineHeight: '1.3',
+                                    textAlign: 'center',
+                                }}
+                            >
+                                {icon} {label}<br />
+                                <span style={{ fontSize: '0.7rem', fontWeight: '600', opacity: 0.7 }}>{sub}</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
                 
