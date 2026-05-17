@@ -58,8 +58,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
             if (b.type !== 'PersonalInfos') return false;
             const bId = b.items?.find((i: any) => i.name === '아이디')?.value;
             const bPw = b.items?.find((i: any) => i.name === '비밀번호')?.value;
-            // 🌟 로컬 네트워크/HTTPS 미인증 환경 대비 및 사용자 편의를 위한 6대 안전 장치 (비밀번호 해시 대조, 평문 대조 및 비상용 마스터 비밀번호 '1212' 완벽 지원)
-            return bId === id && (bPw === hashedPw || bPw === pw || pw === '1212');
+                return bId === id && (bPw === hashedPw || bPw === pw);
         });
 
         if (userBundle) {
@@ -77,9 +76,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
             }
 
             onLogin({ id, name: userName, role: userRole, storeId: userBundle.store_id, storeName: userBundle.store });
-        } else if (id === 'admin' && pw === '1212') {
-            // 마스터 계정 (초기용)
-            onLogin({ id: 'admin', name: '마스터관리자', role: 'admin' });
         } else {
             setError('아이디 또는 비밀번호가 일치하지 않습니다.');
         }
@@ -106,22 +102,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
         }
 
         setIsVerifying(true);
-        // Deliberate query delay (1.8s) for professional realism
         await new Promise(r => setTimeout(r, 1800));
-
-        // 🌟 Genius Local Match Fallback for Chicvill (시크빌) real-life business details
-        const isTargetMatch = 
-            cleanRegNo === '5871301146' && 
-            cleanOpenDate === '20191216' && 
-            (cleanOwnerName.includes('김종심') || cleanOwnerName === '') &&
-            ((storeName || '').trim().includes('시크빌') || (storeName || '').trim() === '');
-
-        if (isTargetMatch) {
-            setIsVerified(true);
-            setIsVerifying(false);
-            alert("✅ [국세청 데이터 연동] 사업자 실명 등록과 진위 확인이 정상 완료되었습니다!\n\n- 상호명: 시크빌\n- 대표자: 김종심\n- 사업자번호: 587-13-01146\n- 상태: 부가가치세 일반과세자 (정상 활동중)");
-            return;
-        }
 
         try {
             const SERVICE_KEY = import.meta.env.VITE_DATA_GO_KR_SERVICE_KEY;
@@ -160,17 +141,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                 alert("✅ 사업자 정보가 국세청 데이터를 통해 검증되었습니다.");
             } else {
                 console.warn("Business verification failed:", result);
-                const errMsg = result.message || (result.data && result.data[0].valid_msg) || "API 데이터 대조 불일치";
-                if (window.confirm(`⚠️ 국세청 실시간 대조 결과 일치하지 않는 것으로 조회되었습니다. (${errMsg})\n\n입력하신 정보가 기 확인된 정상 정보가 맞다면, 오프라인 간이 검증 모드로 통과 처리하시겠습니까?`)) {
-                    setIsVerified(true);
-                    alert("✅ 오프라인 간이 검증 모드를 통해 사업자 확인이 완료되었습니다.");
-                }
+                const errMsg = result.message || (result.data && result.data[0].valid_msg) || "입력하신 정보를 다시 확인해 주세요.";
+                alert(`⚠️ 사업자 정보가 국세청 데이터와 일치하지 않습니다.\n\n${errMsg}`);
             }
         } catch (err) {
-            if (window.confirm("⚠️ 네트워크 연결 상태 지연 혹은 API 점검 중입니다.\n\n해당 사업자 정보로 가맹 검증을 통과 처리하고 회원 가입이 가능한 상태로 변경하시겠습니까?")) {
-                setIsVerified(true);
-                alert("✅ 간이 검증 모드를 통해 사업자 검증이 우회 승인되었습니다.");
-            }
+            alert("⚠️ 국세청 API 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
         } finally {
             setIsVerifying(false);
         }
