@@ -1,18 +1,12 @@
 #!/bin/bash
 set -e
 # Render Build Script
+# Frontend is pre-built locally and committed to git (situation-room/dist/)
+# This script only installs Python backend dependencies.
 
-echo "🔎 Node.js: $(node --version), npm: $(npm --version)"
+echo "🔎 Python: $(python --version 2>&1)"
 
-# 1. 프론트엔드 빌드
-echo "🔨 Building frontend..."
-cd situation-room
-npm install
-npm run build
-echo "✅ Frontend built successfully."
-
-# 2. 백엔드 패키지 설치
 echo "📦 Installing backend dependencies..."
-cd ../situation-backend
+cd situation-backend
 pip install -r requirements.txt
 echo "✅ Backend dependencies installed."
