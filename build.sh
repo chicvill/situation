@@ -1,9 +1,13 @@
 #!/bin/bash
+set -e
 # Render Build Script
+
+echo "🔎 Node.js: $(node --version), npm: $(npm --version)"
+
 # 1. 프론트엔드 빌드
 echo "🔨 Building frontend..."
 cd situation-room
-npm install
+npm ci
 npm run build
 echo "✅ Frontend built successfully."
 

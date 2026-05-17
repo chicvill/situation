@@ -1,5 +1,5 @@
 # Node.js + Python 모두 사용 가능한 베이스 이미지
-FROM node:20-slim AS frontend-builder
+FROM node:22-slim AS frontend-builder
 
 WORKDIR /app/situation-room
 COPY situation-room/package*.json ./
@@ -27,4 +27,5 @@ COPY .env* ./
 
 EXPOSE 8000
 
-CMD ["python", "-m", "uvicorn", "situation-backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+WORKDIR /app/situation-backend
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
