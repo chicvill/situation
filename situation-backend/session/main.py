@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database import init_db_v2, get_db_conn
+from .database import init_db_v2, get_db_conn, seed_stores_from_pool
 from .state import manager, load_pool, save_pool, POOL_FILE  # noqa: F401 — re-exported for legacy imports
 from .models import OrderItem, OrderRequest, StatusUpdate, StoreCreateRequest, StoreUpdateRequest  # noqa: F401
 
@@ -57,6 +57,7 @@ app = FastAPI(lifespan=lifespan)
 
 # DB 초기화
 init_db_v2()
+seed_stores_from_pool()  # stores 테이블이 비어있으면 pool.json에서 자동 시딩
 
 
 app.add_middleware(

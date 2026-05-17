@@ -1,5 +1,54 @@
+import json
+import os
 from psycopg2.extras import RealDictCursor  # type: ignore
 from .connection import get_db_conn
+
+POOL_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "knowledge_pool.json")
+
+
+def seed_stores_from_pool():
+    """stores 테이블이 비어있을 때 pool.json에서 고유 매장을 자동 시딩."""
+    conn = get_db_conn()
+    if not conn:
+        return
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM stores")
+        count = cur.fetchone()[0]
+        if count > 0:
+            cur.close()
+            conn.close()
+            return
+
+        if not os.path.exists(POOL_FILE):
+            cur.close()
+            conn.close()
+            return
+
+        with open(POOL_FILE, encoding="utf-8") as f:
+            pool = json.load(f)
+
+        seen = {}
+        for bundle in pool:
+            sid = bundle.get("store_id", "")
+            sname = bundle.get("store", "")
+            if sid and sname and sid not in seen:
+                seen[sid] = sname
+
+        for sid, sname in seen.items():
+            cur.execute("""
+                INSERT INTO stores (id, name, ceo_name, signature_owner, monthly_fee, payment_status, payment_history, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+                ON CONFLICT (id) DO NOTHING
+            """, (sid, sname, "", sid, 0, "정상", "[]"))
+            print(f"  매장 자동 시딩: {sname} ({sid})")
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        print(f"✅ Pool.json에서 {len(seen)}개 매장 시딩 완료")
+    except Exception as e:
+        print(f"⚠️ seed_stores_from_pool Error: {e}")
 
 
 def get_stores_db():
