@@ -1,0 +1,23 @@
+# Exclude platform-specific node_modules (built on Windows, incompatible with Linux Docker)
+situation-room/node_modules/
+
+# Exclude Python virtualenv and caches
+venv/
+**/__pycache__/
+**/*.pyc
+
+# Exclude local dev files
+.env
+.env.*
+Backup_env.txt
+*.log
+output.txt
+
+# Exclude git and IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Exclude dist-ssr
+situation-room/dist-ssr/
