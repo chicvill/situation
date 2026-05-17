@@ -13,7 +13,6 @@ interface Props {
   storeId: string;
   storeName: string;
   onNavigate?: (tab: any) => void;
-  isCustomerMode?: boolean;
 }
 
 interface MenuItem {
@@ -90,9 +89,9 @@ const getUpsellRecommendation = (mainItemName: string) => {
   };
 };
 
-const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialStoreName, onNavigate, isCustomerMode = false }) => {
-  // AI 비서 ↔ 판형 메뉴 토글 (고객 QR 접속 시 AI 모드로 시작)
-  const [viewMode, setViewMode] = useState<'ai' | 'menu'>(isCustomerMode ? 'ai' : 'menu');
+const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialStoreName, onNavigate }) => {
+  // AI 비서 ↔ 판형 메뉴 토글 (항상 AI 모드로 시작)
+  const [viewMode, setViewMode] = useState<'ai' | 'menu'>('ai');
 
   // --- States ---
   const [cart, setCart] = useState<MenuItem[]>([]);
@@ -113,6 +112,15 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const [userPhone] = useState('');
   const [aiStoryContent, setAiStoryContent] = useState({ title: '', body: '', icon: '🍽️' });
   const [showDelayedHelp, setShowDelayedHelp] = useState(false);
+
+  // Dutch pay states
+  const [showDutchModal, setShowDutchModal] = useState(false);
+  const [dutchStep, setDutchStep] = useState<'select' | 'pay'>('select');
+  const [dutchCount, setDutchCount] = useState(2);
+  const [dutchPaidSlots, setDutchPaidSlots] = useState<boolean[]>([]);
+  const [dutchFrozenTotal, setDutchFrozenTotal] = useState(0);
+  const [dutchPayingSlot, setDutchPayingSlot] = useState<number | null>(null);
+  const [showDutchPersonPayModal, setShowDutchPersonPayModal] = useState(false);
 
   // Lint bypass for onNavigate
   useEffect(() => {
@@ -137,6 +145,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     const params = new URLSearchParams(window.location.search);
     return params.get('table') || '3';
   }, []);
+
+  // QR 스캔 없이 직접 접근한 경우 차단 (table 파라미터 없음)
+  const hasTableParam = useMemo(() => !!new URLSearchParams(window.location.search).get('table'), []);
   
   const tableId = useMemo(() => `T${tableNo.padStart(2, '0')}`, [tableNo]);
 
@@ -261,6 +272,15 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const pendingSessionIdRef = React.useRef('');
   const storeNameRef = React.useRef(storeName);
   useEffect(() => { storeNameRef.current = storeName; }, [storeName]);
+
+  // Dutch pay refs (for access in event handlers / async closures)
+  const dutchPayingSlotRef = React.useRef<number | null>(null);
+  const dutchPaidSlotsRef = React.useRef<boolean[]>([]);
+  const dutchCountRef = React.useRef(2);
+  const dutchFrozenTotalRef = React.useRef(0);
+  useEffect(() => { dutchPaidSlotsRef.current = dutchPaidSlots; }, [dutchPaidSlots]);
+  useEffect(() => { dutchCountRef.current = dutchCount; }, [dutchCount]);
+  useEffect(() => { dutchFrozenTotalRef.current = dutchFrozenTotal; }, [dutchFrozenTotal]);
 
   const refreshOrders = useCallback(async () => {
     if (!sessionIdRef.current) return;
@@ -418,6 +438,29 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       const { success } = e.detail;
       if (success) {
         localStorage.removeItem('payment_success_flag');
+
+        // Dutch pay mode: track per-slot completion
+        if (dutchPayingSlotRef.current !== null) {
+          const slotIdx = dutchPayingSlotRef.current;
+          dutchPayingSlotRef.current = null;
+          const count = dutchCountRef.current;
+          const next = [...dutchPaidSlotsRef.current];
+          next[slotIdx] = true;
+          dutchPaidSlotsRef.current = next;
+          setDutchPaidSlots([...next]);
+          setShowDutchPersonPayModal(false);
+          setDutchPayingSlot(null);
+          if (next.filter(Boolean).length === count) {
+            setCart([]);
+            setShowDutchModal(false);
+            refreshOrders();
+            setShowProgress(true);
+            setVoiceToast('🤝 더치페이 완료! 모두 결제되었습니다.');
+            setTimeout(() => setVoiceToast(null), 4000);
+          }
+          return;
+        }
+
         setCart([]);
         refreshOrders();
         setShowProgress(true);
@@ -750,7 +793,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     try {
       const currentCart = [...cart];
       const usePoints = extraData?.usePoints || 0;
-      const finalAmount = totalPrice - usePoints;
+      const finalAmount = extraData?.dutchAmount !== undefined ? extraData.dutchAmount : totalPrice - usePoints;
 
       // [CP-01] 백엔드 주문 생성 시도
       PaymentService.log("CP-01", "Creating order on backend...");
@@ -785,21 +828,25 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
       if (isCounterPay) {
         PaymentService.log("CP-02", "Counter/Cash Flow - Skipping external PG");
-        setCart([]);
-        refreshOrders();
-        generateAiStory(currentCart);
-        setShowProgress(true);
+        if (extraData?.isDutchPay) {
+          // Dutch pay cash: fire payment_finished for unified Dutch tracking
+          setTimeout(() => window.dispatchEvent(new CustomEvent('payment_finished', { detail: { success: true } })), 0);
+        } else {
+          setCart([]);
+          refreshOrders();
+          generateAiStory(currentCart);
+          setShowProgress(true);
+        }
       } else {
         // [CP-03] 토스 결제 호출 (Service 모듈로 위임)
         PaymentService.log("CP-02", "Electronic Payment Flow - Handoff to PaymentService");
-        // 결제 완료 후 영수증에 표시할 장바구니 items를 localStorage에 미리 저장
         localStorage.setItem('receipt_items_' + orderId, JSON.stringify(
           currentCart.map(c => ({ name: c.name, value: String(c.qty || 1) + '개' }))
         ));
         await PaymentService.requestTossPayment(method, {
           amount: finalAmount,
           orderId: orderId,
-          orderName: `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,
+          orderName: extraData?.dutchLabel || `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,
           customerName: '손님'
         });
       }
@@ -909,7 +956,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
                         ))}
                       </div>
                       <div style={{ textAlign: 'right', marginTop: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '6px', fontSize: '12px', fontWeight: 800, color: '#f97316' }}>
-                        금액: {order.total_price.toLocaleString()}원
+                        금액: {(order.total_price ?? (order as any).total ?? 0).toLocaleString()}원
                       </div>
                     </div>
                   );
@@ -1216,15 +1263,39 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     );
   };
 
+  // QR 스캔 없이 직접 접근한 경우(table 파라미터 없음) 차단
+  if (!hasTableParam) {
+    return (
+      <div className="mobile-v2-container flex-center" style={{ background: '#0f172a' }}>
+        <div style={{ textAlign: 'center', padding: '40px 24px', maxWidth: '360px' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '24px' }}>🔳</div>
+          <h2 style={{ color: 'white', fontWeight: 900, fontSize: '1.4rem', marginBottom: '12px' }}>테이블 QR 스캔 후 주문</h2>
+          <p style={{ color: '#94a3b8', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '32px' }}>
+            각 테이블에 부착된 QR 코드를 스캔하면<br />해당 테이블의 주문 화면이 열립니다.
+          </p>
+          <div style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.2)', borderRadius: '12px', padding: '14px 18px', fontSize: '0.82rem', color: '#fb923c', lineHeight: 1.6 }}>
+            💡 <strong>QR 인쇄</strong> 메뉴에서 테이블별 QR을 인쇄하여<br />각 테이블에 부착해 주세요.
+          </div>
+          <button
+            onClick={() => onNavigate?.('qr')}
+            style={{ marginTop: '24px', background: '#f97316', color: 'white', border: 'none', borderRadius: '12px', padding: '12px 28px', fontSize: '0.9rem', fontWeight: 800, cursor: 'pointer' }}
+          >
+            🖨️ QR 인쇄 센터로 이동
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (sessionPhase !== 'active') {
     const statusMsg = sessionPhase === 'loading'
       ? '연결 확인 중...'
       : sessionPhase === 'waiting_approval'
       ? '일행 확인 중...'
-      : '카운터 테이블 활성화 대기 중...';
+      : '카운터에 좌석 승인을 요청했습니다.';
     const subText = sessionPhase === 'waiting_approval'
       ? '기존 이용 중인 일행의 합류 승인을 기다리고 있습니다. 잠시만 기다려 주세요!'
-      : '좌석 확인이 완료되면 자동으로 메뉴판이 활성화됩니다.';
+      : '카운터에서 승인하면 자동으로 메뉴판이 활성화됩니다. 잠시만 기다려 주세요!';
     return (
       <div className="mobile-v2-container flex-center">
         <div className="premium-waiting-card animate-slide-up">
@@ -1342,20 +1413,27 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
         {/* 4. 더치페이 */}
         <button
-          onClick={async () => {
+          onClick={() => {
             if (!sessionIdRef.current) {
               setVoiceToast('⚠️ 활성 세션이 없습니다. 먼저 주문해 주세요.');
               setTimeout(() => setVoiceToast(null), 3000);
               return;
             }
-            await sendNotify('MERGE', {
-              table_id: tableId,
-              store_id: storeId,
-              session_id: sessionIdRef.current,
-              call_type: '더치페이 요청',
-            });
-            setVoiceToast('🤝 더치페이 요청을 전송했습니다. 카운터를 확인해 주세요!');
-            setTimeout(() => setVoiceToast(null), 4000);
+            if (cart.length === 0) {
+              setVoiceToast('🛒 장바구니가 비어 있습니다. 메뉴를 먼저 담아 주세요!');
+              setTimeout(() => setVoiceToast(null), 3000);
+              return;
+            }
+            setDutchFrozenTotal(totalPrice);
+            dutchFrozenTotalRef.current = totalPrice;
+            setDutchStep('select');
+            setDutchCount(2);
+            dutchCountRef.current = 2;
+            setDutchPaidSlots([]);
+            dutchPaidSlotsRef.current = [];
+            setDutchPayingSlot(null);
+            dutchPayingSlotRef.current = null;
+            setShowDutchModal(true);
           }}
         >
           <span className="nav-icon">🤝</span>
@@ -1386,6 +1464,118 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           totalPrice={totalPrice}
           onClose={() => setShowPayModal(false)}
           onSubmit={executeOrderWithPayment}
+          initialPhone={userPhone}
+          bundles={bundles}
+        />
+      )}
+
+      {/* ── 더치페이 모달 ── */}
+      {showDutchModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 14000, padding: '20px' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '24px', width: '100%', maxWidth: '400px', padding: '28px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', position: 'relative', maxHeight: '80vh', overflowY: 'auto' }}>
+            <button onClick={() => { setShowDutchModal(false); setShowDutchPersonPayModal(false); dutchPayingSlotRef.current = null; }}
+              style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(0,0,0,0.05)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', fontSize: '16px', color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              ✕
+            </button>
+            <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+              <div style={{ fontSize: '36px', marginBottom: '10px' }}>🤝</div>
+              <h3 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 6px', color: 'var(--text-main)' }}>더치페이</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                총 <strong style={{ color: 'var(--text-main)' }}>{dutchFrozenTotal.toLocaleString()}원</strong>을 나눠서 결제합니다
+              </p>
+            </div>
+
+            {dutchStep === 'select' ? (
+              <>
+                <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', margin: '0 0 12px' }}>인원 선택</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '20px' }}>
+                  {[2,3,4,5,6,7,8].map(n => (
+                    <button key={n} onClick={() => setDutchCount(n)}
+                      style={{ padding: '12px 0', border: dutchCount === n ? '2px solid var(--primary)' : '1.5px solid var(--border)', borderRadius: '12px', background: dutchCount === n ? 'rgba(99,102,241,0.1)' : 'var(--bg-secondary)', color: dutchCount === n ? 'var(--primary)' : 'var(--text-main)', fontWeight: 800, fontSize: '15px', cursor: 'pointer' }}>
+                      {n}명
+                    </button>
+                  ))}
+                </div>
+                <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', padding: '16px', marginBottom: '20px', textAlign: 'center' }}>
+                  <p style={{ margin: '0 0 4px', fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>1인당 금액</p>
+                  <p style={{ margin: 0, fontSize: '28px', fontWeight: 900, color: 'var(--text-main)' }}>
+                    {Math.ceil(dutchFrozenTotal / dutchCount).toLocaleString()}원
+                  </p>
+                </div>
+                <button onClick={() => {
+                  const slots = Array(dutchCount).fill(false);
+                  setDutchPaidSlots(slots);
+                  dutchPaidSlotsRef.current = slots;
+                  dutchCountRef.current = dutchCount;
+                  setDutchStep('pay');
+                }} style={{ width: '100%', padding: '16px', background: 'var(--primary)', border: 'none', borderRadius: '12px', color: '#fff', fontSize: '16px', fontWeight: 800, cursor: 'pointer' }}>
+                  다음 →
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+                  {Array.from({ length: dutchCount }, (_, i) => {
+                    const isLast = i === dutchCount - 1;
+                    const perPerson = isLast
+                      ? dutchFrozenTotal - Math.ceil(dutchFrozenTotal / dutchCount) * (dutchCount - 1)
+                      : Math.ceil(dutchFrozenTotal / dutchCount);
+                    const paid = dutchPaidSlots[i] || false;
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: paid ? 'rgba(16,185,129,0.08)' : 'var(--bg-secondary)', borderRadius: '12px', border: paid ? '1.5px solid rgba(16,185,129,0.3)' : '1.5px solid var(--border)' }}>
+                        <div>
+                          <p style={{ margin: '0 0 2px', fontWeight: 800, fontSize: '13px', color: 'var(--text-muted)' }}>{i + 1}번째 결제</p>
+                          <p style={{ margin: 0, fontSize: '20px', fontWeight: 900, color: paid ? '#10b981' : 'var(--text-main)' }}>{perPerson.toLocaleString()}원</p>
+                        </div>
+                        {paid ? (
+                          <div style={{ background: '#10b981', color: '#fff', borderRadius: '20px', padding: '6px 14px', fontSize: '13px', fontWeight: 700 }}>✓ 완료</div>
+                        ) : (
+                          <button onClick={() => {
+                            dutchPayingSlotRef.current = i;
+                            setDutchPayingSlot(i);
+                            setShowDutchPersonPayModal(true);
+                          }} style={{ background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '20px', padding: '8px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                            결제하기
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <p style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+                  {dutchPaidSlots.filter(Boolean).length} / {dutchCount} 명 결제 완료
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 더치페이 개인 결제 PaymentModal */}
+      {showDutchPersonPayModal && dutchPayingSlot !== null && (
+        <PaymentModal
+          totalPrice={
+            dutchPayingSlot === dutchCount - 1
+              ? dutchFrozenTotal - Math.ceil(dutchFrozenTotal / dutchCount) * (dutchCount - 1)
+              : Math.ceil(dutchFrozenTotal / dutchCount)
+          }
+          onClose={() => {
+            setShowDutchPersonPayModal(false);
+            setDutchPayingSlot(null);
+            dutchPayingSlotRef.current = null;
+          }}
+          onSubmit={(method, extraData) => {
+            const isLast = dutchPayingSlot === dutchCount - 1;
+            const perPerson = isLast
+              ? dutchFrozenTotal - Math.ceil(dutchFrozenTotal / dutchCount) * (dutchCount - 1)
+              : Math.ceil(dutchFrozenTotal / dutchCount);
+            return executeOrderWithPayment(method, {
+              ...(extraData || {}),
+              dutchAmount: perPerson,
+              dutchLabel: `더치페이 ${dutchPayingSlot + 1}/${dutchCount}`,
+              isDutchPay: true,
+            });
+          }}
           initialPhone={userPhone}
           bundles={bundles}
         />
