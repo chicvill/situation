@@ -1,8 +1,13 @@
+import hashlib
+import os
 from fastapi import APIRouter, HTTPException
 from ..state import load_pool
 from ..auth import create_token
 
 router = APIRouter()
+
+ADMIN_ID = os.getenv("ADMIN_ID", "admin")
+ADMIN_PW = os.getenv("ADMIN_PASSWORD", "1212")
 
 
 @router.post("/api/auth/login")
@@ -12,6 +17,14 @@ async def login(data: dict):
 
     if not user_id or not password:
         raise HTTPException(status_code=400, detail="아이디와 비밀번호를 입력해 주세요")
+
+    # admin 계정은 평문/해시 모두 허용 (pool.json 의존 없음)
+    if user_id == ADMIN_ID:
+        admin_pw_hash = hashlib.sha256(ADMIN_PW.encode()).hexdigest()
+        if password not in (ADMIN_PW, admin_pw_hash):
+            raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다")
+        token = create_token(ADMIN_ID, "", "admin")
+        return {"token": token, "role": "admin", "store_id": "", "name": "관리자"}
 
     pool = load_pool()
     matched = None
