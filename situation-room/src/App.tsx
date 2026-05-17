@@ -8,6 +8,8 @@ import { DisplayBoard } from './components/DisplayBoard';
 import { StoreManager } from './components/StoreManager';
 import { CounterPad } from './components/CounterPad';
 import { QRManager } from './components/QRManager';
+import { WifiQRManager } from './components/WifiQRManager';
+import { TechInfo } from './components/TechInfo';
 import { PaperViewer } from './components/PaperViewer';
 import { LogicInventory } from './components/LogicInventory';
 import { ReceiptModal } from './components/ReceiptModal';
@@ -32,7 +34,7 @@ import { SideDrawer } from './layout/SideDrawer';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
 
-type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'paper' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'admin' | 'call' | 'manual' | 'parking' | 'points';
+type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'wifi' | 'paper' | 'tech' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'admin' | 'call' | 'manual' | 'parking' | 'points';
 
 function App() {
   const { storeId, storeName: initialStoreName, updateStore } = useStoreFilter();
@@ -40,6 +42,8 @@ function App() {
   const { flashingTabs, callCount, waitingCount, parkingCount, callFlashing, waitingFlashing, parkingFlashing, resetFlash, decrementCall, decrementWaiting, decrementParking } = useStoreSync(storeId);
 
   const [user, setUser] = useState<any>(null);
+  const [reservationCount, setReservationCount] = useState(0);
+  const [reminderQueue, setReminderQueue] = useState<any[]>([]);
   const [selectedAdminStore, setSelectedAdminStore] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('storeId') || null;
@@ -56,6 +60,47 @@ function App() {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!user || user.role === 'customer') return;
+    const check = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/reservation/all`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!Array.isArray(data)) return;
+        setReservationCount(data.filter((r: any) => r.status === 'requested').length);
+        const now = Date.now();
+        const reminders = data
+          .filter((r: any) => {
+            if (!['requested', 'confirmed'].includes(r.status)) return false;
+            const diffH = (new Date(r.reserved_time).getTime() - now) / 3600000;
+            if (diffH <= 0) return false;
+            if (diffH <= 3 && !r.contact_confirmed_3hour) return true;
+            if (diffH <= 24 && !r.contact_confirmed_1day) return true;
+            return false;
+          })
+          .sort((a: any, b: any) => new Date(a.reserved_time).getTime() - new Date(b.reserved_time).getTime());
+        setReminderQueue(reminders);
+      } catch {}
+    };
+    check();
+    const t = setInterval(check, 30000);
+    return () => clearInterval(t);
+  }, [user]);
+
+  const handleContactConfirm = async (r: any) => {
+    const diffH = (new Date(r.reserved_time).getTime() - Date.now()) / 3600000;
+    const contactType = diffH <= 3 ? '3hour' : '1day';
+    try {
+      await fetch(`${API_BASE}/api/reservation/contact-confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reservation_id: r.reservation_id, contact_type: contactType }),
+      });
+      setReminderQueue(prev => prev.filter((x: any) => x.reservation_id !== r.reservation_id));
+    } catch {}
+  };
 
   // 🌟 활성 대시보드 탭이 변경될 때마다 브라우저 로컬 저장소에 기억하여 F5 새로고침 시 화면을 복원합니다.
   useEffect(() => {
@@ -315,19 +360,12 @@ function App() {
   };
 
   const navItems = [
-    { label: '주문', icon: '📝', tab: 'orderV2', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '주방', icon: '👨‍🍳', tab: 'kitchen', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '카운터', icon: '💰', tab: 'counter', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '호출', icon: '🔔', tab: 'call', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '대기', icon: '🛎️', tab: 'waiting', roles: ['admin', 'owner', 'manager', 'staff'] },
+    { label: '비서', icon: '🎤', tab: 'guide', roles: ['admin', 'owner', 'manager', 'staff'], special: true },
     { label: '주차', icon: '🚗', tab: 'parking', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '포인트', icon: '🪙', tab: 'points', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '비서', icon: '🎤', tab: 'guide', roles: ['admin', 'owner', 'manager', 'staff'], special: true }, // 중앙 마이크
-    { label: '홈', icon: '🏠', tab: 'home', roles: ['admin', 'owner', 'manager', 'staff'] },
     { label: '예약', icon: '📅', tab: 'reserve', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: 'QR인쇄', icon: '🖨️', tab: 'qr', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '전광판', icon: '📢', tab: 'display', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '통계', icon: '📊', tab: 'stats', roles: ['admin', 'owner'] },
   ].filter(item => item.roles.includes(user?.role));
 
   const startVoiceRecognition = () => {
@@ -346,7 +384,7 @@ function App() {
         
         // 특정 키워드 인식 시 즉시 이동
         if (text.includes("주문")) {
-            navigateTo("orderV2");
+            navigateTo("counter");
             recognition.stop();
         } else if (text.includes("카운터")) {
             navigateTo("counter");
@@ -391,7 +429,7 @@ function App() {
       case 'orderV2': {
         const urlStoreId = new URLSearchParams(window.location.search).get('storeId');
         const effectiveStoreId = storeId || urlStoreId || '';
-        return <MobileOrderV2 bundles={bundles} storeId={effectiveStoreId} storeName={storeName} onNavigate={navigateTo as any} isCustomerMode={isCustomerMode} />;
+        return <MobileOrderV2 bundles={bundles} storeId={effectiveStoreId} storeName={storeName} onNavigate={navigateTo as any} />;
       }
       case 'kitchen': return <KitchenDisplay />;
       case 'counter': return <CounterPad storeId={storeId} bundles={bundles} />;
@@ -399,18 +437,20 @@ function App() {
       case 'menu': return <MenuManager bundles={bundles} onNavigate={navigateTo as any} />;
       case 'settings': return <StoreManager bundles={bundles} user={user} onNavigate={navigateTo as any} />;
       case 'qr': return <QRManager bundles={bundles} storeId={storeId} storeName={storeName} />;
+      case 'wifi': return <WifiQRManager />;
+      case 'tech': return <TechInfo />;
       case 'paper': return <PaperViewer />;
       case 'stats':
       case 'admin': return <AdminDashboard bundles={bundles} storeDetails={storeDetails} />;
-      case 'home': 
+      case 'home':
         return (
-          <WelcomeHub 
-            user={user} 
-            bundles={bundles} 
-            storeName={storeName} 
+          <WelcomeHub
+            user={user}
+            bundles={bundles}
+            storeName={storeName}
             storeDetails={storeDetails}
             onReloadStoreDetails={fetchStoreDetails}
-            onNavigate={navigateTo as any} 
+            onNavigate={navigateTo as any}
             onProfileUpdated={(updatedUser) => {
               setUser(updatedUser);
               localStorage.setItem('mqnet_user', JSON.stringify(updatedUser));
@@ -423,10 +463,10 @@ function App() {
       case 'manual': return <StoreManualEditor storeId={storeId} user={user} />;
       case 'hr': return <HRManager bundles={bundles} user={user} storeDetails={storeDetails} />;
       case 'waiting': return <WaitingManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'waiting', sId, sName)} onComplete={decrementWaiting} />;
-      case 'reserve': return <ReservationManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'reserve', sId, sName)} />;
+      case 'reserve': return <ReservationManager />;
       case 'parking': return <ParkingManager storeId={storeId} onComplete={decrementParking} />;
       case 'points': return <PointsManager storeId={storeId} />;
-      default: return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} isCustomerMode={isCustomerMode} />;
+      default: return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} />;
     }
   };
 
@@ -442,6 +482,60 @@ function App() {
           }}
         />
       )}
+
+      {reminderQueue.length > 0 && !isCustomerMode && user && (() => {
+        const r = reminderQueue[0];
+        const diffH = (new Date(r.reserved_time).getTime() - Date.now()) / 3600000;
+        const is3h = diffH <= 3;
+        const dtStr = (() => {
+          const d = new Date(r.reserved_time);
+          return `${d.getMonth()+1}월 ${d.getDate()}일 ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        })();
+        return (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 8000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)' }}>
+            <div style={{ background: 'var(--surface)', borderRadius: '24px', padding: '32px', width: '100%', maxWidth: '420px', border: `2px solid ${is3h ? '#ef4444' : '#f59e0b'}`, boxShadow: `0 20px 60px ${is3h ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.25)'}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <span style={{ fontSize: '2rem' }}>{is3h ? '🚨' : '📞'}</span>
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: '1.1rem', color: is3h ? '#dc2626' : '#92400e' }}>
+                    {is3h ? '3시간 전 예약 확인 필요' : '1일 전 예약 확인 필요'}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    고객에게 전화로 예약을 확인해 주세요
+                  </div>
+                </div>
+              </div>
+              <div style={{ background: 'var(--bg-main)', borderRadius: '14px', padding: '18px', marginBottom: '20px', border: '1px solid var(--border)' }}>
+                <div style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--text-main)', marginBottom: '8px' }}>{r.customer_name}</div>
+                <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                  <span>🕐 {dtStr}</span>
+                  {r.phone_number && <span>📞 {r.phone_number}</span>}
+                  <span>👥 {r.party_size}명</span>
+                  {r.table_id && <span>🪑 {r.table_id}</span>}
+                </div>
+                {r.notes && <div style={{ marginTop: '8px', fontSize: '0.82rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>💬 {r.notes}</div>}
+              </div>
+              {reminderQueue.length > 1 && (
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '12px' }}>
+                  외 {reminderQueue.length - 1}건 추가 알림 대기 중
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={() => setReminderQueue(prev => prev.slice(1))}
+                  style={{ flex: 1, padding: '14px', background: 'var(--bg-main)', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: '12px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
+                  나중에
+                </button>
+                <button
+                  onClick={() => handleContactConfirm(r)}
+                  style={{ flex: 2, padding: '14px', background: is3h ? '#ef4444' : '#f59e0b', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 800, cursor: 'pointer', fontSize: '0.95rem' }}>
+                  ✓ 전화 확인 완료
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {isListening && (
         <div className="voice-overlay animate-fade-in">
@@ -487,6 +581,7 @@ function App() {
           callCount={callCount}
           waitingCount={waitingCount}
           parkingCount={parkingCount}
+          reservationCount={reservationCount}
           callFlashing={callFlashing}
           waitingFlashing={waitingFlashing}
           parkingFlashing={parkingFlashing}

@@ -211,7 +211,26 @@ async def staff_check_in(data: Dict):
     if not staff_id:
         raise HTTPException(status_code=400, detail="staff_id required")
 
-    from ..database import get_staff, get_staff_schedules, save_attendance_checkin, get_active_attendance_log, get_today_checkin
+    from ..database import get_staff, get_staff_schedules, save_attendance_checkin, get_active_attendance_log, get_today_checkin, get_recent_device_scan
+
+    # ── 대리 출퇴근 방지: 동일 기기 5분 쿨다운 ──
+    force = data.get("force", False)
+    if not force:
+        recent = get_recent_device_scan(device_id, minutes=5)
+        if recent:
+            last_time = recent.get("check_out_time") or recent.get("check_in_time") or ""
+            try:
+                last_dt = datetime.fromisoformat(str(last_time))
+                remaining_sec = max(0, int(300 - (datetime.now() - last_dt).total_seconds()))
+                remaining_min = remaining_sec // 60
+                remaining_s   = remaining_sec % 60
+                time_label = f"{remaining_min}분 {remaining_s}초" if remaining_min else f"{remaining_s}초"
+            except Exception:
+                time_label = "잠시"
+            raise HTTPException(
+                status_code=429,
+                detail=f"DEVICE_COOLDOWN|이 기기에서 최근 5분 이내에 출퇴근이 처리되었습니다.\n대리 출퇴근 방지를 위해 잠금 중입니다.\n잠금 해제까지 약 {time_label} 남았습니다."
+            )
 
     staff = get_staff(staff_id)
     if not staff:
@@ -317,7 +336,25 @@ async def staff_check_out(data: Dict):
     device_id = data.get("device_id") or "unknown"
     force = data.get("force", False)
 
-    from ..database import get_staff, get_staff_schedules, save_attendance_checkout, get_active_attendance_log, get_today_checkout
+    from ..database import get_staff, get_staff_schedules, save_attendance_checkout, get_active_attendance_log, get_today_checkout, get_recent_device_scan
+
+    # ── 대리 출퇴근 방지: 동일 기기 5분 쿨다운 ──
+    if not force:
+        recent = get_recent_device_scan(device_id, minutes=5)
+        if recent:
+            last_time = recent.get("check_out_time") or recent.get("check_in_time") or ""
+            try:
+                last_dt = datetime.fromisoformat(str(last_time))
+                remaining_sec = max(0, int(300 - (datetime.now() - last_dt).total_seconds()))
+                remaining_min = remaining_sec // 60
+                remaining_s   = remaining_sec % 60
+                time_label = f"{remaining_min}분 {remaining_s}초" if remaining_min else f"{remaining_s}초"
+            except Exception:
+                time_label = "잠시"
+            raise HTTPException(
+                status_code=429,
+                detail=f"DEVICE_COOLDOWN|이 기기에서 최근 5분 이내에 출퇴근이 처리되었습니다.\n대리 출퇴근 방지를 위해 잠금 중입니다.\n잠금 해제까지 약 {time_label} 남았습니다."
+            )
 
     staff = get_staff(staff_id)
     if not staff:

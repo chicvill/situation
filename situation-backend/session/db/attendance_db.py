@@ -117,6 +117,40 @@ def get_active_attendance_log(staff_id: str):
         print(f"Get Active Attendance Log Error: {e}")
         return None
 
+def get_recent_device_scan(device_id: str, minutes: int = 5):
+    """동일 기기의 최근 N분 내 스캔 기록 조회 — 대리 출퇴근 방지"""
+    if not device_id or device_id in ('unknown', ''):
+        return None
+    conn = get_db_conn()
+    if not conn:
+        return None
+    try:
+        from datetime import timedelta
+        cutoff = (datetime.now() - timedelta(minutes=minutes)).isoformat()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT log_id, staff_id, device_id, check_in_time, check_out_time
+            FROM table_attendance_logs
+            WHERE device_id = %(device_id)s
+              AND (
+                  check_in_time  >= %(cutoff)s
+               OR check_out_time >= %(cutoff)s
+              )
+            ORDER BY GREATEST(
+                COALESCE(check_in_time::timestamp,  '1970-01-01'::timestamp),
+                COALESCE(check_out_time::timestamp, '1970-01-01'::timestamp)
+            ) DESC
+            LIMIT 1
+        """, {'device_id': device_id, 'cutoff': cutoff})
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        return dict(row) if row else None
+    except Exception as e:
+        print(f"Get Recent Device Scan Error: {e}")
+        return None
+
+
 def get_staff_attendance_logs(staff_id: str, month: Optional[str] = None):
     conn = get_db_conn()
     if not conn: return []
@@ -177,6 +211,8 @@ def get_all_attendance_as_bundles(store_id: Optional[str] = None):
                     {"name": "직원명", "value": staff_display_name},
                     {"name": "아이디", "value": log['staff_id']},
                     {"name": "상태", "value": log['status']},
+                    {"name": "출근시간", "value": str(log['check_in_time'] or '')},
+                    {"name": "퇴근시간", "value": str(log['check_out_time'] or '')},
                     {"name": "지각여부", "value": "지각" if log['tardy'] else "정상"},
                     {"name": "근무분수", "value": str(log['work_minutes'] or 0)},
                     {"name": "정산상태", "value": "지급" if log.get('paid') else "미지급"}

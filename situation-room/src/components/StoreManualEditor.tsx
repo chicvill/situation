@@ -1,303 +1,194 @@
-import { useState, useEffect } from 'react';
-import { API_BASE } from '../config';
+import { useState } from 'react';
 
-interface Props {
-  storeId: string;
-  user?: any;
+interface TreeItem {
+  title: string;
+  desc: string;
+  children?: { label: string; detail: string }[];
 }
 
-// 여러 매장에 공통적으로 완벽하게 대응하는 표준 매뉴얼 예제 템플릿
-const COMMON_MANUAL_TEMPLATE = `### [우리 매장 운영 절대 규칙]
+const sections: { icon: string; category: string; color: string; items: TreeItem[] }[] = [
+  {
+    icon: '🏪', category: '매장 개설 & 기본 설정', color: '#6366f1',
+    items: [
+      { title: '매장 정보 등록', desc: '홈 > 매장 설정에서 상호명·주소·전화번호를 입력합니다.', children: [
+        { label: '영업 시간 설정', detail: '평일/주말 영업 시작·종료 시간과 브레이크타임을 설정합니다.' },
+        { label: '테이블 구성', detail: '테이블 수와 좌석 수를 등록하여 입장·예약 배정에 활용합니다.' },
+        { label: 'AI 비서 매뉴얼', detail: '고객 응대 말투, 와이파이 비밀번호, 비상 수칙 등 AI가 최우선 준수할 규칙을 입력합니다.' },
+      ]},
+    ],
+  },
+  {
+    icon: '📔', category: '메뉴 관리', color: '#0ea5e9',
+    items: [
+      { title: '메뉴 카테고리 & 항목', desc: '메뉴 설정 탭에서 카테고리를 만들고 항목·가격·사진을 등록합니다.', children: [
+        { label: '품절 처리', detail: '즉시 품절 토글로 모바일 주문 화면에서 해당 메뉴를 비활성화합니다.' },
+        { label: '옵션 추가', detail: '사이즈·온도·추가 토핑 등 선택 옵션을 설정할 수 있습니다.' },
+      ]},
+    ],
+  },
+  {
+    icon: '🖨️', category: 'QR 인쇄', color: '#8b5cf6',
+    items: [
+      { title: 'QR 종류별 인쇄', desc: '목적별 QR 코드를 생성하여 인쇄합니다.', children: [
+        { label: '주문 QR', detail: '고객이 스캔하면 모바일 주문 화면으로 이동합니다.' },
+        { label: '대기 등록 QR', detail: '대기 등록 화면으로 이동합니다.' },
+        { label: '직원 출퇴근 QR', detail: '직원이 스캔하면 출퇴근 시간이 자동 기록됩니다.' },
+        { label: 'WiFi QR', detail: '햄버거 메뉴 > WiFi QR 인쇄에서 SSID/비밀번호를 입력 후 인쇄합니다.' },
+      ]},
+    ],
+  },
+  {
+    icon: '💰', category: '주문 & 카운터', color: '#f59e0b',
+    items: [
+      { title: '카운터에서 결제 처리', desc: '카운터 탭에서 수동 주문 입력과 포인트 결제를 처리합니다.', children: [
+        { label: '포인트 조회', detail: '전화번호 입력 시 사용 가능 포인트와 누적 합계를 즉시 확인합니다.' },
+        { label: 'VIP 단골 알림', detail: '상위 10% 고객 결제 시 화면에 VIP 플래시 오버레이가 표시됩니다.' },
+        { label: '주차 연계 등록', detail: '결제 시 차량번호를 함께 입력하면 주차 무료 시간이 자동 등록됩니다.' },
+      ]},
+    ],
+  },
+  {
+    icon: '🛎️', category: '대기 & 호출', color: '#10b981',
+    items: [
+      { title: '대기 등록 및 호출', desc: '고객이 QR로 대기 등록 후 준비되면 호출 알림이 발송됩니다.', children: [
+        { label: '대기 탭', detail: '현재 대기 중인 명단을 확인하고 "입장" 처리 또는 "취소"합니다.' },
+        { label: '호출 탭', detail: '테이블 호출 벨 요청을 확인하고 서비스 완료 처리합니다.' },
+        { label: '실시간 뱃지', detail: '하단 네비게이션에 미처리 건수가 실시간 배지로 표시됩니다.' },
+      ]},
+    ],
+  },
+  {
+    icon: '📅', category: '예약 관리', color: '#ef4444',
+    items: [
+      { title: '예약 접수부터 입장까지', desc: '예약 탭에서 접수·확정·입장을 일자 순으로 관리합니다.', children: [
+        { label: '새 예약 추가', detail: '+ 새 예약 버튼으로 이름·연락처·인원·날짜·시간을 등록합니다.' },
+        { label: '1일 전 알림', detail: '예약 24시간 전 오버레이가 표시됩니다. 전화 확인 후 "확인 완료"를 누르면 다시 뜨지 않습니다.' },
+        { label: '3시간 전 알림', detail: '예약 3시간 전 빨간 오버레이로 긴급 확인을 요청합니다.' },
+        { label: '입장 처리', detail: '"입장 처리" 버튼을 누르면 테이블 배정 화면이 열리고 세션이 활성화됩니다.' },
+        { label: '수정 / 삭제', detail: '예약 카드의 수정·삭제 버튼으로 정보를 변경하거나 취소할 수 있습니다.' },
+      ]},
+    ],
+  },
+  {
+    icon: '🚗', category: '주차 관리', color: '#64748b',
+    items: [
+      { title: '차량 무료 주차 처리', desc: '주차 탭에서 등록·만료 알림·완료 처리를 합니다.', children: [
+        { label: '차량번호 등록', detail: '카운터 결제 연계 또는 주차 탭 직접 입력으로 등록합니다.' },
+        { label: '무료 시간 설정', detail: '매장 설정에서 기본 무료 주차 시간(분)을 지정합니다.' },
+        { label: '만료 알림', detail: '설정 시간 초과 시 하단 배지와 MQTT 알림으로 즉시 표시됩니다.' },
+      ]},
+    ],
+  },
+  {
+    icon: '🪙', category: '포인트 관리', color: '#d97706',
+    items: [
+      { title: '포인트 적립 & 사용 & 조회', desc: '포인트 탭에서 전체 고객 포인트 현황을 조회합니다.', children: [
+        { label: '자동 적립', detail: '카운터 결제 완료 시 결제금액의 일정 비율이 자동 적립됩니다.' },
+        { label: '포인트 사용', detail: '카운터에서 전화번호 조회 후 보유 포인트를 차감 결제합니다.' },
+        { label: '누적 합계 & 순위', detail: '사용 가능 포인트와 별개로 누적 합계를 기록해 VIP 등급 산정에 사용합니다.' },
+        { label: 'VIP 상위 10%', detail: '누적 포인트 기준 상위 10% 고객은 금빛 배지와 결제 시 VIP 플래시로 구분됩니다.' },
+      ]},
+    ],
+  },
+  {
+    icon: '👥', category: '직원 · 근태 · 급여', color: '#0891b2',
+    items: [
+      { title: '직원 관리', desc: '직원·근태·급여 탭에서 등록부터 급여 계산까지 처리합니다.', children: [
+        { label: '직원 등록', detail: '이름·역할·시급을 등록합니다.' },
+        { label: 'QR 출퇴근', detail: '직원이 QR을 스캔하면 출퇴근 시간이 자동 기록됩니다.' },
+        { label: '근태 이력 조회', detail: '기간별 출퇴근 내역을 확인합니다.' },
+        { label: '급여 계산', detail: '시급 × 근무 시간을 자동 계산하여 정산 내역을 확인합니다.' },
+      ]},
+    ],
+  },
+  {
+    icon: '🎤', category: 'AI 비서 (음성 & 대화)', color: '#7c3aed',
+    items: [
+      { title: 'AI 비서 활용', desc: '하단 중앙 마이크 버튼이나 홈 화면 대화 창으로 AI 비서를 사용합니다.', children: [
+        { label: '음성 명령', detail: '"주문", "카운터" 등 키워드를 말하면 해당 탭으로 즉시 이동합니다.' },
+        { label: '매뉴얼 기반 응답', detail: '매장 운영 매뉴얼에 입력한 내용을 우선 참고하여 답변합니다.' },
+        { label: '상황 질문', detail: '"오늘 예약 있어?", "대기 몇 명이야?" 등 운영 현황을 자연어로 물어볼 수 있습니다.' },
+      ]},
+    ],
+  },
+];
 
-### ⏰ 영업 시간 및 쉬는 시간
-- 영업시간: 오전 11:30 ~ 오후 22:00
-- 브레이크타임: 오후 15:00 ~ 17:00 (오후 14:30 라스트오더)
-- 정기휴무: 매주 화요일은 쉽니다.
-
-### 📶 고객 편의 정보
-- 매장 와이파이: MQnet_Wifi (비밀번호: 12345678)
-- 화장실 위치: 주방 오른쪽 통로 건물 전용 복도 (비밀번호: *1234#)
-- 주차 지원: 결제 시 직원에게 차량번호를 말씀해주시면 지하주차장 1시간 무료 정산을 등록해 드립니다.
-
-### 👥 서비스 말투 가이드라인
-- 고객 응대 시 항상 정중하고 신뢰감 넘치는 표준 존댓말을 구사해 주세요.
-- 비서 역할을 할 때는 "저희 식당을 방문해 주셔서 진심으로 감사드립니다."로 친절하게 문장을 시작하세요.
-
-### 📅 단체 예약 및 결제
-- 8인 이상의 단체 손님은 당일 대화식 주문보다는 사전 전화 예약으로 접수하도록 안내해 주세요.
-- 모든 포인트는 결제금액의 0.1%가 적립되며, 1,000 포인트부터 현금처럼 사용 가능합니다.
-
-### ⚠️ 비상 및 기타 대응 수칙
-- 와이파이가 작동하지 않는 비상 상황 시에는 공유기를 끈 뒤 10초 후에 재부팅하도록 사장님께 보고하세요.
-- 손님이 물을 쏟거나 요청 사항이 있을 시 즉시 벨 호출 알림을 확인하고 신속히 이동해 대응합니다.`;
-
-export const StoreManualEditor = ({ storeId, user }: Props) => {
-  const [manual, setManual] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
-
-  useEffect(() => {
-    fetch(`${API_BASE}/api/store/manual?store_id=${storeId}`)
-      .then(res => res.json())
-      .then(data => setManual(data.manual || ""))
-      .catch(err => console.error("Manual Load Error:", err));
-  }, [storeId]);
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    setMessage("");
-    try {
-      const res = await fetch(`${API_BASE}/api/store/manual`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ store_id: storeId, manual })
-      });
-      if (res.ok) {
-        setMessage("✅ 매뉴얼이 성공적으로 AI 지침에 반영되었습니다.");
-        setIsEditing(false);
-        setTimeout(() => setMessage(""), 3000);
-      }
-    } catch (err) {
-      setMessage("❌ 저장 중 오류가 발생했습니다.");
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // 공통 템플릿 불러오기 기능
-  const loadTemplate = () => {
-    if (window.confirm("주의: 현재 작성 중인 내용이 지워지고 '공통 표준 매뉴얼 예제'로 덮어씌워집니다. 불러오시겠습니까?")) {
-      setManual(COMMON_MANUAL_TEMPLATE);
-      setIsEditing(true); // 편의상 바로 수정할 수 있게 편집 모드로 전환
-      setMessage("📋 표준 공통 예제 템플릿이 로드되었습니다. 수정 후 'AI에게 학습시키기'를 꼭 눌러주세요!");
-      setTimeout(() => setMessage(""), 5000);
-    }
-  };
-
-  // 관리자 권한 여부 확인 (admin, owner, manager)
-  const hasEditPermission = user?.role === 'admin' || user?.role === 'owner' || user?.role === 'manager';
-
-  // 줄바꿈 문자열을 아름다운 HTML 문단 목록으로 변환하는 파서
-  const renderFormattedManual = () => {
-    if (!manual.trim()) {
-      return (
-        <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text-muted)' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '15px' }}>📖</div>
-          <h3 style={{ margin: '0 0 10px 0', color: 'var(--text-main)' }}>매장 매뉴얼이 비어 있습니다</h3>
-          <p style={{ fontSize: '0.9rem', maxWidth: '450px', margin: '0 auto 20px auto', lineHeight: '1.6' }}>
-            매뉴얼을 새로 작성하거나, 다수의 매장에서 실제 공통으로 쓰이는 표준 예제를 불러와 자유롭게 편집 및 수정 테스트를 해볼 수 있습니다.
-          </p>
-          {hasEditPermission && (
-            <button 
-              onClick={loadTemplate}
-              style={{
-                padding: '12px 24px',
-                borderRadius: '10px',
-                background: 'var(--primary-soft)',
-                color: 'var(--primary)',
-                border: '1.5px dashed var(--primary)',
-                fontWeight: '700',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              📋 표준 공통 예제 템플릿 불러오기
-            </button>
-          )}
-        </div>
-      );
-    }
-
-    return (
-      <div className="manual-booklet-paper" style={{
-        background: '#fff',
-        color: '#1e293b',
-        padding: '35px 40px',
-        borderRadius: '16px',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02)',
-        border: '1px solid #e2e8f0',
-        lineHeight: '1.8',
-        fontSize: '1.02rem',
-        fontFamily: "'Inter', sans-serif",
-        textAlign: 'left'
-      }}>
-        {manual.split('\n').map((line, idx) => {
-          const trimmed = line.trim();
-          if (!trimmed) return <div key={idx} style={{ height: '14px' }} />;
-          
-          // 글머리 기호가 포함된 라인은 들여쓰기 셸로 감싸기
-          if (trimmed.startsWith('-') || trimmed.startsWith('*') || trimmed.startsWith('•')) {
-            return (
-              <div key={idx} style={{ display: 'flex', gap: '8px', paddingLeft: '10px', marginBottom: '8px' }}>
-                <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>•</span>
-                <span>{trimmed.substring(1).trim()}</span>
-              </div>
-            );
-          }
-
-          // 제목이나 대분류 성격인 경우 볼드 처리 및 마진 조율
-          if (trimmed.endsWith(':') || trimmed.startsWith('###') || trimmed.startsWith('[')) {
-            return (
-              <h4 key={idx} style={{ 
-                fontSize: '1.15rem', 
-                fontWeight: '800', 
-                color: '#0f172a', 
-                marginTop: '25px', 
-                marginBottom: '10px',
-                borderLeft: '4px solid var(--primary)',
-                paddingLeft: '10px'
-              }}>
-                {trimmed.replace(/###|\[|\]/g, '').trim()}
-              </h4>
-            );
-          }
-
-          return <p key={idx} style={{ margin: '0 0 10px 0' }}>{trimmed}</p>;
-        })}
-      </div>
-    );
-  };
+export const StoreManualEditor = (_props: { storeId?: string; user?: any }) => {
+  const [openSection, setOpenSection] = useState<number | null>(0);
+  const [openItem, setOpenItem] = useState<string | null>(null);
 
   return (
-    <div className="manual-editor-container animate-fade-in" style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-      {/* 프리미엄 헤더 영역 */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '20px', 
-        borderBottom: '2px solid var(--primary)', 
-        paddingBottom: '15px' 
-      }}>
-        <div>
-          <h2 style={{ margin: 0, color: 'var(--primary)', fontSize: '1.6rem', fontWeight: 800 }}>📜 매장 운영 매뉴얼</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
-            {isEditing 
-              ? "여기에 작성하는 내용은 AI 비서가 최우선으로 준수하는 매장의 법률이 됩니다." 
-              : "우리 매장의 공식 가이드북 및 비서 인공지능 절대 규칙입니다."}
-          </p>
-        </div>
-        
-        {/* 우측 관리용 보조 버튼 묶음 */}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          {hasEditPermission && (
-            <button 
-              onClick={loadTemplate}
-              style={{
-                padding: '8px 14px',
-                borderRadius: '8px',
-                background: 'transparent',
-                color: 'var(--text-muted)',
-                border: '1px dashed var(--border)',
-                fontWeight: '600',
-                fontSize: '0.8rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-              title="공통 예제로 덮어쓰기"
-            >
-              📋 예제 불러오기
-            </button>
-          )}
+    <div style={{ padding: '24px', maxWidth: '820px', margin: '0 auto', background: 'var(--bg-main)', minHeight: '100vh' }}>
 
-          {hasEditPermission && (
-            <button 
-              onClick={() => setIsEditing(!isEditing)}
-              style={{
-                padding: '8px 18px',
-                borderRadius: '8px',
-                background: isEditing ? 'var(--surface)' : 'var(--primary)',
-                color: isEditing ? 'var(--text-main)' : 'white',
-                border: isEditing ? '1px solid var(--border)' : 'none',
-                fontWeight: '700',
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                boxShadow: '0 4px 10px rgba(0,0,0,0.05)'
-              }}
-            >
-              {isEditing ? "📄 매뉴얼 보기" : "✏️ 매뉴얼 수정"}
-            </button>
-          )}
-        </div>
+      {/* 헤더 */}
+      <div style={{ marginBottom: '28px' }}>
+        <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--text-main)', margin: '0 0 4px' }}>📜 매장 운영 매뉴얼</h2>
+        <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', margin: 0 }}>
+          매장 개설부터 포인트·예약까지 — 주요 기능 한눈에 보기
+        </p>
       </div>
 
-      {message && (
-        <div style={{ 
-          marginBottom: '15px', 
-          padding: '12px', 
-          borderRadius: '8px', 
-          textAlign: 'center', 
-          background: message.includes('✅') || message.includes('📋') ? '#ecfdf5' : '#fef2f2',
-          color: message.includes('✅') || message.includes('📋') ? '#059669' : '#dc2626',
-          fontWeight: '600',
-          fontSize: '0.9rem',
-          border: `1px solid ${message.includes('✅') || message.includes('📋') ? '#a7f3d0' : '#fecaca'}`
-        }}>
-          {message}
-        </div>
-      )}
+      {/* 섹션 트리 */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {sections.map((sec, si) => {
+          const isOpen = openSection === si;
+          return (
+            <div key={si} style={{ borderRadius: '16px', border: `1px solid ${isOpen ? sec.color : 'var(--border)'}`, overflow: 'hidden', transition: 'border-color 0.2s', background: 'var(--surface)' }}>
 
-      {isEditing && hasEditPermission ? (
-        /* 에디터 편집 모드 */
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }} className="animate-fade-in">
-          <div style={{ flex: 1, minWidth: '300px' }}>
-            <textarea
-              value={manual}
-              onChange={(e) => setManual(e.target.value)}
-              placeholder="예: 우리 매장은 친절을 최우선으로 합니다. 브레이크 타임은 15:00~17:00입니다. 10인 이상 단체 예약은 전화로만 받습니다."
-              style={{ 
-                width: '100%', height: '420px', padding: '20px', borderRadius: '12px',
-                border: '1px solid var(--border)', fontSize: '1rem', lineHeight: '1.6',
-                boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.03)', outline: 'none',
-                background: 'var(--surface)', color: 'var(--text-main)',
-                fontFamily: 'inherit', boxSizing: 'border-box'
-              }}
-            />
-            <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-              <button 
-                onClick={() => setIsEditing(false)}
-                style={{
-                  flex: 0.4, padding: '15px', borderRadius: '12px',
-                  background: 'var(--surface)', color: 'var(--text-main)', fontWeight: '700',
-                  fontSize: '0.95rem', border: '1px solid var(--border)', cursor: 'pointer'
-                }}
-              >
-                취소
+              {/* 섹션 헤더 */}
+              <button
+                onClick={() => setOpenSection(isOpen ? null : si)}
+                style={{ width: '100%', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>{sec.icon}</span>
+                <span style={{ flex: 1, fontWeight: 800, fontSize: '1rem', color: isOpen ? sec.color : 'var(--text-main)' }}>{sec.category}</span>
+                <span style={{ display: 'inline-block', transition: 'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>▼</span>
               </button>
-              <button 
-                onClick={handleSave}
-                disabled={isSaving}
-                style={{
-                  flex: 1, padding: '15px', borderRadius: '12px',
-                  background: 'var(--accent)', color: 'white', fontWeight: '800',
-                  fontSize: '1rem', border: 'none', cursor: 'pointer', opacity: isSaving ? 0.7 : 1,
-                  boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)'
-                }}
-              >
-                {isSaving ? "매장 규칙 반영 중..." : "💾 AI에게 학습시키기"}
-              </button>
+
+              {/* 섹션 내용 */}
+              {isOpen && (
+                <div style={{ borderTop: `1px solid var(--border)`, padding: '4px 0 12px' }}>
+                  {sec.items.map((item, ii) => {
+                    const itemKey = `${si}-${ii}`;
+                    const itemOpen = openItem === itemKey;
+                    return (
+                      <div key={ii} style={{ margin: '6px 16px 0' }}>
+
+                        {/* 아이템 헤더 */}
+                        <div
+                          onClick={() => item.children ? setOpenItem(itemOpen ? null : itemKey) : undefined}
+                          style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '10px 14px', borderRadius: '10px', background: itemOpen ? 'var(--bg-main)' : 'transparent', cursor: item.children ? 'pointer' : 'default', transition: 'background 0.15s' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: sec.color, flexShrink: 0, marginTop: '6px' }} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-main)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                              <span>{item.title}</span>
+                              {item.children && (
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-block', transition: 'transform 0.2s', transform: itemOpen ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>▼</span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: '0.83rem', color: 'var(--text-muted)', marginTop: '2px', lineHeight: '1.5' }}>{item.desc}</div>
+                          </div>
+                        </div>
+
+                        {/* 하위 항목 */}
+                        {itemOpen && item.children && (
+                          <div style={{ marginLeft: '18px', marginTop: '4px', display: 'flex', flexDirection: 'column', gap: '4px', paddingBottom: '6px' }}>
+                            {item.children.map((child, ci) => (
+                              <div key={ci} style={{ padding: '9px 14px', borderRadius: '9px', background: 'var(--bg-main)', border: '1px solid var(--border)' }}>
+                                <div style={{ fontWeight: 700, fontSize: '0.82rem', color: sec.color, marginBottom: '3px' }}>{child.label}</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.55' }}>{child.detail}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-
-          <div style={{ flex: 0.7, minWidth: '250px', background: 'var(--primary-soft)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-            <h4 style={{ margin: '0 0 12px 0', color: 'var(--primary)', fontWeight: 800 }}>💡 작성 추천 가이드라인</h4>
-            <ul style={{ fontSize: '0.85rem', color: 'var(--text-main)', paddingLeft: '20px', lineHeight: '1.9', margin: 0 }}>
-              <li><b>⏰ 매장 운영</b>: 영업 및 휴식 시간, 공휴일 휴무 여부</li>
-              <li><b>🚗 편의 시설</b>: 와이파이 비번, 화장실 비밀번호, 무료 주차 시간</li>
-              <li><b>📅 예약 규칙</b>: 예약 가능 시간 및 한계 인원수</li>
-              <li><b>💁 친절한 말투</b>: 고객 응대 시 선호하는 어조 (예: "정중하고 존댓말로 안내")</li>
-              <li><b>⚠️ 비상 수칙</b>: 특정 재고 소진이나 기기 고장 시 대응 체계</li>
-            </ul>
-          </div>
-        </div>
-      ) : (
-        /* 읽기 전용 책자 모드 */
-        <div className="animate-fade-in">
-          {renderFormattedManual()}
-        </div>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 };

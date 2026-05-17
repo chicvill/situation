@@ -43,14 +43,26 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
           <button onClick={onClose}>×</button>
         </div>
         <nav className="drawer-nav">
+          <div className="drawer-section-label">운영 화면</div>
+          <button onClick={() => onNavigate('home')}>🏠 홈</button>
+          <button onClick={() => onNavigate('kitchen')}>👨‍🍳 주방 모니터</button>
+          <button onClick={() => onNavigate('counter')}>💰 카운터</button>
+          <button onClick={() => onNavigate('display')}>📢 전광판</button>
+          <button onClick={() => onNavigate('qr')}>🖨️ QR 인쇄</button>
+          <button onClick={() => onNavigate('wifi')}>📶 WiFi QR 인쇄</button>
+          {(user?.role === 'admin' || user?.role === 'owner') && (
+            <button onClick={() => onNavigate('stats')}>📊 통계</button>
+          )}
+          <hr />
+          <div className="drawer-section-label">설정</div>
           <button onClick={() => onNavigate('manual')}>📜 매장 운영 매뉴얼</button>
           <button onClick={() => onNavigate('settings')}>⚙️ 매장 설정</button>
           <button onClick={() => onNavigate('menu')}>📔 메뉴 설정</button>
           <button onClick={() => onNavigate('hr')}>👥 직원 · 근태 · 급여 관리</button>
+          <button onClick={() => onNavigate('tech')}>🛠 기술 정보</button>
           {user?.role === 'admin' && (
             <>
               <button onClick={() => onNavigate('admin')}>🏢 매장관리 (관리자 전용)</button>
-              <button onClick={() => onNavigate('inventory')}>🧠 AI 지식 인벤토리</button>
               <button onClick={() => onNavigate('paper')}>📄 AI 논문 보기</button>
             </>
           )}

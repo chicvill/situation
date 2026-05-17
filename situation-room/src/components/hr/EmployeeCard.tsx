@@ -47,7 +47,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   const contractStr = bundle.items?.find((i) => i.name === '계약정보')?.value || '{}';
   const scheduleStr = bundle.items?.find((i) => i.name === '스케줄')?.value || '[]';
 
-  const handleRowClick = () => {
+  const handleCardClick = () => {
     onSelect({
       id, name, role, wage, hours, cumulativeWage, paidWage, unpaidWage,
       contract: JSON.parse(contractStr),
@@ -56,20 +56,23 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   };
 
   return (
-    <tr
+    <div
+      onClick={handleCardClick}
       style={{
-        borderBottom: '1px solid rgba(255,255,255,0.03)',
+        padding: '16px',
+        border: `1.5px solid ${isSelected ? 'var(--accent-orange)' : 'var(--border)'}`,
+        borderRadius: '16px',
+        background: isSelected ? 'rgba(249,115,22,0.04)' : 'rgba(255,255,255,0.015)',
         cursor: 'pointer',
-        background: isSelected ? 'rgba(255,255,255,0.02)' : 'transparent',
-        transition: 'background 0.2s'
+        transition: 'all 0.2s',
       }}
-      onClick={handleRowClick}
     >
-      <td data-label="사원명(연락처)" style={{ padding: '16px 10px', fontWeight: '800', fontSize: '1.05rem', color: 'var(--text-main)' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <div>
+      {/* 상단: 이름, 직책, 연락처 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
+          <div style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-main)' }}>
             👤 {name}
-            {isSelected && <span style={{ color: 'var(--accent-orange)', marginLeft: '6px', fontSize: '0.75rem' }}>● 선택됨</span>}
+            {isSelected && <span style={{ color: 'var(--accent-orange)', marginLeft: '6px', fontSize: '0.72rem' }}>● 선택됨</span>}
           </div>
           {editingPhoneId === bundle.id ? (
             <input
@@ -77,85 +80,98 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
               defaultValue={id}
               onBlur={(ev) => onUpdatePhone(bundle, ev.target.value)}
               onKeyDown={(ev) => ev.key === 'Enter' && onUpdatePhone(bundle, (ev.target as HTMLInputElement).value)}
-              style={{ width: '130px', background: 'var(--surface)', color: 'var(--text-main)', border: '2px solid var(--accent-orange)', padding: '4px', borderRadius: '6px', fontSize: '0.85rem' }}
+              onClick={(ev) => ev.stopPropagation()}
+              style={{ width: '160px', background: 'var(--surface)', color: 'var(--text-main)', border: '2px solid var(--accent-orange)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.82rem' }}
             />
           ) : (
             <span
               onClick={(ev) => { ev.stopPropagation(); (userRole === 'owner' || userRole === 'admin') && onEditPhoneStart(bundle.id, id); }}
-              style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600', cursor: (userRole === 'owner' || userRole === 'admin') ? 'pointer' : 'default', borderBottom: (userRole === 'owner' || userRole === 'admin') ? '1px dashed var(--accent-orange)' : 'none' }}
+              style={{ fontSize: '0.82rem', color: 'var(--text-muted)', cursor: (userRole === 'owner' || userRole === 'admin') ? 'pointer' : 'default', borderBottom: (userRole === 'owner' || userRole === 'admin') ? '1px dashed var(--accent-orange)' : 'none', width: 'fit-content' }}
             >
               📞 {id}
             </span>
           )}
         </div>
-      </td>
-      <td data-label="직책" style={{ padding: '16px 10px' }}>
-        <span className={`role-badge ${role === '점장' ? 'owner-gold' : 'staff-blue'}`} style={{ fontSize: '0.8rem', padding: '4px 10px', borderRadius: '8px' }}>
+        <span className={`role-badge ${role === '점장' ? 'owner-gold' : 'staff-blue'}`} style={{ fontSize: '0.78rem', padding: '4px 10px', borderRadius: '8px', whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '8px' }}>
           {role}
         </span>
-      </td>
-      <td data-label="계약 시급" style={{ padding: '16px 10px', fontWeight: '700', color: 'var(--text-main)' }}>
-        {editingWageId === bundle.id ? (
-          <input
-            autoFocus
-            defaultValue={wage}
-            onBlur={(ev) => onUpdateWage(bundle, ev.target.value)}
-            onKeyDown={(ev) => ev.key === 'Enter' && onUpdateWage(bundle, (ev.target as HTMLInputElement).value)}
-            style={{ width: '80px', background: 'var(--surface)', color: 'var(--text-main)', border: '2px solid var(--accent-orange)', padding: '6px', borderRadius: '6px' }}
-          />
-        ) : (
-          <span
-            onClick={(ev) => { ev.stopPropagation(); (userRole === 'owner' || userRole === 'admin') && onEditWageStart(bundle.id, wage); }}
-            style={{ borderBottom: '2px dashed var(--accent-orange)', cursor: (userRole === 'owner' || userRole === 'admin') ? 'pointer' : 'default' }}
-          >
-            {parseInt(wage).toLocaleString()}원
-          </span>
-        )}
-      </td>
-      <td data-label="누적 시간" style={{ padding: '16px 10px', opacity: 0.8, color: 'var(--text-main)' }}>{hours}시간</td>
-      <td data-label="총 누적임금" style={{ padding: '16px 10px', fontWeight: '700', color: 'var(--text-main)' }}>{parseInt(cumulativeWage).toLocaleString()}원</td>
-      <td data-label="지불된 임금" style={{ padding: '16px 10px', color: '#10b981', fontWeight: '800' }}>{parseInt(paidWage).toLocaleString()}원</td>
-      <td data-label="미지급 임금" style={{ padding: '16px 10px', color: 'var(--accent-orange)', fontWeight: '900', fontSize: '1.05rem' }}>
-        {parseInt(unpaidWage).toLocaleString()}원
-      </td>
-      <td data-label="관리 옵션" style={{ padding: '16px 10px', textAlign: 'right' }} onClick={(ev) => ev.stopPropagation()}>
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => onOpenPayroll({ id, name, role, wage, hours, cumulativeWage, paidWage, unpaidWage })}
-            style={{ background: 'var(--surface)', color: 'var(--text-main)', border: '1.5px solid var(--border)', borderRadius: '10px', padding: '8px 14px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer', boxShadow: '0 2px 5px rgba(0,0,0,0.02)' }}
-          >
-            📄 명세서 확인
-          </button>
-          {(userRole === 'owner' || userRole === 'admin') && (
-            <>
-              <button
-                onClick={(ev) => onForceAttendance(ev, bundle, 'check-in')}
-                style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid #10b981', borderRadius: '10px', padding: '8px 12px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer' }}
-              >
-                🏃출근
-              </button>
-              <button
-                onClick={(ev) => onForceAttendance(ev, bundle, 'check-out')}
-                style={{ background: 'rgba(249, 115, 22, 0.1)', color: 'var(--accent-orange)', border: '1px solid var(--accent-orange)', borderRadius: '10px', padding: '8px 12px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer' }}
-              >
-                🏠퇴근
-              </button>
-            </>
-          )}
-          {userRole === 'owner' && parseInt(unpaidWage) > 0 && (
-            <button
-              onClick={() => onPaySalary(id, name)}
-              className="confirm-btn success-green"
-              style={{ fontSize: '0.8rem', padding: '8px 14px', borderRadius: '10px', fontWeight: '800' }}
+      </div>
+
+      {/* 중단: 임금 통계 그리드 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
+        <div style={{ padding: '8px 10px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
+          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '2px' }}>계약 시급</div>
+          {editingWageId === bundle.id ? (
+            <input
+              autoFocus
+              defaultValue={wage}
+              onBlur={(ev) => onUpdateWage(bundle, ev.target.value)}
+              onKeyDown={(ev) => ev.key === 'Enter' && onUpdateWage(bundle, (ev.target as HTMLInputElement).value)}
+              onClick={(ev) => ev.stopPropagation()}
+              style={{ width: '90px', background: 'var(--surface)', color: 'var(--text-main)', border: '2px solid var(--accent-orange)', padding: '4px', borderRadius: '6px', fontSize: '0.85rem' }}
+            />
+          ) : (
+            <div
+              onClick={(ev) => { ev.stopPropagation(); (userRole === 'owner' || userRole === 'admin') && onEditWageStart(bundle.id, wage); }}
+              style={{ fontWeight: 700, fontSize: '0.9rem', borderBottom: '2px dashed var(--accent-orange)', cursor: (userRole === 'owner' || userRole === 'admin') ? 'pointer' : 'default', width: 'fit-content' }}
             >
-              💸 급여 지급
-            </button>
-          )}
-          {userRole === 'owner' && (
-            <button onClick={() => onResignEmployee(bundle)} className="del-btn" style={{ fontSize: '0.8rem', padding: '8px 14px', borderRadius: '10px', fontWeight: '800' }}>퇴사</button>
+              {parseInt(wage).toLocaleString()}원
+            </div>
           )}
         </div>
-      </td>
-    </tr>
+        <div style={{ padding: '8px 10px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
+          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '2px' }}>누적 근무</div>
+          <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{hours}시간</div>
+        </div>
+        <div style={{ padding: '8px 10px', background: 'rgba(0,0,0,0.2)', borderRadius: '10px' }}>
+          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '2px' }}>총 누적임금</div>
+          <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{parseInt(cumulativeWage).toLocaleString()}원</div>
+        </div>
+        <div style={{ padding: '8px 10px', background: parseInt(unpaidWage) > 0 ? 'rgba(249,115,22,0.07)' : 'rgba(0,0,0,0.2)', borderRadius: '10px', border: parseInt(unpaidWage) > 0 ? '1px solid rgba(249,115,22,0.2)' : 'none' }}>
+          <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '2px' }}>미지급 잔액</div>
+          <div style={{ fontWeight: 900, fontSize: '0.95rem', color: parseInt(unpaidWage) > 0 ? 'var(--accent-orange)' : '#10b981' }}>
+            {parseInt(unpaidWage).toLocaleString()}원
+          </div>
+        </div>
+      </div>
+
+      {/* 하단: 액션 버튼 */}
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }} onClick={(ev) => ev.stopPropagation()}>
+        <button
+          onClick={() => onOpenPayroll({ id, name, role, wage, hours, cumulativeWage, paidWage, unpaidWage })}
+          style={{ background: 'var(--surface)', color: 'var(--text-main)', border: '1.5px solid var(--border)', borderRadius: '8px', padding: '7px 12px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
+        >
+          📄 명세서
+        </button>
+        {(userRole === 'owner' || userRole === 'admin') && (
+          <>
+            <button
+              onClick={(ev) => onForceAttendance(ev, bundle, 'check-in')}
+              style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid #10b981', borderRadius: '8px', padding: '7px 12px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
+            >
+              🏃 출근
+            </button>
+            <button
+              onClick={(ev) => onForceAttendance(ev, bundle, 'check-out')}
+              style={{ background: 'rgba(249, 115, 22, 0.1)', color: 'var(--accent-orange)', border: '1px solid var(--accent-orange)', borderRadius: '8px', padding: '7px 12px', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}
+            >
+              🏠 퇴근
+            </button>
+          </>
+        )}
+        {userRole === 'owner' && parseInt(unpaidWage) > 0 && (
+          <button
+            onClick={() => onPaySalary(id, name)}
+            className="confirm-btn success-green"
+            style={{ fontSize: '0.78rem', padding: '7px 12px', borderRadius: '8px', fontWeight: 800 }}
+          >
+            💸 급여 지급
+          </button>
+        )}
+        {userRole === 'owner' && (
+          <button onClick={() => onResignEmployee(bundle)} className="del-btn" style={{ fontSize: '0.78rem', padding: '7px 12px', borderRadius: '8px', fontWeight: 800 }}>퇴사</button>
+        )}
+      </div>
+    </div>
   );
 };

@@ -16,7 +16,8 @@ async def get_pool(store_id: Optional[str] = None):
     active_order_bundles = get_all_active_orders_as_bundles(store_id)
     pool.extend(active_order_bundles)
 
-    # DB의 직원 및 근태 기록을 가상 번들로 변환 후 통합
+    # DB가 권위 있는 소스이므로 JSON pool에 남아있는 Employee/Attendance 번들은 제거 후 대체
+    pool = [b for b in pool if b.get("type") not in ("Employee", "Attendance")]
     staff_bundles = get_all_staff_as_bundles(store_id)
     attendance_bundles = get_all_attendance_as_bundles(store_id)
     pool.extend(staff_bundles)

@@ -15,7 +15,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   currentTime,
   isCustomerMode,
   onMenuOpen,
-  onSwitchStore,
+  onSwitchStore: _onSwitchStore,
 }) => {
   return (
     <header className="premium-top-bar" style={{
@@ -61,25 +61,6 @@ export const TopBar: React.FC<TopBarProps> = ({
         }} title={storeName}>
           {storeName || '우리식당'}
         </div>
-        {user?.role === 'admin' && (
-          <button
-            onClick={onSwitchStore}
-            style={{
-              background: 'var(--accent-orange-light)',
-              border: '1px solid rgba(249,115,22,0.25)',
-              color: 'var(--accent-orange)',
-              padding: '3px 9px',
-              borderRadius: 'var(--radius-full)',
-              fontSize: '0.72rem',
-              fontWeight: '800',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            전환
-          </button>
-        )}
       </div>
 
       {/* Right: user badge + clock */}

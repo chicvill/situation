@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, type FormEvent } from 'react';
 import { API_BASE } from '../config';
+import { OwnerOnboardingChat } from './OwnerOnboardingChat';
 
 interface Store {
   store_id: string;
@@ -26,6 +27,7 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   
   // Form fields
   const [formStoreId, setFormStoreId] = useState('');
@@ -94,17 +96,7 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
     fetchStores();
   }, []);
 
-  const openAddModal = () => {
-    setEditingStore(null);
-    setFormStoreId(`store-${Date.now().toString().slice(-4)}`);
-    setFormStoreName('');
-    setFormOwnerName('');
-    setFormOwnerId('');
-    setFormMonthlyFee(50000);
-    setFormPaymentStatus('정상');
-    setFormMessage('');
-    setIsModalOpen(true);
-  };
+
 
   const openEditModal = (store: Store) => {
     setEditingStore(store);
@@ -471,7 +463,10 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
           </div>
 
           <button
-            onClick={openAddModal}
+            onClick={() => {
+              Object.keys(localStorage).forEach(k => { if (k.startsWith('mqonboard_')) localStorage.removeItem(k); });
+              setShowOnboarding(true);
+            }}
             style={{
               padding: '16px 28px',
               borderRadius: '16px',
@@ -774,7 +769,20 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
         )}
       </div>
 
-      {/* Add / Edit Modal */}
+      {/* 신규 가맹점 대화식 등록 (점주 온보딩 흐름과 동일) */}
+      {showOnboarding && (
+        <OwnerOnboardingChat
+          onClose={() => setShowOnboarding(false)}
+          onOnboardingComplete={() => {
+            Object.keys(localStorage).forEach(k => { if (k.startsWith('mqonboard_')) localStorage.removeItem(k); });
+            setShowOnboarding(false);
+            fetchStores();
+          }}
+          bundles={bundles}
+        />
+      )}
+
+      {/* Edit Modal (기존 매장 정보 수정 전용) */}
       {isModalOpen && (
         <div style={{
           position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',

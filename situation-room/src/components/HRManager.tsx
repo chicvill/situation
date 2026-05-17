@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 import type { Bundle, EmployeeDetail, PayrollInfo } from './hr/types';
 import { useAttendance } from './hr/useAttendance';
 import { KioskPanel } from './hr/KioskPanel';
-import { QrScannerModal } from './hr/QrScannerModal';
 import { PayrollModal } from './hr/PayrollModal';
 import { EmployeeCard } from './hr/EmployeeCard';
 
@@ -21,11 +20,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
     // Selected states
     const [selectedEmployee, setSelectedEmployee] = useState<EmployeeDetail | null>(null);
     const [payrollModal, setPayrollModal] = useState<PayrollInfo | null>(null);
-    const [qrScannerOpen, setQrScannerOpen] = useState(false);
-    const [selectedStaffForQr, setSelectedStaffForQr] = useState("");
-    const [selectedActionForQr, setSelectedActionForQr] = useState<"check-in" | "check-out">("check-in");
     const [isScanningQr, setIsScanningQr] = useState(false);
-    const [currentTime, setCurrentTime] = useState(new Date());
 
     // 신규 사원 직접 등록 폼 활성화 및 입력 상태들
     const [showRegisterForm, setShowRegisterForm] = useState(false);
@@ -44,12 +39,6 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         6: { active: false, start: '09:00', end: '18:00' },
     });
 
-    // Live clock for QR terminal
-    useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
-
     // 현재 매장의 직원 및 근태 정보만 필터링
     const employees: Bundle[] = bundles.filter(b => b.type === 'Employee' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
     const attendance: Bundle[] = bundles.filter(b => b.type === 'Attendance' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
@@ -65,13 +54,10 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         return false;
     });
 
-    const { deviceId: _deviceId, handleForceAttendance, handleQrAttendance, handleKioskSubmit } = useAttendance({
+    const { deviceId: _deviceId, handleForceAttendance, handleKioskSubmit } = useAttendance({
         storeId,
         employees,
         setIsScanningQr,
-        setQrScannerOpen,
-        selectedStaffForQr,
-        selectedActionForQr,
         kioskPhone,
         setKioskPhone,
         setIsProcessing,
@@ -193,6 +179,15 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
             return;
         }
 
+        const isDuplicate = employees.some(emp => {
+            const existing = emp.items?.find((i: any) => i.name === '아이디')?.value;
+            return existing && existing.replace(/[^0-9]/g, '') === cleanPhone;
+        });
+        if (isDuplicate) {
+            alert(`⚠️ 이미 등록된 전화번호(ID)입니다: ${cleanPhone}\n중복 등록은 허용되지 않습니다.`);
+            return;
+        }
+
         setIsProcessing(true);
         try {
             const schedulesList = Object.entries(regSchedules)
@@ -262,62 +257,62 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
 
     return (
         <div className="admin-page animate-fade-in" style={{ paddingBottom: '60px' }}>
-            <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <div>
-                    <h2>👥 {storeName} 인적 자원 및 임금 정산 관리</h2>
-                    <p>{user.role === 'owner' ? '매장 스케줄·급여·QR출퇴근 통합 관리' : '실시간 나의 근무 및 근태 로그'}</p>
-                </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                    {(user.role === 'owner' || user.role === 'admin') && (
-                        <button
-                            onClick={() => setShowRegisterForm(!showRegisterForm)}
-                            className="confirm-btn success-green"
-                            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', fontWeight: 'bold', boxShadow: '0 4px 15px rgba(16, 185, 129, 0.2)' }}
-                        >
-                            ➕ {showRegisterForm ? '등록 폼 닫기' : '사원 직접 채용/등록'}
-                        </button>
-                    )}
-                    <button
-                        onClick={() => setQrScannerOpen(true)}
-                        className="confirm-btn premium-orange"
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px', fontWeight: 'bold', boxShadow: '0 4px 15px rgba(249, 115, 22, 0.2)' }}
-                    >
-                        📷 출퇴근 QR코드 단말기
-                    </button>
-                </div>
-            </header>
 
-            {storeDetails && showBanner && (
-                <div
-                    onClick={() => setShowBanner(false)}
-                    style={{
-                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(16, 185, 129, 0.04))',
-                        border: '1.5px dashed #10b981',
-                        borderRadius: '16px',
-                        padding: '16px 20px',
-                        marginBottom: '30px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        fontSize: '0.9rem',
-                        color: 'var(--text-main)',
-                        cursor: 'pointer',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.04)',
-                        transition: 'all 0.3s'
-                    }}
-                >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 600 }}>
-                        <span style={{ fontSize: '1.4rem' }}>🎁</span>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                            <span style={{ fontSize: '0.95rem', fontWeight: '800' }}>[안내] 전후 5분 수칙 준수 정산 시스템</span>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                                모든 점장과 점원은 배정된 요일별 출퇴근 일정 기준 전후 5분 내에만 출퇴근 QR 인증이 가능하도록 동기화되어 있습니다.
+            {/* 헤더 */}
+            <div style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                    <div>
+                        <h2 style={{ margin: '0 0 2px', fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)' }}>
+                            👥 인적 자원 · 임금 정산 관리
+                        </h2>
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                            {user.role === 'owner' || user.role === 'admin' ? '스케줄 · 급여 · QR 출퇴근 통합 관리' : '실시간 나의 근무 및 근태 로그'}
+                        </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {(user.role === 'owner' || user.role === 'admin') && (
+                            <button
+                                onClick={() => setShowRegisterForm(!showRegisterForm)}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '6px',
+                                    padding: '9px 16px', borderRadius: '10px', border: 'none',
+                                    background: showRegisterForm ? 'var(--surface)' : '#10b981',
+                                    color: showRegisterForm ? 'var(--text-muted)' : 'white',
+                                    fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
+                                    boxShadow: showRegisterForm ? 'none' : '0 2px 8px rgba(16,185,129,0.25)',
+                                    transition: 'all 0.2s',
+                                }}
+                            >
+                                {showRegisterForm ? '✕ 닫기' : '➕ 사원 등록'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {storeDetails && showBanner && (
+                    <div
+                        onClick={() => setShowBanner(false)}
+                        style={{
+                            marginTop: '14px',
+                            background: 'var(--surface)',
+                            border: '1px solid var(--border)',
+                            borderLeft: '3px solid #10b981',
+                            borderRadius: '10px',
+                            padding: '10px 14px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
+                            cursor: 'pointer',
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                            <span style={{ fontSize: '1rem', flexShrink: 0 }}>⏱</span>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                                <strong style={{ color: 'var(--text-main)' }}>출퇴근 전후 5분 수칙:</strong> 배정된 요일별 일정 기준 전후 5분 내에만 QR 인증이 가능합니다.
                             </span>
                         </div>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', flexShrink: 0 }}>✕</span>
                     </div>
-                    ✕
-                </div>
-            )}
+                )}
+            </div>
 
             {showRegisterForm && (
                 <div className="glass-panel animate-fade-in" style={{ padding: '24px', borderRadius: '20px', border: '1.5px solid #10b981', marginBottom: '25px', background: 'linear-gradient(180deg, rgba(16, 185, 129, 0.05), rgba(0,0,0,0.2))' }}>
@@ -428,88 +423,30 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>* 사원 선택 시 상세 근무 요건 및 요일 스케줄을 조회할 수 있습니다.</span>
                     </div>
 
-                    <div style={{ overflowX: 'auto' }}>
-                        <style>
-                            {`
-                            @media (max-width: 768px) {
-                                .mobile-responsive-table, .mobile-responsive-table tbody, .mobile-responsive-table tr, .mobile-responsive-table td {
-                                    display: block !important;
-                                    width: 100% !important;
-                                    box-sizing: border-box !important;
-                                }
-                                .mobile-responsive-table thead {
-                                    display: none !important;
-                                }
-                                .mobile-responsive-table tr {
-                                    margin-bottom: 20px !important;
-                                    border: 1px solid var(--border) !important;
-                                    border-radius: 16px !important;
-                                    padding: 12px !important;
-                                    background: var(--surface) !important;
-                                    box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
-                                }
-                                .mobile-responsive-table td {
-                                    display: flex !important;
-                                    justify-content: space-between !important;
-                                    align-items: center !important;
-                                    text-align: right !important;
-                                    padding: 10px 5px !important;
-                                    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
-                                    white-space: nowrap !important;
-                                }
-                                .mobile-responsive-table td:last-child {
-                                    border-bottom: none !important;
-                                    flex-direction: column !important;
-                                    align-items: flex-end !important;
-                                    gap: 10px !important;
-                                }
-                                .mobile-responsive-table td::before {
-                                    content: attr(data-label) !important;
-                                    font-weight: 800 !important;
-                                    color: var(--text-muted) !important;
-                                    text-align: left !important;
-                                    margin-right: 15px !important;
-                                }
-                            }
-                            `}
-                        </style>
-                        <table className="mobile-responsive-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead>
-                                <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                                    <th style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>사원명(연락처)</th>
-                                    <th style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>직책</th>
-                                    <th style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>계약 시급</th>
-                                    <th style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>누적 시간</th>
-                                    <th style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>총 누적임금</th>
-                                    <th style={{ padding: '14px 10px', whiteSpace: 'nowrap' }}>지불된 임금</th>
-                                    <th style={{ padding: '14px 10px', color: 'var(--accent-orange)', whiteSpace: 'nowrap' }}>미지급 임금</th>
-                                    <th style={{ padding: '14px 10px', textAlign: 'right', whiteSpace: 'nowrap' }}>급여 정산 및 관리</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {employees.map(e => (
-                                    <EmployeeCard
-                                        key={e.id}
-                                        bundle={e}
-                                        isSelected={selectedEmployee?.id === e.items?.find((i: any) => i.name === '아이디')?.value || selectedEmployee?.id === e.id}
-                                        userRole={user.role}
-                                        editingWageId={editingWage?.id ?? null}
-                                        editingPhoneId={editingPhone?.id ?? null}
-                                        isProcessing={isProcessing}
-                                        onSelect={setSelectedEmployee}
-                                        onEditWageStart={(id, wage) => setEditingWage({ id, wage })}
-                                        onEditPhoneStart={(id, phone) => setEditingPhone({ id, phone })}
-                                        onUpdateWage={handleUpdateWage}
-                                        onUpdatePhone={handleUpdatePhone}
-                                        onForceAttendance={handleForceAttendance}
-                                        onPaySalary={handlePaySalary}
-                                        onResignEmployee={handleResignEmployee}
-                                        onOpenPayroll={setPayrollModal}
-                                    />
-                                ))}
-                                {employees.length === 0 && <tr><td colSpan={8} style={{ textAlign: 'center', opacity: 0.5, padding: '40px' }}>등록된 사원이 없습니다.</td></tr>}
-                            </tbody>
-                        </table>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {employees.map(e => (
+                            <EmployeeCard
+                                key={e.id}
+                                bundle={e}
+                                isSelected={selectedEmployee?.id === e.items?.find((i: any) => i.name === '아이디')?.value || selectedEmployee?.id === e.id}
+                                userRole={user.role}
+                                editingWageId={editingWage?.id ?? null}
+                                editingPhoneId={editingPhone?.id ?? null}
+                                isProcessing={isProcessing}
+                                onSelect={setSelectedEmployee}
+                                onEditWageStart={(id, wage) => setEditingWage({ id, wage })}
+                                onEditPhoneStart={(id, phone) => setEditingPhone({ id, phone })}
+                                onUpdateWage={handleUpdateWage}
+                                onUpdatePhone={handleUpdatePhone}
+                                onForceAttendance={handleForceAttendance}
+                                onPaySalary={handlePaySalary}
+                                onResignEmployee={handleResignEmployee}
+                                onOpenPayroll={setPayrollModal}
+                            />
+                        ))}
+                        {employees.length === 0 && (
+                            <div style={{ textAlign: 'center', opacity: 0.5, padding: '40px' }}>등록된 사원이 없습니다.</div>
+                        )}
                     </div>
                 </div>
 
@@ -584,61 +521,72 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                 )}
             </div>
 
-            {/* 실시간 근태 기록 로그 */}
-            <div className="glass-panel attendance-logs" style={{ marginTop: '25px', padding: '24px', borderRadius: '20px' }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: '1.25rem', fontWeight: 800 }}>🕒 실시간 출퇴근 근태 타임라인 로그 ({storeName})</h3>
-                <div className="log-container" style={{ maxHeight: '350px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* 일별 출퇴근 기록 로그 */}
+            <div className="glass-panel" style={{ marginTop: '25px', padding: '24px', borderRadius: '20px' }}>
+                <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', fontWeight: 800 }}>🕒 일별 출퇴근 기록 ({storeName})</h3>
+                <p style={{ margin: '0 0 16px 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>임금 계산 근거 — 출근·퇴근 시각, 근무 시간 확인</p>
+                <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {attendance.length > 0 ? attendance.map(a => {
+                        const staffName = a.items?.find((i: any) => i.name === '직원명')?.value || '-';
+                        const checkinRaw = a.items?.find((i: any) => i.name === '출근시간')?.value || '';
+                        const checkoutRaw = a.items?.find((i: any) => i.name === '퇴근시간')?.value || '';
+                        const workMinutes = parseInt(a.items?.find((i: any) => i.name === '근무분수')?.value || '0');
                         const tardy = a.items?.find((i: any) => i.name === '지각여부')?.value === '지각';
                         const paid = a.items?.find((i: any) => i.name === '정산상태')?.value === '지급';
+                        const isWorking = a.status === 'working';
+
+                        const fmtTime = (raw: string) => {
+                            if (!raw) return '-';
+                            try { return new Date(raw).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }); }
+                            catch { return raw.slice(11, 16) || '-'; }
+                        };
+                        const fmtDate = (raw: string) => {
+                            if (!raw) return '';
+                            try { return new Date(raw).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' }); }
+                            catch { return raw.slice(0, 10); }
+                        };
+                        const workHours = workMinutes > 0
+                            ? `${Math.floor(workMinutes / 60)}시간 ${workMinutes % 60}분`
+                            : null;
+
                         return (
-                            <div
-                                key={a.id}
-                                className="log-item"
-                                style={{
-                                    padding: '14px 18px',
-                                    background: 'rgba(255,255,255,0.02)',
-                                    border: '1px solid rgba(255,255,255,0.04)',
-                                    borderRadius: '12px',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
-                                }}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <span style={{ fontSize: '1.1rem' }}>⏱️</span>
-                                    <div>
-                                        <span className="action" style={{ color: 'white', fontWeight: '700', fontSize: '0.9rem' }}>{a.title}</span>
-                                        <div style={{ display: 'flex', gap: '6px', marginTop: '3px' }}>
-                                            {tardy && <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>⚠️ 지각</span>}
-                                            <span style={{ background: paid ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: paid ? '#10b981' : '#f59e0b', fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
-                                                {paid ? '정산완료' : '미정산'}
-                                            </span>
-                                        </div>
+                            <div key={a.id} style={{
+                                padding: '12px 14px',
+                                background: 'rgba(255,255,255,0.02)',
+                                border: `1px solid ${isWorking ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                                borderRadius: '12px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                gap: '10px',
+                            }}>
+                                <div style={{ minWidth: 0, flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap' }}>
+                                        <span style={{ fontWeight: 800, fontSize: '0.9rem' }}>👤 {staffName}</span>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{fmtDate(checkinRaw)}</span>
+                                        {isWorking && <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '2px 7px', borderRadius: '4px', fontWeight: 700 }}>근무중</span>}
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', flexWrap: 'wrap' }}>
+                                        <span>🏃 <strong style={{ color: '#10b981' }}>{fmtTime(checkinRaw)}</strong></span>
+                                        <span style={{ color: 'var(--text-muted)' }}>→</span>
+                                        <span>🏠 <strong style={{ color: isWorking ? 'var(--text-muted)' : 'var(--accent-orange)' }}>{isWorking ? '퇴근 전' : fmtTime(checkoutRaw)}</strong></span>
+                                        {workHours && <span style={{ color: '#a0aec0', fontSize: '0.78rem' }}>({workHours})</span>}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '5px', marginTop: '5px', flexWrap: 'wrap' }}>
+                                        {tardy && <span style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>⚠️ 지각</span>}
+                                        <span style={{ background: paid ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)', color: paid ? '#10b981' : '#f59e0b', fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                                            {paid ? '정산완료' : '미정산'}
+                                        </span>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <span className="time" style={{ opacity: 0.5, fontSize: '0.85rem' }}>{a.timestamp}</span>
-                                    {(user.role === 'owner' || user.role === 'admin') && (
-                                        <button
-                                            onClick={(ev) => handleDeleteLog(ev, a.id)}
-                                            style={{
-                                                background: 'rgba(239, 68, 68, 0.1)',
-                                                color: '#ef4444',
-                                                border: '1px solid rgba(239, 68, 68, 0.2)',
-                                                padding: '4px 8px',
-                                                borderRadius: '6px',
-                                                fontSize: '0.7rem',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s'
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
-                                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
-                                        >
-                                            삭제
-                                        </button>
-                                    )}
-                                </div>
+                                {(user.role === 'owner' || user.role === 'admin') && (
+                                    <button
+                                        onClick={(ev) => handleDeleteLog(ev, a.id)}
+                                        style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', padding: '5px 10px', borderRadius: '6px', fontSize: '0.72rem', cursor: 'pointer', flexShrink: 0 }}
+                                    >
+                                        삭제
+                                    </button>
+                                )}
                             </div>
                         );
                     }) : (
@@ -646,21 +594,6 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                     )}
                 </div>
             </div>
-
-            {/* QR 출퇴근기록 단말기 모달 */}
-            {qrScannerOpen && (
-                <QrScannerModal
-                    employees={employees}
-                    currentTime={currentTime}
-                    isScanningQr={isScanningQr}
-                    selectedStaffForQr={selectedStaffForQr}
-                    selectedActionForQr={selectedActionForQr}
-                    onClose={() => setQrScannerOpen(false)}
-                    onStaffSelect={setSelectedStaffForQr}
-                    onActionSelect={setSelectedActionForQr}
-                    onSubmit={handleQrAttendance}
-                />
-            )}
 
             {/* 누적 급여 명세서 확인 모달 */}
             {payrollModal && (

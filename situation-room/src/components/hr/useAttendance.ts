@@ -5,9 +5,6 @@ interface UseAttendanceOptions {
   storeId: string;
   employees: Bundle[];
   setIsScanningQr: (v: boolean) => void;
-  setQrScannerOpen: (v: boolean) => void;
-  selectedStaffForQr: string;
-  selectedActionForQr: 'check-in' | 'check-out';
   kioskPhone: string;
   setKioskPhone: (v: string) => void;
   setIsProcessing: (v: boolean) => void;
@@ -17,9 +14,6 @@ export const useAttendance = ({
   storeId,
   employees,
   setIsScanningQr,
-  setQrScannerOpen,
-  selectedStaffForQr,
-  selectedActionForQr,
   kioskPhone,
   setKioskPhone,
   setIsProcessing,
@@ -75,49 +69,6 @@ export const useAttendance = ({
     }
   };
 
-  const handleQrAttendance = async () => {
-    if (!selectedStaffForQr) {
-      alert('근무자명을 선택해 주세요.');
-      return;
-    }
-    setIsScanningQr(true);
-
-    // 1.2초간 모의 스캐닝 애니메이션 연출
-    setTimeout(async () => {
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-        const endpoint = selectedActionForQr === 'check-in' ? '/api/staff/check-in' : '/api/staff/check-out';
-
-        const response = await fetch(`${apiUrl}${endpoint}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            staff_id: selectedStaffForQr,
-            store_id: storeId === 'Total' ? 'store-korean' : storeId,
-            device_id: deviceId
-          })
-        });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          alert(`🚨 출퇴근 시간 제한 에러!\n\n${result.detail}`);
-        } else {
-          if (selectedActionForQr === 'check-in') {
-            alert(`🏃 출근 완료!\n\n${result.tardy ? '⚠️ 지각 출근입니다! 예정 시간보다 늦게 등록되었습니다.' : '✨ 정상 출근 처리되었습니다.'}\n기록 시각: ${new Date(result.check_in_time).toLocaleTimeString()}`);
-          } else {
-            alert(`🏠 퇴근 완료!\n\n정상적으로 퇴근 처리가 완료되었습니다.\n근무 시간: ${result.work_minutes}분\n기록 시각: ${new Date(result.check_out_time).toLocaleTimeString()}`);
-          }
-          setQrScannerOpen(false);
-        }
-      } catch (err: any) {
-        alert(`❌ 오류가 발생했습니다: ${err.message}`);
-      } finally {
-        setIsScanningQr(false);
-      }
-    }, 1200);
-  };
-
   const handleKioskSubmit = async (actionType: 'check-in' | 'check-out') => {
     const cleanPhone = kioskPhone.replace(/[^0-9]/g, '');
     if (!cleanPhone) return alert('전화번호를 정확히 입력해 주세요.');
@@ -164,5 +115,5 @@ export const useAttendance = ({
     }
   };
 
-  return { deviceId, handleForceAttendance, handleQrAttendance, handleKioskSubmit };
+  return { deviceId, handleForceAttendance, handleKioskSubmit };
 };

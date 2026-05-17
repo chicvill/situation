@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { API_BASE } from '../config';
+import React, { useState } from 'react';
 
 interface Props {
   bundles: any[];
@@ -8,21 +7,7 @@ interface Props {
 }
 
 export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initialStoreName }) => {
-    const [wifiSSID, setWifiSSID] = useState('MQnet_Wifi');
-    const [wifiPass, setWifiPass] = useState('12345678');
     const [printMode, setPrintMode] = useState<'single' | 'a4' | 'grid'>('single');
-    const [lanIp, setLanIp] = useState<string | null>(null);
-
-    useEffect(() => {
-        const host = window.location.hostname;
-        const isLocal = host === 'localhost' || host === '127.0.0.1';
-        if (isLocal) {
-            fetch(`${API_BASE}/api/local-ip`)
-                .then(r => r.json())
-                .then(d => setLanIp(d.ip))
-                .catch(() => setLanIp(null));
-        }
-    }, []);
     
     // 매장 정보 추출
     const safeBundles = Array.isArray(bundles) ? bundles : [];
@@ -77,30 +62,9 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
         }
     })();
 
-    // localhost → 백엔드에서 가져온 LAN IP 사용 (폰이 접속 가능하도록)
-    // LAN IP 직접 접속 → 현재 호스트 사용
-    // 외부 도메인 → 프로덕션 URL 사용
-    const host = window.location.hostname;
-    const isLanAccess = host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.');
-    const isLocal = host === 'localhost' || host === '127.0.0.1';
-    const baseUrl = isLanAccess
-        ? `http://${host}:5173`
-        : isLocal && lanIp
-            ? `http://${lanIp}:5173`
-            : `https://situation.chicvill.store`;
+    const baseUrl = 'https://situation.chicvill.store';
 
     const qrItems = [
-        {
-            title: "📶 매장 WiFi",
-            label: "WIFI",
-            data: `WIFI:S:${wifiSSID};T:WPA;P:${wifiPass};;`,
-            fields: (
-                <div className="qr-inputs no-print" style={{ marginTop: '10px' }}>
-                    <input type="text" value={wifiSSID} onChange={(e) => setWifiSSID(e.target.value)} placeholder="SSID" style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', marginRight: '5px', fontSize: '12px', width: '80px' }} />
-                    <input type="text" value={wifiPass} onChange={(e) => setWifiPass(e.target.value)} placeholder="비밀번호" style={{ padding: '5px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px', width: '80px' }} />
-                </div>
-            )
-        },
         {
             title: "🛎️ 웨이팅 등록",
             label: "WT",
@@ -380,7 +344,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                             </div>
                             <div className="qr-badge-v2" style={{ background: '#0f172a', color: 'white', borderRadius: '50px', padding: printMode === 'single' ? '2px 8px' : '4px 15px', fontSize: printMode === 'single' ? '0.65rem' : '0.85rem', fontWeight: '900', marginTop: printMode === 'single' ? '8px' : '15px', letterSpacing: '0.5px' }}>{item.label}</div>
                             {printMode !== 'single' && <div className="qr-url-text" style={{ fontSize: '0.7rem', color: '#64748b', wordBreak: 'break-all', marginTop: '12px', fontFamily: 'monospace', maxWidth: '200px' }}>{item.data}</div>}
-                            {item.fields}
+                            {(item as any).fields}
                         </div>
                     ))}
                     
