@@ -14,10 +14,27 @@ interface StoreManagerProps {
 export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNavigate }) => {
   const { storeId, storeName } = useStoreFilter();
   const [storeData, setStoreData] = useState<any>({
-    brand: '', regNo: '', address: '', owner: '', bankName: '', accountNo: '', accountHolder: '', 
+    brand: '', regNo: '', address: '', owner: '', bankName: '', accountNo: '', accountHolder: '',
     openDate: '', isVerified: false, bundleId: null
   });
   const [isVerifying, setIsVerifying] = useState(false);
+  const [useKitchen, setUseKitchen] = useState(true);
+
+  useEffect(() => {
+    if (!storeId || storeId === 'Total') return;
+    apiFetch(`/api/stores/${storeId}/settings`)
+      .then(r => r.json())
+      .then(d => setUseKitchen(d.use_kitchen ?? true))
+      .catch(() => {});
+  }, [storeId]);
+
+  const handleKitchenToggle = async (value: boolean) => {
+    setUseKitchen(value);
+    await apiFetch(`/api/stores/${storeId}/settings`, {
+      method: 'PUT',
+      body: JSON.stringify({ use_kitchen: value }),
+    }).catch(() => {});
+  };
 
   useEffect(() => {
     const storeBundle = bundles.find(b => b.type === 'StoreConfig' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
@@ -393,11 +410,36 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
             </div>
           </div>
 
-          <button 
-            style={{ 
-                width: '100%', marginTop: '10px', padding: '16px', borderRadius: 'var(--radius-sm)', 
-                border: 'none', background: 'var(--accent)', color: 'white', fontWeight: '700', fontSize: '1.1rem', cursor: 'pointer' 
-            }} 
+          <div style={{ marginTop: '20px', padding: '24px', background: 'var(--surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+            <h3 style={{ color: 'var(--text-main)', margin: '0 0 16px', fontSize: '1rem', fontWeight: '700' }}>운영 설정</h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>주방 디스플레이 사용</p>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  {useKitchen ? '주방에서 조리완료 버튼을 눌러야 주문이 완료됩니다.' : '주방 확인 없이 주문이 바로 완료 처리됩니다.'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleKitchenToggle(!useKitchen)}
+                style={{
+                  position: 'relative', width: '52px', height: '28px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                  background: useKitchen ? 'var(--primary)' : 'var(--border)', transition: 'background 0.2s', flexShrink: 0
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: '3px', width: '22px', height: '22px', borderRadius: '50%',
+                  background: 'white', transition: 'left 0.2s', left: useKitchen ? '27px' : '3px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }} />
+              </button>
+            </div>
+          </div>
+
+          <button
+            style={{
+                width: '100%', marginTop: '10px', padding: '16px', borderRadius: 'var(--radius-sm)',
+                border: 'none', background: 'var(--accent)', color: 'white', fontWeight: '700', fontSize: '1.1rem', cursor: 'pointer'
+            }}
             onClick={() => handleSave()}
           >
             저장 및 적용하기

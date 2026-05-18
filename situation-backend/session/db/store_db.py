@@ -125,3 +125,33 @@ def delete_store_db(store_id: str):
     except Exception as e:
         print(f"Delete Store DB Error: {e}")
         return False
+
+def get_store_use_kitchen(store_id: str) -> bool:
+    conn = get_db_conn()
+    if not conn: return True
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT use_kitchen FROM stores WHERE id = %s", (store_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row is None or row[0] is None:
+            return True
+        return bool(row[0])
+    except Exception as e:
+        print(f"Get Store use_kitchen Error: {e}")
+        return True
+
+def update_store_use_kitchen(store_id: str, use_kitchen: bool) -> bool:
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE stores SET use_kitchen = %s WHERE id = %s", (use_kitchen, store_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Update Store use_kitchen Error: {e}")
+        return False

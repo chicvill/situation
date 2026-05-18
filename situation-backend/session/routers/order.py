@@ -6,7 +6,7 @@ from ..state import manager
 from ..models import OrderRequest, StatusUpdate
 from ..database import (
     save_order, get_active_session, update_order_status,
-    get_max_order_seq
+    get_max_order_seq, get_store_use_kitchen
 )
 
 router = APIRouter()
@@ -56,6 +56,12 @@ async def process_order(order_req: OrderRequest):
 
     # 3. 주문 객체 생성
     order_id = f"ORD-{uuid.uuid4().hex[:8].upper()}"
+    if order_req.payment_status == "pending":
+        initial_status = "pending_payment"
+    elif get_store_use_kitchen(store_id_val):
+        initial_status = "cooking"
+    else:
+        initial_status = "ready"
     new_order = {
         "order_id": order_id,
         "session_id": session_id,
@@ -64,7 +70,7 @@ async def process_order(order_req: OrderRequest):
         "device_id": order_req.device_id,
         "items": [item.model_dump() for item in order_req.items],
         "total_price": order_req.total_price,
-        "status": "cooking" if order_req.payment_status != "pending" else "pending_payment",
+        "status": initial_status,
         "payment_status": order_req.payment_status,
         "payment_method": order_req.payment_method,
         "order_seq": next_seq,

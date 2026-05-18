@@ -99,6 +99,8 @@ from .db.store_db import (
     update_store_db,
     delete_store_db,
     seed_stores_from_pool,
+    get_store_use_kitchen,
+    update_store_use_kitchen,
 )
 
 __all__ = [
@@ -190,4 +192,6 @@ __all__ = [
     "update_store_db",
     "delete_store_db",
     "seed_stores_from_pool",
+    "get_store_use_kitchen",
+    "update_store_use_kitchen",
 ]

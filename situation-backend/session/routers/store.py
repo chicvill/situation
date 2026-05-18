@@ -2,7 +2,7 @@ import json
 import os
 from typing import Dict, Any
 from fastapi import APIRouter, HTTPException
-from ..database import get_stores_db, add_store_db, update_store_db, delete_store_db
+from ..database import get_stores_db, add_store_db, update_store_db, delete_store_db, get_store_use_kitchen, update_store_use_kitchen
 from ..models import StoreCreateRequest, StoreUpdateRequest
 
 router = APIRouter()
@@ -116,3 +116,18 @@ async def delete_store(store_id: str):
     if success:
         return {"status": "success", "message": "Store deleted successfully"}
     raise HTTPException(status_code=500, detail="Failed to delete store from DB")
+
+
+@router.get("/api/stores/{store_id}/settings")
+async def get_store_settings(store_id: str):
+    use_kitchen = get_store_use_kitchen(store_id)
+    return {"store_id": store_id, "use_kitchen": use_kitchen}
+
+
+@router.put("/api/stores/{store_id}/settings")
+async def update_store_settings(store_id: str, data: Dict[str, Any]):
+    use_kitchen = data.get("use_kitchen", True)
+    success = update_store_use_kitchen(store_id, bool(use_kitchen))
+    if success:
+        return {"status": "success"}
+    raise HTTPException(status_code=500, detail="Failed to update store settings")

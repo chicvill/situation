@@ -78,6 +78,8 @@ def init_config_db():
             manual TEXT DEFAULT ''
         )
     """)
+    # 주방 사용 여부 컬럼 추가 (기존 배포 환경 호환)
+    cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_kitchen BOOLEAN DEFAULT TRUE")
     conn.commit()
     cur.close()
     conn.close()

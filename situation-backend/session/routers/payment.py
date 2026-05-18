@@ -6,7 +6,7 @@ import httpx  # type: ignore
 from ..state import manager
 from ..database import (
     update_order_status, update_order_payment_status,
-    update_order_payment_key, get_order_by_id,
+    update_order_payment_key, get_order_by_id, get_store_use_kitchen,
 )
 
 router = APIRouter()
@@ -60,8 +60,12 @@ async def confirm_payment(data: Dict):
         print(f"⚠️ [Payment Confirm] TOSS_SECRET_KEY 미설정 — Toss 서버 승인 생략 (개발 모드)")
 
     # 3. DB 상태 업데이트
+    store_id = order.get("store_id", "")
+    use_kitchen = get_store_use_kitchen(store_id)
+    post_payment_status = "cooking" if use_kitchen else "ready"
+
     update_order_payment_status(order_id, "paid")
-    update_order_status(order_id, "cooking")
+    update_order_status(order_id, post_payment_status)
 
     if update_order_payment_key(order_id, payment_key):
         print(f"🔑 [Payment Key Saved] {order_id}")
@@ -72,7 +76,7 @@ async def confirm_payment(data: Dict):
     msg_confirmed = {"type": "PAYMENT_CONFIRMED", "order_id": order_id, "status": "paid"}
     await manager.broadcast_to_kitchen(msg_confirmed)
 
-    msg_update = {"type": "STATUS_UPDATE", "order_id": order_id, "status": "cooking", "payment_status": "paid"}
+    msg_update = {"type": "STATUS_UPDATE", "order_id": order_id, "status": post_payment_status, "payment_status": "paid"}
     await manager.broadcast_to_kitchen(msg_update)
 
     return {"status": "success", "order_id": order_id}
