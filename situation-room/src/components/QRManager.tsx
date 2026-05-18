@@ -82,14 +82,14 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
         const cardStyle = isA4
             ? `display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;page-break-after:always;background:white;padding:40px;box-sizing:border-box;`
             : isSingle
-            ? `display:flex;flex-direction:column;align-items:center;padding:8px;border:1.5px dashed #94a3b8;border-radius:8px;background:white;box-sizing:border-box;break-inside:avoid;`
-            : `display:flex;flex-direction:column;align-items:center;padding:14px;border:1px solid #e2e8f0;border-radius:10px;background:white;box-sizing:border-box;break-inside:avoid;`;
+            ? `display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:6px 4px;border:1.5px dashed #94a3b8;border-radius:8px;background:white;box-sizing:border-box;break-inside:avoid;height:100%;`
+            : `display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:14px;border:1px solid #e2e8f0;border-radius:10px;background:white;box-sizing:border-box;break-inside:avoid;height:100%;`;
 
         const gridStyle = isA4
             ? `display:block;`
             : isSingle
-            ? `display:grid;grid-template-columns:repeat(6,1fr);gap:8px;width:100%;`
-            : `display:grid;grid-template-columns:repeat(3,1fr);gap:16px;width:100%;`;
+            ? `display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:1fr;gap:6px;width:100%;height:calc(297mm - 16mm);`
+            : `display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:12px;width:100%;height:calc(297mm - 16mm);`;
 
         const titleStyle = isA4
             ? `font-size:2rem;font-weight:900;color:#0f172a;margin:0 0 30px;text-align:center;`
@@ -98,8 +98,8 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
             : `font-size:1rem;font-weight:800;color:#0f172a;margin:0 0 10px;text-align:center;`;
 
         const imgBoxStyle = isA4
-            ? `width:${qrSize}px;height:${qrSize}px;border:3px solid #000;border-radius:16px;padding:12px;background:white;`
-            : `width:${qrSize}px;height:${qrSize}px;border:1px solid #e2e8f0;border-radius:8px;padding:4px;background:white;`;
+            ? `width:${qrSize}px;height:${qrSize}px;border:3px solid #000;border-radius:16px;padding:12px;background:white;flex-shrink:0;`
+            : `width:100%;aspect-ratio:1;border:1px solid #e2e8f0;border-radius:8px;padding:3px;background:white;flex:1;min-height:0;`;
 
         const badgeStyle = (color: string) => isA4
             ? `margin-top:28px;background:${color};color:white;border-radius:50px;padding:10px 36px;font-size:1.4rem;font-weight:900;`
@@ -109,7 +109,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
             <div style="${cardStyle}">
                 <div style="${titleStyle}">${card.title}</div>
                 <div style="${imgBoxStyle}">
-                    <img src="${getQRUri(card.url, qrSize)}" style="width:100%;height:100%;display:block;" />
+                    <img src="${getQRUri(card.url, qrSize)}" style="width:100%;height:100%;display:block;object-fit:contain;" />
                 </div>
                 <div style="${badgeStyle(card.badgeColor)}">${card.badge}</div>
                 ${isA4 ? `<div style="margin-top:20px;font-size:0.8rem;color:#64748b;font-family:monospace;word-break:break-all;max-width:500px;text-align:center;">${card.url}</div>` : ''}
@@ -150,45 +150,46 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
     };
 
     return (
-        <div className="qr-manager-container animate-fade-in" style={{ padding: '20px' }}>
-            <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)', padding: '25px', borderRadius: '16px', border: '1px solid var(--border)', marginBottom: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', flexWrap: 'wrap', gap: '16px' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    <h2 style={{ fontSize: '1.6rem', fontWeight: '900', color: 'var(--text-main)', margin: 0 }}>🔳 QR 마스터 인쇄 센터</h2>
-                    <p style={{ color: 'var(--text-muted)', margin: '5px 0 0', fontSize: '0.9rem' }}>
-                        매장명: <strong style={{ color: 'var(--accent-orange)' }}>{storeName}</strong> (ID: {resolvedStoreId})
+        <div className="qr-manager-container animate-fade-in" style={{ padding: '16px' }}>
+            <header className="page-header" style={{ display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--surface)', padding: '18px', borderRadius: '16px', border: '1px solid var(--border)', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                {/* 제목 + 매장 정보 */}
+                <div>
+                    <h2 style={{ fontSize: '1.15rem', fontWeight: '900', color: 'var(--text-main)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>🔳 QR 마스터 인쇄 센터</h2>
+                    <p style={{ color: 'var(--text-muted)', margin: '4px 0 0', fontSize: '0.82rem' }}>
+                        매장명: <strong style={{ color: 'var(--accent-orange)' }}>{storeName}</strong> <span style={{ opacity: 0.6 }}>(ID: {resolvedStoreId})</span>
                     </p>
-
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '16px' }}>
-                        {([
-                            { mode: 'single', icon: '📄', label: 'A4 전체 모아찍기', sub: '기본값' },
-                            { mode: 'a4',     icon: '📐', label: 'A4 낱장 크게',    sub: '1개씩' },
-                            { mode: 'grid',   icon: '🔳', label: '스티커 모아찍기', sub: '3열 그리드' },
-                        ] as const).map(({ mode, icon, label, sub }) => (
-                            <button
-                                key={mode}
-                                onClick={() => setPrintMode(mode)}
-                                style={{
-                                    padding: '8px 14px',
-                                    borderRadius: '8px',
-                                    border: printMode === mode ? '2px solid var(--accent-orange)' : '1px solid var(--border)',
-                                    background: printMode === mode ? '#f9731615' : 'white',
-                                    color: printMode === mode ? 'var(--accent-orange)' : 'var(--text-main)',
-                                    fontWeight: '800',
-                                    fontSize: '0.82rem',
-                                    cursor: 'pointer',
-                                    whiteSpace: 'nowrap',
-                                    lineHeight: '1.3',
-                                    textAlign: 'center',
-                                }}
-                            >
-                                {icon} {label}<br />
-                                <span style={{ fontSize: '0.7rem', fontWeight: '600', opacity: 0.7 }}>{sub}</span>
-                            </button>
-                        ))}
-                    </div>
                 </div>
 
-                <button className="premium-btn" onClick={handlePrint} style={{ padding: '12px 30px', fontSize: '1.05rem', boxShadow: '0 4px 15px rgba(249, 115, 22, 0.2)', flexShrink: 0 }}>
+                {/* 인쇄 모드 선택 */}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    {([
+                        { mode: 'single', icon: '📄', label: 'A4 모아찍기' },
+                        { mode: 'a4',     icon: '📐', label: 'A4 낱장' },
+                        { mode: 'grid',   icon: '🔳', label: '스티커 3열' },
+                    ] as const).map(({ mode, icon, label }) => (
+                        <button
+                            key={mode}
+                            onClick={() => setPrintMode(mode)}
+                            style={{
+                                flex: 1,
+                                padding: '8px 4px',
+                                borderRadius: '8px',
+                                border: printMode === mode ? '2px solid var(--accent-orange)' : '1px solid var(--border)',
+                                background: printMode === mode ? '#f9731615' : 'white',
+                                color: printMode === mode ? 'var(--accent-orange)' : 'var(--text-main)',
+                                fontWeight: '800',
+                                fontSize: '0.78rem',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            {icon} {label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* 인쇄 버튼 */}
+                <button className="premium-btn" onClick={handlePrint} style={{ width: '100%', padding: '13px', fontSize: '1rem', boxShadow: '0 4px 15px rgba(249, 115, 22, 0.2)' }}>
                     🖨️ 인쇄하기 (Ctrl + P)
                 </button>
             </header>
