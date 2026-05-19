@@ -32,7 +32,6 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     const wasApproved = useRef<boolean>(sessionPreApproved);
 
     const scrollRef = useRef<HTMLDivElement>(null);   // chat messages container
-    const menuScrollRef = useRef<HTMLDivElement>(null); // horizontal menu carousel
     const messagesEndRef = useRef<HTMLDivElement>(null); // sentinel for auto-scroll
     const hasSpokenWelcome = useRef(false);
 
@@ -107,84 +106,9 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         };
     }, []);
 
-    // Extract menus from bundles dynamically using an ultra-robust defensive matching strategy
-    const menus = useMemo(() => {
-        const safeBundles = Array.isArray(bundles) ? bundles : [];
-        if (safeBundles.length === 0) {
-            console.log("ConversationalUI: No bundles available yet.");
-            return [];
-        }
-
-        console.log(`ConversationalUI: Searching menus for storeId=${storeId}, storeName=${storeName}`);
-        
-        // 1. Precise match by storeId
-        let menuBundle = safeBundles.find(b => b.type === 'Menus' && b.store_id === storeId);
-        
-        // 2. Fallback to storeName match (case-insensitive & partial)
-        if (!menuBundle && storeName) {
-            const cleanTarget = storeName.replace(/\s+/g, '').toLowerCase();
-            menuBundle = safeBundles.find(b => {
-                if (b.type !== 'Menus' || !b.store) return false;
-                const cleanSource = b.store.replace(/\s+/g, '').toLowerCase();
-                return cleanSource.includes(cleanTarget) || cleanTarget.includes(cleanSource);
-            });
-        }
-        
-        // 3. Fallback to any Menus bundle (last resort)
-        if (!menuBundle) {
-            menuBundle = safeBundles.find(b => b.type === 'Menus');
-            if (menuBundle) console.log("ConversationalUI: Found fallback menu bundle:", menuBundle.store);
-        }
-        
-        if (!menuBundle || !menuBundle.items) {
-            console.log("ConversationalUI: No menu bundle found even with fallbacks.");
-            return [];
-        }
-
-        console.log(`ConversationalUI: Found ${menuBundle.items?.length || 0} menu items for ${menuBundle.store}`);
-        
-        const getFallbackImage = (item: any) => {
-            const cat = String(item.category || '').toLowerCase();
-            const name = String(item.name || '').toLowerCase();
-            
-            if (name.includes('커피') || name.includes('아메리카노') || cat.includes('커피') || cat.includes('에스프레소')) 
-                return 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=300&h=200&fit=crop';
-            if (name.includes('치킨') || name.includes('닭')) 
-                return 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?w=300&h=200&fit=crop';
-            if (name.includes('바베큐') || name.includes('고기') || name.includes('등갈비') || cat.includes('요리')) 
-                return 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300&h=200&fit=crop';
-            if (name.includes('케이크') || name.includes('디저트') || cat.includes('디저트')) 
-                return 'https://images.unsplash.com/photo-1563729784474-d77dbb933a9e?w=300&h=200&fit=crop';
-            if (name.includes('탕') || name.includes('국물') || cat.includes('안주')) 
-                return 'https://images.unsplash.com/photo-1534422298391-e4f8c170db06?w=300&h=200&fit=crop';
-            if (cat.includes('주류') || name.includes('맥주') || name.includes('소주')) 
-                return 'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=300&h=200&fit=crop';
-            
-            return 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&h=200&fit=crop';
-        };
-
-        return (menuBundle.items || []).map((item: any) => {
-            const imgPath = item.icon || item.image || '';
-            const isUrl = typeof imgPath === 'string' && imgPath.startsWith('http');
-            
-            return {
-                name: String(item.name || '').trim(),
-                price: typeof item.price === 'number' ? item.price : (parseInt(String(item.value || item.price || '0').replace(/[^0-9]/g, '')) || 0),
-                category: item.category || '기타',
-                desc: item.description || item.desc || '',
-                image: isUrl ? imgPath : getFallbackImage(item),
-                icon: !isUrl ? imgPath : ''
-            };
-        }).filter((m: any) => m.name);
-    }, [bundles, storeId, storeName]);
     
     const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0), [cart]);
 
-    const scroll = (direction: 'left' | 'right') => {
-        if (menuScrollRef.current) {
-            menuScrollRef.current.scrollBy({ left: direction === 'left' ? -240 : 240, behavior: 'smooth' });
-        }
-    };
 
     // Initial Welcome Message or Post-Payment Restoration Dialog
     useEffect(() => {
@@ -305,17 +229,6 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         addAiMessage(`메뉴를 선택해 주세요. 담은 후 결제 버튼을 눌러주세요. 😊`, { isMenuCarousel: true });
     };
 
-    // Add to local dialogue cart
-    const handleAddCart = (menu: any) => {
-        setCart(prev => {
-            const existing = prev.find(item => item.name === menu.name);
-            if (existing) {
-                return prev.map(item => item.name === menu.name ? { ...item, qty: item.qty + 1 } : item);
-            }
-            return [...prev, { ...menu, qty: 1 }];
-        });
-        speak(`${menu.name}을 장바구니에 담았습니다.`);
-    };
     // 2. Go to Points step
     const handleProceedToPoints = () => {
         setOrderStep('point_guide');
@@ -737,87 +650,6 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
 
                         {/* --- Dynamic Conversational Elements --- */}
 
-                        {/* Menu Selection Carousel */}
-                        {msg.isMenuCarousel && orderStep === 'menu_selection' && (
-                            <div style={{ marginTop: '10px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ fontSize: '12px', color: '#f97316', fontWeight: 900 }}>🍔 메뉴 선택</span>
-                                        <span style={{ fontSize: '10px', color: '#94a3b8' }}>(총 {menus.length}개)</span>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); scroll('left'); }} 
-                                            style={{ background: '#f97316', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', fontWeight: 900 }}
-                                        >
-                                            ←
-                                        </button>
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); scroll('right'); }} 
-                                            style={{ background: '#f97316', color: 'white', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', fontWeight: 900 }}
-                                        >
-                                            →
-                                        </button>
-                                    </div>
-                                </div>
-                                <div
-                                    ref={menuScrollRef}
-                                    style={{ display: 'flex', gap: '12px', overflowX: 'auto', padding: '5px 5px 15px', width: '100%', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', position: 'relative' }}
-                                    className="no-scrollbar"
-                                >
-                                    {menus.map((item: any, idx: number) => (
-                                        <div key={idx} style={{
-                                            width: '160px', flexShrink: 0, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px'
-                                        }}>
-                                        <div style={{ position: 'relative', width: '100%', height: '90px' }}>
-                                            {item.image && <img src={item.image} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} alt={item.name} />}
-                                            {item.icon && !item.icon.startsWith('http') && (
-                                                <div style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(255,255,255,0.8)', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
-                                                    {item.icon}
-                                                </div>
-                                            )}
-                                        </div>
-                                            <div style={{ fontWeight: 800, fontSize: '13px', color: '#1e293b' }}>{item.name}</div>
-                                            <div style={{ fontSize: '10px', color: '#64748b', height: '30px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{item.desc}</div>
-                                            <div style={{ fontWeight: 900, fontSize: '12px', color: '#f97316' }}>{item.price.toLocaleString()}원</div>
-                                            <button 
-                                                onClick={() => handleAddCart(item)}
-                                                style={{
-                                                    width: '100%', padding: '6px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '11px', cursor: 'pointer'
-                                                }}
-                                            >
-                                                + 담기
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Cart inside Menu Selection Bubble */}
-                        {msg.isMenuCarousel && orderStep === 'menu_selection' && cart.length > 0 && (
-                            <div style={{ marginTop: '12px', background: 'rgba(249, 115, 22, 0.04)', border: '1px dashed rgba(249, 115, 22, 0.3)', borderRadius: '10px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <div style={{ fontSize: '12px', fontWeight: 800, color: '#ea580c' }}>🧺 실시간 장바구니</div>
-                                {cart.map((cartItem, cIdx) => (
-                                    <div key={cIdx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#334155' }}>
-                                        <span>{cartItem.name} x {cartItem.qty}</span>
-                                        <span style={{ fontWeight: 700 }}>{(cartItem.price * cartItem.qty).toLocaleString()}원</span>
-                                    </div>
-                                ))}
-                                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '6px', display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: '13px', color: '#ea580c' }}>
-                                    <span>총 결제액</span>
-                                    <span>{cartTotal.toLocaleString()}원</span>
-                                </div>
-                                <button 
-                                    onClick={handleProceedToPoints}
-                                    style={{
-                                        marginTop: '6px', width: '100%', padding: '10px', background: 'linear-gradient(135deg, #f97316, #ea580c)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 800, fontSize: '12px', cursor: 'pointer', boxShadow: '0 4px 10px rgba(249,115,22,0.15)'
-                                    }}
-                                >
-                                    💳 총 {cartTotal.toLocaleString()}원 결제 진행하기 ➔
-                                </button>
-                            </div>
-                        )}
 
                         {/* Phone Number Entry Card (Point Guide) */}
                         {msg.isPointGuide && orderStep === 'point_guide' && (
