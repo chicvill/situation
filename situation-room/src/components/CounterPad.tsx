@@ -218,7 +218,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             if (total > 0 && paid < total) return { label: '결제대기', bg: '#fee2e2', color: '#b91c1c', stage: 'payment_pending', hint: '더블탭→종료' };
             return { label: '결제완료', bg: '#dcfce7', color: '#15803d', stage: 'payment_done', hint: '더블탭→종료' };
         }
-        if (!session && !isSeatReq) return { label: tableId, bg: '#ffffff', color: '#9ca3af', stage: 'initial' };
+        if (!session && !isSeatReq) return { label: '빈자리', bg: '#ffffff', color: '#9ca3af', stage: 'initial', hint: '더블탭→배정' };
         if (isSeatReq && !session) return { label: '고객대기', bg: '#fef3c7', color: '#92400e', stage: 'waiting' };
         if (session) {
             const active = (session.orders || []).filter((o: any) => o.status !== 'cancelled');
@@ -262,7 +262,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 }).then(() => fetchSessions()).catch(() => {});
             }
             setSelectedTableId(null);
-        } else if (stage === 'waiting') {
+        } else if (stage === 'waiting' || stage === 'initial') {
             handleOpenSession(tableId);
         }
     }, [lastTapInfo, getTableStage, patchSessionStatus, sessions, handleOpenSession, fetchSessions]);
@@ -288,7 +288,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         : -1;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--bg-main)', padding: '10px', gap: '8px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 146px)', overflow: 'hidden', background: 'var(--bg-main)', padding: '10px', gap: '8px', boxSizing: 'border-box' }}>
 
             {/* ── 좌석 승인 요청 배너 ── */}
             {seatRequests.length > 0 && (
