@@ -278,6 +278,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const dutchPaidSlotsRef = React.useRef<boolean[]>([]);
   const dutchCountRef = React.useRef(2);
   const dutchFrozenTotalRef = React.useRef(0);
+  const catScrollRef = React.useRef<HTMLDivElement>(null);
+  const menuScrollRef = React.useRef<HTMLDivElement>(null);
   useEffect(() => { dutchPaidSlotsRef.current = dutchPaidSlots; }, [dutchPaidSlots]);
   useEffect(() => { dutchCountRef.current = dutchCount; }, [dutchCount]);
   useEffect(() => { dutchFrozenTotalRef.current = dutchFrozenTotal; }, [dutchFrozenTotal]);
@@ -1148,77 +1150,156 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
   const renderContent = () => {
     if (showProgress) return renderProgressScreen();
-    
+
+    const filteredMenus = (menus || []).filter(m => activeCategory === '전체' || m.category === activeCategory);
+
+    const arrowBtnStyle: React.CSSProperties = {
+      flexShrink: 0,
+      width: '28px',
+      height: '28px',
+      background: '#f1f5f9',
+      border: '1.5px solid #cbd5e1',
+      borderRadius: '50%',
+      color: '#475569',
+      fontSize: '11px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontWeight: 900,
+      padding: 0,
+      lineHeight: 1,
+    };
+
     return (
       <>
-        {/* 가로 스크롤 안내 */}
-        <div className="scroll-hint-bar">
-          <span className="scroll-hint-arrow">👈</span>
-          <span>카테고리를 좌우로 밀어 메뉴를 탐색하세요</span>
-          <span className="scroll-hint-arrow" style={{ animationDelay: '0.7s' }}>👉</span>
+        {/* ── 카탈로그 스크롤바 (카테고리) ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 0 6px' }}>
+          <button style={arrowBtnStyle} onClick={() => catScrollRef.current?.scrollBy({ left: -120, behavior: 'smooth' })}>◀</button>
+          <div
+            ref={catScrollRef}
+            style={{ flex: 1, display: 'flex', gap: '7px', overflowX: 'auto', scrollbarWidth: 'none', padding: '2px 0 4px' }}
+          >
+            {categories.map((cat, i) => {
+              const isSel = activeCategory === cat;
+              return (
+                <button
+                  key={i}
+                  onClick={() => setActiveCategory(cat)}
+                  style={{
+                    flexShrink: 0,
+                    background: isSel ? '#f97316' : '#f1f5f9',
+                    border: isSel ? 'none' : '1.5px solid #e2e8f0',
+                    color: isSel ? 'white' : '#475569',
+                    padding: '6px 14px',
+                    borderRadius: '100px',
+                    fontSize: '12.5px',
+                    fontWeight: 800,
+                    whiteSpace: 'nowrap',
+                    cursor: 'pointer',
+                    boxShadow: isSel ? '0 4px 10px rgba(249,115,22,0.25)' : 'none',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+          <button style={arrowBtnStyle} onClick={() => catScrollRef.current?.scrollBy({ left: 120, behavior: 'smooth' })}>▶</button>
         </div>
 
-        {/* Category Selector Pills */}
-        <div style={{
-          display: 'flex',
-          overflowX: 'auto',
-          gap: '8px',
-          padding: '5px 0 15px',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none'
-        }} className="hide-scrollbar">
-          {categories.map((cat, i) => {
-            const isSelected = activeCategory === cat;
-            return (
-              <button
-                key={i}
-                onClick={() => setActiveCategory(cat)}
-                style={{
-                  background: isSelected ? '#f97316' : 'rgba(255,255,255,0.05)',
-                  border: isSelected ? 'none' : '1px solid rgba(255,255,255,0.1)',
-                  color: isSelected ? 'white' : '#94a3b8',
-                  padding: '8px 16px',
-                  borderRadius: '100px',
-                  fontSize: '13px',
-                  fontWeight: 800,
-                  whiteSpace: 'nowrap',
-                  cursor: 'pointer',
-                  boxShadow: isSelected ? '0 4px 12px rgba(249, 115, 22, 0.2)' : 'none',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {cat}
-              </button>
-            );
-          })}
-        </div>
+        {/* ── 메뉴 가로 스크롤바 ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 0 0' }}>
+          <button style={arrowBtnStyle} onClick={() => menuScrollRef.current?.scrollBy({ left: -155, behavior: 'smooth' })}>◀</button>
+          <div
+            ref={menuScrollRef}
+            style={{ flex: 1, display: 'flex', gap: '10px', overflowX: 'auto', scrollbarWidth: 'none', padding: '4px 2px 100px' }}
+          >
+            {filteredMenus.map((item, idx) => {
+              const cartItem = cart.find(c => c.name === item.name);
+              return (
+                <div
+                  key={idx}
+                  onClick={() => { if (!cartItem) addToCart(item); }}
+                  style={{
+                    flexShrink: 0,
+                    width: '135px',
+                    background: '#ffffff',
+                    borderRadius: '14px',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.09)',
+                    overflow: 'hidden',
+                    cursor: cartItem ? 'default' : 'pointer',
+                    border: cartItem ? '2px solid #f97316' : '1.5px solid #e2e8f0',
+                    transition: 'border 0.2s, box-shadow 0.2s',
+                    userSelect: 'none',
+                    WebkitUserSelect: 'none',
+                  }}
+                >
+                  {/* 사진 */}
+                  <div style={{ position: 'relative', width: '100%', height: '105px' }}>
+                    <img
+                      src={item.icon}
+                      alt={item.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=400&h=400'; }}
+                    />
+                    <span style={{ position: 'absolute', top: '5px', left: '5px', background: 'rgba(0,0,0,0.5)', color: 'white', padding: '1px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: 700 }}>{item.category}</span>
+                  </div>
 
-        <div className="menu-grid-v2">
-          {(menus || []).filter(m => activeCategory === '전체' || m.category === activeCategory).map((item, idx) => {
-            const cartItem = cart.find(c => c.name === item.name);
-            return (
-              <div key={idx} className="menu-card-v2" onClick={() => addToCart(item)}>
-                <div className="menu-image-container">
-                  <img src={item.icon} alt={item.name} onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=400&h=400'; }} />
-                  <span className="menu-category-tag">{item.category}</span>
-                  {cartItem && (
-                    <div className="menu-qty-bar" onClick={e => e.stopPropagation()}>
-                      <button className="menu-qty-btn" onClick={() => removeFromCart(item.name)}>−</button>
-                      <span className="menu-qty-count">{cartItem.qty}</span>
-                      <button className="menu-qty-btn menu-qty-btn-plus" onClick={() => addToCart(item)}>+</button>
+                  {/* ─ 수량 조절 바 (사진 아래) ─ */}
+                  <div
+                    onClick={e => e.stopPropagation()}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      background: cartItem ? 'rgba(249,115,22,0.07)' : '#f8fafc',
+                      borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0',
+                      padding: '5px 8px',
+                    }}
+                  >
+                    <button
+                      onClick={() => removeFromCart(item.name)}
+                      style={{
+                        width: '22px', height: '22px', border: 'none',
+                        background: cartItem ? 'rgba(239,68,68,0.12)' : 'transparent',
+                        color: cartItem ? '#ef4444' : '#cbd5e1',
+                        borderRadius: '50%', fontSize: '15px', fontWeight: 900,
+                        cursor: cartItem ? 'pointer' : 'default',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: 0, lineHeight: 1,
+                      }}
+                    >−</button>
+                    <span style={{ fontSize: '13px', fontWeight: 900, color: cartItem ? '#f97316' : '#94a3b8', minWidth: '20px', textAlign: 'center' }}>
+                      {cartItem?.qty ?? 0}
+                    </span>
+                    <button
+                      onClick={() => addToCart(item)}
+                      style={{
+                        width: '22px', height: '22px', border: 'none',
+                        background: 'rgba(249,115,22,0.15)', color: '#f97316',
+                        borderRadius: '50%', fontSize: '15px', fontWeight: 900,
+                        cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: 0, lineHeight: 1,
+                      }}
+                    >+</button>
+                  </div>
+
+                  {/* 이름 & 가격 */}
+                  <div style={{ padding: '7px 8px 10px' }}>
+                    <div style={{ fontSize: '11.5px', fontWeight: 800, color: '#0f172a', lineHeight: 1.3, marginBottom: '3px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {item.name}
                     </div>
-                  )}
+                    <div style={{ fontSize: '12.5px', fontWeight: 900, color: '#f59e0b' }}>
+                      {item.price.toLocaleString()}원
+                    </div>
+                  </div>
                 </div>
-                <div className="menu-info">
-                  <div className="menu-name">{item.name}</div>
-                  <div className="menu-desc">{item.description}</div>
-                  <div className="menu-price">{item.price.toLocaleString()}원</div>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+          <button style={arrowBtnStyle} onClick={() => menuScrollRef.current?.scrollBy({ left: 155, behavior: 'smooth' })}>▶</button>
         </div>
-
       </>
     );
   };
