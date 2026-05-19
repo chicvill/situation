@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import type { BundleData } from '../types';
 import { API_BASE } from '../config';
 import { subscribeTopic } from '../services/mqttClient';
@@ -7,58 +7,71 @@ import { useStoreFilter } from '../hooks/useStoreFilter';
 export const KitchenDisplay: React.FC = () => {
     const { storeId } = useStoreFilter();
     const [bundles, setBundles] = useState<BundleData[]>([]);
+    const prevOrderCountRef = useRef(0);
 
-    const fetchKitchenOrders = async () => {
+    const playDing = useCallback(() => {
         try {
-            const apiUrl = API_BASE;
-            const res = await fetch(`${apiUrl}/api/kitchen/orders?store_id=${storeId || "Total"}`);
+            const audio = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2014/09/Ding-dong.mp3');
+            audio.play().catch(() => {});
+        } catch {}
+    }, []);
+
+    const fetchKitchenOrders = useCallback(async () => {
+        try {
+            const res = await fetch(`${API_BASE}/api/kitchen/orders?store_id=${storeId || "Total"}`);
             const data = await res.json();
             if (Array.isArray(data)) {
+                if (data.length > prevOrderCountRef.current) {
+                    playDing();
+                }
+                prevOrderCountRef.current = data.length;
                 setBundles(data);
             } else {
+                prevOrderCountRef.current = 0;
                 setBundles([]);
             }
         } catch (e) {
             console.error('Kitchen Fetch Error:', e);
         }
-    };
+    }, [storeId, playDing]);
 
     useEffect(() => {
         fetchKitchenOrders();
         const refreshTypes = ['NEW_ORDER', 'STATUS_UPDATE', 'PAYMENT_CONFIRMED', 'STAFF_CALL', 'PARKING_APPLIED', 'WAITING_REGISTERED'];
-        
-        // 매장별 토픽 또는 전체 브로드캐스트 구독
-        const topic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : `store/+/kitchen`;
-        
+
         const messageHandler = (data: any) => {
             if (refreshTypes.includes(data.type)) {
                 fetchKitchenOrders();
             }
         };
 
+        const topic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : 'store/broadcast/kitchen';
         const unsubscribe1 = subscribeTopic(topic, messageHandler);
-        const unsubscribe2 = (storeId && storeId !== 'Total') ? subscribeTopic('store/broadcast/kitchen', messageHandler) : () => {};
+        const unsubscribe2 = subscribeTopic('situation/kitchen', messageHandler);
+
+        // 5초 폴링 (MQTT 미연결 환경 보완)
+        const interval = setInterval(fetchKitchenOrders, 5000);
 
         return () => {
             unsubscribe1();
             unsubscribe2();
+            clearInterval(interval);
         };
-    }, [storeId]);
+    }, [storeId, fetchKitchenOrders]);
 
-    const markAsDone = async (orderId: string) => {
+    const markAsDone = useCallback(async (orderId: string) => {
         try {
-            const apiUrl = API_BASE;
-            const res = await fetch(`${apiUrl}/api/order/status`, {
+            const res = await fetch(`${API_BASE}/api/order/status`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order_id: orderId, status: 'ready' }) // served 대신 ready 사용
+                body: JSON.stringify({ order_id: orderId, status: 'ready' })
             });
             if (!res.ok) throw new Error('Update failed');
-            fetchKitchenOrders(); 
+            fetchKitchenOrders();
         } catch (e) {
             console.error('Mark Done Error:', e);
         }
-    };
+    }, [fetchKitchenOrders]);
 
     // 주문을 테이블(세션)별로 그룹화
     const groupedOrders = useMemo(() => {

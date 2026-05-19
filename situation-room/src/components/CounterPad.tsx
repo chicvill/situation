@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { PaymentModal } from './PaymentModal';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 import { subscribeTopic } from '../services/mqttClient';
@@ -26,6 +26,8 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const [seatRequests, setSeatRequests] = useState<{ table_id: string; timestamp: string }[]>([]);
     const [vipPayerInfo, setVipPayerInfo] = useState<{ phone: string; topPercent: number } | null>(null);
     const [vipFlashVisible, setVipFlashVisible] = useState(false);
+    const prevOrderCountRef = useRef(0);
+    const prevCallCountRef = useRef(0);
 
     const playDingDong = () => {
         try {
@@ -56,6 +58,15 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             const res = await fetch(`${apiUrl}/api/counter/sessions?store_id=${storeId || "Total"}`);
             const data = await res.json();
             if (Array.isArray(data)) {
+                const totalOrders = data.reduce((sum: number, s: any) =>
+                    sum + (s.orders || []).filter((o: any) => o.status !== 'cancelled').length, 0);
+                const pendingCalls = data.reduce((sum: number, s: any) =>
+                    sum + (s.calls || []).filter((c: any) => c.status === 'pending').length, 0);
+                if (totalOrders > prevOrderCountRef.current || pendingCalls > prevCallCountRef.current) {
+                    playDingDong();
+                }
+                prevOrderCountRef.current = totalOrders;
+                prevCallCountRef.current = pendingCalls;
                 setSessions(data);
             } else {
                 setSessions([]);
@@ -64,7 +75,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             console.error('Counter Fetch Error:', e);
             setSessions([]);
         }
-    }, [storeId]); 
+    }, [storeId]);
 
     useEffect(() => {
         // 1. 초기 로드
