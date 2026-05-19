@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { KitchenDisplay } from './components/KitchenDisplay';
 import { API_BASE, TOSS_CLIENT_KEY } from './config';
@@ -51,7 +51,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<MainTab>(() => {
     return (localStorage.getItem('situation_active_tab') as MainTab) || 'guide';
   });
-  const [tabHistory, setTabHistory] = useState<MainTab[]>([]);
+  const tabHistoryRef = useRef<MainTab[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [recognizedText, setRecognizedText] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -249,9 +249,9 @@ function App() {
       }
 
       // 탭 히스토리가 있으면 이전 탭으로 복귀
-      if (tabHistory.length > 0 && !isCustomerMode) {
-        const prevTab = tabHistory[tabHistory.length - 1];
-        setTabHistory(prev => prev.slice(0, -1));
+      if (tabHistoryRef.current.length > 0 && !isCustomerMode) {
+        const prevTab = tabHistoryRef.current[tabHistoryRef.current.length - 1];
+        tabHistoryRef.current = tabHistoryRef.current.slice(0, -1);
         setActiveTab(prevTab);
         return;
       }
@@ -269,7 +269,7 @@ function App() {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [isMenuOpen, receiptData, isListening, activeTab, isCustomerMode, tabHistory]);
+  }, [isMenuOpen, receiptData, isListening, activeTab, isCustomerMode]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -363,7 +363,7 @@ function App() {
 
 
   const navigateTo = (tab: MainTab) => {
-    setTabHistory(prev => [...prev, activeTab]);
+    tabHistoryRef.current = [...tabHistoryRef.current, activeTab];
     setActiveTab(tab);
     setIsMenuOpen(false);
     resetFlash(tab);
