@@ -126,18 +126,10 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         fetchSessions();
     }, [bundles, fetchSessions]);
 
-    // 좌석 요청 3초 폴링 (MQTT 보완)
+    // 초기 좌석 요청 로드 (이후 업데이트는 MQTT로)
     useEffect(() => {
         fetchSeatRequests();
-        const interval = setInterval(fetchSeatRequests, 3000);
-        return () => clearInterval(interval);
     }, [fetchSeatRequests]);
-
-    // 주문·호출·주차 5초 폴링 (MQTT 미연결 환경 보완)
-    useEffect(() => {
-        const interval = setInterval(fetchSessions, 5000);
-        return () => clearInterval(interval);
-    }, [fetchSessions]);
 
 
 

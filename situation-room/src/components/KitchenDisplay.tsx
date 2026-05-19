@@ -48,12 +48,8 @@ export const KitchenDisplay: React.FC = () => {
         const topic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : 'store/+/kitchen';
         const unsubscribe1 = subscribeTopic(topic, messageHandler);
 
-        // 5초 폴링 (MQTT 미연결 환경 보완)
-        const interval = setInterval(fetchKitchenOrders, 5000);
-
         return () => {
             unsubscribe1();
-            clearInterval(interval);
         };
     }, [storeId, fetchKitchenOrders]);
 

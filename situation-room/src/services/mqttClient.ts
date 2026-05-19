@@ -33,11 +33,17 @@ function mqttTopicMatch(pattern: string, topic: string): boolean {
 }
 
 function buildClient(): MqttClient {
-    const client = mqtt.connect(MQTT_WS_BASE, {
+    const opts: Record<string, unknown> = {
         reconnectPeriod: 5000,
         connectTimeout: 10000,
         clientId: `situation-room-${Math.random().toString(16).slice(2, 8)}`,
-    });
+    };
+    const mqttUser = import.meta.env.VITE_MQTT_USERNAME as string | undefined;
+    const mqttPass = import.meta.env.VITE_MQTT_PASSWORD as string | undefined;
+    if (mqttUser) opts.username = mqttUser;
+    if (mqttPass) opts.password = mqttPass;
+
+    const client = mqtt.connect(MQTT_WS_BASE, opts as any);
 
     client.on('connect', () => {
         console.log(`[MQTT] 브로커 연결 성공: ${MQTT_WS_BASE}`);
