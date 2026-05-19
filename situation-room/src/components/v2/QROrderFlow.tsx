@@ -255,13 +255,14 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   useEffect(() => {
     const unsub = subscribeTopic(`situation/table/${tableId}`, (msg: any) => {
       switch (msg.type) {
-        case 'SESSION_OPENED':
-          joinSession().then((result) => {
-            if (result === 'active') {
-              addAiMsg('좌석 승인이 완료되었습니다! 원하시는 메뉴를 선택해 주세요. 🛒');
-            }
-          });
+        case 'SESSION_OPENED': {
+          // 카운터가 세션을 열었음 → MQTT 메시지를 신뢰하고 바로 active로 전환
+          const sid = msg.session?.session_id || msg.session_id || sessionIdRef.current || '';
+          activateSession(sid, []);
+          refreshOrders();
+          addAiMsg('좌석 승인이 완료되었습니다! 원하시는 메뉴를 선택해 주세요. 🛒');
           break;
+        }
         case 'SESSION_CLOSED':
           sessionIdRef.current = '';
           phaseRef.current = 'greeting'; setPhase('greeting');
