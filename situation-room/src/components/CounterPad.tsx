@@ -288,7 +288,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         : -1;
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-main)', padding: '10px', gap: '8px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: 'var(--bg-main)', padding: '10px', gap: '8px', boxSizing: 'border-box' }}>
 
             {/* ── 좌석 승인 요청 배너 ── */}
             {seatRequests.length > 0 && (
@@ -497,21 +497,20 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                     )}
             </div>
 
-            {/* ── 하단: 테이블 그리드 ── */}
-            <div style={{ background: 'var(--surface)', borderRadius: '10px', border: '1px solid var(--border)', padding: '8px 12px', flexShrink: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>테이블 현황</span>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {/* ── 하단 바: 테이블 그리드 ── */}
+            <div style={{ background: 'var(--surface)', borderTop: '2px solid var(--border)', borderRadius: '12px', padding: '10px 12px 8px', flexShrink: 0, boxShadow: '0 -2px 8px rgba(0,0,0,0.04)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>테이블 현황 <span style={{ color: 'var(--accent)' }}>{sessions.length}석 활성</span></span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                         {STAGE_PIPELINE.filter(s => s.key !== 'initial').map(s => (
                             <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                                 <div style={{ width: '7px', height: '7px', borderRadius: '2px', background: s.bg, border: `1px solid ${s.color}66`, flexShrink: 0 }} />
                                 <span style={{ fontSize: '0.58rem', color: 'var(--text-muted)' }}>{s.label}</span>
                             </div>
                         ))}
-                        <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: '700', marginLeft: '4px' }}>활성 {sessions.length}석</span>
                     </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '4px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '5px' }}>
                     {tables.map(num => {
                         const tableId = `T${String(num).padStart(2, '0')}`;
                         const { label, bg, color, hint, stage } = getTableStage(tableId);
@@ -522,8 +521,8 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                 key={num}
                                 onClick={() => handleTableTap(tableId)}
                                 style={{
-                                    padding: '6px 2px 5px',
-                                    borderRadius: '7px',
+                                    padding: '8px 4px 7px',
+                                    borderRadius: '8px',
                                     border: isSelected ? `2px solid ${color}` : `1.5px solid ${stage === 'initial' ? '#e5e7eb' : color + '55'}`,
                                     background: bg,
                                     color,
@@ -535,9 +534,9 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                     animation: hasAlert ? 'pulse-mild 2s infinite' : 'none',
                                 }}
                             >
-                                <div style={{ fontSize: '0.55rem', fontWeight: '600', opacity: 0.65, marginBottom: '1px' }}>{tableId}</div>
-                                <div style={{ lineHeight: 1.2, fontSize: '0.6rem' }}>{label}</div>
-                                {hint && <div style={{ fontSize: '0.45rem', opacity: 0.5, marginTop: '1px' }}>{hint}</div>}
+                                <div style={{ fontSize: '0.6rem', fontWeight: '600', opacity: 0.6, marginBottom: '2px' }}>{tableId}</div>
+                                <div style={{ lineHeight: 1.2, fontSize: '0.68rem' }}>{label}</div>
+                                {hint && <div style={{ fontSize: '0.5rem', opacity: 0.5, marginTop: '2px' }}>{hint}</div>}
                             </button>
                         );
                     })}
