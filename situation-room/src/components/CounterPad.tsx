@@ -29,8 +29,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const prevOrderCountRef = useRef(0);
     const prevCallCountRef = useRef(0);
 
-    // 테이블 수동 단계 오버라이드: 'served' | 'ending'
-    const [tableOverrides, setTableOverrides] = useState<Record<string, 'served' | 'ending'>>({});
     // 마지막으로 터치한 테이블 (상세 패널 표시용)
     const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
     // 더블탭 감지
@@ -313,27 +311,14 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         }
     };
 
-    // 세션 종료 시 오버라이드 자동 정리
-    useEffect(() => {
-        setTableOverrides(prev => {
-            const next = { ...prev };
-            let changed = false;
-            for (const tid of Object.keys(next)) {
-                if (!sessions.some(s => s.table_id === tid)) { delete next[tid]; changed = true; }
-            }
-            return changed ? next : prev;
-        });
-    }, [sessions]);
-
-    // 테이블 상태 계산
+    // 테이블 상태 계산 — session.status('serving'|'closing')를 서버에서 직접 읽음
     const getTableStage = useCallback((tableId: string): { label: string; bg: string; color: string; stage: string; hint?: string } => {
-        const override = tableOverrides[tableId];
         const session = sessions.find(s => s.table_id === tableId);
         const isSeatReq = seatRequests.some(r => r.table_id === tableId);
 
-        if (override === 'ending') return { label: '세션종료', bg: '#e2e8f0', color: '#475569', stage: 'ending', hint: '더블탭→초기화' };
-        if (override === 'served') {
-            const orders = (session?.orders || []).filter((o: any) => o.status !== 'cancelled');
+        if (session?.status === 'closing') return { label: '세션종료', bg: '#e2e8f0', color: '#475569', stage: 'closing', hint: '더블탭→초기화' };
+        if (session?.status === 'serving') {
+            const orders = (session.orders || []).filter((o: any) => o.status !== 'cancelled');
             const total = orders.reduce((s: number, o: any) => s + (o.total_price ?? o.total ?? 0), 0);
             const paid = orders.filter((o: any) => o.payment_status === 'paid' || o.payment_status === 'prepaid').reduce((s: number, o: any) => s + (o.total_price ?? o.total ?? 0), 0);
             if (total > 0 && paid < total) return { label: '결제대기', bg: '#fee2e2', color: '#b91c1c', stage: 'payment_pending', hint: '더블탭→종료' };
@@ -348,7 +333,20 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             return { label: '주문접수', bg: '#fed7aa', color: '#c2410c', stage: 'ordered' };
         }
         return { label: tableId, bg: '#ffffff', color: '#9ca3af', stage: 'initial' };
-    }, [tableOverrides, sessions, seatRequests]);
+    }, [sessions, seatRequests]);
+
+    const patchSessionStatus = useCallback(async (tableId: string, status: string) => {
+        const s = sessions.find(s => s.table_id === tableId);
+        if (!s) return;
+        try {
+            await fetch(`${getApiUrl()}/api/session/status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: s.session_id, status })
+            });
+            fetchSessions();
+        } catch {}
+    }, [sessions, fetchSessions]);
 
     // 테이블 버튼 탭 처리
     const handleTableTap = useCallback((tableId: string) => {
@@ -359,25 +357,23 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
 
         if (!isDouble) return;
 
-        // 더블탭: 단계 진행
         const { stage } = getTableStage(tableId);
         setLastTapInfo(null);
         if (stage === 'cooking_done') {
-            setTableOverrides(prev => ({ ...prev, [tableId]: 'served' }));
+            patchSessionStatus(tableId, 'serving');
         } else if (stage === 'payment_pending' || stage === 'payment_done') {
-            setTableOverrides(prev => ({ ...prev, [tableId]: 'ending' }));
-        } else if (stage === 'ending') {
+            patchSessionStatus(tableId, 'closing');
+        } else if (stage === 'closing') {
             const s = sessions.find(s => s.table_id === tableId);
             if (s) {
                 fetch(`${getApiUrl()}/api/session/close`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: s.session_id, force: true }) })
                     .then(() => fetchSessions()).catch(() => {});
             }
-            setTableOverrides(prev => { const n = { ...prev }; delete n[tableId]; return n; });
             setSelectedTableId(null);
         } else if (stage === 'waiting') {
             handleOpenSession(tableId);
         }
-    }, [lastTapInfo, getTableStage, sessions, handleOpenSession, fetchSessions]);
+    }, [lastTapInfo, getTableStage, patchSessionStatus, sessions, handleOpenSession, fetchSessions]);
 
     const tables = Array.from({ length: 12 }, (_, i) => i + 1);
 
