@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import { KitchenDisplay } from './components/KitchenDisplay';
 import { API_BASE, TOSS_CLIENT_KEY } from './config';
@@ -51,7 +51,6 @@ function App() {
   const [activeTab, setActiveTab] = useState<MainTab>(() => {
     return (localStorage.getItem('situation_active_tab') as MainTab) || 'guide';
   });
-  const tabHistoryRef = useRef<MainTab[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [recognizedText, setRecognizedText] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -231,45 +230,26 @@ function App() {
     }
   }, []);
 
+  // 앱 마운트 시 히스토리 항목 확보 (back 버튼이 앱을 이탈하지 않도록)
+  useEffect(() => {
+    window.history.pushState({ type: 'app' }, '');
+  }, []);
+
   // --- Global Back Button Handling ---
   useEffect(() => {
     const handlePopState = () => {
-      // 오버레이가 열려있다면 닫음
-      if (isMenuOpen) {
-        setIsMenuOpen(false);
-        return;
-      }
-      if (receiptData) {
-        setReceiptData(null);
-        return;
-      }
-      if (isListening) {
-        setIsListening(false);
-        return;
-      }
+      // 소모된 히스토리 항목을 즉시 보충하여 다음 back도 앱 안에서 처리
+      window.history.pushState({ type: 'app' }, '');
 
-      // 탭 히스토리가 있으면 이전 탭으로 복귀
-      if (tabHistoryRef.current.length > 0 && !isCustomerMode) {
-        const prevTab = tabHistoryRef.current[tabHistoryRef.current.length - 1];
-        tabHistoryRef.current = tabHistoryRef.current.slice(0, -1);
-        setActiveTab(prevTab);
-        return;
-      }
-
-      // 폴백: guide가 아니면 guide로
-      if (activeTab !== 'guide' && !isCustomerMode) {
-        setActiveTab('guide');
-      }
+      if (isMenuOpen) { setIsMenuOpen(false); return; }
+      if (receiptData) { setReceiptData(null); return; }
+      if (isListening) { setIsListening(false); return; }
+      if (!isCustomerMode) { setActiveTab('counter'); }
     };
-
-    // 오버레이가 열릴 때 히스토리 추가
-    if (isMenuOpen || receiptData || isListening) {
-      window.history.pushState({ overlay: true }, '');
-    }
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [isMenuOpen, receiptData, isListening, activeTab, isCustomerMode]);
+  }, [isMenuOpen, receiptData, isListening, isCustomerMode]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -363,11 +343,9 @@ function App() {
 
 
   const navigateTo = (tab: MainTab) => {
-    tabHistoryRef.current = [...tabHistoryRef.current, activeTab];
     setActiveTab(tab);
     setIsMenuOpen(false);
     resetFlash(tab);
-    window.history.pushState({ type: 'tab' }, '');
   };
 
   const navItems = [
