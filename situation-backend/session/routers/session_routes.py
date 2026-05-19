@@ -169,6 +169,29 @@ async def get_seat_requests(store_id: str = "Total"):
     return manager.get_seat_requests(store_id)
 
 
+@router.post("/api/session/status")
+async def update_session_stage(data: Dict):
+    """테이블 단계 수동 전환: serving | closing (카운터 더블탭용)"""
+    session_id = data.get("session_id")
+    status = data.get("status")
+    allowed = {'serving', 'closing', 'active'}
+    if not session_id or status not in allowed:
+        raise HTTPException(status_code=400, detail=f"session_id and status ({allowed}) required")
+
+    from ..database import update_session_status
+    success = update_session_status(session_id, status)
+    if not success:
+        raise HTTPException(status_code=500, detail="DB update failed")
+
+    session = get_session_by_id(session_id)
+    table_id = session.get('table_id') if session else None
+    payload = {"type": "STATUS_UPDATE", "session_id": session_id, "status": status, "table_id": table_id}
+    await manager.broadcast_to_kitchen(payload)
+    if table_id:
+        await manager.send_to_table(table_id, payload)
+    return {"status": "success"}
+
+
 @router.post("/api/session/reset")
 async def reset_session(data: Dict):
     """세션 강제 종료 및 모든 주문 취소 (장난 주문/중도 퇴장 대응)"""
