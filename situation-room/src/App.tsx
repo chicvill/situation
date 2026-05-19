@@ -21,7 +21,6 @@ import { CallManager } from './components/CallManager';
 import { StoreManualEditor } from './components/StoreManualEditor';
 import { ParkingManager } from './components/ParkingManager';
 import { PointsManager } from './components/PointsManager';
-import MobileOrderV2 from './components/v2/MobileOrderV2';
 import QROrderFlow from './components/v2/QROrderFlow';
 import { AdminStoreManager } from './components/AdminStoreManager';
 import { NotificationToast } from './components/NotificationToast';

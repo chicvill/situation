@@ -137,7 +137,6 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   const [phase, setPhase] = useState<FlowPhase>('loading');
   const [activeCategory, setActiveCategory] = useState('전체');
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [sessionId, setSessionId] = useState('');
   const [aiMessages, setAiMessages] = useState<AiMsg[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [allOrders, setAllOrders] = useState<Order[]>([]);  // 전체 주문 누적
@@ -210,7 +209,6 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
 
   const activateSession = useCallback((sid: string, orders: Order[] = []) => {
     sessionIdRef.current = sid;
-    setSessionId(sid);
     setAllOrders(orders);
     phaseRef.current = 'active';
     setPhase('active');
@@ -250,7 +248,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           joinSession();
           break;
         case 'SESSION_CLOSED':
-          sessionIdRef.current = ''; setSessionId('');
+          sessionIdRef.current = '';
           phaseRef.current = 'greeting'; setPhase('greeting');
           setCart([]); setAllOrders([]);
           addAiMsg('세션이 종료되었습니다. 이용해 주셔서 감사합니다! 😊', true);
