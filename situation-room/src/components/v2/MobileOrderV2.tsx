@@ -1340,7 +1340,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
               const cartItem = cart.find(c => c.name === item.name);
               return (
                 <div key={idx} onClick={() => { if (!cartItem) addToCart(item); }} style={{
-                  flexShrink: 0, width: '88px',
+                  flexShrink: 0, width: '132px',
                   background: '#ffffff', borderRadius: '10px', overflow: 'hidden',
                   cursor: cartItem ? 'default' : 'pointer',
                   border: cartItem ? '2px solid #f97316' : '1.5px solid #e2e8f0',
@@ -1348,7 +1348,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
                   userSelect: 'none', WebkitUserSelect: 'none',
                 }}>
                   {/* 사진 */}
-                  <div style={{ width: '100%', height: '66px' }}>
+                  <div style={{ width: '100%', height: '99px' }}>
                     <img src={item.icon} alt={item.name}
                       style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                       onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=400&h=400'; }}

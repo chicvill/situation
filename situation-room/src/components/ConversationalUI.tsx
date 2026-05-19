@@ -572,55 +572,6 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
 
     return (
         <div className="conversational-ui-container full-width-mode">
-            {/* Premium dark header */}
-            <div className="chat-header-banner" style={{
-                background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-                padding: '13px 18px',
-                borderBottom: 'none',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.25)'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
-                    <div style={{
-                        width: '38px', height: '38px',
-                        borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '18px',
-                        boxShadow: '0 2px 8px rgba(37,99,235,0.45)',
-                        flexShrink: 0
-                    }}>☕</div>
-                    <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#f1f5f9' }}>{storeName} AI</div>
-                        <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '5px', marginTop: '1px' }}>
-                            <span style={{
-                                width: '6px', height: '6px', borderRadius: '50%',
-                                background: '#10b981', display: 'inline-block',
-                                animation: 'pulseGreen 1.5s infinite'
-                            }}></span>
-                            Table {tableNo} · 온라인
-                        </div>
-                    </div>
-                </div>
-                <button
-                    onClick={() => onNavigate && onNavigate('orderV2')}
-                    style={{
-                        padding: '6px 14px',
-                        background: 'rgba(255,255,255,0.07)',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        borderRadius: '20px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        color: '#94a3b8',
-                        cursor: 'pointer'
-                    }}
-                >
-                    일반 보기
-                </button>
-            </div>
-
             {/* Chat Messages Log */}
             <div className="chat-content" ref={scrollRef} style={{ background: '#eef1f5', padding: '16px 14px 16px' }}>
                 {messages.map((msg, index) => (
@@ -818,7 +769,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 <div className="suggestions-scroll" style={{ display: 'flex', gap: '7px', overflowX: 'auto', scrollbarWidth: 'none' }}>
                     {orderStep === 'welcome' && (
                         <>
-                            <button onClick={startOrderingFlow} className="suggestion-chip" style={{ background: '#2563eb', color: '#fff', border: 'none', fontWeight: 600, padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                            <button onClick={() => onNavigate && onNavigate('orderV2')} className="suggestion-chip" style={{ background: '#2563eb', color: '#fff', border: 'none', fontWeight: 600, padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                 📋 주문하기
                             </button>
                             <button onClick={() => triggerStaffCallFlow('직원호출')} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', fontWeight: 600, padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
@@ -901,89 +852,36 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 <div ref={messagesEndRef} style={{ height: 0 }} />
             </div>
 
-            {/* Chat Input Area - Hidden during specific steps */}
-            {!['point_guide', 'payment_method_selection', 'cash_invoice_guide', 'paying'].includes(orderStep) && (
-            <div className="chat-input-area" style={{
-                padding: '10px 14px calc(10px + env(safe-area-inset-bottom))',
-                background: 'white',
+            {/* Standalone mic button */}
+            <div style={{
+                display: 'flex', justifyContent: 'center', alignItems: 'center',
+                padding: '8px 14px calc(8px + env(safe-area-inset-bottom))',
+                background: '#ffffff',
                 borderTop: '1px solid #e4e8ed',
-                display: 'flex',
-                gap: '8px',
-                position: 'sticky',
-                bottom: 0,
-                zIndex: 1000,
-                boxShadow: '0 -2px 10px rgba(0,0,0,0.04)',
-                alignItems: 'center'
+                position: 'sticky', bottom: 0, zIndex: 1000,
+                boxShadow: '0 -2px 10px rgba(0,0,0,0.04)'
             }}>
-                {/* Voice Microphone Toggle Button */}
-                <button 
+                <button
                     onClick={toggleVoiceOrdering}
                     style={{
-                        width: '42px',
-                        height: '42px',
+                        width: '48px', height: '48px',
                         borderRadius: '50%',
                         background: isListening ? '#ef4444' : '#2563eb',
                         border: 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '18px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '22px',
                         cursor: 'pointer',
-                        boxShadow: isListening ? '0 0 10px rgba(239,68,68,0.4)' : '0 2px 8px rgba(37,99,235,0.3)',
+                        boxShadow: isListening ? '0 0 14px rgba(239,68,68,0.5)' : '0 2px 10px rgba(37,99,235,0.35)',
                         transition: 'all 0.3s'
                     }}
                 >
                     {isListening ? '🔊' : '🎙️'}
                 </button>
-                <input 
-                    type="text" 
-                    placeholder={
-                        isListening ? "말씀해 주세요..." : 
-                        orderStep === 'point_guide' ? "전화번호를 입력하세요" :
-                        orderStep === 'parking' ? "차량번호 뒤 4자리를 입력하세요" :
-                        "AI 점장에게 채팅으로 말씀하세요..."
-                    }
-                    style={{
-                        flex: 1,
-                        padding: '11px 16px',
-                        border: '1px solid #dde3ea',
-                        borderRadius: '24px',
-                        fontSize: '14px',
-                        background: '#f4f6f9',
-                        color: '#1e293b',
-                        outline: 'none'
-                    }}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                            handleSendMessage(e.currentTarget.value);
-                            e.currentTarget.value = '';
-                        }
-                    }}
-                />
-                <button 
-                    className="send-btn" 
-                    style={{
-                        padding: '10px 18px',
-                        background: '#3b82f6',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '24px',
-                        fontWeight: 700,
-                        fontSize: '13px',
-                        cursor: 'pointer'
-                    }}
-                    onClick={(e) => {
-                        const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                        if (input.value.trim()) {
-                            handleSendMessage(input.value);
-                            input.value = '';
-                        }
-                    }}
-                >
-                    전송
-                </button>
+                {isListening && (
+                    <span style={{ marginLeft: '10px', fontSize: '12px', color: '#ef4444', fontWeight: 600 }}>말씀해 주세요...</span>
+                )}
             </div>
-            )}
+
         </div>
     );
 };
