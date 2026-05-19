@@ -322,16 +322,15 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
             addAiMsg(`이전에 승인된 테이블입니다. 바로 주문하세요! 🛒`, true);
           } else if (result === 'waiting_new') {
             addAiMsg(
-              `안녕하세요! 저는 ${storeName} AI 도우미입니다. 😊 카운터에서 좌석을 확인 중입니다. 승인이 완료되면 주문을 시작할 수 있습니다. ⏳`,
-              true
+              `안녕하세요! 저는 ${storeName} AI 도우미입니다. 😊`,
+              false
             );
+            setTimeout(() => {
+              addAiMsg('카운터에서 좌석을 확인 중입니다. 승인이 완료되면 자동으로 주문 화면이 열립니다.', true);
+            }, 400);
           } else if (result === 'waiting_join') {
-            addAiMsg(
-              `합석을 요청했습니다. 카운터에서 합석 여부를 확인 중입니다. 잠시만 기다려 주세요. ⏳`,
-              true
-            );
+            addAiMsg('합석을 요청했습니다. 카운터에서 합석 여부를 확인 중입니다. 잠시만 기다려 주세요.', true);
           } else {
-            // greeting
             addAiMsg(
               `안녕하세요! 저는 ${storeName} AI 도우미입니다. 😊 위 카테고리를 눌러 메뉴를 보시고, [+] 버튼이나 🎙️ 음성 버튼으로 편하게 주문하세요!`,
               true
@@ -344,6 +343,29 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
       });
     }
   }, [menus.length, hasTableParam]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── 승인 대기 폴링: 5초마다 확인 → 승인 시 즉시 active 전환 ── */
+  useEffect(() => {
+    if (phase !== 'waiting_approval') return;
+
+    const interval = setInterval(async () => {
+      if (phaseRef.current !== 'waiting_approval') return;
+      try {
+        const res = await fetch(`${API_BASE}/api/checkin/request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tableNo, deviceId, store: storeName, store_id: storeId })
+        });
+        const data = await res.json();
+        if (data.status === 'active' && phaseRef.current === 'waiting_approval') {
+          activateSession(data.session?.session_id || '', data.orders || []);
+          addAiMsg('좌석 승인이 완료되었습니다! 원하시는 메뉴를 선택해 주세요. 🛒', true);
+        }
+      } catch (_) {}
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [phase, tableNo, deviceId, storeName, storeId, activateSession, addAiMsg]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Phase별 AI 멘트 ── */
   useEffect(() => {
