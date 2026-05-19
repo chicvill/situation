@@ -1,5 +1,5 @@
 """
-MQTT Handler — 외부 브로커(HiveMQ Cloud) 연동
+MQTT Handler — Mosquitto 브로커 연동 (plain TCP, 포트 1883)
 
 토픽 구조:
   store/{store_id}/counter          — 카운터 이벤트 (Subscribe + Publish)
@@ -10,7 +10,6 @@ MQTT Handler — 외부 브로커(HiveMQ Cloud) 연동
 
 import asyncio
 import os
-import ssl
 import json
 import uuid
 from datetime import datetime
@@ -27,7 +26,6 @@ MQTT_HOST = os.getenv("MQTT_BROKER_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_BROKER_PORT", "1883"))
 MQTT_USERNAME = os.getenv("MQTT_USERNAME") or None
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD") or None
-MQTT_TLS = os.getenv("MQTT_TLS", "false").lower() in ("true", "1", "yes")
 
 _mqtt_client: Optional[Any] = None
 
@@ -100,30 +98,20 @@ async def _handle_call_message(store_id: str, payload: dict, ws_manager):
     await ws_manager.broadcast_to_kitchen(broadcast_msg)
 
 
-def _build_tls_context() -> Optional[ssl.SSLContext]:
-    if not MQTT_TLS:
-        return None
-    ctx = ssl.create_default_context()
-    return ctx
-
-
 async def run_mqtt_client(ws_manager):
-    """MQTT 구독 루프 — HiveMQ Cloud(또는 다른 외부 브로커) 연결."""
+    """MQTT 구독 루프 — Mosquitto 브로커 연결 (plain TCP)."""
     global _mqtt_client
     if not MQTT_AVAILABLE:
         print("[MQTT] aiomqtt 미설치 - MQTT 서비스를 시작할 수 없습니다.")
         return
 
-    tls_ctx = _build_tls_context()
     conn_kwargs: dict = {"hostname": MQTT_HOST, "port": MQTT_PORT}
     if MQTT_USERNAME:
         conn_kwargs["username"] = MQTT_USERNAME
     if MQTT_PASSWORD:
         conn_kwargs["password"] = MQTT_PASSWORD
-    if tls_ctx:
-        conn_kwargs["tls_context"] = tls_ctx
 
-    print(f"[MQTT] 브로커 연결 시도: {MQTT_HOST}:{MQTT_PORT} (TLS={MQTT_TLS}, auth={'yes' if MQTT_USERNAME else 'no'})")
+    print(f"[MQTT] 브로커 연결 시도: {MQTT_HOST}:{MQTT_PORT} (auth={'yes' if MQTT_USERNAME else 'no'})")
 
     retry_count = 0
     while True:
