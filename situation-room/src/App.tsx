@@ -22,6 +22,7 @@ import { StoreManualEditor } from './components/StoreManualEditor';
 import { ParkingManager } from './components/ParkingManager';
 import { PointsManager } from './components/PointsManager';
 import MobileOrderV2 from './components/v2/MobileOrderV2';
+import QROrderFlow from './components/v2/QROrderFlow';
 import { AdminStoreManager } from './components/AdminStoreManager';
 import { NotificationToast } from './components/NotificationToast';
 import { WelcomeHub } from './components/WelcomeHub';
@@ -418,7 +419,7 @@ function App() {
       case 'orderV2': {
         const urlStoreId = new URLSearchParams(window.location.search).get('storeId');
         const effectiveStoreId = storeId || urlStoreId || '';
-        return <MobileOrderV2 bundles={bundles} storeId={effectiveStoreId} storeName={storeName} onNavigate={navigateTo as any} />;
+        return <QROrderFlow bundles={bundles} storeId={effectiveStoreId} storeName={storeName} onNavigate={navigateTo as any} />;
       }
       case 'kitchen': return <KitchenDisplay />;
       case 'counter': return <CounterPad storeId={storeId} bundles={bundles} />;
@@ -455,7 +456,7 @@ function App() {
       case 'reserve': return <ReservationManager />;
       case 'parking': return <ParkingManager storeId={storeId} onComplete={decrementParking} />;
       case 'points': return <PointsManager storeId={storeId} />;
-      default: return <MobileOrderV2 bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} />;
+      default: return <QROrderFlow bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} />;
     }
   };
 
