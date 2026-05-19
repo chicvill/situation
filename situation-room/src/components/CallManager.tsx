@@ -175,19 +175,27 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [],
 
     return (
         <div className="admin-page animate-fade-in" style={{ padding: '24px', background: 'var(--bg-main)' }}>
-            <header className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                <div>
-                    <h2 style={{ fontSize: '1.8rem', fontWeight: 800, margin: 0, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        🛎️ 실시간 직원 호출 모니터
+            <header className="page-header" style={{ marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0, color: 'var(--text-main)' }}>
+                        🛎️ 실시간 직원 호출
                     </h2>
-                    <p style={{ margin: '8px 0 0 0', color: 'var(--text-muted)' }}>각 테이블 고객이 패널 및 음성 오더로 요청한 직원 호출을 실시간으로 확인하고 관리합니다.</p>
+                    {calls.length > 0 && (
+                        <span style={{
+                            background: '#ef4444',
+                            color: 'white',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            padding: '2px 10px',
+                            borderRadius: '50px',
+                        }}>
+                            {calls.length}건 대기 중
+                        </span>
+                    )}
                 </div>
-                <div className="waiting-stats glass-panel" style={{ padding: '10px 20px', borderRadius: '12px', background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                    <div className="stat" style={{ textAlign: 'center' }}>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>대기 중 호출</label>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--accent)' }}>{calls.length}건</div>
-                    </div>
-                </div>
+                <p style={{ margin: '6px 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    고객 호출을 실시간으로 확인하고 처리합니다.
+                </p>
             </header>
 
             <div className="calls-grid" style={{
@@ -296,15 +304,12 @@ export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [],
                     <div style={{
                         gridColumn: '1 / -1',
                         textAlign: 'center',
-                        padding: '100px 20px',
-                        background: 'var(--surface)',
-                        border: '1px dashed var(--border)',
-                        borderRadius: '20px',
+                        padding: '80px 20px',
                         color: 'var(--text-muted)'
                     }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🍵</div>
-                        <h3 style={{ margin: '0 0 8px 0', fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)' }}>대기 중인 호출이 없습니다.</h3>
-                        <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.7 }}>현재 접수된 고객 요청 사항이 없습니다. 평온한 상태입니다.</p>
+                        <div style={{ fontSize: '2.8rem', marginBottom: '12px', opacity: 0.6 }}>🍵</div>
+                        <p style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--text-muted)' }}>대기 중인 호출이 없습니다</p>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', opacity: 0.6 }}>고객 호출이 접수되면 여기에 표시됩니다.</p>
                     </div>
                 )}
             </div>
