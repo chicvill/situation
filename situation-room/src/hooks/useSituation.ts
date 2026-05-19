@@ -139,18 +139,14 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             messageHandler(data);
         };
 
+        // store/{id}/kitchen + store/{id}/counter 구독 (와일드카드로 Total 모드 지원)
+        const counterTopic = (storeId && storeId !== 'Total') ? `store/${storeId}/counter` : 'store/+/counter';
         const unsubscribe1 = subscribeTopic(topic, handleMessage);
-        const unsubscribe3 = subscribeTopic('situation/kitchen', handleMessage);
-        let unsubscribe2 = () => {};
-        
-        if (storeId && storeId !== 'Total') {
-            unsubscribe2 = subscribeTopic('store/broadcast/kitchen', handleMessage);
-        }
+        const unsubscribe2 = subscribeTopic(counterTopic, handleMessage);
 
         return () => {
             unsubscribe1();
             unsubscribe2();
-            unsubscribe3();
         };
     }, [storeId, fetchInitialData]); // 필수 의존성 통합
 

@@ -86,9 +86,10 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         // 1. 초기 로드
         fetchSessions();
 
-        // 2. MQTT 구독으로 실시간 갱신
-        const topic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : `store/+/kitchen`;
-        
+        // 2. MQTT 구독 — store/{id}/counter + store/{id}/kitchen (와일드카드 지원)
+        const counterTopic = (storeId && storeId !== 'Total') ? `store/${storeId}/counter` : 'store/+/counter';
+        const kitchenTopic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : 'store/+/kitchen';
+
         const messageHandler = (data: any) => {
             if (data.type === 'SEAT_REQUEST') {
                 setSeatRequests(prev => {
@@ -112,14 +113,12 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             }
         };
 
-        const unsubscribe1 = subscribeTopic(topic, messageHandler);
-        const unsubscribe2 = subscribeTopic('situation/kitchen', messageHandler);
-        const unsubscribe3 = (storeId && storeId !== 'Total') ? subscribeTopic('store/broadcast/kitchen', messageHandler) : () => {};
+        const unsubscribe1 = subscribeTopic(counterTopic, messageHandler);
+        const unsubscribe2 = subscribeTopic(kitchenTopic, messageHandler);
 
         return () => {
             unsubscribe1();
             unsubscribe2();
-            unsubscribe3();
         };
     }, [storeId, fetchSessions]); // fetchSessions 의존성 추가
 

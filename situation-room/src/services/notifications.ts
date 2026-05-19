@@ -64,12 +64,15 @@ export function subscribeToStore(
         onEvent(data);
     };
 
-    const storeTopic = storeId && storeId !== 'Total'
+    const kitchenTopic = storeId && storeId !== 'Total'
         ? `store/${storeId}/kitchen`
         : 'store/+/kitchen';
+    const counterTopic = storeId && storeId !== 'Total'
+        ? `store/${storeId}/counter`
+        : 'store/+/counter';
 
-    const unsub1 = subscribeTopic('situation/kitchen', handle);
-    const unsub2 = subscribeTopic(storeTopic, handle);
+    const unsub1 = subscribeTopic(kitchenTopic, handle);
+    const unsub2 = subscribeTopic(counterTopic, handle);
     return () => { unsub1(); unsub2(); };
 }
 

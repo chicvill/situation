@@ -2,9 +2,15 @@
  * MQTT 싱글톤 클라이언트 — 모든 실시간 통신 통합
  * Mosquitto 브로커에 WebSocket(포트 9001)으로 연결.
  *
- * 토픽:
- *   situation/kitchen           — 주방·카운터 전체 broadcast
- *   situation/table/{table_id}  — 특정 테이블 모바일 대상 메시지
+ * 토픽 구조:
+ *   store/{store_id}/counter          — 카운터 (세션·호출·주차·결제)
+ *   store/{store_id}/kitchen          — 주방 (주문·조리 상태)
+ *   store/{store_id}/table/{table_id} — 모바일 (테이블별)
+ *   store/broadcast/{channel}         — store_id 미확정 시 전체 broadcast
+ *
+ * 와일드카드:
+ *   store/+/counter   — 모든 매장 카운터 (Total 모드)
+ *   store/+/kitchen   — 모든 매장 주방
  */
 
 import mqtt, { type MqttClient } from 'mqtt';
@@ -12,8 +18,19 @@ import { MQTT_WS_BASE } from '../config';
 
 let _client: MqttClient | null = null;
 
-// topic → handlers (레퍼런스 카운팅으로 중복 subscribe/unsubscribe 방지)
+// topic/pattern → handlers (레퍼런스 카운팅으로 중복 subscribe/unsubscribe 방지)
 const _handlers = new Map<string, Set<(data: any) => void>>();
+
+/** MQTT 와일드카드 패턴 매칭 (+: 단일 레벨, #: 다중 레벨) */
+function mqttTopicMatch(pattern: string, topic: string): boolean {
+    const pp = pattern.split('/');
+    const tp = topic.split('/');
+    if (pp[pp.length - 1] === '#') {
+        return topic.startsWith(pp.slice(0, -1).join('/'));
+    }
+    if (pp.length !== tp.length) return false;
+    return pp.every((seg, i) => seg === '+' || seg === tp[i]);
+}
 
 function buildClient(): MqttClient {
     const client = mqtt.connect(MQTT_WS_BASE, {
@@ -39,11 +56,13 @@ function buildClient(): MqttClient {
     });
 
     client.on('message', (topic, payload) => {
-        const handlers = _handlers.get(topic);
-        if (!handlers) return;
         try {
             const data = JSON.parse(payload.toString());
-            handlers.forEach(h => h(data));
+            _handlers.forEach((handlers, pattern) => {
+                if (mqttTopicMatch(pattern, topic)) {
+                    handlers.forEach(h => h(data));
+                }
+            });
         } catch (e) {
             console.error('[MQTT] 메시지 파싱 오류:', e);
         }

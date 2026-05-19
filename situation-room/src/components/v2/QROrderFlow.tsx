@@ -253,7 +253,9 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
      MQTT subscriptions + 초기화
   ───────────────────────────────────────────── */
   useEffect(() => {
-    const unsub = subscribeTopic(`situation/table/${tableId}`, (msg: any) => {
+    // 신규 토픽(store-scoped) + 레거시 토픽(situation/table) 동시 구독 — 서버 전환 과도기 대응
+    const tableTopicNew = (storeId && storeId !== 'Total') ? `store/${storeId}/table/${tableId}` : `situation/table/${tableId}`;
+    const handleTableMsg = (msg: any) => {
       switch (msg.type) {
         case 'SESSION_OPENED': {
           // 카운터가 세션을 열었음 → MQTT 메시지를 신뢰하고 바로 active로 전환
@@ -300,7 +302,11 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         default:
           refreshOrders();
       }
-    });
+    };
+    const unsub = subscribeTopic(tableTopicNew, handleTableMsg);
+    const unsubLegacy = tableTopicNew !== `situation/table/${tableId}`
+      ? subscribeTopic(`situation/table/${tableId}`, handleTableMsg)
+      : () => {};
 
     const callUnsub = subscribeToStore(storeId, (data: any) => {
       if (callOverlay && data.type === 'CALL_STATUS_UPDATED' && data.call_id === callOverlay.callId) {
@@ -309,7 +315,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
       }
     });
 
-    return () => { unsub(); callUnsub(); };
+    return () => { unsub(); unsubLegacy(); callUnsub(); };
   }, [tableId, storeId, deviceId, joinSession, activateSession, refreshOrders, addAiMsg, orderRound, callOverlay]);
 
   /* ── 최초 진입 ── */
