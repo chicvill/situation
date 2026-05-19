@@ -110,6 +110,7 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
     const [showTermsDetail, setShowTermsDetail] = useState(false);
 
     const chatEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
 
     // 메뉴판 사진 스캔 훅
     const {
@@ -190,7 +191,9 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
 
     // Auto scroll to bottom
     useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
     }, [messages, isTyping]);
 
     // Handle initial greeting on starting chat
@@ -1023,7 +1026,7 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                         </div>
 
                         {/* Messages Area */}
-                        <div className="chat-messages-container">
+                        <div className="chat-messages-container" ref={messagesContainerRef}>
                             {messages.map((msg) => (
                                 <div key={msg.id} className={`chat-bubble-wrapper ${msg.sender}`}>
                                     {msg.sender === 'ai' && <div className="message-avatar">🤖</div>}

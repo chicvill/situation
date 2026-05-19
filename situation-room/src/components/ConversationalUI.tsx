@@ -31,7 +31,9 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     const [isCheckingSession, setIsCheckingSession] = useState<boolean>(!sessionPreApproved);
     const wasApproved = useRef<boolean>(sessionPreApproved);
 
-    const scrollRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);   // chat messages container
+    const menuScrollRef = useRef<HTMLDivElement>(null); // horizontal menu carousel
+    const messagesEndRef = useRef<HTMLDivElement>(null); // sentinel for auto-scroll
     const hasSpokenWelcome = useRef(false);
 
     const tableId = `T${tableNo.padStart(2, '0')}`;
@@ -179,9 +181,8 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0), [cart]);
 
     const scroll = (direction: 'left' | 'right') => {
-        if (scrollRef.current) {
-            const scrollAmount = 240;
-            scrollRef.current.scrollBy({ left: direction === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
+        if (menuScrollRef.current) {
+            menuScrollRef.current.scrollBy({ left: direction === 'left' ? -240 : 240, behavior: 'smooth' });
         }
     };
 
@@ -222,9 +223,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
 
     // Auto-scroll when messages change
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, cart, orderStep, isPaying]);
 
     const handleCloseWindow = () => {
@@ -710,7 +709,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
             </div>
 
             {/* Chat Messages Log */}
-            <div className="chat-content" ref={scrollRef} style={{ background: '#eef1f5', padding: '16px 14px 100px' }}>
+            <div className="chat-content" ref={scrollRef} style={{ background: '#eef1f5', padding: '16px 14px 16px' }}>
                 {messages.map((msg, index) => (
                     <div key={msg.id || index} className={`message-bubble ${msg.sender}`} style={{
                         alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
@@ -761,9 +760,9 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                                         </button>
                                     </div>
                                 </div>
-                                <div 
-                                    ref={scrollRef}
-                                    style={{ display: 'flex', gap: '12px', overflowX: 'auto', padding: '5px 5px 15px', width: '100%', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', position: 'relative' }} 
+                                <div
+                                    ref={menuScrollRef}
+                                    style={{ display: 'flex', gap: '12px', overflowX: 'auto', padding: '5px 5px 15px', width: '100%', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', position: 'relative' }}
                                     className="no-scrollbar"
                                 >
                                     {menus.map((item: any, idx: number) => (
@@ -1066,6 +1065,8 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                         </>
                     )}
                 </div>
+                {/* auto-scroll sentinel */}
+                <div ref={messagesEndRef} style={{ height: 0 }} />
             </div>
 
             {/* Chat Input Area - Hidden during specific steps */}
