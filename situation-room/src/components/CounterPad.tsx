@@ -118,6 +118,12 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         return () => clearInterval(interval);
     }, [fetchSeatRequests]);
 
+    // 주문·호출·주차 5초 폴링 (MQTT 미연결 환경 보완)
+    useEffect(() => {
+        const interval = setInterval(fetchSessions, 5000);
+        return () => clearInterval(interval);
+    }, [fetchSessions]);
+
 
 
     const handleStatusUpdate = async (orderId: string, status: string) => {
