@@ -29,6 +29,13 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const prevOrderCountRef = useRef(0);
     const prevCallCountRef = useRef(0);
 
+    // 테이블 수동 단계 오버라이드: 'served' | 'ending'
+    const [tableOverrides, setTableOverrides] = useState<Record<string, 'served' | 'ending'>>({});
+    // 마지막으로 터치한 테이블 (상세 패널 표시용)
+    const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+    // 더블탭 감지
+    const [lastTapInfo, setLastTapInfo] = useState<{ id: string; time: number } | null>(null);
+
     const playDingDong = () => {
         try {
             const audio = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2014/09/Ding-dong.mp3');
@@ -306,6 +313,72 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         }
     };
 
+    // 세션 종료 시 오버라이드 자동 정리
+    useEffect(() => {
+        setTableOverrides(prev => {
+            const next = { ...prev };
+            let changed = false;
+            for (const tid of Object.keys(next)) {
+                if (!sessions.some(s => s.table_id === tid)) { delete next[tid]; changed = true; }
+            }
+            return changed ? next : prev;
+        });
+    }, [sessions]);
+
+    // 테이블 상태 계산
+    const getTableStage = useCallback((tableId: string): { label: string; bg: string; color: string; stage: string; hint?: string } => {
+        const override = tableOverrides[tableId];
+        const session = sessions.find(s => s.table_id === tableId);
+        const isSeatReq = seatRequests.some(r => r.table_id === tableId);
+
+        if (override === 'ending') return { label: '세션종료', bg: '#e2e8f0', color: '#475569', stage: 'ending', hint: '더블탭→초기화' };
+        if (override === 'served') {
+            const orders = (session?.orders || []).filter((o: any) => o.status !== 'cancelled');
+            const total = orders.reduce((s: number, o: any) => s + (o.total_price ?? o.total ?? 0), 0);
+            const paid = orders.filter((o: any) => o.payment_status === 'paid' || o.payment_status === 'prepaid').reduce((s: number, o: any) => s + (o.total_price ?? o.total ?? 0), 0);
+            if (total > 0 && paid < total) return { label: '결제대기', bg: '#fee2e2', color: '#b91c1c', stage: 'payment_pending', hint: '더블탭→종료' };
+            return { label: '결제완료', bg: '#dcfce7', color: '#15803d', stage: 'payment_done', hint: '더블탭→종료' };
+        }
+        if (!session && !isSeatReq) return { label: tableId, bg: '#ffffff', color: '#9ca3af', stage: 'initial' };
+        if (isSeatReq && !session) return { label: '고객 대기', bg: '#fef3c7', color: '#92400e', stage: 'waiting' };
+        if (session) {
+            const active = (session.orders || []).filter((o: any) => o.status !== 'cancelled');
+            if (active.length === 0) return { label: '좌석배정', bg: '#dbeafe', color: '#1e40af', stage: 'seated' };
+            if (active.some((o: any) => o.status === 'ready')) return { label: '조리완료', bg: '#ede9fe', color: '#6d28d9', stage: 'cooking_done', hint: '더블탭→서빙' };
+            return { label: '주문접수', bg: '#fed7aa', color: '#c2410c', stage: 'ordered' };
+        }
+        return { label: tableId, bg: '#ffffff', color: '#9ca3af', stage: 'initial' };
+    }, [tableOverrides, sessions, seatRequests]);
+
+    // 테이블 버튼 탭 처리
+    const handleTableTap = useCallback((tableId: string) => {
+        setSelectedTableId(tableId);
+        const now = Date.now();
+        const isDouble = lastTapInfo?.id === tableId && (now - lastTapInfo.time) < 450;
+        setLastTapInfo({ id: tableId, time: now });
+
+        if (!isDouble) return;
+
+        // 더블탭: 단계 진행
+        const { stage } = getTableStage(tableId);
+        setLastTapInfo(null);
+        if (stage === 'cooking_done') {
+            setTableOverrides(prev => ({ ...prev, [tableId]: 'served' }));
+        } else if (stage === 'payment_pending' || stage === 'payment_done') {
+            setTableOverrides(prev => ({ ...prev, [tableId]: 'ending' }));
+        } else if (stage === 'ending') {
+            const s = sessions.find(s => s.table_id === tableId);
+            if (s) {
+                fetch(`${getApiUrl()}/api/session/close`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: s.session_id, force: true }) })
+                    .then(() => fetchSessions()).catch(() => {});
+            }
+            setTableOverrides(prev => { const n = { ...prev }; delete n[tableId]; return n; });
+            setSelectedTableId(null);
+        } else if (stage === 'waiting') {
+            handleOpenSession(tableId);
+        }
+    }, [lastTapInfo, getTableStage, sessions, handleOpenSession, fetchSessions]);
+
     const tables = Array.from({ length: 12 }, (_, i) => i + 1);
 
     return (
@@ -353,51 +426,38 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 </div>
             )}
 
-            <div style={{
-                marginBottom: '14px',
-                padding: '12px 14px',
-                background: 'var(--surface)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border)',
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                    <span style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--text-main)' }}>테이블 선택</span>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--accent)', fontWeight: '600' }}>활성 {sessions.length}석</span>
+            {/* ── 5열 테이블 그리드 ── */}
+            <div style={{ marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--text-muted)' }}>테이블 현황</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: '600' }}>활성 {sessions.length}석</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '7px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
                     {tables.map(num => {
                         const tableId = `T${String(num).padStart(2, '0')}`;
-                        const isOccupied = sessions.some(s => s.table_id === tableId);
-                        const capacity = (num <= 4) ? 4 : (num <= 8) ? 2 : (num <= 10) ? 6 : 4;
-
+                        const { label, bg, color, hint } = getTableStage(tableId);
+                        const isSelected = selectedTableId === tableId;
                         return (
-                            <button
-                                key={num}
-                                disabled={isOccupied}
-                                onClick={() => handleOpenSession(tableId)}
-                                style={{
-                                    padding: '7px 4px',
-                                    borderRadius: '7px',
-                                    border: '1px solid var(--border)',
-                                    background: isOccupied ? 'var(--border)' : 'var(--surface)',
-                                    color: isOccupied ? 'var(--text-muted)' : 'var(--text-main)',
-                                    fontWeight: '700',
-                                    fontSize: '0.78rem',
-                                    cursor: isOccupied ? 'not-allowed' : 'pointer',
-                                    opacity: isOccupied ? 0.5 : 1,
-                                    whiteSpace: 'nowrap'
-                                }}
-                            >
-                                {tableId}[{capacity}]{isOccupied ? '🔴' : '⚪'}
+                            <button key={num} onClick={() => handleTableTap(tableId)} style={{
+                                padding: '8px 2px 6px',
+                                borderRadius: '8px',
+                                border: isSelected ? `2px solid ${color}` : '1.5px solid #e2e8f0',
+                                background: bg,
+                                color,
+                                fontWeight: '800',
+                                fontSize: '0.7rem',
+                                cursor: 'pointer',
+                                textAlign: 'center',
+                                boxShadow: isSelected ? `0 0 0 3px ${color}22` : 'none',
+                                transition: 'box-shadow 0.15s',
+                            }}>
+                                <div style={{ fontSize: '0.6rem', fontWeight: '600', opacity: 0.6, marginBottom: '2px' }}>{tableId}</div>
+                                <div style={{ lineHeight: 1.2 }}>{label}</div>
+                                {hint && <div style={{ fontSize: '0.52rem', opacity: 0.55, marginTop: '2px' }}>{hint}</div>}
                             </button>
                         );
                     })}
                 </div>
-            </div>
-
-            <div style={{ marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-main)' }}>실시간 이용 현황</span>
-                <span style={{ fontSize: '0.82rem', color: 'var(--accent)', fontWeight: '600' }}>Active {sessions.length}</span>
             </div>
 
             {(selectedSessionForPay || selectedOrderForPay) && (
@@ -463,160 +523,128 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 </div>
             )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {(!Array.isArray(sessions) || sessions.length === 0) ? (
-                    <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}>
-                        <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>현재 활성화된 테이블 세션이 없습니다.</div>
-                    </div>
-                ) : (
-                    Array.isArray(sessions) && sessions.map((session) => {
-                        const activeOrders = (session.orders || []).filter((o: any) => o.status !== 'cancelled');
-                        const sessionTotal = activeOrders.reduce((sum: number, o: any) => sum + (o.total_price ?? o.total ?? 0), 0);
-                        const unpaidTotal = activeOrders
-                            .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
-                            .reduce((sum: number, o: any) => sum + (o.total_price ?? o.total ?? 0), 0);
-                        const isAllPrepaid = unpaidTotal === 0;
-                        const isPending = session.status === 'pending';
-                        const hasReady = (session.orders || []).some((o: any) => o.status === 'ready');
-                        const cap = (() => { const n = parseInt(session.table_id.replace('T','')); return isNaN(n)?'':`[${(n<=4)?4:(n<=8)?2:(n<=10)?6:4}]`; })();
+            {/* 선택된 테이블 상세 패널 */}
+            {selectedTableId ? (() => {
+                const session = sessions.find((s: any) => s.table_id === selectedTableId);
+                const stage = getTableStage(selectedTableId);
+                const isPending = session?.status === 'pending';
+                const isSeatReq = seatRequests.some((r: any) => r.table_id === selectedTableId);
+                const activeOrders = session ? (session.orders || []).filter((o: any) => o.status !== 'cancelled') : [];
+                const sessionTotal = activeOrders.reduce((sum: number, o: any) => sum + (o.total_price ?? o.total ?? 0), 0);
+                const unpaidTotal = activeOrders
+                    .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
+                    .reduce((sum: number, o: any) => sum + (o.total_price ?? o.total ?? 0), 0);
 
-                        return (
-                            <div key={session.session_id} style={{
-                                background: 'var(--surface)',
-                                borderRadius: 'var(--radius-lg)',
-                                border: `1.5px solid ${isPending ? 'var(--warning)' : hasReady ? '#10b981' : 'var(--border)'}`,
-                                padding: '14px',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '10px',
-                                boxShadow: isPending ? '0 4px 16px rgba(245,158,11,0.08)' : '0 2px 8px rgba(0,0,0,0.03)'
-                            }}>
-                                {/* 헤더: 테이블명 + 상태뱃지 + 세션ID 한 줄 */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                    <span style={{ fontSize: '1.15rem', fontWeight: '800', color: isPending ? 'var(--warning)' : 'var(--primary)', whiteSpace: 'nowrap' }}>
-                                        TABLE {session.table_id}{cap}
-                                    </span>
-                                    {isPending && (
-                                        <span style={{ background: 'var(--warning)', color: 'white', padding: '2px 8px', borderRadius: '5px', fontSize: '0.72rem', fontWeight: '700' }}>승인대기</span>
-                                    )}
-                                    {hasReady && (
-                                        <span style={{ background: 'linear-gradient(135deg,#10b981,#059669)', color: 'white', padding: '2px 8px', borderRadius: '5px', fontSize: '0.72rem', fontWeight: '700', boxShadow: '0 0 8px rgba(16,185,129,0.35)' }}>🍽️ 서빙대기</span>
-                                    )}
-                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginLeft: 'auto', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '160px' }}>{session.session_id}</span>
-                                </div>
+                return (
+                    <div style={{ background: 'var(--surface)', borderRadius: 'var(--radius-lg)', border: `2px solid ${stage.bg === '#ffffff' ? 'var(--border)' : stage.bg}`, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        {/* 헤더: 테이블명 + 단계 배지 */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '1.2rem', fontWeight: '800', color: stage.color }}>
+                                TABLE {selectedTableId}
+                            </span>
+                            <span style={{ background: stage.bg, color: stage.color, padding: '3px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700', border: `1px solid ${stage.color}33` }}>
+                                {stage.label}
+                            </span>
+                            {session && (
+                                <span style={{ marginLeft: 'auto', fontSize: '0.7rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px', whiteSpace: 'nowrap' }}>
+                                    {session.session_id}
+                                </span>
+                            )}
+                        </div>
 
-                                {/* 주문 목록 */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {activeOrders.map((order: any) => {
-                                        const isPrepaid = order.payment_status === 'prepaid' || order.payment_status === 'paid';
-                                        const isPaidOrServed = order.status === 'paid' || order.status === 'served' || isPrepaid;
-                                        return (
-                                            <div key={order.order_id} style={{
-                                                background: 'var(--primary-soft)',
-                                                borderRadius: '10px',
-                                                padding: '10px 12px',
-                                            }}>
-                                                {/* 주문 헤더 */}
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                                                    <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)' }}>#{order.order_seq}차</span>
-                                                    <span style={{ fontSize: '0.72rem', color: isPrepaid ? '#10b981' : 'var(--text-muted)', fontWeight: '700', background: isPrepaid ? 'rgba(16,185,129,0.1)' : 'transparent', padding: '1px 6px', borderRadius: '4px' }}>
-                                                        {isPrepaid ? '선불' : '후불'}
-                                                    </span>
-                                                    <span style={{ marginLeft: 'auto', fontWeight: '800', fontSize: '0.95rem', color: 'var(--accent)', whiteSpace: 'nowrap' }}>
-                                                        {(order.total_price ?? order.total ?? 0).toLocaleString()}원
-                                                    </span>
-                                                </div>
+                        {/* 좌석 승인 버튼 */}
+                        {((isSeatReq && !session) || isPending) && (
+                            <button onClick={() => handleOpenSession(selectedTableId)} style={{ background: 'var(--warning)', border: 'none', color: 'white', padding: '12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.95rem', cursor: 'pointer', width: '100%' }}>
+                                좌석 개시 승인
+                            </button>
+                        )}
 
-                                                {/* 아이템 목록 */}
-                                                {isPrepaid ? (
-                                                    /* 선불: 한 줄 요약 */
-                                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '8px', lineHeight: 1.4 }}>
-                                                        {(order.items || []).map((item: any) => `${item.name} ${item.quantity || item.qty}개`).join(' · ')}
-                                                    </div>
-                                                ) : (
-                                                    /* 후불: 수량 조절 버튼 */
-                                                    <div style={{ marginBottom: '8px' }}>
-                                                        {(order.items || []).map((item: any, i: number) => (
-                                                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                                                <span style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>{item.name}</span>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--surface)', padding: '2px 6px', borderRadius: '6px', border: '1px solid var(--border)' }}>
-                                                                    <button onClick={() => { const ni=[...(order.items||[])]; ni[i]={...item,quantity:Math.max(0,(item.quantity||item.qty||0)-1)}; handleUpdateOrderItem(order.order_id,ni); }} style={{ background:'none',border:'none',color:'var(--text-muted)',cursor:'pointer',fontWeight:'700',fontSize:'1rem',lineHeight:1,padding:'0 2px' }}>−</button>
-                                                                    <span style={{ fontWeight:'700',minWidth:'18px',textAlign:'center',fontSize:'0.85rem' }}>{item.quantity||item.qty}</span>
-                                                                    <button onClick={() => { const ni=[...(order.items||[])]; ni[i]={...item,quantity:(item.quantity||item.qty||0)+1}; handleUpdateOrderItem(order.order_id,ni); }} style={{ background:'none',border:'none',color:'var(--accent)',cursor:'pointer',fontWeight:'700',fontSize:'1rem',lineHeight:1,padding:'0 2px' }}>+</button>
-                                                                    <button onClick={() => { const ni=(order.items||[]).filter((_:any,idx:number)=>idx!==i); handleUpdateOrderItem(order.order_id,ni); }} style={{ background:'none',border:'none',color:'var(--danger)',cursor:'pointer',fontSize:'11px',padding:'0 2px' }}>✕</button>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
-
-                                                {/* 액션 버튼 */}
-                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', paddingTop: '6px', borderTop: '1px solid var(--border)' }}>
-                                                    <button onClick={() => handleCancelWithRefund(order)} style={{ background:'transparent', border:'1px solid var(--border)', color:'var(--danger)', padding:'4px 10px', borderRadius:'6px', fontSize:'0.75rem', cursor:'pointer', fontWeight:'500' }}>
-                                                        삭제
-                                                    </button>
-                                                    {order.status === 'ready' ? (
-                                                        <button onClick={() => handleStatusUpdate(order.order_id, 'served')} style={{ background:'linear-gradient(135deg,#10b981,#059669)', border:'none', color:'white', padding:'4px 14px', borderRadius:'6px', fontSize:'0.75rem', cursor:'pointer', fontWeight:'700', whiteSpace:'nowrap', boxShadow:'0 0 10px rgba(16,185,129,0.4)' }}>
-                                                            🍽️ 서빙완료
-                                                        </button>
-                                                    ) : (
-                                                        <button disabled={isPaidOrServed} onClick={() => setSelectedOrderForPay(order)} style={{ background: isPaidOrServed ? 'var(--border)' : 'var(--accent)', border:'none', color: isPaidOrServed ? 'var(--text-muted)' : 'white', padding:'4px 14px', borderRadius:'6px', fontSize:'0.75rem', cursor: isPaidOrServed ? 'default' : 'pointer', fontWeight:'600', whiteSpace:'nowrap' }}>
-                                                            {isPrepaid ? '선불완료' : (order.status==='paid'||order.payment_status==='paid') ? '결제완료' : '결제'}
-                                                        </button>
-                                                    )}
-                                                </div>
+                        {/* 주문 목록 (차수별/합석별) */}
+                        {activeOrders.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {[...activeOrders].sort((a: any, b: any) => (a.order_seq || 0) - (b.order_seq || 0)).map((order: any) => {
+                                    const isPrepaid = order.payment_status === 'prepaid' || order.payment_status === 'paid';
+                                    const isPaidOrServed = order.status === 'paid' || order.status === 'served' || isPrepaid;
+                                    return (
+                                        <div key={order.order_id} style={{ background: 'var(--primary-soft)', borderRadius: '10px', padding: '10px 12px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                                                <span style={{ fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)' }}>#{order.order_seq || 1}차</span>
+                                                {order.join_order && <span style={{ fontSize: '0.68rem', background: '#e0e7ff', color: '#4338ca', padding: '1px 5px', borderRadius: '4px', fontWeight: '700' }}>합석</span>}
+                                                <span style={{ fontSize: '0.72rem', color: isPrepaid ? '#10b981' : 'var(--text-muted)', fontWeight: '700', background: isPrepaid ? 'rgba(16,185,129,0.1)' : 'transparent', padding: '1px 6px', borderRadius: '4px' }}>
+                                                    {isPrepaid ? '선불' : '후불'}
+                                                </span>
+                                                <span style={{ marginLeft: 'auto', fontWeight: '800', fontSize: '0.95rem', color: 'var(--accent)' }}>
+                                                    {(order.total_price ?? order.total ?? 0).toLocaleString()}원
+                                                </span>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* 합계 + 세션 액션 */}
-                                <div style={{ display:'flex', alignItems:'center', gap:'8px', background:'var(--primary-soft)', padding:'10px 12px', borderRadius:'10px', border:'1px solid var(--border)' }}>
-                                    <div style={{ flex:1 }}>
-                                        <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', fontWeight:'600' }}>선결제 / 총액</div>
-                                        <div style={{ fontSize:'0.95rem', fontWeight:'800', color:'var(--text-main)', whiteSpace:'nowrap' }}>
-                                            {(sessionTotal-unpaidTotal).toLocaleString()}원 / {sessionTotal.toLocaleString()}원
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', marginBottom: '8px', lineHeight: 1.4 }}>
+                                                {(order.items || []).map((item: any) => `${item.name} ${item.quantity || item.qty}개`).join(' · ')}
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', paddingTop: '6px', borderTop: '1px solid var(--border)' }}>
+                                                <button onClick={() => handleCancelWithRefund(order)} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--danger)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '500' }}>삭제</button>
+                                                {order.status === 'ready' ? (
+                                                    <button onClick={() => handleStatusUpdate(order.order_id, 'served')} style={{ background: 'linear-gradient(135deg,#10b981,#059669)', border: 'none', color: 'white', padding: '4px 14px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '700', whiteSpace: 'nowrap', boxShadow: '0 0 10px rgba(16,185,129,0.4)' }}>
+                                                        🍽️ 서빙완료
+                                                    </button>
+                                                ) : (
+                                                    <button disabled={isPaidOrServed} onClick={() => setSelectedOrderForPay(order)} style={{ background: isPaidOrServed ? 'var(--border)' : 'var(--accent)', border: 'none', color: isPaidOrServed ? 'var(--text-muted)' : 'white', padding: '4px 14px', borderRadius: '6px', fontSize: '0.75rem', cursor: isPaidOrServed ? 'default' : 'pointer', fontWeight: '600', whiteSpace: 'nowrap' }}>
+                                                        {isPrepaid ? '선불완료' : (order.status === 'paid' || order.payment_status === 'paid') ? '결제완료' : '결제'}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div style={{ textAlign:'right', marginRight:'8px' }}>
-                                        <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', fontWeight:'600' }}>미결제</div>
-                                        <div style={{ fontSize:'1.1rem', fontWeight:'900', color: unpaidTotal>0 ? '#ef4444' : '#10b981', whiteSpace:'nowrap' }}>
-                                            {unpaidTotal>0 ? `${unpaidTotal.toLocaleString()}원` : activeOrders.length===0 ? '활성화' : '완료'}
-                                        </div>
-                                    </div>
-                                    {isPending ? (
-                                        <button onClick={() => handleOpenSession(session.table_id)} style={{ background:'var(--warning)', border:'none', color:'white', padding:'8px 16px', borderRadius:'8px', fontWeight:'700', fontSize:'0.85rem', cursor:'pointer', whiteSpace:'nowrap' }}>
-                                            개시 승인
-                                        </button>
-                                    ) : (
-                                        <div style={{ display:'flex', gap:'6px' }}>
-                                            <button onClick={() => handleResetSession(session.session_id)} style={{ background:'transparent', border:'1px solid var(--border)', color:'var(--danger)', padding:'7px 10px', borderRadius:'7px', fontWeight:'500', fontSize:'0.78rem', cursor:'pointer', whiteSpace:'nowrap' }}>
-                                                초기화
-                                            </button>
-                                            {isAllPrepaid ? (
-                                                <button onClick={async () => {
-                                                    const msg = activeOrders.length>0 ? '모든 결제가 완료되었습니다. 세션을 종료하시겠습니까?' : '주문이 없습니다. 세션을 종료하시겠습니까?';
-                                                    if (!window.confirm(msg)) return;
-                                                    try {
-                                                        const r = await fetch(`${getApiUrl()}/api/session/close`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:session.session_id,force:true})});
-                                                        if(r.ok){alert('테이블이 초기화되었습니다.');fetchSessions();}else{alert('오류가 발생했습니다.');}
-                                                    } catch(e){alert('오류가 발생했습니다.');}
-                                                }} style={{ background:'var(--accent)', border:'none', color:'white', padding:'7px 14px', borderRadius:'7px', fontWeight:'600', fontSize:'0.85rem', cursor:'pointer', whiteSpace:'nowrap' }}>
-                                                    {activeOrders.length===0 ? '종료' : '결제완료'}
-                                                </button>
-                                            ) : (
-                                                <button onClick={() => setSelectedSessionForPay(session)} style={{ background:'var(--primary)', border:'none', color:'white', padding:'7px 14px', borderRadius:'7px', fontWeight:'600', fontSize:'0.85rem', cursor:'pointer', whiteSpace:'nowrap' }}>
-                                                    전체결제
-                                                </button>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
+                                    );
+                                })}
                             </div>
-                        );
-                    })
-                )}
-            </div>
+                        ) : session ? (
+                            <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>주문 내역이 없습니다.</div>
+                        ) : null}
+
+                        {/* 합계 + 세션 액션 */}
+                        {session && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--primary-soft)', padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '600' }}>선결제 / 총액</div>
+                                    <div style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>
+                                        {(sessionTotal - unpaidTotal).toLocaleString()}원 / {sessionTotal.toLocaleString()}원
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'right', marginRight: '8px' }}>
+                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '600' }}>미결제</div>
+                                    <div style={{ fontSize: '1.1rem', fontWeight: '900', color: unpaidTotal > 0 ? '#ef4444' : '#10b981', whiteSpace: 'nowrap' }}>
+                                        {unpaidTotal > 0 ? `${unpaidTotal.toLocaleString()}원` : activeOrders.length === 0 ? '활성화' : '완료'}
+                                    </div>
+                                </div>
+                                {isPending ? (
+                                    <button onClick={() => handleOpenSession(session.table_id)} style={{ background: 'var(--warning)', border: 'none', color: 'white', padding: '8px 16px', borderRadius: '8px', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>개시 승인</button>
+                                ) : (
+                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                        <button onClick={() => handleResetSession(session.session_id)} style={{ background: 'transparent', border: '1px solid var(--border)', color: 'var(--danger)', padding: '7px 10px', borderRadius: '7px', fontWeight: '500', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>초기화</button>
+                                        {unpaidTotal === 0 ? (
+                                            <button onClick={async () => {
+                                                const msg = activeOrders.length > 0 ? '모든 결제가 완료되었습니다. 세션을 종료하시겠습니까?' : '주문이 없습니다. 세션을 종료하시겠습니까?';
+                                                if (!window.confirm(msg)) return;
+                                                try {
+                                                    const r = await fetch(`${getApiUrl()}/api/session/close`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: session.session_id, force: true }) });
+                                                    if (r.ok) { alert('테이블이 초기화되었습니다.'); fetchSessions(); } else { alert('오류가 발생했습니다.'); }
+                                                } catch (e) { alert('오류가 발생했습니다.'); }
+                                            }} style={{ background: 'var(--accent)', border: 'none', color: 'white', padding: '7px 14px', borderRadius: '7px', fontWeight: '600', fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                                {activeOrders.length === 0 ? '종료' : '결제완료'}
+                                            </button>
+                                        ) : (
+                                            <button onClick={() => setSelectedSessionForPay(session)} style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '7px 14px', borderRadius: '7px', fontWeight: '600', fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>전체결제</button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                );
+            })() : (
+                <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: '500' }}>테이블을 선택하면 상세 정보가 표시됩니다.</div>
+                </div>
+            )}
         </div>
     );
 };
