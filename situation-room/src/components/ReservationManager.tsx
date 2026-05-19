@@ -267,26 +267,23 @@ export const ReservationManager: React.FC = () => {
     ];
 
     return (
-        <div style={{ padding: '24px', background: 'var(--bg-main)', minHeight: '100vh' }}>
+        <div style={{ padding: '16px', background: 'var(--bg-main)', minHeight: '100vh' }}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                <div>
-                    <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 4px' }}>📅 예약 관리</h2>
-                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0 }}>일자순 · 확정 · 입장 처리 · 수정 · 삭제</p>
-                </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>📅 예약 관리</h2>
                 <button
                     onClick={() => { setIsNew(true); setEditId(null); setEditForm(emptyForm()); setEditOpen(true); }}
-                    style={{ padding: '12px 20px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem', whiteSpace: 'nowrap' }}
+                    style={{ padding: '9px 16px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem', whiteSpace: 'nowrap' }}
                 >
                     + 새 예약
                 </button>
             </div>
 
             {/* Filter tabs */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
                 {FILTER_TABS.map(t => (
                     <button key={t.key} onClick={() => setFilterStatus(t.key)} style={{
-                        padding: '8px 16px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem', whiteSpace: 'nowrap',
+                        padding: '7px 14px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.8rem', whiteSpace: 'nowrap',
                         background: filterStatus === t.key ? 'var(--primary)' : 'var(--surface)',
                         color: filterStatus === t.key ? 'white' : 'var(--text-muted)',
                     }}>{t.label}</button>
@@ -295,12 +292,12 @@ export const ReservationManager: React.FC = () => {
 
             {/* List */}
             {filtered.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '80px 20px', background: 'var(--surface)', borderRadius: '16px', border: '1px dashed var(--border)' }}>
-                    <div style={{ fontSize: '2.5rem', marginBottom: '12px' }}>📅</div>
-                    <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>해당 예약이 없습니다.</p>
+                <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '2.2rem', marginBottom: '10px', opacity: 0.5 }}>📅</div>
+                    <p style={{ fontWeight: 600, margin: 0 }}>해당 예약이 없습니다.</p>
                 </div>
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {filtered.map(r => {
                         const diffMs = new Date(r.reserved_time).getTime() - Date.now();
                         const diffH = diffMs / 3600000;
@@ -310,67 +307,84 @@ export const ReservationManager: React.FC = () => {
 
                         return (
                             <div key={r.reservation_id} style={{
-                                background: 'var(--surface)', borderRadius: '16px', padding: '18px 20px 18px 24px',
+                                background: 'var(--surface)', borderRadius: '14px', padding: '14px 14px 14px 18px',
                                 border: `1.5px solid ${isUrgent ? '#fca5a5' : isSoon ? '#fcd34d' : 'var(--border)'}`,
-                                boxShadow: isUrgent ? '0 4px 16px rgba(239,68,68,0.08)' : '0 2px 6px rgba(0,0,0,0.03)',
                                 position: 'relative', overflow: 'hidden',
                             }}>
-                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: STATUS_COLOR[r.status] || 'var(--border)', borderRadius: '4px 0 0 4px' }} />
+                                {/* 좌측 상태 컬러 바 */}
+                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px', background: STATUS_COLOR[r.status] || 'var(--border)' }} />
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        {/* Top row: time + badges */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                                            <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent)' }}>{fmtDT(r.reserved_time)}</span>
-                                            {diffLabel && (
-                                                <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: '10px',
-                                                    background: isUrgent ? '#fee2e2' : isSoon ? '#fef3c7' : 'var(--primary-soft)',
-                                                    color: isUrgent ? '#dc2626' : isSoon ? '#92400e' : 'var(--text-muted)' }}>
-                                                    {diffLabel}
-                                                </span>
-                                            )}
-                                            <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '8px',
-                                                background: 'var(--primary-soft)', color: STATUS_COLOR[r.status] || 'var(--text-muted)' }}>
-                                                {STATUS_LABEL[r.status] || r.status}
-                                            </span>
-                                        </div>
-                                        {/* Info row */}
-                                        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                            <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)' }}>{r.customer_name}</span>
-                                            {r.phone_number && <span style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>📞 {r.phone_number}</span>}
-                                            <span style={{ color: 'var(--accent-orange)', fontWeight: 700, fontSize: '0.88rem' }}>👥 {r.party_size}명</span>
-                                            {r.table_id && <span style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>🪑 {r.table_id}</span>}
-                                        </div>
-                                        {r.notes && (
-                                            <div style={{ marginTop: '6px', fontSize: '0.82rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                                                💬 {r.notes}
-                                            </div>
-                                        )}
-                                    </div>
+                                {/* 1행: 날짜 + 상태 뱃지 + D-tag */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                                    <span style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--accent)', whiteSpace: 'nowrap' }}>
+                                        {fmtDT(r.reserved_time)}
+                                    </span>
+                                    <span style={{
+                                        fontSize: '0.72rem', fontWeight: 800, padding: '2px 8px', borderRadius: '8px', whiteSpace: 'nowrap',
+                                        background: 'var(--primary-soft)', color: STATUS_COLOR[r.status] || 'var(--text-muted)'
+                                    }}>
+                                        {STATUS_LABEL[r.status] || r.status}
+                                    </span>
+                                    {diffLabel && (
+                                        <span style={{
+                                            fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: '10px', whiteSpace: 'nowrap',
+                                            background: isUrgent ? '#fee2e2' : isSoon ? '#fef3c7' : 'rgba(0,0,0,0.05)',
+                                            color: isUrgent ? '#dc2626' : isSoon ? '#92400e' : 'var(--text-muted)'
+                                        }}>
+                                            {diffLabel}
+                                        </span>
+                                    )}
+                                </div>
 
-                                    {/* Action buttons */}
-                                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', flexShrink: 0 }}>
-                                        {r.status === 'requested' && (
-                                            <button onClick={() => handleConfirm(r)}
-                                                style={{ padding: '8px 12px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
-                                                확정
-                                            </button>
-                                        )}
-                                        {(r.status === 'requested' || r.status === 'confirmed') && (
-                                            <button onClick={() => handleArrival(r)}
-                                                style={{ padding: '8px 12px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
-                                                입장 처리
-                                            </button>
-                                        )}
-                                        <button onClick={() => { setIsNew(false); setEditId(r.reservation_id); setEditForm({ ...r }); setEditOpen(true); }}
-                                            style={{ padding: '8px 12px', background: 'var(--surface)', color: 'var(--text-main)', border: '1px solid var(--border)', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem' }}>
-                                            수정
-                                        </button>
-                                        <button onClick={() => handleDelete(r.reservation_id)}
-                                            style={{ padding: '8px 12px', background: 'transparent', color: 'var(--danger)', border: '1px solid var(--border)', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem' }}>
-                                            삭제
-                                        </button>
+                                {/* 2행: 고객 정보 */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: r.notes ? '4px' : '12px' }}>
+                                    <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>
+                                        {r.customer_name}
+                                    </span>
+                                    {r.phone_number && (
+                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                                            📞 {r.phone_number}
+                                        </span>
+                                    )}
+                                    <span style={{ color: 'var(--accent-orange)', fontWeight: 700, fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                                        👥 {r.party_size}명
+                                    </span>
+                                    {r.table_id && (
+                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                                            🪑 {r.table_id}
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* 메모 */}
+                                {r.notes && (
+                                    <div style={{ marginBottom: '12px', fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                        💬 {r.notes}
                                     </div>
+                                )}
+
+                                {/* 3행: 액션 버튼 */}
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    {r.status === 'requested' && (
+                                        <button onClick={() => handleConfirm(r)} style={{
+                                            flex: 1, padding: '9px 0', background: '#3b82f6', color: 'white',
+                                            border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem'
+                                        }}>확정</button>
+                                    )}
+                                    {(r.status === 'requested' || r.status === 'confirmed') && (
+                                        <button onClick={() => handleArrival(r)} style={{
+                                            flex: 2, padding: '9px 0', background: '#10b981', color: 'white',
+                                            border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem'
+                                        }}>입장 처리</button>
+                                    )}
+                                    <button onClick={() => { setIsNew(false); setEditId(r.reservation_id); setEditForm({ ...r }); setEditOpen(true); }} style={{
+                                        flex: 1, padding: '9px 0', background: 'var(--bg-main)', color: 'var(--text-main)',
+                                        border: '1px solid var(--border)', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem'
+                                    }}>수정</button>
+                                    <button onClick={() => handleDelete(r.reservation_id)} style={{
+                                        flex: 1, padding: '9px 0', background: 'transparent', color: '#ef4444',
+                                        border: '1px solid #fca5a5', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem'
+                                    }}>삭제</button>
                                 </div>
                             </div>
                         );
