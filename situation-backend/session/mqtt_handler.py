@@ -1,14 +1,16 @@
 """
-MQTT Handler - 직원 호출(Staff Call) Phase 1
-기존 WebSocket과 병행 운용. 브로커: Mosquitto
+MQTT Handler — 외부 브로커(HiveMQ Cloud) 연동
 
 토픽 구조:
-  store/{store_id}/call            - 모바일 → 백엔드 (Subscribe)
-  store/{store_id}/call/broadcast  - 백엔드 → 카운터/주방 (Publish)
+  store/{store_id}/counter          — 카운터 이벤트 (Subscribe + Publish)
+  store/{store_id}/kitchen          — 주방 이벤트 (Publish)
+  store/{store_id}/table/{table_id} — 모바일 이벤트 (Publish)
+  store/{store_id}/call             — 직원 호출 수신 (Subscribe)
 """
 
 import asyncio
 import os
+import ssl
 import json
 import uuid
 from datetime import datetime
@@ -22,7 +24,10 @@ except ImportError:
     print("[MQTT] aiomqtt 미설치 - MQTT 기능 비활성화. `pip install aiomqtt` 로 설치하세요.")
 
 MQTT_HOST = os.getenv("MQTT_BROKER_HOST", "localhost")
-MQTT_PORT = int(os.getenv("MQTT_BROKER_PORT", "1885"))  # 1885: 기존 Windows 서비스(1883) 충돌 방지
+MQTT_PORT = int(os.getenv("MQTT_BROKER_PORT", "1883"))
+MQTT_USERNAME = os.getenv("MQTT_USERNAME") or None
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD") or None
+MQTT_TLS = os.getenv("MQTT_TLS", "false").lower() in ("true", "1", "yes")
 
 _mqtt_client: Optional[Any] = None
 
@@ -95,37 +100,50 @@ async def _handle_call_message(store_id: str, payload: dict, ws_manager):
     await ws_manager.broadcast_to_kitchen(broadcast_msg)
 
 
+def _build_tls_context() -> Optional[ssl.SSLContext]:
+    if not MQTT_TLS:
+        return None
+    ctx = ssl.create_default_context()
+    return ctx
+
+
 async def run_mqtt_client(ws_manager):
-    """MQTT 구독 루프 - 앱 lifespan에서 백그라운드 태스크로 실행."""
+    """MQTT 구독 루프 — HiveMQ Cloud(또는 다른 외부 브로커) 연결."""
     global _mqtt_client
     if not MQTT_AVAILABLE:
         print("[MQTT] aiomqtt 미설치 - MQTT 서비스를 시작할 수 없습니다.")
         return
 
+    tls_ctx = _build_tls_context()
+    conn_kwargs: dict = {"hostname": MQTT_HOST, "port": MQTT_PORT}
+    if MQTT_USERNAME:
+        conn_kwargs["username"] = MQTT_USERNAME
+    if MQTT_PASSWORD:
+        conn_kwargs["password"] = MQTT_PASSWORD
+    if tls_ctx:
+        conn_kwargs["tls_context"] = tls_ctx
+
+    print(f"[MQTT] 브로커 연결 시도: {MQTT_HOST}:{MQTT_PORT} (TLS={MQTT_TLS}, auth={'yes' if MQTT_USERNAME else 'no'})")
+
     retry_count = 0
     while True:
         try:
-            print(f"[MQTT] 브로커 연결 시도: {MQTT_HOST}:{MQTT_PORT}")
-            async with aiomqtt.Client(MQTT_HOST, MQTT_PORT) as client:
+            async with aiomqtt.Client(**conn_kwargs) as client:
                 _mqtt_client = client
                 retry_count = 0
                 print(f"[MQTT] 브로커 연결 성공: {MQTT_HOST}:{MQTT_PORT}")
 
                 await client.subscribe("store/+/call")
-                print("[MQTT] 구독 완료: store/+/call (직원 호출 채널)")
+                print("[MQTT] 구독 완료: store/+/call")
 
                 async for message in client.messages:
                     topic = str(message.topic)
                     try:
                         payload = json.loads(message.payload)
-                        print(f"[MQTT 수신 - 백엔드] topic={topic} | {str(payload)[:150]}")
-
                         parts = topic.split("/")
                         if len(parts) == 3 and parts[0] == "store" and parts[2] == "call":
                             store_id = parts[1]
                             await _handle_call_message(store_id, payload, ws_manager)
-                        else:
-                            print(f"[MQTT 수신 - 백엔드] 알 수 없는 토픽 형식: {topic}")
                     except json.JSONDecodeError:
                         print(f"[MQTT 수신 오류] JSON 파싱 실패: topic={topic}")
                     except Exception as e:
@@ -134,14 +152,7 @@ async def run_mqtt_client(ws_manager):
         except Exception as e:
             retry_count += 1
             _mqtt_client = None
-            # 브로커가 없는 환경(Render 등)에서 무한 로그 방지: 5회 실패 후 60초 간격으로 전환
-            if retry_count <= 5:
-                print(f"[MQTT] 연결 끊김 또는 오류: {e}. 5초 후 재연결... ({retry_count}/5)")
-                await asyncio.sleep(5)
-            else:
-                if retry_count == 6:
-                    print(f"[MQTT] 브로커 없음 — 60초 간격으로 재시도합니다. (MQTT_BROKER_HOST={MQTT_HOST})")
-                await asyncio.sleep(60)
-            continue
-
-        await asyncio.sleep(5)
+            delay = 5 if retry_count <= 5 else 60
+            if retry_count == 1 or retry_count == 6:
+                print(f"[MQTT] 연결 실패: {e} → {delay}초 후 재시도")
+            await asyncio.sleep(delay)
