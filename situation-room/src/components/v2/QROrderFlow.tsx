@@ -164,6 +164,9 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   const [callOverlay, setCallOverlay] = useState<{ callId: string; status: 'pending' | 'completed' } | null>(null);
   const [isOrdering, setIsOrdering] = useState(false);
 
+  /* ── Waiting type: new_session = 카운터가 새 세션 승인 대기, join = 합석 대기 ── */
+  const [waitingType, setWaitingType] = useState<'new_session' | 'join'>('new_session');
+
   /* ── Refs ── */
   const sessionIdRef = useRef('');
   const phaseRef = useRef<FlowPhase>('loading');
@@ -214,7 +217,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
     setPhase('active');
   }, []);
 
-  const joinSession = useCallback(async () => {
+  const joinSession = useCallback(async (): Promise<'active' | 'waiting_new' | 'waiting_join' | 'greeting'> => {
     try {
       const res = await fetch(`${API_BASE}/api/checkin/request`, {
         method: 'POST',
@@ -224,17 +227,25 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
       const data = await res.json();
       if (data.status === 'active') {
         activateSession(data.session?.session_id || '', data.orders || []);
+        return 'active';
       } else if (data.status === 'waiting_approval') {
+        // 합석 대기: 서버가 join:true 또는 existing_session을 반환할 때
+        const isJoin = !!(data.join || data.is_join || data.existing_session);
+        const wt: 'new_session' | 'join' = isJoin ? 'join' : 'new_session';
+        setWaitingType(wt);
         phaseRef.current = 'waiting_approval';
         setPhase('waiting_approval');
+        return isJoin ? 'waiting_join' : 'waiting_new';
       } else {
-        // 세션 없음 → greeting으로 진입 (카테고리 스트립은 보임, 메뉴는 숨김)
+        // 세션 없음 → greeting으로 진입
         phaseRef.current = 'greeting';
         setPhase('greeting');
+        return 'greeting';
       }
     } catch (_) {
       phaseRef.current = 'greeting';
       setPhase('greeting');
+      return 'greeting';
     }
   }, [tableNo, deviceId, storeName, storeId, activateSession]);
 
@@ -245,7 +256,11 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
     const unsub = subscribeTopic(`situation/table/${tableId}`, (msg: any) => {
       switch (msg.type) {
         case 'SESSION_OPENED':
-          joinSession();
+          joinSession().then((result) => {
+            if (result === 'active') {
+              addAiMsg('좌석 승인이 완료되었습니다! 원하시는 메뉴를 선택해 주세요. 🛒');
+            }
+          });
           break;
         case 'SESSION_CLOSED':
           sessionIdRef.current = '';
@@ -258,9 +273,10 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
             if (msg.approved) {
               activateSession(msg.session_id, []);
               refreshOrders();
-              addAiMsg(`합석이 승인되었습니다. ${orderRound + 1}차 주문을 시작할 수 있습니다!`);
+              addAiMsg(`합석이 승인되었습니다! 메뉴를 선택해 주세요. 🛒`);
               setOrderRound(r => r + 1);
             } else {
+              phaseRef.current = 'greeting'; setPhase('greeting');
               addAiMsg('합석이 거부되었습니다. 카운터에 문의해 주세요.');
             }
           }
@@ -298,15 +314,28 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   /* ── 최초 진입 ── */
   useEffect(() => {
     if (!hasTableParam) return;
-    // 메뉴가 로드되면 세션 확인 + AI 인사
     if (menus.length > 0 && phase === 'loading') {
-      joinSession().then(() => {
+      joinSession().then((result) => {
         setTimeout(() => {
-          addAiMsg(
-            `안녕하세요! 저는 ${storeName} AI 도우미입니다. 😊 위 카테고리를 눌러 메뉴를 보시고, 사진 아래 [+] 버튼이나 🎙️ 음성 주문 버튼으로 편하게 주문하세요!`,
-            true
-          );
-          // loading 단계이면 greeting으로
+          if (result === 'active') {
+            addAiMsg(`이전에 승인된 테이블입니다. 바로 주문하세요! 🛒`, true);
+          } else if (result === 'waiting_new') {
+            addAiMsg(
+              `안녕하세요! 저는 ${storeName} AI 도우미입니다. 😊 카운터에서 좌석을 확인 중입니다. 승인이 완료되면 주문을 시작할 수 있습니다. ⏳`,
+              true
+            );
+          } else if (result === 'waiting_join') {
+            addAiMsg(
+              `합석을 요청했습니다. 카운터에서 합석 여부를 확인 중입니다. 잠시만 기다려 주세요. ⏳`,
+              true
+            );
+          } else {
+            // greeting
+            addAiMsg(
+              `안녕하세요! 저는 ${storeName} AI 도우미입니다. 😊 위 카테고리를 눌러 메뉴를 보시고, [+] 버튼이나 🎙️ 음성 버튼으로 편하게 주문하세요!`,
+              true
+            );
+          }
           if (phaseRef.current === 'loading') {
             phaseRef.current = 'greeting'; setPhase('greeting');
           }
@@ -317,11 +346,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
 
   /* ── Phase별 AI 멘트 ── */
   useEffect(() => {
-    if (phase === 'waiting_approval') {
-      addAiMsg('카운터에서 좌석을 확인 중입니다. 잠시만 기다려 주세요. ⏳');
-    } else if (phase === 'active' && phaseRef.current !== 'active') {
-      addAiMsg('좌석 승인이 완료되었습니다! 원하시는 메뉴를 선택해 주세요. 🛒');
-    } else if (phase === 'paid') {
+    if (phase === 'paid') {
       addAiMsg('결제가 완료되었습니다! 맛있게 드세요. 🎉 추가 주문은 하단 [추가주문] 버튼을 이용하세요.');
     }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -623,11 +648,51 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         </div>
       )}
 
-      {/* ── 승인 대기 배너 ── */}
+      {/* ── 승인 대기 전체 화면 ── */}
       {phase === 'waiting_approval' && (
-        <div style={{ background: '#fef3c7', borderBottom: '1px solid #fde68a', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <span style={{ fontSize: 16 }}>⏳</span>
-          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#92400e' }}>카운터에서 좌석을 확인 중입니다. 잠시만 기다려 주세요.</span>
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+          padding: '40px 24px', gap: 20,
+        }}>
+          <div style={{
+            width: 80, height: 80, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 36, boxShadow: '0 0 0 0 rgba(245,158,11,0.4)',
+            animation: 'pulse-ring 1.5s ease-in-out infinite',
+          }}>
+            ⏳
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#92400e', marginBottom: 8 }}>
+              {waitingType === 'join' ? '합석 승인 대기 중' : '좌석 승인 대기 중'}
+            </div>
+            <div style={{ fontSize: '0.88rem', color: '#78350f', lineHeight: 1.6 }}>
+              {waitingType === 'join'
+                ? '카운터에서 합석 여부를 확인 중입니다.\n승인되면 자동으로 주문 화면이 열립니다.'
+                : '카운터에서 좌석을 확인 중입니다.\n잠시만 기다려 주세요.'}
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+            {[0, 1, 2].map(i => (
+              <div key={i} style={{
+                width: 8, height: 8, borderRadius: '50%', background: '#f59e0b',
+                animation: `dot-bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
+              }} />
+            ))}
+          </div>
+          <style>{`
+            @keyframes pulse-ring {
+              0%   { box-shadow: 0 0 0 0 rgba(245,158,11,0.45); }
+              70%  { box-shadow: 0 0 0 18px rgba(245,158,11,0); }
+              100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+            }
+            @keyframes dot-bounce {
+              0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+              40%            { transform: scale(1.2); opacity: 1; }
+            }
+          `}</style>
         </div>
       )}
 
