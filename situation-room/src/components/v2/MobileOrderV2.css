@@ -159,6 +159,7 @@
 /* Menu Grid */
 .menu-grid-v2 {
   padding: 20px;
+  padding-bottom: 120px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -240,21 +241,52 @@
 }
 
 .add-quick-btn {
+  display: none;
+}
+
+.menu-qty-bar {
   position: absolute;
-  bottom: -8px;
-  right: -8px;
-  background: var(--accent);
-  color: white;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: none;
-  font-size: 1.2rem;
-  font-weight: 700;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border-radius: 0 0 8px 8px;
+  gap: 4px;
+}
+
+.menu-qty-btn {
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 8px var(--accent-glow);
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.menu-qty-btn-plus {
+  background: rgba(249, 115, 22, 0.25);
+  border-color: rgba(249, 115, 22, 0.4);
+  color: #fb923c;
+}
+
+.menu-qty-count {
+  font-size: 14px;
+  font-weight: 800;
+  color: white;
+  min-width: 20px;
+  text-align: center;
 }
 
 .menu-info {

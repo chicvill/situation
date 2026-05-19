@@ -350,9 +350,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     });
   }, []);
 
-  const deleteFromCart = useCallback((name: string) => {
-    setCart(prev => prev.filter(c => c.name !== name));
-  }, []);
 
   const generateAiStory = useCallback((items: MenuItem[]) => {
     if (items.length === 0) return;
@@ -1205,54 +1202,17 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
                   <img src={item.icon} alt={item.name} onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=400&h=400'; }} />
                   <span className="menu-category-tag">{item.category}</span>
                   {cartItem && (
-                    <span className="add-quick-btn">
-                      {cartItem.qty}
-                    </span>
+                    <div className="menu-qty-bar" onClick={e => e.stopPropagation()}>
+                      <button className="menu-qty-btn" onClick={() => removeFromCart(item.name)}>−</button>
+                      <span className="menu-qty-count">{cartItem.qty}</span>
+                      <button className="menu-qty-btn menu-qty-btn-plus" onClick={() => addToCart(item)}>+</button>
+                    </div>
                   )}
                 </div>
                 <div className="menu-info">
                   <div className="menu-name">{item.name}</div>
                   <div className="menu-desc">{item.description}</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div className="menu-price">
-                      {item.price.toLocaleString()}원
-                    </div>
-                    {cartItem && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={(e) => e.stopPropagation()}>
-                        <button 
-                          onClick={() => removeFromCart(item.name)}
-                          style={{ 
-                            width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', color: '#94a3b8', 
-                            fontSize: '11px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s'
-                          }}
-                        >
-                          -
-                        </button>
-                        <span style={{ fontSize: '13px', fontWeight: 800, color: 'white' }}>{cartItem.qty}</span>
-                        <button 
-                          onClick={() => addToCart(item)}
-                          style={{ 
-                            width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: 'rgba(249, 115, 22, 0.1)', border: '1px solid rgba(249, 115, 22, 0.2)', borderRadius: '6px', color: '#f97316', 
-                            fontSize: '11px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s'
-                          }}
-                        >
-                          +
-                        </button>
-                        <button 
-                          onClick={() => deleteFromCart(item.name)}
-                          style={{ 
-                            width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '6px', color: '#ef4444', 
-                            fontSize: '11px', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s', marginLeft: '4px'
-                          }}
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <div className="menu-price">{item.price.toLocaleString()}원</div>
                 </div>
               </div>
             );
