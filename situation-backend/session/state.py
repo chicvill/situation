@@ -37,9 +37,11 @@ def save_pool(pool: list) -> bool:
 class ConnectionManager:
     """MQTT 기반 실시간 메시지 브로드캐스트 매니저.
 
-    토픽:
-      situation/kitchen           — 주방·카운터 전체 broadcast
-      situation/table/{table_id}  — 특정 테이블 모바일 대상 메시지
+    토픽 구조:
+      store/{store_id}/counter          — 카운터 (세션·호출·주차·결제)
+      store/{store_id}/kitchen          — 주방 (주문·조리 상태)
+      store/{store_id}/table/{table_id} — 모바일 (테이블별)
+      store/broadcast/{channel}         — store_id 미확정 시 전체 broadcast
     """
 
     def __init__(self):
@@ -62,29 +64,36 @@ class ConnectionManager:
             reqs = [r for r in reqs if r["store_id"] == store_id]
         return reqs
 
+    def _extract_store_id(self, message: dict) -> Optional[str]:
+        sid = message.get("store_id")
+        if sid and sid not in ("Total", "default_store"):
+            return sid
+        for key in ("order", "session", "data", "call", "info"):
+            sub = message.get(key)
+            if isinstance(sub, dict):
+                sid = sub.get("store_id")
+                if sid and sid not in ("Total", "default_store"):
+                    return sid
+        return None
+
     async def broadcast_to_kitchen(self, message: dict):
         from .mqtt_handler import mqtt_publish
-
-        store_id = message.get("store_id")
-        if not store_id:
-            for key in ["order", "session", "data", "call", "info"]:
-                if key in message and isinstance(message[key], dict):
-                    store_id = message[key].get("store_id")
-                    if store_id:
-                        break
-
-        topic = f"store/{store_id}/kitchen" if store_id else "store/broadcast/kitchen"
-        print(f"[CP-B1] broadcast_to_kitchen type={message.get('type')!r} store_id={store_id!r}")
-        print(f"        발행 토픽1: {topic}")
-        r1 = await mqtt_publish(topic, message, qos=1)
-        print(f"        발행 토픽2: situation/kitchen")
-        r2 = await mqtt_publish("situation/kitchen", message, qos=1)
-        print(f"        결과: topic1={r1} topic2={r2}")
+        store_id = self._extract_store_id(message)
+        if store_id:
+            await mqtt_publish(f"store/{store_id}/kitchen", message, qos=1)
+            await mqtt_publish(f"store/{store_id}/counter", message, qos=1)
+        else:
+            await mqtt_publish("store/broadcast/kitchen", message, qos=1)
+            await mqtt_publish("store/broadcast/counter", message, qos=1)
+        print(f"[MQTT] broadcast type={message.get('type')!r} store={store_id!r}")
 
     async def send_to_table(self, table_id: str, message: dict):
         from .mqtt_handler import mqtt_publish
-        # 모바일 기기(테이블)로 보내는 메시지도 QoS 1로 보장
-        await mqtt_publish(f"situation/table/{table_id}", message, qos=1)
+        store_id = self._extract_store_id(message)
+        if store_id:
+            await mqtt_publish(f"store/{store_id}/table/{table_id}", message, qos=1)
+        else:
+            await mqtt_publish(f"situation/table/{table_id}", message, qos=1)
 
 
 manager = ConnectionManager()
