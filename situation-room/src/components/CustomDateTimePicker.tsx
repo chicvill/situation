@@ -38,7 +38,6 @@ export const CustomDateTimePicker: React.FC<Props> = ({ value, onChange }) => {
                     textField: {
                         variant: 'outlined',
                         fullWidth: true,
-                        placeholder: '날짜 및 시간을 선택하세요',
                         sx: {
                             backgroundColor: 'var(--bg-main)',
                             borderRadius: '10px',
