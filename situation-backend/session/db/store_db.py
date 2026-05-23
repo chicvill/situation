@@ -155,3 +155,34 @@ def update_store_use_kitchen(store_id: str, use_kitchen: bool) -> bool:
     except Exception as e:
         print(f"Update Store use_kitchen Error: {e}")
         return False
+
+def get_reservation_settings(store_id: str) -> dict:
+    conn = get_db_conn()
+    if not conn: return {"start": "11:00", "end": "20:00"}
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT reservation_settings FROM stores WHERE id = %s", (store_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row and row['reservation_settings']:
+            return row['reservation_settings']
+        return {"start": "11:00", "end": "20:00"}
+    except Exception as e:
+        print(f"Get reservation_settings Error: {e}")
+        return {"start": "11:00", "end": "20:00"}
+
+def update_reservation_settings(store_id: str, settings: dict) -> bool:
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        import json
+        cur = conn.cursor()
+        cur.execute("UPDATE stores SET reservation_settings = %s WHERE id = %s", (json.dumps(settings), store_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Update reservation_settings Error: {e}")
+        return False

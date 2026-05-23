@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStoreFilter } from '../hooks/useStoreFilter';
+import { CustomDateTimePicker } from './CustomDateTimePicker';
+import { subscribeToStore } from '../services/notifications';
 
-const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+const getApiUrl = () => {
+    let url = import.meta.env.VITE_API_URL;
+    if (!url || ((url.includes('127.0.0.1') || url.includes('localhost')) && window.location.hostname !== '127.0.0.1' && window.location.hostname !== 'localhost')) {
+        url = `http://${window.location.hostname}:8000`;
+    }
+    return url;
+};
 
 interface Reservation {
     reservation_id: string;
@@ -32,7 +40,7 @@ const STATUS_COLOR: Record<string, string> = {
     finished: '#6b7280',
 };
 
-const TABLES = Array.from({ length: 12 }, (_, i) => `T${String(i + 1).padStart(2, '0')}`);
+
 
 const emptyForm = (): Partial<Reservation> => ({
     customer_name: '', phone_number: '', party_size: 2,
@@ -56,20 +64,50 @@ const getDiffLabel = (dt: string) => {
 };
 
 // ─── Customer-facing registration form ───────────────────────────────────────
-const CustomerRegistrationForm: React.FC<{ storeId: string; storeName: string }> = ({ storeName }) => {
+const CustomerRegistrationForm: React.FC<{ storeId: string; storeName: string }> = ({ storeId, storeName }) => {
     const [form, setForm] = useState({ name: '', phone: '', datetime: '', count: '2' });
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [settings, setSettings] = useState({ start: '11:00', end: '20:00' });
+
+    useEffect(() => {
+        if (!storeId || storeId === 'Total') return;
+        fetch(`${getApiUrl()}/api/stores/${storeId}/settings`)
+            .then(r => r.json())
+            .then(d => { 
+                if (d.reservation_settings) {
+                    setSettings(typeof d.reservation_settings === 'string' ? JSON.parse(d.reservation_settings) : d.reservation_settings);
+                }
+            })
+            .catch(() => {});
+    }, [storeId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!form.phone || !form.datetime) return alert('연락처와 예약 일시를 입력해주세요.');
+
+        const selectedDate = new Date(form.datetime);
+        const timeStr = `${String(selectedDate.getHours()).padStart(2, '0')}:${String(selectedDate.getMinutes()).padStart(2, '0')}`;
+        
+        if (settings.start === settings.end) {
+            return alert('현재 매장 설정상 예약을 접수하지 않습니다.');
+        }
+        
+        const isValidTime = settings.start <= settings.end 
+            ? (timeStr >= settings.start && timeStr <= settings.end)
+            : (timeStr >= settings.start || timeStr <= settings.end);
+
+        if (!isValidTime) {
+            return alert(`예약 가능 시간은 ${settings.start} ~ ${settings.end} 입니다.`);
+        }
+
         setSubmitting(true);
         try {
             const res = await fetch(`${getApiUrl()}/api/reservation/request`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    store_id: storeId,
                     customer_name: form.name || '손님',
                     phone_number: form.phone.replace(/[^0-9]/g, ''),
                     party_size: Number(form.count.replace('+', '')) || 2,
@@ -87,12 +125,18 @@ const CustomerRegistrationForm: React.FC<{ storeId: string; storeName: string }>
     };
 
     if (submitted) {
+        const isToday = new Date(form.datetime).toDateString() === new Date().toDateString();
         return (
             <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)' }}>
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                     <div style={{ fontSize: '4rem', marginBottom: '16px' }}>✅</div>
                     <h2 style={{ color: 'var(--text-main)', fontWeight: 900 }}>예약 신청 완료</h2>
-                    <p style={{ color: 'var(--text-muted)', lineHeight: 1.8 }}>{storeName} 방문 예약이 접수되었습니다.<br />매장에서 확인 후 연락드릴 예정입니다.</p>
+                    <p style={{ color: 'var(--text-muted)', lineHeight: 1.8 }}>
+                        {storeName} 방문 예약이 접수되었습니다.<br />
+                        {isToday 
+                            ? '당일 예약이 정상적으로 접수되었습니다. 매장 상황에 따라 곧 안내해 드리겠습니다.' 
+                            : '입력하신 전화번호로 점장님이 확인 후 연락을 드려 최종 확정될 예정입니다.'}
+                    </p>
                 </div>
             </div>
         );
@@ -113,8 +157,9 @@ const CustomerRegistrationForm: React.FC<{ storeId: string; storeName: string }>
                             style={{ display: 'block', marginTop: '8px', width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', boxSizing: 'border-box' }} />
                     </label>
                     <label style={{ fontWeight: 700, fontSize: '0.9rem' }}>예약 일시
-                        <input type="datetime-local" value={form.datetime} onChange={e => setForm(f => ({ ...f, datetime: e.target.value }))} required
-                            style={{ display: 'block', marginTop: '8px', width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', boxSizing: 'border-box' }} />
+                        <div style={{ marginTop: '8px' }}>
+                            <CustomDateTimePicker value={form.datetime} onChange={v => setForm(f => ({ ...f, datetime: v }))} />
+                        </div>
                     </label>
                     <label style={{ fontWeight: 700, fontSize: '0.9rem' }}>방문 인원
                         <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
@@ -137,14 +182,30 @@ const CustomerRegistrationForm: React.FC<{ storeId: string; storeName: string }>
 };
 
 // ─── Main management view ─────────────────────────────────────────────────────
-export const ReservationManager: React.FC = () => {
+export const ReservationManager: React.FC<{ userRole?: string; bundles?: any[] }> = ({ userRole, bundles = [] }) => {
     const { storeId, storeName } = useStoreFilter();
 
+    const dynamicTableCount = React.useMemo(() => {
+        const storeBundle = bundles.find(b => b.type === 'StoreConfig' && (b.store_id === storeId || !b.store_id));
+        const tableSetup = storeBundle?.items?.find((i: any) => i.name === '테이블설정' || i.name === '테이블 수' || i.name === 'table_count')?.value;
+        if (tableSetup) {
+            if (typeof tableSetup === 'string' && tableSetup.includes('번:')) {
+                return tableSetup.split(',').length;
+            } else if (!isNaN(Number(tableSetup))) {
+                return Number(tableSetup);
+            }
+        }
+        return 12;
+    }, [bundles, storeId]);
+
+    const TABLES = React.useMemo(() => Array.from({ length: dynamicTableCount }, (_, i) => `T${String(i + 1).padStart(2, '0')}`), [dynamicTableCount]);
+
     const params = new URLSearchParams(window.location.search);
-    const isRegistrationMode = params.get('mode') === 'reserve' && params.get('action') === 'register';
+    const isRegistrationMode = params.get('mode') === 'reserve' && params.get('action') === 'register' && (!userRole || userRole === 'customer');
 
     const [reservations, setReservations] = useState<Reservation[]>([]);
-    const [filterStatus, setFilterStatus] = useState<string>('active');
+    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [reservationSettings, setReservationSettings] = useState({ start: '11:00', end: '20:00' });
 
     const [editOpen, setEditOpen] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
@@ -157,17 +218,52 @@ export const ReservationManager: React.FC = () => {
 
     const fetchReservations = useCallback(async () => {
         try {
-            const res = await fetch(`${getApiUrl()}/api/reservation/all`);
+            const url = storeId && storeId !== 'Total' ? `${getApiUrl()}/api/reservation/all?store_id=${storeId}` : `${getApiUrl()}/api/reservation/all`;
+            const res = await fetch(url);
             const data = await res.json();
             if (Array.isArray(data)) setReservations(data);
         } catch (e) {
             console.error('Fetch reservations error:', e);
         }
-    }, []);
+    }, [storeId]);
 
     useEffect(() => {
         fetchReservations();
-    }, [fetchReservations]);
+        
+        if (!storeId || storeId === 'Total') return;
+        const unsub = subscribeToStore(storeId, (data) => {
+            if (data.type === 'RESERVATION_UPDATED') {
+                fetchReservations();
+            }
+        });
+        return () => unsub();
+    }, [fetchReservations, storeId]);
+
+    useEffect(() => {
+        if (!storeId || storeId === 'Total') return;
+        fetch(`${getApiUrl()}/api/stores/${storeId}/settings`)
+            .then(r => r.json())
+            .then(d => {
+                if (d.reservation_settings) {
+                    setReservationSettings(typeof d.reservation_settings === 'string' ? JSON.parse(d.reservation_settings) : d.reservation_settings);
+                }
+            })
+            .catch(() => {});
+    }, [storeId]);
+
+    const handleSaveSettings = async () => {
+        if (!storeId || storeId === 'Total') return alert('특정 매장을 선택한 후 설정하세요.');
+        try {
+            await fetch(`${getApiUrl()}/api/stores/${storeId}/settings`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reservation_settings: reservationSettings }),
+            });
+            alert('설정이 저장되었습니다.');
+        } catch {
+            alert('설정 저장 중 오류가 발생했습니다.');
+        }
+    };
 
     const handleConfirm = async (r: Reservation) => {
         try {
@@ -196,6 +292,7 @@ export const ReservationManager: React.FC = () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
+                        store_id: storeId,
                         customer_name: editForm.customer_name,
                         phone_number: editForm.phone_number,
                         party_size: editForm.party_size,
@@ -248,6 +345,17 @@ export const ReservationManager: React.FC = () => {
         }
     };
 
+    const handleContactConfirm = async (r: Reservation, type: '1day' | '3hour') => {
+        try {
+            await fetch(`${getApiUrl()}/api/reservation/contact-confirm`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reservation_id: r.reservation_id, contact_type: type }),
+            });
+            fetchReservations();
+        } catch (e) { console.error(e); }
+    };
+
     const filtered = reservations.filter(r => {
         if (filterStatus === 'active') return ['requested', 'confirmed'].includes(r.status);
         if (filterStatus === 'arrived') return r.status === 'arrived';
@@ -267,9 +375,10 @@ export const ReservationManager: React.FC = () => {
     ];
 
     return (
-        <div style={{ padding: '16px', background: 'var(--bg-main)', minHeight: '100vh' }}>
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ padding: '16px', paddingBottom: '120px', background: 'var(--bg-main)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flex: 1 }}>
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>📅 예약 관리</h2>
                 <button
                     onClick={() => { setIsNew(true); setEditId(null); setEditForm(emptyForm()); setEditOpen(true); }}
@@ -364,25 +473,33 @@ export const ReservationManager: React.FC = () => {
                                 )}
 
                                 {/* 3행: 액션 버튼 */}
-                                <div style={{ display: 'flex', gap: '6px' }}>
+                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                                     {r.status === 'requested' && (
                                         <button onClick={() => handleConfirm(r)} style={{
-                                            flex: 1, padding: '9px 0', background: '#3b82f6', color: 'white',
+                                            flex: 1, padding: '9px 0', background: '#3b82f6', color: 'white', minWidth: '70px',
                                             border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem'
                                         }}>확정</button>
                                     )}
+                                    {new Date(r.reserved_time).toDateString() !== new Date().toDateString() && r.status !== 'cancelled' && r.status !== 'finished' && (
+                                        <button onClick={() => handleContactConfirm(r, '1day')} style={{
+                                            flex: 1, padding: '9px 0', background: r.contact_confirmed_1day ? 'var(--bg-main)' : '#8b5cf6', color: r.contact_confirmed_1day ? 'var(--text-muted)' : 'white', minWidth: '90px',
+                                            border: r.contact_confirmed_1day ? '1px solid var(--border)' : 'none', borderRadius: '8px', fontWeight: 700, cursor: r.contact_confirmed_1day ? 'default' : 'pointer', fontSize: '0.82rem'
+                                        }} disabled={r.contact_confirmed_1day}>
+                                            {r.contact_confirmed_1day ? '✅ 전화확인됨' : '📞 전화 확인'}
+                                        </button>
+                                    )}
                                     {(r.status === 'requested' || r.status === 'confirmed') && (
                                         <button onClick={() => handleArrival(r)} style={{
-                                            flex: 2, padding: '9px 0', background: '#10b981', color: 'white',
+                                            flex: 2, padding: '9px 0', background: '#10b981', color: 'white', minWidth: '90px',
                                             border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer', fontSize: '0.82rem'
                                         }}>입장 처리</button>
                                     )}
                                     <button onClick={() => { setIsNew(false); setEditId(r.reservation_id); setEditForm({ ...r }); setEditOpen(true); }} style={{
-                                        flex: 1, padding: '9px 0', background: 'var(--bg-main)', color: 'var(--text-main)',
+                                        flex: 1, padding: '9px 0', background: 'var(--bg-main)', color: 'var(--text-main)', minWidth: '70px',
                                         border: '1px solid var(--border)', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem'
                                     }}>수정</button>
                                     <button onClick={() => handleDelete(r.reservation_id)} style={{
-                                        flex: 1, padding: '9px 0', background: 'transparent', color: '#ef4444',
+                                        flex: 1, padding: '9px 0', background: 'transparent', color: '#ef4444', minWidth: '70px',
                                         border: '1px solid #fca5a5', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem'
                                     }}>삭제</button>
                                 </div>
@@ -391,6 +508,26 @@ export const ReservationManager: React.FC = () => {
                     })}
                 </div>
             )}
+            </div>
+
+            {/* ── Settings ── */}
+            <div style={{ position: 'sticky', bottom: '80px', margin: 'auto -16px -16px -16px', padding: '16px 20px', background: 'var(--surface)', borderTop: '1px solid var(--border)', zIndex: 100, boxShadow: '0 -10px 20px rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxWidth: '600px', margin: '0 auto' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>⚙️ 당일 예약 가능 시간 설정</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <select value={reservationSettings.start} onChange={e => setReservationSettings(prev => ({ ...prev, start: e.target.value }))}
+                            style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}>
+                            {Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`).map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <span style={{ fontWeight: 800, color: 'var(--text-muted)' }}>~</span>
+                        <select value={reservationSettings.end} onChange={e => setReservationSettings(prev => ({ ...prev, end: e.target.value }))}
+                            style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '0.95rem', fontWeight: 600, outline: 'none' }}>
+                            {Array.from({length: 24}, (_, i) => `${String(i).padStart(2, '0')}:00`).map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <button onClick={handleSaveSettings} style={{ padding: '10px 20px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 800, cursor: 'pointer', fontSize: '0.95rem', marginLeft: '4px', whiteSpace: 'nowrap' }}>저장</button>
+                    </div>
+                </div>
+            </div>
 
             {/* ── Edit / New Modal ── */}
             {editOpen && (
@@ -407,9 +544,15 @@ export const ReservationManager: React.FC = () => {
                                 { label: '예약 일시', key: 'reserved_time', type: 'datetime-local', placeholder: '' },
                             ] as { label: string; key: keyof Reservation; type: string; placeholder: string }[]).map(f => (
                                 <label key={f.key} style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>{f.label}
-                                    <input type={f.type} value={(editForm[f.key] as string) || ''} placeholder={f.placeholder}
-                                        onChange={e => setEditForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                                        style={{ display: 'block', width: '100%', marginTop: '6px', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', boxSizing: 'border-box' }} />
+                                    {f.type === 'datetime-local' ? (
+                                        <div style={{ marginTop: '6px' }}>
+                                            <CustomDateTimePicker value={(editForm[f.key] as string) || ''} onChange={v => setEditForm(prev => ({ ...prev, [f.key]: v }))} />
+                                        </div>
+                                    ) : (
+                                        <input type={f.type} value={(editForm[f.key] as string) || ''} placeholder={f.placeholder}
+                                            onChange={e => setEditForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                                            style={{ display: 'block', width: '100%', marginTop: '6px', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', boxSizing: 'border-box' }} />
+                                    )}
                                 </label>
                             ))}
                             <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-muted)' }}>인원수

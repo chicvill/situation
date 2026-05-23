@@ -4,6 +4,39 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
+// 모바일 디버깅을 위한 글로벌 에러 캐처
+window.onerror = function(message, source, lineno, colno, error) {
+    const errorDiv = document.createElement('div');
+    errorDiv.style.position = 'fixed';
+    errorDiv.style.top = '0';
+    errorDiv.style.left = '0';
+    errorDiv.style.width = '100%';
+    errorDiv.style.padding = '20px';
+    errorDiv.style.background = 'rgba(255, 0, 0, 0.9)';
+    errorDiv.style.color = 'white';
+    errorDiv.style.zIndex = '999999';
+    errorDiv.style.wordBreak = 'break-all';
+    errorDiv.style.fontSize = '12px';
+    errorDiv.innerHTML = `<h3>🚨 Fatal Error</h3><p>${message}</p><p>${source}:${lineno}:${colno}</p><pre>${error instanceof Error ? error.stack : ''}</pre>`;
+    document.body.appendChild(errorDiv);
+};
+
+window.addEventListener('unhandledrejection', function(event) {
+    const errorDiv = document.createElement('div');
+    errorDiv.style.position = 'fixed';
+    errorDiv.style.top = '50%';
+    errorDiv.style.left = '0';
+    errorDiv.style.width = '100%';
+    errorDiv.style.padding = '20px';
+    errorDiv.style.background = 'rgba(200, 0, 0, 0.9)';
+    errorDiv.style.color = 'white';
+    errorDiv.style.zIndex = '999999';
+    errorDiv.style.wordBreak = 'break-all';
+    errorDiv.style.fontSize = '12px';
+    errorDiv.innerHTML = `<h3>🚨 Promise Rejection</h3><p>${event.reason}</p>`;
+    document.body.appendChild(errorDiv);
+});
+
 // Error Boundary to catch silent crashes
 class AppErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
   constructor(props: { children: ReactNode }) {

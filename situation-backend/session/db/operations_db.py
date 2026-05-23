@@ -185,14 +185,16 @@ def save_reservation(res_data: dict):
     try:
         cur = conn.cursor()
         query = """
-            INSERT INTO table_reservations (reservation_id, customer_name, phone_number, party_size, reserved_time, table_id, status)
-            VALUES (%(reservation_id)s, %(customer_name)s, %(phone_number)s, %(party_size)s, %(reserved_time)s, %(table_id)s, %(status)s)
+            INSERT INTO table_reservations (reservation_id, store_id, customer_name, phone_number, party_size, reserved_time, table_id, status)
+            VALUES (%(reservation_id)s, %(store_id)s, %(customer_name)s, %(phone_number)s, %(party_size)s, %(reserved_time)s, %(table_id)s, %(status)s)
             ON CONFLICT (reservation_id) DO UPDATE SET
                 status = EXCLUDED.status,
-                table_id = EXCLUDED.table_id
+                table_id = EXCLUDED.table_id,
+                store_id = EXCLUDED.store_id
         """
         cur.execute(query, {
             'reservation_id': res_data['reservation_id'],
+            'store_id': res_data.get('store_id', 'store-1'),
             'customer_name': res_data['customer_name'],
             'phone_number': res_data['phone_number'],
             'party_size': res_data['party_size'],
@@ -208,12 +210,15 @@ def save_reservation(res_data: dict):
         print(f"Save Reservation Error: {e}")
         return False
 
-def get_active_reservations():
+def get_active_reservations(store_id: Optional[str] = None):
     conn = get_db_conn()
     if not conn: return []
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM table_reservations WHERE status IN ('requested', 'confirmed') ORDER BY reserved_time ASC")
+        if store_id and store_id != "Total":
+            cur.execute("SELECT * FROM table_reservations WHERE status IN ('requested', 'confirmed') AND store_id = %(store_id)s ORDER BY reserved_time ASC", {'store_id': store_id})
+        else:
+            cur.execute("SELECT * FROM table_reservations WHERE status IN ('requested', 'confirmed') ORDER BY reserved_time ASC")
         results = cur.fetchall()
         cur.close()
         conn.close()
@@ -255,12 +260,15 @@ def _ensure_reservation_columns():
 _ensure_reservation_columns()
 
 
-def get_all_reservations():
+def get_all_reservations(store_id: Optional[str] = None):
     conn = get_db_conn()
     if not conn: return []
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM table_reservations ORDER BY reserved_time ASC")
+        if store_id and store_id != "Total":
+            cur.execute("SELECT * FROM table_reservations WHERE store_id = %(store_id)s ORDER BY reserved_time ASC", {'store_id': store_id})
+        else:
+            cur.execute("SELECT * FROM table_reservations ORDER BY reserved_time ASC")
         results = cur.fetchall()
         cur.close()
         conn.close()

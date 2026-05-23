@@ -1,0 +1,14 @@
+{
+  "snapshot_time": "2026-05-23T09:02:35.997680",
+  "label": "CREATE",
+  "note": "DB CREATE 직전 세션 상태",
+  "session": {
+    "session_id": "SESS-84B17DC1",
+    "store_id": "test_store",
+    "table_id": "T98",
+    "device_id": "TEST_DEVICE_A",
+    "status": "active",
+    "checkin_time": "2026-05-23T09:02:35.997029",
+    "metadata": {}
+  }
+}

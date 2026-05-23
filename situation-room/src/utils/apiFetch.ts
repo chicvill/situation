@@ -1,4 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+let API_BASE = import.meta.env.VITE_API_URL;
+if (!API_BASE || ((API_BASE.includes('127.0.0.1') || API_BASE.includes('localhost')) && window.location.hostname !== '127.0.0.1' && window.location.hostname !== 'localhost')) {
+    API_BASE = `http://${window.location.hostname}:8000`;
+}
 
 export const getApiBase = () => API_BASE;
 

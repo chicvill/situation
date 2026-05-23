@@ -3,17 +3,21 @@ import asyncio
 import httpx  # type: ignore
 from contextlib import asynccontextmanager
 from datetime import datetime
+from dotenv import load_dotenv, find_dotenv
+load_dotenv(find_dotenv())  # situation-backend/.env 자동 탐색 및 로드
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import init_db_v2, get_db_conn, seed_stores_from_pool
+from .db.session_db import init_archive_table
 from .state import manager, load_pool, save_pool, POOL_FILE  # noqa: F401 — re-exported for legacy imports
 from .models import OrderItem, OrderRequest, StatusUpdate, StoreCreateRequest, StoreUpdateRequest  # noqa: F401
 
 from .routers import store, pool, session_routes, payment, order, operations, staff, chat, manual, notify
 from .routers import auth_router
+from .routers import debug_router
 from .mqtt_handler import run_mqtt_client
 
 
@@ -32,16 +36,16 @@ async def keep_alive_task():
                 conn.commit()
                 cur.close()
                 conn.close()
-                print(f"💓 [{datetime.now().strftime('%H:%M:%S')}] DB Keep-alive pulse sent.")
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] DB Keep-alive pulse sent.")
 
             # 2. 셀프 핑 (HTTP 요청이 있어야 Render가 잠들지 않음)
             render_url = os.getenv("RENDER_EXTERNAL_URL") or "http://localhost:8000"
             async with httpx.AsyncClient() as client:
                 await client.get(render_url)
-                print(f"🌐 [{datetime.now().strftime('%H:%M:%S')}] Self-ping sent to {render_url}")
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] Self-ping sent to {render_url}")
 
         except Exception as e:
-            print(f"⚠️ Keep-alive pulse failed: {e}")
+            print(f"Keep-alive pulse failed: {e}")
 
         await asyncio.sleep(840)  # 14분 간격 (Render 15분 슬립 타임아웃 방지)
 
@@ -85,6 +89,7 @@ def init_config_db():
     conn.close()
 
 init_config_db()
+init_archive_table()
 
 # --- Frontend Serving ---
 # Render 환경과 로컬 환경 모두 지원하는 경로 설정
@@ -115,4 +120,5 @@ app.include_router(staff.router)
 app.include_router(chat.router)
 app.include_router(manual.router)
 app.include_router(notify.router)
+app.include_router(debug_router.router)
 # app.include_router(websocket.router)  # Removed as part of MQTT migration

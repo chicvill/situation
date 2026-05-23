@@ -148,15 +148,20 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
   // --- Effects ---
   useEffect(() => {
     fetchMySession();
-    const unsubscribeTable = subscribeTopic(`situation/table/${tableId}`, (data) => {
+    const tableHandler = (data: any) => {
       if (['STATUS_UPDATE', 'STATUS_UPDATED', 'NEW_ORDER', 'SESSION_OPENED', 'PAYMENT_CONFIRMED', 'PAYMENT_APPROVED', 'ORDER_UPDATED', 'KITCHEN_DONE'].includes(data.type)) {
         fetchMySession();
       } else if (data.type === 'SESSION_CLOSED') {
         window.location.reload();
       }
-    });
+    };
+    const tableTopicNew = (storeId && storeId !== 'Total') ? `store/${storeId}/table/${tableId}` : `situation/table/${tableId}`;
+    const unsubscribeTable = subscribeTopic(tableTopicNew, tableHandler);
+    const unsubscribeLegacy = tableTopicNew !== `situation/table/${tableId}`
+      ? subscribeTopic(`situation/table/${tableId}`, tableHandler)
+      : null;
     const timer = setInterval(fetchMySession, 5000);
-    return () => { unsubscribeTable(); clearInterval(timer); };
+    return () => { unsubscribeTable(); unsubscribeLegacy?.(); clearInterval(timer); };
   }, [tableId, storeId, fetchMySession]);
 
   // --- Draggable Cart Logic ---
@@ -250,8 +255,8 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
           table_id: tableId, device_id: deviceId, store_id: storeId,
           items: cart.map(c => ({ name: c.name, quantity: c.qty || 1, price: c.price, qty: c.qty || 1 })),
           total_price: totalPrice,
-          // 카운터 결제는 unpaid, 카드는 결제 대기(pending) 상태로 시작
-          payment_status: (method === '카운터에서 결제' || method === '현금 결제' || method === 'cash') ? 'unpaid' : 'pending',
+          // 카운터 결제는 unpaid, 카트는 결제 대기(pending) 상태로 시작
+          payment_status: (method === '카운터에서 결제' || method === '현금 결제' || method === 'cash') ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
           payment_method: method,
           metadata: extraData
         })
@@ -262,12 +267,18 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
         const orderId = orderData.order_id;
 
         // 2. 결제 수단별 분기 처리
-        if (method === '카운터에서 결제' || method === '현금 결제' || method === 'cash') {
+        const isCounterPay = method === '카운터에서 결제' || method === '현금 결제' || method === 'cash';
+        const isTestPay = method.includes('가상 결제') || method.includes('테스트');
+
+        if (isCounterPay || isTestPay) {
           // 카운터에서 결제 (현금 등) -> 즉시 완료 단계로 이동
           setCart([]);
           fetchMySession();
           generateAiStory(currentCart);
           setShowProgress(true);
+          if (isTestPay) {
+            alert('테스트 결제가 성공적으로 완료되었습니다.');
+          }
         } else {
           // 카드 / 계좌이체 -> 토스 결제창 호출
           const tossPayments = (window as any).TossPayments('test_ck_D5b4Zne68wxL1Pn6k0m8rlzYWBn1');

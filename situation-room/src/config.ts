@@ -29,11 +29,8 @@ const getWsBase = () => {
 };
 
 const getMqttWsBase = () => {
-    if (import.meta.env.VITE_MQTT_WS_URL) return import.meta.env.VITE_MQTT_WS_URL;
-    const host = window.location.hostname;
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    // Mosquitto WebSocket 기본 포트: 9001
-    return `${protocol}://${host}:9001`;
+    // 환경변수나 캐시 문제와 무관하게 명시적으로 HiveMQ Cloud WSS 주소 강제 반환
+    return 'wss://315e5d948dad4a52b84916853d7e9344.s1.eu.hivemq.cloud:8884/mqtt';
 };
 
 export const API_BASE = getApiBase();

@@ -679,6 +679,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                                     <option value="계좌이체">🏦 계좌이체</option>
                                     <option value="카드/페이">💳 카드 / 페이 결제</option>
                                     <option value="카운터결제">🏪 카운터에서 결제</option>
+                                    <option value="가상 결제 (테스트)">⚡ 가상 결제 (테스트)</option>
                                 </select>
                             </div>
                         )}

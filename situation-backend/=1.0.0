@@ -1,0 +1,43 @@
+WARNING: Cache entry deserialization failed, entry ignored
+Collecting openai
+  Downloading openai-2.37.0-py3-none-any.whl.metadata (31 kB)
+Requirement already satisfied: anyio<5,>=3.5.0 in C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages (from openai) (4.12.1)
+WARNING: Cache entry deserialization failed, entry ignored
+Collecting distro<2,>=1.7.0 (from openai)
+  Using cached distro-1.9.0-py3-none-any.whl.metadata (6.8 kB)
+Requirement already satisfied: httpx<1,>=0.23.0 in C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages (from openai) (0.28.1)
+WARNING: Cache entry deserialization failed, entry ignored
+Collecting jiter<1,>=0.10.0 (from openai)
+  Downloading jiter-0.15.0-cp314-cp314-win_amd64.whl.metadata (5.3 kB)
+Requirement already satisfied: pydantic<3,>=1.9.0 in C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages (from openai) (2.12.5)
+WARNING: Cache entry deserialization failed, entry ignored
+Collecting sniffio (from openai)
+  Using cached sniffio-1.3.1-py3-none-any.whl.metadata (3.9 kB)
+WARNING: Cache entry deserialization failed, entry ignored
+Collecting tqdm>4 (from openai)
+  Using cached tqdm-4.67.3-py3-none-any.whl.metadata (57 kB)
+Requirement already satisfied: typing-extensions<5,>=4.11 in C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages (from openai) (4.15.0)
+Requirement already satisfied: idna>=2.8 in C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages (from anyio<5,>=3.5.0->openai) (3.11)
+Requirement already satisfied: certifi in C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages (from httpx<1,>=0.23.0->openai) (2026.1.4)
+Requirement already satisfied: httpcore==1.* in C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages (from httpx<1,>=0.23.0->openai) (1.0.9)
+Requirement already satisfied: h11>=0.16 in C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages (from httpcore==1.*->httpx<1,>=0.23.0->openai) (0.16.0)
+Requirement already satisfied: annotated-types>=0.6.0 in C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages (from pydantic<3,>=1.9.0->openai) (0.7.0)
+Requirement already satisfied: pydantic-core==2.41.5 in C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages (from pydantic<3,>=1.9.0->openai) (2.41.5)
+Requirement already satisfied: typing-inspection>=0.4.2 in C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages (from pydantic<3,>=1.9.0->openai) (0.4.2)
+Requirement already satisfied: colorama in C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages (from tqdm>4->openai) (0.4.6)
+Downloading openai-2.37.0-py3-none-any.whl (1.3 MB)
+   ---------------------------------------- 1.3/1.3 MB 9.4 MB/s  0:00:00
+Using cached distro-1.9.0-py3-none-any.whl (20 kB)
+Downloading jiter-0.15.0-cp314-cp314-win_amd64.whl (197 kB)
+Using cached tqdm-4.67.3-py3-none-any.whl (78 kB)
+Using cached sniffio-1.3.1-py3-none-any.whl (10 kB)
+Installing collected packages: tqdm, sniffio, jiter, distro, openai
+  WARNING: The script tqdm.exe is installed in 'C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Scripts' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+  WARNING: The script distro.exe is installed in 'C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\Scripts' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+
+Successfully installed distro-1.9.0 jiter-0.15.0 openai-2.37.0 sniffio-1.3.1 tqdm-4.67.3
+
+[notice] A new release of pip is available: 26.1 -> 26.1.1
+[notice] To update, run: C:\Users\USER\AppData\Local\Python\pythoncore-3.14-64\python.exe -m pip install --upgrade pip

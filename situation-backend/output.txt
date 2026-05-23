@@ -1,4 +1,5 @@
-=== DB Debug/Sync Start: 2026-05-16T16:33:53.541122 ===
-Current stores in DB: [('store-chinese', '취홍루'), ('store-1', '시크앤프레시'), ('store-chicvill', '시크빌'), ('store-japanese', '미도리 스시'), ('store-western', '라 벨라 이탈리아'), ('store-korean', '대장금 수라간'), ('store-coffee', '그레이스 하이테크 커피'), ('store-beef', '대관령 황금 한우'), ('store-tofu', '한옥마을 수제 초당순두부'), ('store-bibim', '우정 전주 돌솥비빔밥')]
-store-chicvill count: 1
-Stores in DB after sync: [('store-chinese', '취홍루'), ('store-1', '시크앤프레시'), ('store-chicvill', '시크빌'), ('store-japanese', '미도리 스시'), ('store-western', '라 벨라 이탈리아'), ('store-korean', '대장금 수라간'), ('store-coffee', '그레이스 하이테크 커피'), ('store-beef', '대관령 황금 한우'), ('store-tofu', '한옥마을 수제 초당순두부'), ('store-bibim', '우정 전주 돌솥비빔밥')]
+=== DB Debug/Sync Start: 2026-05-17T16:51:52.672784 ===
+Current stores in DB: [('store-1', '미소 한식당'), ('store-2', '블루버드 카페'), ('store-3', '나폴리 피자'), ('store-8214', '시크빌')]
+store-chicvill count: 0
+Successfully force-seeded 'store-chicvill' into database!
+Stores in DB after sync: [('store-1', '미소 한식당'), ('store-2', '블루버드 카페'), ('store-3', '나폴리 피자'), ('store-8214', '시크빌'), ('store-chicvill', '시크빌')]

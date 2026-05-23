@@ -14,7 +14,7 @@ router = APIRouter()
 
 @router.post("/api/order/direct")
 async def process_order(order_req: OrderRequest):
-    print(f"🔥 [Order Request] Table: {order_req.table_id}, Store: {order_req.store_id}, Price: {order_req.total_price}")
+    print(f"[Order Request] Table: {order_req.table_id}, Store: {order_req.store_id}, Price: {order_req.total_price}")
 
     # 0. 매장 ID 보정 (Total이거나 비어있으면 default_store 사용)
     effective_store_id = order_req.store_id
@@ -29,10 +29,10 @@ async def process_order(order_req: OrderRequest):
         alt_store_id = "default_store" if effective_store_id != "default_store" else "Total"
         session = get_active_session(alt_store_id, order_req.table_id)
         if session:
-            print(f"🔗 [Session Linked] Found active session in alternative store: {alt_store_id}")
+            print(f"[Session Linked] Found active session in alternative store: {alt_store_id}")
 
     if not session:
-        print(f"⚠️ [Warning] No active session found for Table {order_req.table_id}. Creating new one...")
+        print(f"[Warning] No active session found for Table {order_req.table_id}. Creating new one...")
         from ..routers.session_routes import open_session_manually
         try:
             session = await open_session_manually({
@@ -40,7 +40,7 @@ async def process_order(order_req: OrderRequest):
                 "table_id": order_req.table_id
             })
         except Exception as e:
-            print(f"❌ Failed to create automatic session: {e}")
+            print(f"[Failed] Failed to create automatic session: {e}")
             session = {}
 
     session_dict = session if isinstance(session, dict) else {}
@@ -48,7 +48,7 @@ async def process_order(order_req: OrderRequest):
     table_id_val = str(session_dict.get('table_id') or order_req.table_id)
     store_id_val = str(session_dict.get('store_id') or effective_store_id)
 
-    print(f"✅ [Target Session] ID: {session_id} | Table: {table_id_val} | Store: {store_id_val}")
+    print(f"[Target Session] ID: {session_id} | Table: {table_id_val} | Store: {store_id_val}")
 
     # 2. 다음 차수 결정
     current_max_seq = get_max_order_seq(session_id)
@@ -73,16 +73,17 @@ async def process_order(order_req: OrderRequest):
         "status": initial_status,
         "payment_status": order_req.payment_status,
         "payment_method": order_req.payment_method,
+        "join_order": order_req.join_order,
         "order_seq": next_seq,
         "timestamp": datetime.now().isoformat()
     }
 
     # 4. DB 저장
-    print(f"💾 [Checkpoint 3] Saving Order {order_id} to Session {session_id}...")
+    print(f"[Checkpoint 3] Saving Order {order_id} to Session {session_id}...")
     save_success = save_order(new_order)
     
     if not save_success:
-        print(f"❌ [Checkpoint 3 Failed] Could not save order to database. Aborting.")
+        print(f"[Checkpoint 3 Failed] Could not save order to database. Aborting.")
         raise HTTPException(status_code=500, detail="Database save failed for order.")
 
     # 4-1. 포인트 처리 (metadata에 phone이 있는 경우 - 다중 매장 격리 연동)
@@ -93,7 +94,7 @@ async def process_order(order_req: OrderRequest):
         # 기본 0.1% 적립
         pts = int(order_req.total_price * 0.001)
         update_customer_points(phone, pts, effective_store_id)
-        print(f"💰 [Checkpoint 4] Accumulated {pts}P for {phone} under Store {effective_store_id}")
+        print(f"[Checkpoint 4] Accumulated {pts}P for {phone} under Store {effective_store_id}")
 
         # 주방/카운터에 실시간 포인트 적립 브로드캐스트 전송
         await manager.broadcast_to_kitchen({
@@ -103,14 +104,14 @@ async def process_order(order_req: OrderRequest):
             "store_id": effective_store_id
         })
 
-    print(f"✨ [Checkpoint 5] Order Saved Successfully: {order_id}")
+    print(f"[Checkpoint 5] Order Saved Successfully: {order_id}")
 
     # 5. 주방에 알림 전송
     await manager.broadcast_to_kitchen({
         "type": "NEW_ORDER",
         "order": new_order
     })
-    print(f"📡 [Checkpoint 6] Broadcast NEW_ORDER sent to kitchen monitors.")
+    print(f"[Checkpoint 6] Broadcast NEW_ORDER sent to kitchen monitors.")
 
     return {"status": "success", "order_id": order_id, "order_seq": next_seq}
 

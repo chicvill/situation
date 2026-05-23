@@ -376,7 +376,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
   // --- Effects ---
   useEffect(() => {
-    const unsubscribeTable = subscribeTopic(`situation/table/${tableId}`, (msg) => {
+    const tableHandler = (msg: any) => {
       switch (msg.type) {
         case 'SESSION_OPENED':
           joinSession();
@@ -405,7 +405,12 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
         default:
           refreshOrders();
       }
-    });
+    };
+    const tableTopicNew = (storeId && storeId !== 'Total') ? `store/${storeId}/table/${tableId}` : `situation/table/${tableId}`;
+    const unsubscribeTable = subscribeTopic(tableTopicNew, tableHandler);
+    const unsubscribeLegacy = tableTopicNew !== `situation/table/${tableId}`
+      ? subscribeTopic(`situation/table/${tableId}`, tableHandler)
+      : null;
 
     joinSession();
 
@@ -415,7 +420,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       }
     }, 5000);
 
-    return () => { unsubscribeTable(); clearInterval(timer); };
+    return () => { unsubscribeTable(); unsubscribeLegacy?.(); clearInterval(timer); };
   }, [tableId, storeId, deviceId, joinSession, refreshOrders]);
 
   // --- Delayed Payment Watcher ---
@@ -430,6 +435,15 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       setShowDelayedHelp(false);
     }
   }, [showProgress, myOrders]);
+
+  // --- Session Phase Announcement ---
+  useEffect(() => {
+    if (sessionPhase === 'no_session') {
+      speakResponse('카운터에 좌석 승인을 요청했습니다. 카운터에서 승인하면 자동으로 메뉴판이 활성화됩니다. 잠시만 기다려 주세요.');
+    } else if (sessionPhase === 'waiting_approval') {
+      speakResponse('기존 이용 중인 일행의 합류 승인을 기다리고 있습니다. 잠시만 기다려 주세요.');
+    }
+  }, [sessionPhase]);
 
   // --- Payment Result Handling (Event driven from App.tsx) ---
   useEffect(() => {
@@ -803,7 +817,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           table_id: tableId, device_id: deviceId, store_id: storeId,
           items: cart.map(c => ({ name: c.name, quantity: c.qty || 1, price: c.price, qty: c.qty || 1 })),
           total_price: finalAmount,
-          payment_status: (method.includes('카운터') || method.includes('현금') || method.includes('cash')) ? 'unpaid' : 'pending',
+          payment_status: (method.includes('카운터') || method.includes('현금') || method.includes('cash')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
           payment_method: method,
           metadata: extraData
         })
@@ -1199,8 +1213,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           {filteredMenus.map((item, idx) => {
             const cartItem = cart.find(c => c.name === item.name);
             return (
-              <div key={idx} className="menu-card-v2" style={{ cursor: cartItem ? 'default' : 'pointer' }}
-                onClick={() => { if (!cartItem) addToCart(item); }}>
+              <div key={idx} className="menu-card-v2" style={{ cursor: 'pointer' }}
+                onClick={() => addToCart(item)}>
                 {/* 사진 + 사진 아래 수량 바 */}
                 <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
                   <div style={{ position: 'relative', width: '100px', height: '85px' }}>
@@ -1211,18 +1225,18 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
                     <span className="menu-category-tag">{item.category}</span>
                   </div>
                   {/* 수량 바 (사진 아래) */}
-                  <div onClick={e => e.stopPropagation()} style={{
+                  <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     background: cartItem ? 'rgba(249,115,22,0.08)' : '#f1f5f9',
                     border: '1px solid #e2e8f0', borderTop: 'none',
                     borderRadius: '0 0 10px 10px',
                     padding: '4px 6px', width: '100px', boxSizing: 'border-box',
                   }}>
-                    <button onClick={() => removeFromCart(item.name)} style={{ ...qtyBtnS, color: cartItem ? '#ef4444' : '#cbd5e1' }}>−</button>
+                    <button onClick={(e) => { e.stopPropagation(); removeFromCart(item.name); }} style={{ ...qtyBtnS, color: cartItem ? '#ef4444' : '#cbd5e1' }}>−</button>
                     <span style={{ fontSize: '12px', fontWeight: 900, color: cartItem ? '#f97316' : '#94a3b8', minWidth: '18px', textAlign: 'center' }}>
                       {cartItem?.qty ?? 0}
                     </span>
-                    <button onClick={() => addToCart(item)} style={{ ...qtyBtnS, color: '#f97316' }}>+</button>
+                    <button onClick={(e) => { e.stopPropagation(); addToCart(item); }} style={{ ...qtyBtnS, color: '#f97316' }}>+</button>
                   </div>
                 </div>
                 {/* 메뉴 정보 */}
@@ -1339,10 +1353,10 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
             {filteredMenusAi.map((item, idx) => {
               const cartItem = cart.find(c => c.name === item.name);
               return (
-                <div key={idx} onClick={() => { if (!cartItem) addToCart(item); }} style={{
+                <div key={idx} onClick={() => addToCart(item)} style={{
                   flexShrink: 0, width: '132px',
                   background: '#ffffff', borderRadius: '10px', overflow: 'hidden',
-                  cursor: cartItem ? 'default' : 'pointer',
+                  cursor: 'pointer',
                   border: cartItem ? '2px solid #f97316' : '1.5px solid #e2e8f0',
                   boxShadow: '0 1px 6px rgba(0,0,0,0.07)',
                   userSelect: 'none', WebkitUserSelect: 'none',
@@ -1355,15 +1369,15 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
                     />
                   </div>
                   {/* 수량 바 (사진 아래) */}
-                  <div onClick={e => e.stopPropagation()} style={{
+                  <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     background: cartItem ? 'rgba(249,115,22,0.07)' : '#f8fafc',
                     borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0',
                     padding: '3px 5px',
                   }}>
-                    <button onClick={() => removeFromCart(item.name)} style={{ width: '18px', height: '18px', border: 'none', background: 'none', color: cartItem ? '#ef4444' : '#cbd5e1', fontSize: '13px', fontWeight: 900, cursor: cartItem ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1 }}>−</button>
+                    <button onClick={(e) => { e.stopPropagation(); removeFromCart(item.name); }} style={{ width: '18px', height: '18px', border: 'none', background: 'none', color: cartItem ? '#ef4444' : '#cbd5e1', fontSize: '13px', fontWeight: 900, cursor: cartItem ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1 }}>−</button>
                     <span style={{ fontSize: '12px', fontWeight: 900, color: cartItem ? '#f97316' : '#94a3b8', minWidth: '16px', textAlign: 'center' }}>{cartItem?.qty ?? 0}</span>
-                    <button onClick={() => addToCart(item)} style={{ width: '18px', height: '18px', border: 'none', background: 'rgba(249,115,22,0.15)', color: '#f97316', fontSize: '13px', fontWeight: 900, cursor: 'pointer', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1 }}>+</button>
+                    <button onClick={(e) => { e.stopPropagation(); addToCart(item); }} style={{ width: '18px', height: '18px', border: 'none', background: 'rgba(249,115,22,0.15)', color: '#f97316', fontSize: '13px', fontWeight: 900, cursor: 'pointer', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1 }}>+</button>
                   </div>
                   {/* 이름 & 가격 */}
                   <div style={{ padding: '4px 5px 5px' }}>

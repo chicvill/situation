@@ -17,6 +17,7 @@ class OrderRequest(BaseModel):
     payment_status: Optional[str] = "unpaid"
     payment_method: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
+    join_order: Optional[bool] = False
 
 
 class StatusUpdate(BaseModel):

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { subscribeToStore } from '../services/notifications';
+import { playDingDong } from '../utils/audio';
 
 export interface NotificationStates {
   call: boolean;
@@ -22,6 +23,7 @@ export const useStoreSync = (storeId: string) => {
   const [callCount, setCallCount] = useState(0);
   const [waitingCount, setWaitingCount] = useState(0);
   const [parkingCount, setParkingCount] = useState(0);
+  const [reservationCount, setReservationCount] = useState(0);
   const [callFlashing, setCallFlashing] = useState(false);
   const [waitingFlashing, setWaitingFlashing] = useState(false);
   const [parkingFlashing, setParkingFlashing] = useState(false);
@@ -29,13 +31,7 @@ export const useStoreSync = (storeId: string) => {
   const waitingFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const parkingFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const playDingDong = () => {
-    try {
-      const audio = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2014/09/Ding-dong.mp3');
-      audio.volume = 0.6;
-      audio.play().catch(() => {});
-    } catch (_) {}
-  };
+  // playDingDong은 utils/audio.ts 공통 함수 사용
 
   const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
 
@@ -67,10 +63,11 @@ export const useStoreSync = (storeId: string) => {
       }
 
       // 사전 예약 실시간 상태 체크
-      const reserveRes = await fetch(`${apiUrl}/api/reservation/active`);
+      const reserveRes = await fetch(`${apiUrl}/api/reservation/active${storeParam}`);
       if (reserveRes.ok) {
         const data = await reserveRes.json();
         if (Array.isArray(data)) {
+          setReservationCount(data.length);
           setFlashingTabs(prev => ({ ...prev, reserve: data.length > 0 }));
         }
       }
@@ -136,6 +133,15 @@ export const useStoreSync = (storeId: string) => {
             break;
 
           case 'RESERVATION_UPDATED':
+            fetch(`${getApiUrl()}/api/reservation/active${storeId !== 'Total' ? `?store_id=${storeId}` : ''}`)
+              .then(res => res.json())
+              .then(data => {
+                if (Array.isArray(data)) {
+                  setReservationCount(data.length);
+                  setFlashingTabs(prev => ({ ...prev, reserve: data.length > 0 }));
+                }
+              })
+              .catch(() => {});
             setFlashingTabs(prev => ({ ...prev, reserve: true }));
             break;
 
@@ -179,7 +185,15 @@ export const useStoreSync = (storeId: string) => {
       }
     };
 
-    return subscribeToStore(storeId, handleMessage);
+    const unsubscribe = subscribeToStore(storeId, handleMessage);
+
+    // 주기적 폴링: 30초마다 건수 정확히 동기화
+    const pollInterval = setInterval(() => { checkInitialStates(); }, 30000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(pollInterval);
+    };
   }, [storeId, checkInitialStates]);
 
   // 3. 특정 탭 클릭 이동 시 해당 알림 깜빡임 즉시 초기화(Reset)
@@ -211,6 +225,7 @@ export const useStoreSync = (storeId: string) => {
     callCount,
     waitingCount,
     parkingCount,
+    reservationCount,
     callFlashing,
     waitingFlashing,
     parkingFlashing,

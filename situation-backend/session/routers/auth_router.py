@@ -28,13 +28,22 @@ async def login(data: dict):
 
     pool = load_pool()
     matched = None
+    
+    # HTTP 환경(로컬 IP)에서는 프론트엔드의 crypto.subtle이 동작하지 않아 평문이 전달됩니다.
+    # 비밀번호 길이가 64자(SHA-256 길이)가 아니면 평문으로 간주하고 서버에서 해싱합니다.
+    target_pw = password
+    if len(password) != 64:
+        target_pw = hashlib.sha256(password.encode()).hexdigest()
+
     for bundle in pool:
         if bundle.get("type") != "PersonalInfos":
             continue
         items = bundle.get("items", [])
         b_id = next((i["value"] for i in items if i.get("name") == "아이디"), None)
         b_pw = next((i["value"] for i in items if i.get("name") == "비밀번호"), None)
-        if b_id == user_id and b_pw == password:
+        
+        # 클라이언트가 보낸 원본(password) 또는 서버 해싱본(target_pw) 중 하나라도 일치하면 통과
+        if b_id == user_id and (b_pw == password or b_pw == target_pw):
             matched = bundle
             break
 

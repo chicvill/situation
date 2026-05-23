@@ -101,6 +101,8 @@ from .db.store_db import (
     seed_stores_from_pool,
     get_store_use_kitchen,
     update_store_use_kitchen,
+    get_reservation_settings,
+    update_reservation_settings,
 )
 
 __all__ = [
@@ -194,4 +196,6 @@ __all__ = [
     "seed_stores_from_pool",
     "get_store_use_kitchen",
     "update_store_use_kitchen",
+    "get_reservation_settings",
+    "update_reservation_settings",
 ]

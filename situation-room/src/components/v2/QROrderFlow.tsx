@@ -495,16 +495,14 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   ───────────────────────────────────────────── */
   const handleStaffCall = useCallback(async (callType = '직원호출') => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-      const res = await fetch(`${apiUrl}/api/call`, {
+      const res = await fetch(`${API_BASE}/api/call`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ table_id: tableId, store_id: storeId, call_type: callType })
       });
-      if (res.ok) {
-        const d = await res.json();
-        setCallOverlay({ callId: d.call_id, status: 'pending' });
-        addAiMsg('직원 호출 완료! 곧 방문합니다. 🔔', false);
-      }
+      if (!res.ok) throw new Error('호출 실패');
+      const d = await res.json();
+      setCallOverlay({ callId: d.call_id, status: 'pending' });
+      addAiMsg('직원 호출 완료! 곧 방문합니다. 🔔', false);
     } catch (_) { setVoiceToast('❌ 호출 실패. 카운터로 직접 문의해 주세요.'); setTimeout(() => setVoiceToast(null), 3000); }
   }, [tableId, storeId, addAiMsg]);
 
@@ -514,8 +512,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   const handleParkingSubmit = async () => {
     if (vehicleNumber.trim().length < 4) { setVoiceToast('차량번호 뒤 4자리를 입력해주세요.'); setTimeout(() => setVoiceToast(null), 3000); return; }
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
-      const res = await fetch(`${apiUrl}/api/parking/validate`, {
+      const res = await fetch(`${API_BASE}/api/parking/validate`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ session_id: sessionIdRef.current, vehicle_number: vehicleNumber, discount_minutes: 120, store_id: storeId })
       });
@@ -548,7 +545,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           table_id: tableId, device_id: deviceId, store_id: storeId,
           items: cart.map(c => ({ name: c.name, quantity: c.qty, price: c.price, qty: c.qty })),
           total_price: finalAmount,
-          payment_status: (method.includes('카운터') || method.includes('현금')) ? 'unpaid' : 'pending',
+          payment_status: (method.includes('카운터') || method.includes('현금')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
           payment_method: method,
           metadata: { ...extraData, cash_receipt: cashReceipt, phone: userPhone, round: orderRound }
         })
@@ -557,9 +554,12 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
       const orderData = await res.json();
       const orderId = orderData.order_id;
 
-      if (method.includes('카운터') || method.includes('현금')) {
+      const isTestPay = method.includes('가상 결제') || method.includes('테스트');
+
+      if (method.includes('카운터') || method.includes('현금') || isTestPay) {
         setCart([]); refreshOrders();
         phaseRef.current = 'paid'; setPhase('paid');
+        if (isTestPay) alert('테스트 결제가 성공적으로 완료되었습니다.');
       } else {
         localStorage.setItem('receipt_items_' + orderId, JSON.stringify(cart.map(c => ({ name: c.name, value: `${c.qty}개` }))));
         await PaymentService.requestTossPayment(method, {

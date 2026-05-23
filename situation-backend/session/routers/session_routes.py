@@ -28,20 +28,18 @@ async def check_in(data: Dict):
         alt = "default_store" if store_id != "default_store" else "Total"
         active = get_active_session(alt, table_id)
 
-    # ① 세션 없음 → 카운터에 좌석 승인 요청 저장 + 브로드캐스트
+    # ① 세션 없음 → 카운터 고객대기 알림 전송 후 승인 대기
     if not active:
-        print(f"[check_in] {table_id} 세션 없음 → SEAT_REQUEST")
+        print(f"[check_in] {table_id} 세션 없음 → SEAT_REQUEST 알림 전송 후 대기")
         ts = datetime.now().isoformat()
-        manager.add_seat_request(table_id, store_id, ts)
-        seat_req = {
-            "type": "SEAT_REQUEST",
-            "table_id": table_id,
-            "store_id": store_id,
-            "device_id": device_id,
-            "timestamp": ts,
-        }
-        await manager.send_to_table(table_id, seat_req)
-        await manager.broadcast_to_kitchen(seat_req)
+        
+        # 카운터에 고객 알림 (이미 요청 중이면 중복 생략)
+        already_requested = any(r["table_id"] == table_id for r in manager.get_seat_requests())
+        if not already_requested:
+            manager.add_seat_request(table_id, store_id, ts)
+            seat_msg = {"type": "SEAT_REQUEST", "table_id": table_id, "store_id": store_id, "timestamp": ts}
+            await manager.broadcast_to_kitchen(seat_msg)
+            
         return {"status": "no_session"}
 
     orders = get_orders_by_session(active['session_id'])
@@ -50,10 +48,18 @@ async def check_in(data: Dict):
 
     print(f"[check_in] {table_id} 세션={active['session_id']} 주문수={len(orders)} first_device={first_device!r} 요청기기={device_id!r}")
 
-    # ② 주문 없는 테이블 → 무조건 통과 (보호할 주문 없음)
+    # ② 주문 없는 테이블 → 무조건 통과 (보호할 주문 없음) + 카운터 고객대기 알림
     if not orders:
         if device_id and not first_device:
             update_session_device_id(active['session_id'], device_id)
+        # 기존 세션이어도 주문 전이면 고객이 방금 도착한 것 → 카운터에 알림
+        already_requested = any(r["table_id"] == table_id for r in manager.get_seat_requests())
+        if not already_requested:
+            ts = datetime.now().isoformat()
+            manager.add_seat_request(table_id, session_store_id, ts)
+            seat_msg = {"type": "SEAT_REQUEST", "table_id": table_id, "store_id": session_store_id, "timestamp": ts}
+            await manager.broadcast_to_kitchen(seat_msg)
+            print(f"[check_in] 기존 세션 있음 + 주문 없음 → SEAT_REQUEST 알림")
         print(f"[check_in] 주문 없음 → active")
         return {"status": "active", "session": active, "orders": orders}
 
@@ -70,7 +76,7 @@ async def check_in(data: Dict):
         metadata = {}
     if device_id in metadata.get('approved_devices', []):
         print(f"[check_in] 승인된 기기 → active")
-        return {"status": "active", "session": active, "orders": orders}
+        return {"status": "active", "session": active, "orders": orders, "is_joined": True}
 
     # ④ 주문 있는 테이블, 다른 디바이스 → 합류 승인 요청
     join_call_id = f"JOIN-{active['session_id']}-{device_id}"
@@ -113,9 +119,10 @@ async def open_session_manually(data: Dict):
     if not table_id:
         raise HTTPException(status_code=400, detail="table_id required")
 
-    # 이미 활성 세션이 있으면 그대로 반환 (중복 개설 방지)
+    # 이미 활성 세션이 있으면 seat request만 제거 후 반환 (중복 개설 방지)
     active = get_active_session(store_id, table_id)
     if active:
+        manager.remove_seat_request(table_id)
         return active
 
     # 새 세션 생성 — device_id는 빈 문자열로 설정해 첫 고객 QR 스캔 시 소유권 이전

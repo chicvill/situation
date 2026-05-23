@@ -46,7 +46,8 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
         }
     })();
 
-    const baseUrl = 'https://situation.chicvill.store';
+    // 현재 접속 중인 브라우저의 주소(로컬 Vite 5173 포트 또는 운영 도메인)를 그대로 사용하여 QR 생성
+    const baseUrl = window.location.origin;
 
     const qrItems = [
         { title: "🛎️ 웨이팅 등록",       label: "WT", data: `${baseUrl}/?mode=waiting&action=register&table=99&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },

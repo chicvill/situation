@@ -110,7 +110,7 @@ def get_db_conn():
         raw.autocommit = False
         return PooledConnectionWrapper(raw, _get_pool())
     except Exception as e:
-        print(f"❌ DB Connection Error: {e}")
+        print(f"DB Connection Error: {e}")
         raise e
 
 def init_db_v2():
@@ -223,6 +223,7 @@ def init_db_v2():
         cur.execute("""
             CREATE TABLE IF NOT EXISTS table_reservations (
                 reservation_id TEXT PRIMARY KEY,
+                store_id TEXT NOT NULL DEFAULT 'store-1',
                 customer_name TEXT NOT NULL,
                 phone_number TEXT NOT NULL,
                 party_size INTEGER NOT NULL,
@@ -231,6 +232,10 @@ def init_db_v2():
                 status TEXT DEFAULT 'requested'
             )
         """)
+        try:
+            cur.execute("ALTER TABLE table_reservations ADD COLUMN IF NOT EXISTS store_id TEXT NOT NULL DEFAULT 'store-1'")
+        except Exception:
+            pass
 
         # 8. 원클릭 셀프 주차 테이블 (table_parkings)
         cur.execute("""
@@ -307,6 +312,10 @@ def init_db_v2():
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
+        try:
+            cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS reservation_settings JSONB DEFAULT '{\"start\":\"11:00\", \"end\":\"20:00\"}'::jsonb")
+        except Exception:
+            pass
 
         try:
             # 기존 테이블 누락 컬럼 보완 (table_sessions v1 → v2)
@@ -347,6 +356,6 @@ def init_db_v2():
         conn.commit()
         cur.close()
         conn.close()
-        print("✅ Session-centric DB Schema initialized and verified.")
+        print("Session-centric DB Schema initialized and verified.")
     except Exception as e:
-        print(f"❌ DB Init V2 Error: {e}")
+        print(f"DB Init V2 Error: {e}")

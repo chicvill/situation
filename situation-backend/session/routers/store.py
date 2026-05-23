@@ -120,14 +120,18 @@ async def delete_store(store_id: str):
 
 @router.get("/api/stores/{store_id}/settings")
 async def get_store_settings(store_id: str):
+    from ..database import get_store_use_kitchen, get_reservation_settings
     use_kitchen = get_store_use_kitchen(store_id)
-    return {"store_id": store_id, "use_kitchen": use_kitchen}
+    reservation_settings = get_reservation_settings(store_id)
+    return {"store_id": store_id, "use_kitchen": use_kitchen, "reservation_settings": reservation_settings}
 
 
 @router.put("/api/stores/{store_id}/settings")
 async def update_store_settings(store_id: str, data: Dict[str, Any]):
-    use_kitchen = data.get("use_kitchen", True)
-    success = update_store_use_kitchen(store_id, bool(use_kitchen))
-    if success:
-        return {"status": "success"}
-    raise HTTPException(status_code=500, detail="Failed to update store settings")
+    from ..database import update_store_use_kitchen, update_reservation_settings
+    if "use_kitchen" in data:
+        use_kitchen = data.get("use_kitchen", True)
+        update_store_use_kitchen(store_id, bool(use_kitchen))
+    if "reservation_settings" in data:
+        update_reservation_settings(store_id, data["reservation_settings"])
+    return {"status": "success"}

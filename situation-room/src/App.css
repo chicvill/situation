@@ -64,23 +64,21 @@
 
 /* ── Bottom Navigation ── */
 .bottom-nav-bar-9 {
-  position: fixed;
+  position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 72px;
+  height: 48px;
   background: var(--surface);
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 8px 12px;
+  padding: 4px 12px;
   overflow-x: auto;
   scrollbar-width: none;
   z-index: 1000;
   box-shadow: 0 -4px 20px rgba(0,0,0,0.04);
-  max-width: 520px;
-  margin: 0 auto;
 }
 .bottom-nav-bar-9::-webkit-scrollbar { display: none; }
 
@@ -91,8 +89,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 46px;
-  height: 52px;
+  min-width: 40px;
+  height: 40px;
   gap: 3px;
   color: var(--text-muted);
   cursor: pointer;
@@ -110,8 +108,8 @@
 .nav-item-9.active .nav-icon {
   filter: drop-shadow(0 0 4px rgba(249,115,22,0.4));
 }
-.nav-item-9 .nav-icon  { font-size: 1.3rem; line-height: 1; }
-.nav-item-9 .nav-label { font-size: 0.62rem; font-weight: 700; letter-spacing: -0.2px; }
+.nav-item-9 .nav-icon  { font-size: 1rem; line-height: 1; }
+.nav-item-9 .nav-label { font-size: 0.55rem; font-weight: 700; letter-spacing: -0.2px; }
 
 /* AI 비서 중앙 특수 버튼 */
 .mic-special-centered {
@@ -119,9 +117,9 @@
   color: white !important;
   border-radius: var(--radius-md) !important;
   box-shadow: 0 4px 16px rgba(249,115,22,0.35);
-  min-width: 58px !important;
-  height: 52px;
-  transform: translateY(-4px);
+  min-width: 46px !important;
+  height: 40px;
+  transform: translateY(-2px);
   transition: all var(--transition-base);
 }
 .mic-special-centered:hover {
@@ -129,7 +127,7 @@
   transform: translateY(-6px);
   background: linear-gradient(135deg, #ea6c0a, var(--accent-orange)) !important;
 }
-.mic-special-centered .nav-icon  { font-size: 1.5rem; }
+.mic-special-centered .nav-icon  { font-size: 1.1rem; }
 .mic-special-centered .nav-label { color: rgba(255,255,255,0.9) !important; }
 
 /* ── Side Drawer (SideMenu.css) ── */
@@ -1014,6 +1012,12 @@ tr:hover td { background: var(--surface-hover); }
   }
 }
 .blink-call-bell { animation: blink-call-icon 0.9s cubic-bezier(0.4,0,0.2,1) infinite; }
+
+@keyframes seat-blink {
+  0%, 100% { background: #fef3c7; box-shadow: none; }
+  50% { background: #fb923c; box-shadow: 0 0 0 3px rgba(249,115,22,0.55), 0 0 10px rgba(249,115,22,0.35); }
+}
+.table-seat-waiting { animation: seat-blink 0.7s ease-in-out infinite; }
 
 @keyframes notif-slide-in {
   from { opacity: 0; transform: translateX(120%); }

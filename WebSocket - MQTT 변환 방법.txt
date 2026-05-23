@@ -2,7 +2,7 @@ claude code에서 만든 situation 서버 구동
 
 - 터미널 1
 mosquitto 시작
-  & "C:\Program Files\mosquitto\mosquitto.exe" -c "C:\Users\USER\Desktop\Workstation\situation\mosquitto.conf"
+  & "C:\Program Files\mosquitto\mosquitto.exe" -c "exit\mosquitto.conf"
 - 터미널 2
 BACKEND
   cd C:\Users\USER\Desktop\Workstation\situation\situation-backend

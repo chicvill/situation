@@ -1,10 +1,19 @@
 import psycopg2  # type: ignore
 import os
 import json
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 
-# Load .env
-load_dotenv(find_dotenv())
+# situation-backend/.env 명시적 로드 (find_dotenv는 하위 폴더를 탐색하지 않음)
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_ENV_CANDIDATES = [
+    os.path.join(_SCRIPT_DIR, "situation-backend", ".env"),
+    os.path.join(_SCRIPT_DIR, ".env"),
+]
+for _env_path in _ENV_CANDIDATES:
+    if os.path.exists(_env_path):
+        load_dotenv(_env_path)
+        break
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 print("==================================================")

@@ -31,6 +31,7 @@ import { useStoreSync } from './hooks/useStoreSync';
 import { TopBar } from './layout/TopBar';
 import { BottomNav } from './layout/BottomNav';
 import { SideDrawer } from './layout/SideDrawer';
+import { MqttDebugOverlay } from './components/MqttDebugOverlay';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
 
@@ -39,10 +40,9 @@ type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 
 function App() {
   const { storeId, storeName: initialStoreName, updateStore } = useStoreFilter();
   const { bundles, handleSendMessage } = useSituation(storeId, initialStoreName);
-  const { flashingTabs, callCount, waitingCount, parkingCount, callFlashing, waitingFlashing, parkingFlashing, resetFlash, decrementCall, decrementWaiting, decrementParking } = useStoreSync(storeId);
+  const { flashingTabs, callCount, waitingCount, parkingCount, reservationCount, callFlashing, waitingFlashing, parkingFlashing, resetFlash, decrementCall, decrementWaiting, decrementParking } = useStoreSync(storeId);
 
   const [user, setUser] = useState<any>(null);
-  const [reservationCount, setReservationCount] = useState(0);
   const [reminderQueue, setReminderQueue] = useState<any[]>([]);
   const [selectedAdminStore, setSelectedAdminStore] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -65,15 +65,19 @@ function App() {
     if (!user || user.role === 'customer') return;
     const check = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/reservation/all`);
+        const url = storeId && storeId !== 'Total' ? `${API_BASE}/api/reservation/all?store_id=${storeId}` : `${API_BASE}/api/reservation/all`;
+        const res = await fetch(url);
         if (!res.ok) return;
         const data = await res.json();
         if (!Array.isArray(data)) return;
-        setReservationCount(data.filter((r: any) => r.status === 'requested').length);
         const now = Date.now();
         const reminders = data
           .filter((r: any) => {
             if (!['requested', 'confirmed'].includes(r.status)) return false;
+            
+            const isToday = new Date(r.reserved_time).toDateString() === new Date().toDateString();
+            if (isToday) return false;
+
             const diffH = (new Date(r.reserved_time).getTime() - now) / 3600000;
             if (diffH <= 0) return false;
             if (diffH <= 3 && !r.contact_confirmed_3hour) return true;
@@ -346,6 +350,16 @@ function App() {
     setActiveTab(tab);
     setIsMenuOpen(false);
     resetFlash(tab);
+    
+    // Scroll to top when changing tabs
+    setTimeout(() => {
+      const mainContent = document.querySelector('.saas-main-full');
+      if (mainContent) {
+        mainContent.scrollTo({ top: 0, behavior: 'instant' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+    }, 0);
   };
 
   const navItems = [
@@ -452,7 +466,7 @@ function App() {
       case 'manual': return <StoreManualEditor storeId={storeId} user={user} />;
       case 'hr': return <HRManager bundles={bundles} user={user} storeDetails={storeDetails} />;
       case 'waiting': return <WaitingManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'waiting', sId, sName)} onComplete={decrementWaiting} />;
-      case 'reserve': return <ReservationManager />;
+      case 'reserve': return <ReservationManager userRole={user?.role} bundles={bundles} />;
       case 'parking': return <ParkingManager storeId={storeId} onComplete={decrementParking} />;
       case 'points': return <PointsManager storeId={storeId} />;
       default: return <QROrderFlow bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} />;
@@ -462,6 +476,8 @@ function App() {
 
   return (
     <div className={`saas-container mobile-full-mode ${isCustomerMode ? 'customer-mode' : ''}`}>
+      <MqttDebugOverlay />
+      
       {receiptData && (
         <ReceiptModal
           {...receiptData}

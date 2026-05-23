@@ -60,14 +60,29 @@ async def update_waiting_status_endpoint(data: Dict):
     if not waiting_id or not status:
         raise HTTPException(status_code=400, detail="waiting_id and status required")
 
+    # store_id를 DB에서 조회 — broadcast_to_kitchen이 올바른 토픽으로 발행하기 위해 필요
+    # store_id 없으면 store/broadcast/kitchen 으로 발행되어 고객 브라우저가 수신 못함
+    store_id = None
+    try:
+        from ..db.connection import get_db_conn
+        from psycopg2.extras import RealDictCursor
+        _conn = get_db_conn()
+        if _conn:
+            _cur = _conn.cursor(cursor_factory=RealDictCursor)
+            _cur.execute("SELECT store_id FROM table_waitings WHERE waiting_id = %s", (waiting_id,))
+            _row = _cur.fetchone()
+            if _row:
+                store_id = _row["store_id"]
+            _cur.close(); _conn.close()
+    except Exception:
+        pass
+
     from ..database import update_waiting_status
     if update_waiting_status(waiting_id, status):
-        # 대기 상태 변경 알림 전파
-        await manager.broadcast_to_kitchen({
-            "type": "WAITING_UPDATED",
-            "waiting_id": waiting_id,
-            "status": status
-        })
+        msg = {"type": "WAITING_UPDATED", "waiting_id": waiting_id, "status": status}
+        if store_id:
+            msg["store_id"] = store_id
+        await manager.broadcast_to_kitchen(msg)
         return {"status": "success"}
     raise HTTPException(status_code=500, detail="Failed to update waiting status")
 
@@ -152,6 +167,7 @@ async def request_reservation(data: Dict):
     party_size_raw = data.get("party_size") or data.get("partySize") or 1
     reserved_time = data.get("reserved_time") or data.get("reservedTime")
     table_id = data.get("table_id") or data.get("tableId") or "T01"
+    store_id = data.get("store_id") or data.get("storeId") or "store-1"
 
     try:
         party_size = int(party_size_raw)
@@ -164,6 +180,7 @@ async def request_reservation(data: Dict):
     reservation_id = f"RESV-{uuid.uuid4().hex[:4].upper()}"
     res_data = {
         "reservation_id": reservation_id,
+        "store_id": store_id,
         "customer_name": customer_name,
         "phone_number": phone_number,
         "party_size": party_size,
@@ -177,16 +194,17 @@ async def request_reservation(data: Dict):
         await manager.broadcast_to_kitchen({
             "type": "RESERVATION_UPDATED",
             "reservation_id": reservation_id,
-            "status": "requested"
+            "status": "requested",
+            "store_id": store_id
         })
         return res_data
     raise HTTPException(status_code=500, detail="Failed to save reservation")
 
 
 @router.get("/api/reservation/active")
-async def get_active_reservations_endpoint():
+async def get_active_reservations_endpoint(store_id: Optional[str] = None):
     from ..database import get_active_reservations
-    return get_active_reservations()
+    return get_active_reservations(store_id)
 
 
 @router.post("/api/reservation/status")
@@ -199,6 +217,7 @@ async def update_reservation_status_endpoint(data: Dict):
 
     from ..database import update_reservation_status
     if update_reservation_status(reservation_id, status):
+        # We don't have store_id here easily without fetching DB, but we broadcast to kitchen
         await manager.broadcast_to_kitchen({
             "type": "RESERVATION_UPDATED",
             "reservation_id": reservation_id,
@@ -209,9 +228,9 @@ async def update_reservation_status_endpoint(data: Dict):
 
 
 @router.get("/api/reservation/all")
-async def get_all_reservations_endpoint():
+async def get_all_reservations_endpoint(store_id: Optional[str] = None):
     from ..database import get_all_reservations
-    return get_all_reservations()
+    return get_all_reservations(store_id)
 
 
 @router.post("/api/reservation/contact-confirm")

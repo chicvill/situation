@@ -39,8 +39,8 @@ export interface NotifyEvent {
 
 /**
  * 스토어 이벤트 구독.
- * situation/kitchen + store/{storeId}/kitchen 를 동시에 구독하며
- * store_id 불일치 메시지를 한 곳에서 필터링한다.
+ * store/{storeId} 단일 토픽을 구독하며 store_id 불일치 메시지를 필터링한다.
+ * store_id 미확정 broadcast 메시지도 함께 수신한다.
  */
 export function subscribeToStore(
     storeId: string,
@@ -53,27 +53,19 @@ export function subscribeToStore(
             data.store_id !== storeId &&
             data.store_id !== 'Total');
 
-        console.log(
-            `[CP-F1] MQTT 수신 type=${data.type}` +
-            ` | 메시지 store_id=${data.store_id ?? '(없음)'}` +
-            ` | 구독자 storeId=${storeId || '(없음)'}` +
-            ` | ${blocked ? '❌ 차단' : '✅ 통과'}`
-        );
-
         if (blocked) return;
         onEvent(data);
     };
 
-    const kitchenTopic = storeId && storeId !== 'Total'
-        ? `store/${storeId}/kitchen`
-        : 'store/+/kitchen';
-    const counterTopic = storeId && storeId !== 'Total'
-        ? `store/${storeId}/counter`
-        : 'store/+/counter';
-
-    const unsub1 = subscribeTopic(kitchenTopic, handle);
-    const unsub2 = subscribeTopic(counterTopic, handle);
-    return () => { unsub1(); unsub2(); };
+    // 특정 매장이면 store/{storeId} + store/broadcast 각각 구독
+    // Total/미지정이면 store/+ 하나만 구독 (store/+ 가 store/broadcast 포함)
+    if (storeId && storeId !== 'Total') {
+        const unsub1 = subscribeTopic(`store/${storeId}`, handle);
+        const unsub2 = subscribeTopic('store/broadcast', handle);
+        return () => { unsub1(); unsub2(); };
+    }
+    const unsub = subscribeTopic('store/+', handle);
+    return unsub;
 }
 
 /**

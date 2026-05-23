@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { PaymentModal } from './PaymentModal';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 import { subscribeTopic } from '../services/mqttClient';
+import { playDingDong } from '../utils/audio';
 
 interface CounterPadProps {
     storeId?: string;
@@ -34,19 +35,17 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const [selectedSessionForPay, setSelectedSessionForPay] = useState<any | null>(null);
     const [selectedOrderForPay, setSelectedOrderForPay] = useState<any | null>(null);
     const [seatRequests, setSeatRequests] = useState<{ table_id: string; timestamp: string }[]>([]);
+    const [joinRequests, setJoinRequests] = useState<{ table_id: string; device_id: string; session_id: string; timestamp: string }[]>([]);
     const [vipPayerInfo, setVipPayerInfo] = useState<{ phone: string; topPercent: number } | null>(null);
     const [vipFlashVisible, setVipFlashVisible] = useState(false);
     const prevOrderCountRef = useRef(0);
     const prevCallCountRef = useRef(0);
     const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+    const initialSelectionDone = useRef(false);
+
     const [lastTapInfo, setLastTapInfo] = useState<{ id: string; time: number } | null>(null);
 
-    const playDingDong = () => {
-        try {
-            const audio = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2014/09/Ding-dong.mp3');
-            audio.play().catch(() => {});
-        } catch {}
-    };
+    // playDingDong: utils/audio.ts 상단 import에서 가져옴
 
     const fetchSeatRequests = useCallback(async () => {
         try {
@@ -63,7 +62,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
 
     const fetchSessions = useCallback(async () => {
         try {
-            const res = await fetch(`${getApiUrl()}/api/counter/sessions?store_id=${storeId || 'Total'}`);
+            const res = await fetch(`${getApiUrl()}/api/counter/sessions?store_id=${storeId || 'Total'}&t=${Date.now()}`);
             const data = await res.json();
             if (Array.isArray(data)) {
                 const totalOrders = data.reduce((sum: number, s: any) =>
@@ -74,19 +73,35 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 prevOrderCountRef.current = totalOrders;
                 prevCallCountRef.current = pendingCalls;
                 setSessions(data);
+                if (!initialSelectionDone.current) {
+                    initialSelectionDone.current = true;
+                    if (data.length > 0) {
+                        const first = [...data].sort((a, b) => a.table_id.localeCompare(b.table_id))[0];
+                        setSelectedTableId(first.table_id);
+                    } else {
+                        setSelectedTableId('T01');
+                    }
+                }
             } else {
                 setSessions([]);
+                if (!initialSelectionDone.current) {
+                    initialSelectionDone.current = true;
+                    setSelectedTableId('T01');
+                }
             }
         } catch (e) {
             console.error('Counter Fetch Error:', e);
             setSessions([]);
+            if (!initialSelectionDone.current) {
+                initialSelectionDone.current = true;
+                setSelectedTableId('T01');
+            }
         }
     }, [storeId]);
 
     useEffect(() => {
         fetchSessions();
-        const counterTopic = (storeId && storeId !== 'Total') ? `store/${storeId}/counter` : 'store/+/counter';
-        const kitchenTopic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : 'store/+/kitchen';
+        const storeTopic  = (storeId && storeId !== 'Total') ? `store/${storeId}` : 'store/+';
         const messageHandler = (data: any) => {
             if (data.type === 'SEAT_REQUEST') {
                 setSeatRequests(prev => {
@@ -97,34 +112,92 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 return;
             }
             if (data.type === 'SESSION_OPENED') {
+                playDingDong();
                 setSeatRequests(prev => prev.filter(r => r.table_id !== data.session?.table_id));
                 fetchSessions();
                 return;
             }
-            if ([
-                'NEW_ORDER', 'STATUS_UPDATE', 'ORDER_UPDATED', 'ORDER_PLACED', 'NEW_ORDER_DIRECT',
-                'SESSION_CLOSED', 'PAYMENT_CONFIRMED', 'PARTIAL_SETTLEMENT',
-                'STAFF_CALL', 'PARKING_APPLIED', 'WAITING_REGISTERED'
-            ].includes(data.type)) {
+            if (data.type === 'JOIN_REQUEST') {
+                setJoinRequests(prev => {
+                    if (prev.some(r => r.session_id === data.session_id && r.device_id === data.device_id)) return prev;
+                    playDingDong();
+                    return [...prev, { table_id: data.table_id, device_id: data.device_id, session_id: data.session_id, timestamp: new Date().toISOString() }];
+                });
+                return;
+            }
+            if (data.type === 'JOIN_RESPONSE') {
+                setJoinRequests(prev => prev.filter(r => r.session_id !== data.session_id || r.device_id !== data.device_id));
+                return;
+            }
+            // 외부(고객/주방)에서 발생한 이벤트 → 딩동 + 화면 갱신
+            // WAITING_REGISTERED는 App 레벨 useStoreSync가 처리하므로 제외 (중복 딩동 방지)
+            const externalEvents = [
+                'NEW_ORDER', 'ORDER_PLACED', 'NEW_ORDER_DIRECT', 'ORDER_UPDATED',
+                'STATUS_UPDATE', 'SESSION_CLOSED', 'PAYMENT_CONFIRMED', 'PARTIAL_SETTLEMENT',
+                'STAFF_CALL', 'PARKING_APPLIED'
+            ];
+            if (externalEvents.includes(data.type)) {
+                playDingDong();
+                if (data.type === 'SESSION_CLOSED') {
+                    setJoinRequests(prev => prev.filter(r => r.session_id !== data.session_id));
+                }
                 fetchSessions();
             }
         };
-        const unsub1 = subscribeTopic(counterTopic, messageHandler);
-        const unsub2 = subscribeTopic(kitchenTopic, messageHandler);
-        return () => { unsub1(); unsub2(); };
+        const unsub1 = subscribeTopic(storeTopic, messageHandler);
+        // Total 모드: store/+ 가 broadcast 포함. 특정 매장: broadcast 별도 구독
+        const unsub2 = storeTopic !== 'store/+' ? subscribeTopic('store/broadcast', messageHandler) : null;
+        return () => { unsub1(); unsub2?.(); };
     }, [storeId, fetchSessions]);
 
+    // 폴링 안전망: MQTT 독립적으로 3초마다 자동 갱신 (토픽 불일치 방어)
+    useEffect(() => {
+        const interval = setInterval(() => { fetchSessions(); }, 3000);
+        return () => clearInterval(interval);
+    }, [fetchSessions]);
+
+    // 좌석요청 폴링: MQTT 수신 실패 시 fallback
+    useEffect(() => {
+        fetchSeatRequests();
+        const interval = setInterval(() => { fetchSeatRequests(); }, 3000);
+        return () => clearInterval(interval);
+    }, [fetchSeatRequests]);
+
     useEffect(() => { fetchSessions(); }, [bundles, fetchSessions]);
-    useEffect(() => { fetchSeatRequests(); }, [fetchSeatRequests]);
+
+    const handleApproveJoin = async (req: any) => {
+        try {
+            await fetch(`${getApiUrl()}/api/session/approve-join`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: req.session_id,
+                    device_id: req.device_id,
+                    table_id: req.table_id,
+                    approved: true
+                })
+            });
+            setJoinRequests(prev => prev.filter(r => r.session_id !== req.session_id || r.device_id !== req.device_id));
+        } catch (e) {
+            console.error('Approve Join Error:', e);
+        }
+    };
 
     const handleStatusUpdate = async (orderId: string, status: string) => {
+        setSessions(prev => prev.map(s => ({
+            ...s,
+            orders: s.orders?.map((o: any) => o.order_id === orderId ? { ...o, status } : o)
+        })));
         try {
             await fetch(`${getApiUrl()}/api/order/status`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ order_id: orderId, status })
             });
             fetchSessions();
-        } catch (e) { console.error('Status Update Error:', e); }
+        } catch (e) { 
+            console.error('Status Update Error:', e); 
+            fetchSessions();
+        }
     };
 
     const handleCloseSession = async (sessionId: string) => {
@@ -146,6 +219,10 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     };
 
     const handlePartialPayment = async (orderId: string) => {
+        setSessions(prev => prev.map(s => ({
+            ...s,
+            orders: s.orders?.map((o: any) => o.order_id === orderId ? { ...o, status: 'paid', payment_status: 'paid' } : o)
+        })));
         try {
             const res = await fetch(`${getApiUrl()}/api/order/status`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -153,7 +230,11 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             });
             if (res.ok) { setSelectedOrderForPay(null); fetchSessions(); }
             else { const d = await res.json(); throw new Error(d.detail || '결제 실패'); }
-        } catch (e) { console.error('Partial Payment Error:', e); throw e; }
+        } catch (e) { 
+            console.error('Partial Payment Error:', e); 
+            fetchSessions();
+            throw e; 
+        }
     };
 
     const handleCancelWithRefund = async (order: any) => {
@@ -210,20 +291,22 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const getTableStage = useCallback((tableId: string): { label: string; bg: string; color: string; stage: string; hint?: string } => {
         const session = sessions.find(s => s.table_id === tableId);
         const isSeatReq = seatRequests.some(r => r.table_id === tableId);
-        if (session?.status === 'closing') return { label: '세션종료', bg: '#e2e8f0', color: '#475569', stage: 'closing', hint: '더블탭→초기화' };
+        if (session?.status === 'closing') return { label: '세션종료', bg: '#e2e8f0', color: '#475569', stage: 'closing' };
         if (session?.status === 'serving') {
             const orders = (session.orders || []).filter((o: any) => o.status !== 'cancelled');
             const total = orders.reduce((s: number, o: any) => s + (o.total_price ?? o.total ?? 0), 0);
             const paid = orders.filter((o: any) => o.payment_status === 'paid' || o.payment_status === 'prepaid').reduce((s: number, o: any) => s + (o.total_price ?? o.total ?? 0), 0);
-            if (total > 0 && paid < total) return { label: '결제대기', bg: '#fee2e2', color: '#b91c1c', stage: 'payment_pending', hint: '더블탭→종료' };
-            return { label: '결제완료', bg: '#dcfce7', color: '#15803d', stage: 'payment_done', hint: '더블탭→종료' };
+            if (total > 0 && paid < total) return { label: '결제대기', bg: '#fee2e2', color: '#b91c1c', stage: 'payment_pending' };
+            return { label: '결제완료', bg: '#dcfce7', color: '#15803d', stage: 'payment_done' };
         }
-        if (!session && !isSeatReq) return { label: '빈자리', bg: '#ffffff', color: '#9ca3af', stage: 'initial', hint: '더블탭→배정' };
+        if (!session && !isSeatReq) return { label: '빈자리', bg: '#ffffff', color: '#9ca3af', stage: 'initial' };
         if (isSeatReq && !session) return { label: '고객대기', bg: '#fef3c7', color: '#92400e', stage: 'waiting' };
         if (session) {
             const active = (session.orders || []).filter((o: any) => o.status !== 'cancelled');
+            // 세션 있어도 주문 전이면서 seat request 있으면 고객대기 표시 (QR 스캔 직후)
+            if (active.length === 0 && isSeatReq) return { label: '고객대기', bg: '#fef3c7', color: '#92400e', stage: 'waiting' };
             if (active.length === 0) return { label: '좌석배정', bg: '#dbeafe', color: '#1e40af', stage: 'seated' };
-            if (active.some((o: any) => o.status === 'ready')) return { label: '조리완료', bg: '#ede9fe', color: '#6d28d9', stage: 'cooking_done', hint: '더블탭→서빙' };
+            if (active.some((o: any) => o.status === 'ready')) return { label: '조리완료', bg: '#ede9fe', color: '#6d28d9', stage: 'cooking_done' };
             return { label: '주문접수', bg: '#fed7aa', color: '#c2410c', stage: 'ordered' };
         }
         return { label: tableId, bg: '#ffffff', color: '#9ca3af', stage: 'initial' };
@@ -232,13 +315,16 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const patchSessionStatus = useCallback(async (tableId: string, status: string) => {
         const s = sessions.find(s => s.table_id === tableId);
         if (!s) return;
+        setSessions(prev => prev.map(sess => sess.table_id === tableId ? { ...sess, status } : sess));
         try {
             await fetch(`${getApiUrl()}/api/session/status`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_id: s.session_id, status })
             });
             fetchSessions();
-        } catch {}
+        } catch {
+            fetchSessions();
+        }
     }, [sessions, fetchSessions]);
 
     const handleTableTap = useCallback((tableId: string) => {
@@ -249,9 +335,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         if (!isDouble) return;
         const { stage } = getTableStage(tableId);
         setLastTapInfo(null);
-        if (stage === 'cooking_done') {
-            patchSessionStatus(tableId, 'serving');
-        } else if (stage === 'payment_pending' || stage === 'payment_done') {
+        if (stage === 'payment_pending' || stage === 'payment_done') {
             patchSessionStatus(tableId, 'closing');
         } else if (stage === 'closing') {
             const s = sessions.find(s => s.table_id === tableId);
@@ -283,10 +367,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const isPending = selectedSession?.status === 'pending';
     const isSeatReqSelected = seatRequests.some((r: any) => r.table_id === selectedTableId);
 
-    const currentStageIdx = selectedStage
-        ? STAGE_PIPELINE.findIndex(p => p.key === selectedStage.stage)
-        : -1;
-
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 146px)', overflow: 'hidden', background: 'var(--bg-main)', padding: '10px', gap: '8px', boxSizing: 'border-box' }}>
 
@@ -300,6 +380,22 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                 <span style={{ fontWeight: '700', fontSize: '0.85rem', color: '#ea580c' }}>{req.table_id}</span>
                                 <span style={{ fontSize: '0.7rem', color: '#9a3412' }}>{new Date(req.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 <button onClick={() => handleOpenSession(req.table_id)} style={{ background: '#f97316', color: 'white', border: 'none', borderRadius: '5px', padding: '3px 8px', fontWeight: '700', fontSize: '0.75rem', cursor: 'pointer' }}>승인</button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* ── 합석(이기종 기기) 승인 요청 배너 ── */}
+            {joinRequests.length > 0 && (
+                <div style={{ padding: '8px 14px', background: 'linear-gradient(135deg,#e0e7ff,#c7d2fe)', border: '2px solid #6366f1', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#4338ca', whiteSpace: 'nowrap' }}>🔔 합석 승인 요청 ({joinRequests.length}건)</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {joinRequests.map(req => (
+                            <div key={`${req.session_id}-${req.device_id}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'white', border: '1px solid #a5b4fc', borderRadius: '8px', padding: '4px 10px' }}>
+                                <span style={{ fontWeight: '700', fontSize: '0.85rem', color: '#4f46e5' }}>{req.table_id}</span>
+                                <span style={{ fontSize: '0.7rem', color: '#3730a3' }}>{new Date(req.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                <button onClick={() => handleApproveJoin(req)} style={{ background: '#6366f1', color: 'white', border: 'none', borderRadius: '5px', padding: '3px 8px', fontWeight: '700', fontSize: '0.75rem', cursor: 'pointer' }}>합석요구</button>
                             </div>
                         ))}
                     </div>
@@ -327,38 +423,16 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
 
                             {/* ── 진행 그래프 ── */}
                             <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '10px 14px', border: '1px solid var(--border)' }}>
-                                <div style={{ fontSize: '0.68rem', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '8px' }}>진행 단계</div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', padding: '4px 0' }}>
+                                    <span style={{ fontSize: '0.65rem', fontWeight: '700', color: 'var(--text-muted)' }}>진행 단계 :</span>
                                     {STAGE_PIPELINE.filter(s => s.key !== 'initial').map((s, idx, arr) => {
-                                        const stageIdx = STAGE_PIPELINE.findIndex(p => p.key === s.key);
                                         const isActive = s.key === selectedStage.stage;
-                                        const isPast = currentStageIdx > stageIdx;
-                                        const isFuture = currentStageIdx < stageIdx;
                                         return (
-                                            <div key={s.key} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', flex: 1 }}>
-                                                    <div style={{
-                                                        width: '28px', height: '28px',
-                                                        borderRadius: '50%',
-                                                        background: isActive ? s.color : isPast ? s.color + 'aa' : '#e5e7eb',
-                                                        border: isActive ? `3px solid ${s.color}` : isPast ? `2px solid ${s.color}77` : '2px solid #d1d5db',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        boxShadow: isActive ? `0 0 10px ${s.color}66` : 'none',
-                                                        transition: 'all 0.3s',
-                                                        flexShrink: 0,
-                                                    }}>
-                                                        {isPast && !isActive && (
-                                                            <span style={{ fontSize: '0.65rem', color: 'white', fontWeight: '800' }}>✓</span>
-                                                        )}
-                                                        {isActive && (
-                                                            <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'white' }} />
-                                                        )}
-                                                    </div>
-                                                    <span style={{ fontSize: '0.5rem', fontWeight: isActive ? '800' : '500', color: isActive ? s.color : isFuture ? '#d1d5db' : '#9ca3af', whiteSpace: 'nowrap', textAlign: 'center' }}>{s.label}</span>
-                                                </div>
-                                                {idx < arr.length - 1 && (
-                                                    <div style={{ height: '2px', flex: 1, background: isPast || isActive ? s.color + '66' : '#e5e7eb', marginBottom: '18px', transition: 'background 0.3s' }} />
-                                                )}
+                                            <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <span style={{ fontSize: '0.75rem', fontWeight: isActive ? '900' : '500', color: isActive ? s.color : 'var(--text-muted)' }}>
+                                                    {s.label}
+                                                </span>
+                                                {idx < arr.length - 1 && <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', opacity: 0.5 }}>›</span>}
                                             </div>
                                         );
                                     })}
@@ -374,12 +448,17 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
 
                             {/* ── 주문 목록 (차수별) ── */}
                             {activeOrders.length > 0 && (
-                                <div style={{ background: 'var(--surface)', borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden' }}>
-                                    <div style={{ padding: '8px 14px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>주문 내역</span>
+                                <div style={{ background: 'var(--surface)', borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+                                    <div style={{ padding: '8px 14px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>주문 내역</span>
+                                            {activeOrders.some((o: any) => o.join_order) && (
+                                                <span style={{ fontSize: '0.65rem', fontWeight: '800', background: '#4338ca', color: 'white', padding: '2px 7px', borderRadius: '4px', letterSpacing: '-0.2px' }}>🤝 합석 포함</span>
+                                            )}
+                                        </div>
                                         <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{activeOrders.length}건</span>
                                     </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', flex: 1 }}>
                                         {[...activeOrders]
                                             .sort((a: any, b: any) => (a.order_seq || 0) - (b.order_seq || 0))
                                             .map((order: any, idx: number) => {
@@ -388,12 +467,18 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                 const orderAmt = order.total_price ?? order.total ?? 0;
                                                 const isReady = order.status === 'ready';
                                                 return (
-                                                    <div key={order.order_id} style={{ padding: '10px 14px', borderBottom: idx < activeOrders.length - 1 ? '1px solid var(--border)' : 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <div key={order.order_id} style={{
+                                                        padding: '10px 14px',
+                                                        borderBottom: idx < activeOrders.length - 1 ? '1px solid var(--border)' : 'none',
+                                                        display: 'flex', alignItems: 'center', gap: '8px',
+                                                        background: order.join_order ? 'linear-gradient(90deg, #eef2ff 0%, transparent 100%)' : 'transparent',
+                                                        borderLeft: order.join_order ? '3px solid #6366f1' : '3px solid transparent',
+                                                    }}>
                                                         {/* 차수 배지 */}
-                                                        <div style={{ flexShrink: 0, textAlign: 'center', minWidth: '32px' }}>
+                                                        <div style={{ flexShrink: 0, textAlign: 'center', minWidth: '36px' }}>
                                                             <div style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)' }}>#{order.order_seq || 1}</div>
                                                             {order.join_order && (
-                                                                <div style={{ fontSize: '0.55rem', background: '#e0e7ff', color: '#4338ca', padding: '1px 3px', borderRadius: '3px', fontWeight: '700', marginTop: '2px' }}>합석</div>
+                                                                <div style={{ fontSize: '0.58rem', background: '#6366f1', color: 'white', padding: '1px 4px', borderRadius: '4px', fontWeight: '800', marginTop: '2px', whiteSpace: 'nowrap' }}>합석</div>
                                                             )}
                                                         </div>
 
@@ -513,30 +598,30 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '5px' }}>
                     {tables.map(num => {
                         const tableId = `T${String(num).padStart(2, '0')}`;
-                        const { label, bg, color, hint, stage } = getTableStage(tableId);
+                        const { label, bg, color, stage } = getTableStage(tableId);
                         const isSelected = selectedTableId === tableId;
-                        const hasAlert = stage === 'waiting' || stage === 'cooking_done' || stage === 'payment_pending';
+                        const isWaiting = stage === 'waiting';
+                        const hasAlert = isWaiting || stage === 'cooking_done' || stage === 'payment_pending';
                         return (
                             <button
                                 key={num}
                                 onClick={() => handleTableTap(tableId)}
+                                className={isWaiting ? 'table-seat-waiting' : ''}
                                 style={{
-                                    padding: '8px 4px 7px',
-                                    borderRadius: '8px',
-                                    border: isSelected ? `2px solid ${color}` : `1.5px solid ${stage === 'initial' ? '#e5e7eb' : color + '55'}`,
-                                    background: bg,
+                                    padding: '4px 2px',
+                                    borderRadius: '6px',
+                                    border: isSelected ? `2px solid ${color}` : isWaiting ? `2px solid ${color}` : `1.5px solid ${stage === 'initial' ? '#e5e7eb' : color + '55'}`,
+                                    ...(isWaiting ? {} : { background: bg }),
                                     color,
-                                    fontWeight: '800',
                                     cursor: 'pointer',
                                     textAlign: 'center',
-                                    boxShadow: isSelected ? `0 0 0 3px ${color}22` : hasAlert ? `0 0 6px ${color}44` : 'none',
-                                    transition: 'all 0.15s',
-                                    animation: hasAlert ? 'pulse-mild 2s infinite' : 'none',
+                                    boxShadow: isSelected ? `0 0 0 3px ${color}22` : (!isWaiting && hasAlert) ? `0 0 6px ${color}44` : 'none',
+                                    transition: isWaiting ? 'none' : 'all 0.15s',
+                                    ...(isWaiting ? {} : { animation: hasAlert ? 'pulse-mild 2s infinite' : 'none' }),
                                 }}
                             >
-                                <div style={{ fontSize: '0.6rem', fontWeight: '600', opacity: 0.6, marginBottom: '2px' }}>{tableId}</div>
-                                <div style={{ lineHeight: 1.2, fontSize: '0.68rem' }}>{label}</div>
-                                {hint && <div style={{ fontSize: '0.5rem', opacity: 0.5, marginTop: '2px' }}>{hint}</div>}
+                                <div style={{ fontSize: '0.6rem', fontWeight: '700', opacity: 0.6 }}>{tableId}</div>
+                                <div style={{ lineHeight: 1.1, fontSize: '0.65rem', fontWeight: '800' }}>{label}</div>
                             </button>
                         );
                     })}
@@ -571,6 +656,12 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 />
             )}
 
+            {/* ── 전역 애니메이션 (seat-blink는 App.css에 정의) ── */}
+            <style>{`
+                @keyframes vipFlash { from { opacity:1; transform:scale(1); } to { opacity:0.6; transform:scale(1.06); } }
+                @keyframes pulse-mild { 0%,100% { box-shadow: none; } 50% { box-shadow: 0 0 8px currentColor; } }
+            `}</style>
+
             {/* ── VIP 플래시 ── */}
             {vipFlashVisible && (
                 <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
@@ -579,10 +670,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                         <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#92400e', letterSpacing: '0.1em' }}>VIP</div>
                         <div style={{ fontSize: '1rem', color: '#b45309', fontWeight: 700, marginTop: '8px' }}>상위 {vipPayerInfo?.topPercent}% 단골 고객</div>
                     </div>
-                    <style>{`
-                        @keyframes vipFlash { from { opacity:1; transform:scale(1); } to { opacity:0.6; transform:scale(1.06); } }
-                        @keyframes pulse-mild { 0%,100% { box-shadow: none; } 50% { box-shadow: 0 0 8px currentColor; } }
-                    `}</style>
                 </div>
             )}
         </div>

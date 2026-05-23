@@ -20,6 +20,7 @@ const METHODS: Method[] = [
   { id: 'card',     icon: '💳', name: '카드 / 간편결제', desc: '신용카드, 토스페이, 삼성페이 등',   color: '#3b82f6' },
   { id: 'transfer', icon: '🏦', name: '계좌이체',         desc: '실시간 은행 이체',                  color: '#8b5cf6' },
   { id: 'cash',     icon: '💵', name: '카운터에서 결제',   desc: '매장 현장 결제',                    color: '#10b981' },
+  { id: 'test',     icon: '⚡', name: '가상 결제 (테스트)', desc: '실결제 없이 즉시 결제 완료 처리', color: '#f59e0b' },
 ];
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({

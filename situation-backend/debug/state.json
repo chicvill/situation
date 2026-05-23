@@ -1,0 +1,68 @@
+{
+  "updated_at": "2026-05-24T07:24:46.044357",
+  "calls": [],
+  "waiting": [],
+  "parking": [],
+  "points": [
+    {
+      "phone": "12345678963",
+      "remaining": 65,
+      "total_earned": 65,
+      "last_updated": "2026-05-20T09:50:27.884845"
+    },
+    {
+      "phone": "01011112222",
+      "remaining": 125,
+      "total_earned": 125,
+      "last_updated": "2026-05-19T11:20:45.692445"
+    },
+    {
+      "phone": "01011111111",
+      "remaining": 51,
+      "total_earned": 51,
+      "last_updated": "2026-05-19T10:28:20.017275"
+    }
+  ],
+  "reservations": [
+    {
+      "reservation_id": "RESV-EF6C",
+      "name": "Yyy",
+      "party_size": 2,
+      "reserved_time": "2026-05-24T11:30",
+      "status": "requested",
+      "store_id": "store-chicvill02"
+    },
+    {
+      "reservation_id": "TEST-1234",
+      "name": "test",
+      "party_size": 2,
+      "reserved_time": "2026-05-24T12:00",
+      "status": "requested",
+      "store_id": "chicvill"
+    },
+    {
+      "reservation_id": "RESV-196A",
+      "name": "test",
+      "party_size": 1,
+      "reserved_time": "2026-05-24T12:00",
+      "status": "requested",
+      "store_id": "test"
+    },
+    {
+      "reservation_id": "RESV-0AA6",
+      "name": "손님",
+      "party_size": 2,
+      "reserved_time": "2026-05-24T12:00",
+      "status": "requested",
+      "store_id": "chicvill/situation"
+    },
+    {
+      "reservation_id": "RESV-5A7B",
+      "name": "Qqq",
+      "party_size": 2,
+      "reserved_time": "2026-05-25T11:30",
+      "status": "requested",
+      "store_id": "store-chicvill02"
+    }
+  ]
+}

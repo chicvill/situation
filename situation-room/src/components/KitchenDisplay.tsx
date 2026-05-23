@@ -3,22 +3,18 @@ import type { BundleData } from '../types';
 import { API_BASE } from '../config';
 import { subscribeTopic } from '../services/mqttClient';
 import { useStoreFilter } from '../hooks/useStoreFilter';
+import { playDingDong } from '../utils/audio';
 
 export const KitchenDisplay: React.FC = () => {
     const { storeId } = useStoreFilter();
     const [bundles, setBundles] = useState<BundleData[]>([]);
     const prevOrderCountRef = useRef(0);
 
-    const playDing = useCallback(() => {
-        try {
-            const audio = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2014/09/Ding-dong.mp3');
-            audio.play().catch(() => {});
-        } catch {}
-    }, []);
+    const playDing = useCallback(() => { playDingDong(0.4); }, []);
 
     const fetchKitchenOrders = useCallback(async () => {
         try {
-            const res = await fetch(`${API_BASE}/api/kitchen/orders?store_id=${storeId || "Total"}`);
+            const res = await fetch(`${API_BASE}/api/kitchen/orders?store_id=${storeId || "Total"}&t=${Date.now()}`);
             const data = await res.json();
             if (Array.isArray(data)) {
                 if (data.length > prevOrderCountRef.current) {
@@ -41,19 +37,27 @@ export const KitchenDisplay: React.FC = () => {
 
         const messageHandler = (data: any) => {
             if (refreshTypes.includes(data.type)) {
+                playDing();
                 fetchKitchenOrders();
             }
         };
 
-        const topic = (storeId && storeId !== 'Total') ? `store/${storeId}/kitchen` : 'store/+/kitchen';
+        const topic = (storeId && storeId !== 'Total') ? `store/${storeId}` : 'store/+';
         const unsubscribe1 = subscribeTopic(topic, messageHandler);
+        const unsubscribe2 = topic !== 'store/+' ? subscribeTopic('store/broadcast', messageHandler) : null;
+
+        // 폴링 안전망: 3초마다 자동 갱신
+        const interval = setInterval(() => { fetchKitchenOrders(); }, 3000);
 
         return () => {
             unsubscribe1();
+            unsubscribe2?.();
+            clearInterval(interval);
         };
     }, [storeId, fetchKitchenOrders]);
 
     const markAsDone = useCallback(async (orderId: string) => {
+        setBundles(prev => prev.map(b => (b as any).order_id === orderId ? { ...b, status: 'ready' } : b));
         try {
             const res = await fetch(`${API_BASE}/api/order/status`, {
                 method: 'POST',
@@ -64,6 +68,7 @@ export const KitchenDisplay: React.FC = () => {
             fetchKitchenOrders();
         } catch (e) {
             console.error('Mark Done Error:', e);
+            fetchKitchenOrders();
         }
     }, [fetchKitchenOrders]);
 
@@ -146,6 +151,7 @@ export const KitchenDisplay: React.FC = () => {
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: '700' }}>ORDER #{order.order_seq || 1}</span>
+                                                {order.join_order && <span style={{ background: '#e0e7ff', color: '#4338ca', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>합석</span>}
                                                 {isLate && <span style={{ background: 'var(--danger)', color: 'white', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>DELAYED</span>}
                                             </div>
                                             <span style={{ color: isLate ? 'var(--danger)' : 'var(--text-muted)', fontSize: '0.8rem', fontWeight: '600' }}>{diffMins}분 경과</span>

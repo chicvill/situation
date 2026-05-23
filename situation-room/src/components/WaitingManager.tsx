@@ -1,6 +1,7 @@
 import React from 'react';
 import { subscribeToStore } from '../services/notifications';
 import { useStoreFilter } from '../hooks/useStoreFilter';
+import { playDingDong } from '../utils/audio';
 
 interface WaitingEntry {
     waiting_id: string;
@@ -26,24 +27,47 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
     const [regPhone, setRegPhone] = React.useState('');
     const [regCount, setRegCount] = React.useState('2');
     const [isSubmitting, setIsSubmitting] = React.useState(false);
-    const [waitingId, setWaitingId] = React.useState<string | null>(null);
+    // sessionStorage로 복구: 새로고침해도 대기 ID 유지
+    const [waitingId, setWaitingId] = React.useState<string | null>(
+        () => sessionStorage.getItem('waiting_id')
+    );
     const [hasCalled, setHasCalled] = React.useState(false);
     const [waitingList, setWaitingList] = React.useState<WaitingEntry[]>([]);
+    // 호출 완료된 waiting_id 집합 — 중복 호출 방지
+    const [calledIds, setCalledIds] = React.useState<Set<string>>(new Set());
 
-    const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+    const getApiUrl = () => {
+        const envUrl = import.meta.env.VITE_API_URL;
+        if (envUrl && (envUrl.includes('127.0.0.1') || envUrl.includes('localhost'))) {
+            return `http://${window.location.hostname}:8000`;
+        }
+        return envUrl || `http://${window.location.hostname}:8000`;
+    };
 
-    const playDingDong = () => {
+    // playDingDong: utils/audio.ts 상단 import에서 가져옴
+
+    // --- 고객: 첫 터치 시 모바일 브라우저 오디오 권한 해제(Unlock) ---
+    const unlockAudio = () => {
         try {
-            const audio = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2014/09/Ding-dong.mp3');
-            audio.volume = 0.8;
-            audio.play().catch(() => {});
-        } catch (_) {}
+            const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+            if (!AudioCtx) return;
+            const ctx = new AudioCtx();
+            // 무음 오실레이터를 0.01초간 켜서 브라우저의 오디오 권한을 영구적으로 획득합니다.
+            const osc = ctx.createOscillator();
+            osc.connect(ctx.destination);
+            osc.start(0);
+            osc.stop(ctx.currentTime + 0.01);
+        } catch (e) {}
     };
 
     // --- 고객: 대기 등록 제출 ---
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!regPhone) return alert('연락처를 입력해주세요.');
+        
+        // 터치 이벤트 컨텍스트 내부에서 오디오 락 해제
+        unlockAudio();
+
         setIsSubmitting(true);
         try {
             const cleanPhone = regPhone.replace(/[^0-9]/g, '');
@@ -58,6 +82,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
             });
             if (res.ok) {
                 const data = await res.json();
+                sessionStorage.setItem('waiting_id', data.waiting_id);
                 setWaitingId(data.waiting_id);
             } else {
                 alert('등록에 실패했습니다. 다시 시도해주세요.');
@@ -69,20 +94,63 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
         }
     };
 
-    // --- 고객: MQTT 구독으로 입장 알림 수신 ---
+    // --- 고객: MQTT 구독 + HTTP 폴링 안전망으로 입장 알림 수신 ---
     React.useEffect(() => {
-        if (!waitingId) return;
-        return subscribeToStore(storeId || '', (data) => {
+        if (!waitingId || hasCalled) return;
+
+        const triggerEntry = () => {
+            setHasCalled(true);
+            playDingDong();
+            sessionStorage.removeItem('waiting_id');
+        };
+
+        // MQTT: 실시간 수신
+        const unsub = subscribeToStore(storeId || '', (data) => {
             if (
                 (data.type === 'WAITING_UPDATED' || data.type === 'WAITING_STATUS_CHANGED') &&
                 data.waiting_id === waitingId &&
                 (data.status === 'finished' || data.status === 'called')
             ) {
-                setHasCalled(true);
-                playDingDong();
+                triggerEntry();
             }
         });
-    }, [waitingId, storeId]);
+
+        // HTTP 폴링 안전망: MQTT 누락 시 3초마다 직접 확인
+        // registeredAt: 등록 직후 !mine 오탐 방지를 위해 10초 이후부터 !mine 판단
+        const registeredAt = Date.now();
+
+        const checkStatus = async () => {
+            try {
+                const res = await fetch(`${getApiUrl()}/api/waiting/active${storeId && storeId !== 'Total' ? `?store_id=${storeId}` : ''}`);
+                if (!res.ok) return;
+                const list: WaitingEntry[] = await res.json();
+                const mine = list.find(w => w.waiting_id === waitingId);
+                const elapsed = Date.now() - registeredAt;
+                if (mine?.status === 'called' || mine?.status === 'finished') {
+                    triggerEntry();
+                } else if (!mine && elapsed > 10000) {
+                    // 10초 경과 후에도 목록에 없으면 입장 처리 (finished/cancelled로 삭제됨)
+                    triggerEntry();
+                }
+            } catch { /* 네트워크 오류 무시 */ }
+        };
+
+        const poll = setInterval(checkStatus, 3000);
+
+        // 모바일 브라우저 탭 활성화 시 즉시 체크 (백그라운드 복귀 대응)
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                checkStatus();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => { 
+            unsub(); 
+            clearInterval(poll); 
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [waitingId, storeId, hasCalled]);
 
     // --- 매니저: 대기 목록 초기 로드 ---
     const fetchWaitings = React.useCallback(async () => {
@@ -125,6 +193,9 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
 
     // --- 매니저: 상태 변경 처리 ---
     const handleStatusUpdate = async (wid: string, status: string) => {
+        // 이미 호출된 항목 중복 방지
+        if (status === 'called' && calledIds.has(wid)) return;
+
         try {
             const res = await fetch(`${getApiUrl()}/api/waiting/status`, {
                 method: 'POST',
@@ -132,7 +203,11 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
                 body: JSON.stringify({ waiting_id: wid, status }),
             });
             if (res.ok) {
-                if (status === 'finished' || status === 'cancelled') {
+                if (status === 'called') {
+                    // 호출 완료 표시 — 버튼 비활성화
+                    setCalledIds(prev => new Set(prev).add(wid));
+                } else if (status === 'finished' || status === 'cancelled') {
+                    setCalledIds(prev => { const s = new Set(prev); s.delete(wid); return s; });
                     setWaitingList(prev => prev.filter(w => w.waiting_id !== wid));
                     onComplete?.();
                 }
@@ -193,7 +268,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
     // --- 고객: 입장 대기 화면 ---
     if (isRegistrationMode && waitingId) {
         return (
-            <div className={`customer-waiting-status ${hasCalled ? 'entry-flash' : ''}`} style={{
+            <div id="customer-waiting-container" className={`customer-waiting-status ${hasCalled ? 'entry-flash' : ''}`} style={{
                 padding: '40px 20px',
                 background: hasCalled ? '#ff4d4d' : 'var(--bg-main)',
                 minHeight: '100vh',
@@ -210,7 +285,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
                     }
                     .entry-flash { animation: flash-bg 0.8s infinite; }
                 ` }} />
-                <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '40px 30px', borderRadius: '30px', textAlign: 'center', border: `2px solid ${hasCalled ? '#d32f2f' : 'var(--premium-orange)'}`, boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}>
+                <div id="customer-glass-panel" className="glass-panel" style={{ width: '100%', maxWidth: '400px', padding: '40px 30px', borderRadius: '30px', textAlign: 'center', border: `2px solid ${hasCalled ? '#d32f2f' : 'var(--premium-orange)'}`, boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}>
                     {!hasCalled ? (
                         <>
                             <div style={{ fontSize: '4rem', marginBottom: '20px' }}>⏳</div>
@@ -233,7 +308,23 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
                                 매장 입구로 오셔서<br />직원에게 이 화면을 보여주세요.
                             </p>
                             <button
-                                onClick={() => { try { window.close(); } catch (_) {} }}
+                                onClick={() => {
+                                    sessionStorage.removeItem('waiting_id');
+                                    try { window.close(); } catch (_) {}
+                                    // 브라우저 닫기 실패 시 최종 안내 화면으로 전환하기 위해 상태 변경 (임시 변수 대신 window.location이나 HTML 변경 고려)
+                                    // 여기서는 컴포넌트 최상단 렌더링에 isFinished 관련 뷰를 추가하기 어려우므로, 바로 내용물을 교체합니다.
+                                    const panel = document.getElementById('customer-glass-panel');
+                                    const container = document.getElementById('customer-waiting-container');
+                                    if (container) container.style.background = 'var(--bg-main)';
+                                    if (panel) {
+                                        panel.style.borderColor = 'var(--premium-orange)';
+                                        panel.innerHTML = `
+                                            <div style="font-size: 4rem; margin-bottom: 20px;">✅</div>
+                                            <h2 style="font-size: 1.8rem; font-weight: 900; margin-bottom: 15px; color: var(--success);">안내가 종료되었습니다</h2>
+                                            <p style="font-size: 1.1rem; font-weight: 700; margin-bottom: 30px; line-height: 1.6; color: var(--text-main);">이용해 주셔서 감사합니다.<br />열려있는 브라우저 창(크롬, 사파리 등)을<br />직접 닫아주세요.</p>
+                                        `;
+                                    }
+                                }}
                                 style={{ padding: '15px 30px', borderRadius: '15px', border: 'none', background: '#000', color: '#fff', fontWeight: 900, fontSize: '1.1rem', cursor: 'pointer' }}
                             >
                                 확인했습니다
@@ -284,8 +375,13 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
                                 <span>{mins === 0 ? '방금 전' : `${mins}분 전`}</span>
                             </div>
                             <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                                <button className="confirm-btn premium-orange" onClick={() => handleStatusUpdate(w.waiting_id, 'called')} style={{ flex: 1, padding: '10px', fontSize: '0.85rem', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                                    🔔 호출
+                                <button
+                                    className="confirm-btn premium-orange"
+                                    onClick={() => handleStatusUpdate(w.waiting_id, 'called')}
+                                    disabled={calledIds.has(w.waiting_id)}
+                                    style={{ flex: 1, padding: '10px', fontSize: '0.85rem', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', cursor: calledIds.has(w.waiting_id) ? 'default' : 'pointer', opacity: calledIds.has(w.waiting_id) ? 0.45 : 1 }}
+                                >
+                                    {calledIds.has(w.waiting_id) ? '✅ 호출됨' : '🔔 호출'}
                                 </button>
                                 <button className="confirm-btn success-green" onClick={() => handleStatusUpdate(w.waiting_id, 'finished')} style={{ flex: 1, padding: '10px', fontSize: '0.85rem', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
                                     🚀 입장

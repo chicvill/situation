@@ -1,0 +1,13 @@
+{
+  "snapshot_time": "2026-05-23T21:37:51.389396",
+  "label": "CREATE",
+  "session": {
+    "session_id": "SESS-341BBBEF",
+    "store_id": "store-chicvill02",
+    "table_id": "T05",
+    "device_id": "DEV-8XLGFGGRT",
+    "status": "active",
+    "checkin_time": "2026-05-23T21:37:51.388411",
+    "metadata": {}
+  }
+}

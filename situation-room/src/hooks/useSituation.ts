@@ -3,6 +3,7 @@ import type { Message, BundleData } from '../types';
 import { API_BASE } from '../config';
 import { subscribeTopic } from '../services/mqttClient';
 import { mapMqttToBundles } from '../services/situationMapper';
+import { playDingDong } from '../utils/audio';
 
 export const useSituation = (storeId: string = "", storeName: string = "") => {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -37,16 +38,37 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
         fetchInitialData();
     }, [fetchInitialData]);
 
-    // MQTT store/{store_id}/kitchen 구독으로 타겟팅 업데이트
+    // MQTT store/{store_id} 구독으로 타겟팅 업데이트
     useEffect(() => {
         const currentStoreId = storeIdRef.current;
-        // Total이거나 빈 값이면(어드민) 모든 매장(store/+/kitchen) 구독, 아니면 특정 매장만 구독
-        const topic = (currentStoreId && currentStoreId !== "Total") 
-            ? `store/${currentStoreId}/kitchen` 
-            : `store/+/kitchen`;
+        // Total이거나 빈 값이면(어드민) 모든 매장(store/+) 구독, 아니면 특정 매장만 구독
+        const topic = (currentStoreId && currentStoreId !== "Total")
+            ? `store/${currentStoreId}`
+            : `store/+`;
+
+        // playDingDong: utils/audio.ts 상단 import에서 가져옴
+
+        // 딩동을 울려야 하는 이벤트 (고객/외부 발생, useStoreSync가 처리하지 않는 것만)
+        const DING_EVENTS = [
+            'NEW_ORDER', 'ORDER_PLACED', 'NEW_ORDER_DIRECT', 'ORDER_UPDATED',
+            'STATUS_UPDATE', 'STATUS_UPDATED', 'KITCHEN_DONE',
+            'SEAT_REQUEST', 'SESSION_OPENED', 'SESSION_CLOSED',
+            'JOIN_REQUEST', 'STAFF_CALL', 'PARKING_APPLIED',
+            // 'WAITING_REGISTERED' → useStoreSync가 담당 (중복 방지)
+            // 'WAITING_UPDATED'    → 매니저 호출 액션, 카운터 딩동 불필요
+            'PAYMENT_CONFIRMED', 'PARTIAL_SETTLEMENT',
+        ];
+        // 화면 데이터 갱신이 필요한 이벤트 (딩동 여부와 무관)
+        const REFRESH_EVENTS = [...DING_EVENTS, 'WAITING_REGISTERED', 'WAITING_UPDATED'];
 
         const messageHandler = (data: any) => {
             console.log(`[CHECKPOINT - 수신] MQTT 메시지 도착 (type: ${data.type}):`, data);
+            if (DING_EVENTS.includes(data.type)) {
+                playDingDong();
+            }
+            if (REFRESH_EVENTS.includes(data.type)) {
+                fetchInitialData();
+            }
             
             const bundleTypes = ['Orders', 'Log', 'Menus', 'StoreConfig', 'PersonalInfos', 'Settlement', 'Employee', 'Attendance', 'Waiting', 'Checkins', 'Reservations', 'Analysis'];
             
@@ -139,14 +161,16 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             messageHandler(data);
         };
 
-        // store/{id}/kitchen + store/{id}/counter 구독 (와일드카드로 Total 모드 지원)
-        const counterTopic = (storeId && storeId !== 'Total') ? `store/${storeId}/counter` : 'store/+/counter';
+        // store/+ (Total 모드): 와일드카드가 store/broadcast 포함 → 단일 구독
+        // store/{id} (특정 매장): store/broadcast 별도 추가 구독
         const unsubscribe1 = subscribeTopic(topic, handleMessage);
-        const unsubscribe2 = subscribeTopic(counterTopic, handleMessage);
+        const unsubscribe2 = topic !== 'store/+'
+            ? subscribeTopic('store/broadcast', handleMessage)
+            : null;
 
         return () => {
             unsubscribe1();
-            unsubscribe2();
+            unsubscribe2?.();
         };
     }, [storeId, fetchInitialData]); // 필수 의존성 통합
 

@@ -1,0 +1,381 @@
+{
+  "updated_at": "2026-05-24T07:24:46.042072",
+  "seat_requests": [],
+  "sessions": {
+    "count": 10,
+    "active": [
+      {
+        "session_id": "SESS-9B056DAF",
+        "table_id": "T01",
+        "store_id": "store-1",
+        "status": "active",
+        "checkin_time": "2026-05-17T16:32:53.545128",
+        "seat_requested": false,
+        "order_count": 2,
+        "total_amount": 27000,
+        "orders": [
+          {
+            "order_id": "ORD-823A9278",
+            "order_seq": 1,
+            "status": "cooking",
+            "total_price": 9000,
+            "items": [
+              {
+                "name": "된장찌개",
+                "price": 9000,
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "order_id": "ORD-0FAC313E",
+            "order_seq": 2,
+            "status": "cooking",
+            "total_price": 18000,
+            "items": [
+              {
+                "name": "김치찌개",
+                "price": 9000,
+                "quantity": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "session_id": "SESS-75B0F589",
+        "table_id": "T02",
+        "store_id": "store-1",
+        "status": "active",
+        "checkin_time": "2026-05-17T16:32:53.627995",
+        "seat_requested": false,
+        "order_count": 2,
+        "total_amount": 27000,
+        "orders": [
+          {
+            "order_id": "ORD-28E3C574",
+            "order_seq": 1,
+            "status": "cooking",
+            "total_price": 9000,
+            "items": [
+              {
+                "name": "된장찌개",
+                "price": 9000,
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "order_id": "ORD-972CF4D9",
+            "order_seq": 2,
+            "status": "cooking",
+            "total_price": 18000,
+            "items": [
+              {
+                "name": "김치찌개",
+                "price": 9000,
+                "quantity": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "session_id": "SESS-7CD826E2",
+        "table_id": "T01",
+        "store_id": "store-2",
+        "status": "active",
+        "checkin_time": "2026-05-17T16:32:53.672130",
+        "seat_requested": false,
+        "order_count": 2,
+        "total_amount": 15500,
+        "orders": [
+          {
+            "order_id": "ORD-CC583FE9",
+            "order_seq": 1,
+            "status": "cooking",
+            "total_price": 4500,
+            "items": [
+              {
+                "name": "아메리카노",
+                "price": 4500,
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "order_id": "ORD-DBA06D0C",
+            "order_seq": 2,
+            "status": "cooking",
+            "total_price": 11000,
+            "items": [
+              {
+                "name": "카페라떼",
+                "price": 5500,
+                "quantity": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "session_id": "SESS-DA125CB8",
+        "table_id": "T02",
+        "store_id": "store-2",
+        "status": "active",
+        "checkin_time": "2026-05-17T16:32:53.712547",
+        "seat_requested": false,
+        "order_count": 2,
+        "total_amount": 15500,
+        "orders": [
+          {
+            "order_id": "ORD-3C488379",
+            "order_seq": 1,
+            "status": "cooking",
+            "total_price": 4500,
+            "items": [
+              {
+                "name": "아메리카노",
+                "price": 4500,
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "order_id": "ORD-48B1F5C7",
+            "order_seq": 2,
+            "status": "cooking",
+            "total_price": 11000,
+            "items": [
+              {
+                "name": "카페라떼",
+                "price": 5500,
+                "quantity": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "session_id": "SESS-6A1EA1B6",
+        "table_id": "T01",
+        "store_id": "store-3",
+        "status": "active",
+        "checkin_time": "2026-05-17T16:32:53.753387",
+        "seat_requested": false,
+        "order_count": 2,
+        "total_amount": 52000,
+        "orders": [
+          {
+            "order_id": "ORD-A848EC09",
+            "order_seq": 1,
+            "status": "cooking",
+            "total_price": 16000,
+            "items": [
+              {
+                "name": "마르게리타",
+                "price": 16000,
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "order_id": "ORD-52B86EA0",
+            "order_seq": 2,
+            "status": "cooking",
+            "total_price": 36000,
+            "items": [
+              {
+                "name": "페퍼로니",
+                "price": 18000,
+                "quantity": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "session_id": "SESS-A7257ECF",
+        "table_id": "T02",
+        "store_id": "store-3",
+        "status": "active",
+        "checkin_time": "2026-05-17T16:32:53.794887",
+        "seat_requested": false,
+        "order_count": 2,
+        "total_amount": 52000,
+        "orders": [
+          {
+            "order_id": "ORD-C9CABE82",
+            "order_seq": 1,
+            "status": "cooking",
+            "total_price": 16000,
+            "items": [
+              {
+                "name": "마르게리타",
+                "price": 16000,
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "order_id": "ORD-08073DBB",
+            "order_seq": 2,
+            "status": "cooking",
+            "total_price": 36000,
+            "items": [
+              {
+                "name": "페퍼로니",
+                "price": 18000,
+                "quantity": 2
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "session_id": "SESS-9AEF9657",
+        "table_id": "5",
+        "store_id": "store-chicvill02",
+        "status": "active",
+        "checkin_time": "2026-05-23T22:33:59.209061",
+        "seat_requested": false,
+        "order_count": 3,
+        "total_amount": 70000,
+        "orders": [
+          {
+            "order_id": "ORD-0350371B",
+            "order_seq": 1,
+            "status": "cooking",
+            "total_price": 35000,
+            "items": [
+              {
+                "name": "광어",
+                "price": 30000,
+                "quantity": 1
+              },
+              {
+                "name": "소주",
+                "price": 5000,
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "order_id": "ORD-921E7397",
+            "order_seq": 2,
+            "status": "cooking",
+            "total_price": 5000,
+            "items": [
+              {
+                "name": "맥주",
+                "price": 5000,
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "order_id": "ORD-7F498F35",
+            "order_seq": 3,
+            "status": "cooking",
+            "total_price": 30000,
+            "items": [
+              {
+                "name": "우럭",
+                "price": 30000,
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "session_id": "SESS-E823A5E3",
+        "table_id": "T02",
+        "store_id": "store-chicvill02",
+        "status": "active",
+        "checkin_time": "2026-05-24T07:01:57.883105",
+        "seat_requested": false,
+        "order_count": 0,
+        "total_amount": 0,
+        "orders": []
+      },
+      {
+        "session_id": "SESS-BA738886",
+        "table_id": "T05",
+        "store_id": "store-chicvill02",
+        "status": "active",
+        "checkin_time": "2026-05-23T22:34:19.512112",
+        "seat_requested": false,
+        "order_count": 0,
+        "total_amount": 0,
+        "orders": []
+      },
+      {
+        "session_id": "SESS-537395B2",
+        "table_id": "T03",
+        "store_id": "store-chicvill03",
+        "status": "active",
+        "checkin_time": "2026-05-21T09:32:11.342234",
+        "seat_requested": false,
+        "order_count": 3,
+        "total_amount": 180000,
+        "orders": [
+          {
+            "order_id": "ORD-DA3ECC69",
+            "order_seq": 1,
+            "status": "pending_payment",
+            "total_price": 60000,
+            "items": [
+              {
+                "name": "우럭",
+                "price": 30000,
+                "quantity": 1
+              },
+              {
+                "name": "광어",
+                "price": 30000,
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "order_id": "ORD-EBBC2C72",
+            "order_seq": 2,
+            "status": "pending_payment",
+            "total_price": 60000,
+            "items": [
+              {
+                "name": "우럭",
+                "price": 30000,
+                "quantity": 1
+              },
+              {
+                "name": "광어",
+                "price": 30000,
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "order_id": "ORD-1569048A",
+            "order_seq": 3,
+            "status": "ready",
+            "total_price": 60000,
+            "items": [
+              {
+                "name": "우럭",
+                "price": 30000,
+                "quantity": 1
+              },
+              {
+                "name": "광어",
+                "price": 30000,
+                "quantity": 1
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

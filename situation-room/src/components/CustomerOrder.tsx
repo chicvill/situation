@@ -28,6 +28,14 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
   const [userPhone, setUserPhone] = useState('');
   const [isWaitingForPartyApproval, setIsWaitingForPartyApproval] = useState(false);
   const [pendingJoinRequest, setPendingJoinRequest] = useState<{ deviceId: string; sessionId: string } | null>(null);
+  const [isJoinedDevice, setIsJoinedDevice] = useState(false);
+
+  const playDingDong = () => {
+    try {
+      const audio = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2014/09/Ding-dong.mp3');
+      audio.play().catch(() => {});
+    } catch {}
+  };
 
 
   const tableNo = useMemo(() => {
@@ -74,8 +82,8 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
     checkSession();
     const timer = setInterval(checkSession, 3000); // 3초마다 체크
     
-    // MQTT situation/table/{tableId} 구독으로 테이블 이벤트 수신
-    const unsubscribeTable = subscribeTopic(`situation/table/${tableId}`, (data) => {
+    // 신규(store-scoped) + 레거시(situation/table) 동시 구독
+    const tableHandler = (data: any) => {
       try {
         if (data.type === 'SESSION_CLOSED') {
           window.location.reload();
@@ -85,7 +93,9 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
           if (data.device_id === deviceId) {
             if (data.approved) {
               setIsWaitingForPartyApproval(false);
+              setIsJoinedDevice(true);
               setHasSession(true);
+              playDingDong();
             } else {
               alert("일행이 합류를 거절했습니다.");
               window.location.href = "/";
@@ -95,11 +105,17 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
       } catch (e) {
         console.error("MQTT Message Error:", e);
       }
-    });
+    };
+    const tableTopicNew = (storeId && storeId !== 'Total') ? `store/${storeId}/table/${tableId}` : `situation/table/${tableId}`;
+    const unsubscribeTable = subscribeTopic(tableTopicNew, tableHandler);
+    const unsubscribeLegacy = tableTopicNew !== `situation/table/${tableId}`
+      ? subscribeTopic(`situation/table/${tableId}`, tableHandler)
+      : null;
 
     return () => {
       clearInterval(timer);
       unsubscribeTable();
+      unsubscribeLegacy?.();
     };
   }, [tableId, storeId]);
 
@@ -117,6 +133,8 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
       .then(data => {
         if (data.status === 'waiting_party_approval') {
           setIsWaitingForPartyApproval(true);
+        } else if (data.is_joined) {
+          setIsJoinedDevice(true);
         }
       })
       .catch(err => console.error("Checkin Request Error:", err));
@@ -245,7 +263,8 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
             : cartList.map(item => ({ name: item.name, price: item.price, quantity: item.qty })),
           total_price: isCall ? 0 : totalPrice,
           payment_status: method ? 'prepaid' : 'unpaid', // 결제 방식이 있으면 선불로 표시
-          payment_method: method
+          payment_method: method,
+          join_order: isJoinedDevice
         }),
       });
 

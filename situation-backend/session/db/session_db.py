@@ -74,12 +74,34 @@ def _row_to_dict(row) -> Optional[dict]:
 # ──────────────────────────────────────────────
 
 def save_session(session_data: dict) -> bool:
-    """세션 생성 (INSERT) 또는 status/metadata 갱신 (UPDATE)."""
+    """세션 생성 (INSERT) 또는 status/metadata 갱신 (UPDATE).
+    신규 세션 생성 시 같은 (store_id, table_id)의 기존 활성 세션을 먼저 닫아 중복 방지.
+    """
+    try:
+        from ..debug_writer import snapshot_before_db
+        label = "CREATE" if session_data.get("status") == "active" else "UPDATE"
+        snapshot_before_db(label, session_data)
+    except Exception:
+        pass
     conn = get_db_conn()
     if not conn:
         return False
     try:
         cur = conn.cursor()
+        # 신규 세션 생성(INSERT)인 경우: 같은 테이블의 기존 활성 세션을 먼저 종료
+        cur.execute("""
+            UPDATE table_sessions
+            SET status = 'closed', checkout_time = %(t)s, version = version + 1
+            WHERE store_id = %(sid)s
+              AND table_id = %(tid)s
+              AND status != 'closed'
+              AND session_id != %(new_sid)s
+        """, {
+            't':       _now(),
+            'sid':     session_data['store_id'],
+            'tid':     session_data['table_id'],
+            'new_sid': session_data['session_id'],
+        })
         cur.execute("""
             INSERT INTO table_sessions
                 (session_id, store_id, table_id, device_id, status,
@@ -162,7 +184,9 @@ def get_active_session(store_id: str, table_id: str) -> Optional[dict]:
 
 
 def get_all_active_sessions(store_id: Optional[str] = None) -> list:
-    """활성 세션 전체 반환 — JOIN 없이 단일 쿼리."""
+    """활성 세션 전체 반환.
+    DISTINCT ON (store_id, table_id) 으로 같은 테이블의 중복 세션 제거 (최신 1개만).
+    """
     conn = get_db_conn()
     if not conn:
         return []
@@ -170,15 +194,17 @@ def get_all_active_sessions(store_id: Optional[str] = None) -> list:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         if store_id and store_id not in ('Total', 'default_store'):
             cur.execute("""
-                SELECT * FROM table_sessions
+                SELECT DISTINCT ON (store_id, table_id) *
+                FROM table_sessions
                 WHERE status != 'closed' AND store_id = %(sid)s
-                ORDER BY checkin_time DESC
+                ORDER BY store_id, table_id, checkin_time DESC
             """, {'sid': store_id})
         else:
             cur.execute("""
-                SELECT * FROM table_sessions
+                SELECT DISTINCT ON (store_id, table_id) *
+                FROM table_sessions
                 WHERE status != 'closed'
-                ORDER BY checkin_time DESC
+                ORDER BY store_id, table_id, checkin_time DESC
             """)
         return [_row_to_dict(r) for r in cur.fetchall()]
     except Exception as e:
@@ -188,6 +214,94 @@ def get_all_active_sessions(store_id: Optional[str] = None) -> list:
         cur.close(); conn.close()
 
 
+def _archive_session(session_id: str, conn) -> None:
+    """세션 종료 시 요약 정보를 session_archive 테이블에 저장."""
+    try:
+        session = get_session(session_id)
+        if not session:
+            return
+        orders = session.get('orders') or []
+        active_orders  = [o for o in orders if o.get('status') != 'cancelled']
+        cancelled_orders = [o for o in orders if o.get('status') == 'cancelled']
+        total_revenue    = sum(o.get('total_price', 0) for o in active_orders)
+        cancelled_count  = len(cancelled_orders)
+
+        # 메뉴별 집계
+        items_map: dict = {}
+        for order in active_orders:
+            for item in (order.get('items') or []):
+                name = item.get('name', '?')
+                qty  = item.get('quantity', item.get('qty', 1))
+                price = item.get('price', 0)
+                if name in items_map:
+                    items_map[name]['qty'] += qty
+                else:
+                    items_map[name] = {'name': name, 'qty': qty, 'price': price}
+
+        checkin_str  = session.get('checkin_time') or _now()
+        checkout_str = _now()
+        try:
+            from datetime import datetime as _dt
+            ci = _dt.fromisoformat(checkin_str)
+            duration = max(0, int((_dt.now() - ci).total_seconds() / 60))
+        except Exception:
+            duration = 0
+
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO session_archive
+                (session_id, store_id, table_id, checkin_time, checkout_time,
+                 duration_minutes, order_count, total_revenue, cancelled_count,
+                 items_summary, archived_at)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            ON CONFLICT (session_id) DO NOTHING
+        """, (
+            session_id,
+            session.get('store_id'),
+            session.get('table_id'),
+            checkin_str,
+            checkout_str,
+            duration,
+            len(active_orders),
+            total_revenue,
+            cancelled_count,
+            json.dumps(list(items_map.values()), ensure_ascii=False),
+            _now(),
+        ))
+        print(f"[archive] {session_id} → {session.get('table_id')} | {len(active_orders)}건 | {total_revenue:,}원")
+    except Exception as e:
+        print(f"[archive] ERROR: {e}")
+
+
+def init_archive_table() -> None:
+    """session_archive 테이블 생성 (서버 시작 시 1회 호출)."""
+    conn = get_db_conn()
+    if not conn:
+        return
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS session_archive (
+                session_id       TEXT PRIMARY KEY,
+                store_id         TEXT,
+                table_id         TEXT,
+                checkin_time     TEXT,
+                checkout_time    TEXT,
+                duration_minutes INTEGER DEFAULT 0,
+                order_count      INTEGER DEFAULT 0,
+                total_revenue    INTEGER DEFAULT 0,
+                cancelled_count  INTEGER DEFAULT 0,
+                items_summary    JSONB   DEFAULT '[]',
+                archived_at      TEXT
+            )
+        """)
+        conn.commit()
+        cur.close(); conn.close()
+        print("[DB] session_archive 테이블 준비 완료")
+    except Exception as e:
+        print(f"[DB] session_archive 초기화 실패: {e}")
+
+
 def update_session_status(session_id: str, status: str) -> bool:
     conn = get_db_conn()
     if not conn:
@@ -195,6 +309,7 @@ def update_session_status(session_id: str, status: str) -> bool:
     try:
         cur = conn.cursor()
         if status == 'closed':
+            _archive_session(session_id, conn)   # 종료 전 요약 아카이브
             cur.execute("""
                 UPDATE table_sessions
                 SET status = %(s)s, checkout_time = %(t)s, version = version + 1
