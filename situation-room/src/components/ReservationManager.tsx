@@ -2,10 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 import { CustomDateTimePicker } from './CustomDateTimePicker';
 import { subscribeToStore } from '../services/notifications';
+import { API_BASE } from '../config';
 
-const getApiUrl = () => {
-    return import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
-};
+const getApiUrl = () => API_BASE;
 
 interface Reservation {
     reservation_id: string;

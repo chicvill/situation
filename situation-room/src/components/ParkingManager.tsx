@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { subscribeToStore } from '../services/notifications';
+import { API_BASE } from '../config';
 
 interface Parking {
     parking_id: string;
@@ -21,7 +22,7 @@ export const ParkingManager = ({ storeId, onComplete }: ParkingManagerProps) => 
     const [searchQuery, setSearchQuery] = useState('');
     const [completing, setCompleting] = useState<string | null>(null);
 
-    const getApiUrl = () => import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+    const getApiUrl = () => API_BASE;
 
     const fetchParkings = async () => {
         try {

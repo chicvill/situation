@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { Bundle } from './types';
+import { API_BASE } from '../../config';
 
 interface UseAttendanceOptions {
   storeId: string;
@@ -36,7 +37,7 @@ export const useAttendance = ({
 
     setIsProcessing(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+      const apiUrl = API_BASE;
       const endpoint = actionType === 'check-in' ? '/api/staff/check-in' : '/api/staff/check-out';
 
       const response = await fetch(`${apiUrl}${endpoint}`, {
@@ -82,7 +83,7 @@ export const useAttendance = ({
 
     setIsScanningQr(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+      const apiUrl = API_BASE;
       const endpoint = actionType === 'check-in' ? '/api/staff/check-in' : '/api/staff/check-out';
 
       const response = await fetch(`${apiUrl}${endpoint}`, {

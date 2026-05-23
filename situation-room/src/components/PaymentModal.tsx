@@ -1,5 +1,6 @@
 import React from 'react'; // Git Force Trigger: 2026-05-04 23:27
 import type { BundleData } from '../types';
+import { API_BASE } from '../config';
 
 interface PaymentModalProps {
   totalPrice: number;
@@ -58,7 +59,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const lookupPoints = async (phone: string) => {
     if (phone.length < 10) return;
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+      const apiUrl = API_BASE;
       const res = await fetch(`${apiUrl}/api/points/${phone}`);
       const data = await res.json();
       const usable = data.usable_points ?? data.points ?? 0;

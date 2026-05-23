@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { subscribeToStore, VIRTUAL_TABLE_LABEL } from '../services/notifications';
+import { API_BASE } from '../config';
 
 interface Call {
     call_id: string;
@@ -20,7 +21,7 @@ interface CallManagerProps {
 export const CallManager: React.FC<CallManagerProps> = ({ storeId, bundles = [], onComplete }) => {
     const [calls, setCalls] = useState<Call[]>([]);
 
-    const getApiUrl = () => import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+    const getApiUrl = () => API_BASE;
 
     const fetchCalls = async () => {
         try {

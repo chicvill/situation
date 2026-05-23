@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { subscribeToStore } from '../services/notifications';
 import { playDingDong } from '../utils/audio';
+import { API_BASE } from '../config';
 
 export interface NotificationStates {
   call: boolean;
@@ -33,7 +34,7 @@ export const useStoreSync = (storeId: string) => {
 
   // playDingDong은 utils/audio.ts 공통 함수 사용
 
-  const getApiUrl = () => import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+  const getApiUrl = () => API_BASE;
 
   // 1. 초기 백엔드 상태를 조회하여 실제 DB 대기자/호출/예약 건수에 맞게 깜빡임 플래그 세팅
   const checkInitialStates = useCallback(async () => {

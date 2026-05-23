@@ -4,6 +4,7 @@ import { StoreCreationForm } from './welcome/StoreCreationForm';
 import { PendingApprovals } from './welcome/PendingApprovals';
 import { QuickLinks } from './welcome/QuickLinks';
 import { EditProfileModal } from './welcome/EditProfileModal';
+import { API_BASE } from '../config';
 
 interface WelcomeHubProps {
   user: any;
@@ -114,7 +115,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
 
     setIsBuildingHouse(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+      const apiUrl = API_BASE;
 
       const storePayload = {
         store_id: newStoreId,
@@ -220,7 +221,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
     setError('');
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+      const apiUrl = API_BASE;
       const currentHashedPw = userBundle.items?.find((i: any) => i.name === '비밀번호')?.value || '';
       const finalHashedPw = password.trim() ? await hashPassword(password) : currentHashedPw;
 
@@ -292,7 +293,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
 
     setIsProcessing(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+      const apiUrl = API_BASE;
 
       const response = await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
         method: 'PUT',
@@ -324,7 +325,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
 
     setIsProcessing(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+      const apiUrl = API_BASE;
 
       const response = await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
         method: 'PUT',

@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { subscribeToStore } from '../services/notifications';
+import { API_BASE } from '../config';
 
 interface CustomerPoint {
     phone: string;
@@ -18,7 +19,7 @@ export const PointsManager = ({ storeId }: PointsManagerProps) => {
     const [points, setPoints] = useState<CustomerPoint[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const getApiUrl = () => import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+    const getApiUrl = () => API_BASE;
 
     const fetchPoints = async () => {
         try {

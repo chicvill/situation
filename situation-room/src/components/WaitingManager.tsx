@@ -2,6 +2,7 @@ import React from 'react';
 import { subscribeToStore } from '../services/notifications';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 import { playDingDong } from '../utils/audio';
+import { API_BASE } from '../config';
 
 interface WaitingEntry {
     waiting_id: string;
@@ -36,9 +37,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
     // 호출 완료된 waiting_id 집합 — 중복 호출 방지
     const [calledIds, setCalledIds] = React.useState<Set<string>>(new Set());
 
-    const getApiUrl = () => {
-        return import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
-    };
+    const getApiUrl = () => API_BASE;
 
     // playDingDong: utils/audio.ts 상단 import에서 가져옴
 

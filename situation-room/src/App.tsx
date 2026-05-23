@@ -32,6 +32,7 @@ import { TopBar } from './layout/TopBar';
 import { BottomNav } from './layout/BottomNav';
 import { SideDrawer } from './layout/SideDrawer';
 import { MqttDebugOverlay } from './components/MqttDebugOverlay';
+
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
 
@@ -265,7 +266,7 @@ function App() {
     if (isSuccess && orderId) {
       const confirmPayment = async () => {
         try {
-          const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+          const apiUrl = API_BASE;
           const res = await fetch(`${apiUrl}/api/payment/confirm`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -631,7 +632,7 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
           setStatusText('토스 안전 결제 화면으로 이동 중입니다...');
           
           // 백엔드로부터 동적 Toss Client Key 조회
-          const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+          const apiUrl = API_BASE;
           const configRes = await fetch(`${apiUrl}/api/config/toss-key`);
           const configData = await configRes.json();
           const clientKey = configData.clientKey || TOSS_CLIENT_KEY;
@@ -678,7 +679,7 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
       const confirmPayment = async () => {
         try {
           setStatusText('결제 승인을 완료하는 중입니다. 안전한 거래를 위해 창을 닫지 마세요...');
-          const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
+          const apiUrl = API_BASE;
           const res = await fetch(`${apiUrl}/api/payment/confirm`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
