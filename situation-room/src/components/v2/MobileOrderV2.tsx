@@ -511,7 +511,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
   const requestStaffCall = useCallback(async (callType: string = "직원호출") => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
       const res = await fetch(`${apiUrl}/api/call`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -559,7 +559,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     }
     
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
       const res = await fetch(`${apiUrl}/api/parking/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

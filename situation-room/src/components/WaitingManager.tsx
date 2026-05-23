@@ -37,11 +37,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
     const [calledIds, setCalledIds] = React.useState<Set<string>>(new Set());
 
     const getApiUrl = () => {
-        const envUrl = import.meta.env.VITE_API_URL;
-        if (envUrl && (envUrl.includes('127.0.0.1') || envUrl.includes('localhost'))) {
-            return `http://${window.location.hostname}:8000`;
-        }
-        return envUrl || `http://${window.location.hostname}:8000`;
+        return import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
     };
 
     // playDingDong: utils/audio.ts 상단 import에서 가져옴

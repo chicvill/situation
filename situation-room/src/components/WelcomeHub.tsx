@@ -114,7 +114,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
 
     setIsBuildingHouse(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
 
       const storePayload = {
         store_id: newStoreId,
@@ -220,7 +220,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
     setError('');
 
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
       const currentHashedPw = userBundle.items?.find((i: any) => i.name === '비밀번호')?.value || '';
       const finalHashedPw = password.trim() ? await hashPassword(password) : currentHashedPw;
 
@@ -292,7 +292,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
 
     setIsProcessing(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
 
       const response = await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
         method: 'PUT',
@@ -324,7 +324,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
 
     setIsProcessing(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
 
       const response = await fetch(`${apiUrl}/api/bundle/${bundle.id}`, {
         method: 'PUT',

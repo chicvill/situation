@@ -18,7 +18,7 @@ export const PointsManager = ({ storeId }: PointsManagerProps) => {
     const [points, setPoints] = useState<CustomerPoint[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+    const getApiUrl = () => import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
 
     const fetchPoints = async () => {
         try {

@@ -36,7 +36,7 @@ export const useAttendance = ({
 
     setIsProcessing(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
       const endpoint = actionType === 'check-in' ? '/api/staff/check-in' : '/api/staff/check-out';
 
       const response = await fetch(`${apiUrl}${endpoint}`, {
@@ -82,7 +82,7 @@ export const useAttendance = ({
 
     setIsScanningQr(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
       const endpoint = actionType === 'check-in' ? '/api/staff/check-in' : '/api/staff/check-out';
 
       const response = await fetch(`${apiUrl}${endpoint}`, {

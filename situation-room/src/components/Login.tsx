@@ -53,7 +53,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
     // 매장 목록 로드 (직원/점장 가입 시)
     useEffect(() => {
         if (!isSignup || role === 'owner') return;
-        const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+        const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
         fetch(`${apiUrl}/api/stores`)
             .then(r => r.json())
             .then((data: any[]) => setStoreList(data))
@@ -79,7 +79,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
 
         // 1. 서버에서 JWT 발급 (자격증명 검증 + 토큰 발급)
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
             const res = await fetch(`${apiUrl}/api/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -224,7 +224,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
         setError('');
 
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
             
             // 중복 아이디 확인
             const existing = bundles.find(b => 

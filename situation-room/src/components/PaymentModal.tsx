@@ -58,7 +58,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const lookupPoints = async (phone: string) => {
     if (phone.length < 10) return;
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
       const res = await fetch(`${apiUrl}/api/points/${phone}`);
       const data = await res.json();
       const usable = data.usable_points ?? data.points ?? 0;

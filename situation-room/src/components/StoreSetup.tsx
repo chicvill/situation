@@ -17,7 +17,7 @@ export const StoreSetup: React.FC<{ storeName: string }> = ({ storeName }) => {
         
         try {
             if (type === 'reg') setUploadingReg(true); else setUploadingMenu(true);
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
             const response = await fetch(`${apiUrl}/api/analyze-image?doc_type=${type}`, {
                 method: 'POST',
                 body: formData,
@@ -88,7 +88,7 @@ export const StoreSetup: React.FC<{ storeName: string }> = ({ storeName }) => {
         }
 
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+            const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
             const response = await fetch(`${apiUrl}/api/situation`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

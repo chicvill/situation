@@ -547,7 +547,7 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
         setIsTyping(true);
 
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
             const hashedSignupPw = await hashPassword(ownerPw);
 
             // 1. Create SQL Store Record via POST /api/stores
@@ -658,7 +658,7 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
 
         setIsTyping(true);
         try {
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
             const idToUse = `MENUS_ONBOARD_${Date.now()}`;
             
             const menuPayload = {
@@ -733,7 +733,7 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                     end_time: val.end
                 }));
 
-            const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+            const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
             const response = await fetch(`${apiUrl}/api/staff/direct-register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

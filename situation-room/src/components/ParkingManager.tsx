@@ -21,7 +21,7 @@ export const ParkingManager = ({ storeId, onComplete }: ParkingManagerProps) => 
     const [searchQuery, setSearchQuery] = useState('');
     const [completing, setCompleting] = useState<string | null>(null);
 
-    const getApiUrl = () => import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+    const getApiUrl = () => import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
 
     const fetchParkings = async () => {
         try {

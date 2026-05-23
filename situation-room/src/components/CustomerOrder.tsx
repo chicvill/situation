@@ -60,7 +60,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
   // 세션 승인 상태 실시간 체크
   const checkSession = async () => {
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:8000`;
+      const apiUrl = import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
       // storeId를 쿼리 파라미터로 명시적으로 전달
       const res = await fetch(`${apiUrl}/api/session/${tableId}?store_id=${storeId}`);
       const data = await res.json();

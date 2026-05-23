@@ -4,11 +4,7 @@ import { CustomDateTimePicker } from './CustomDateTimePicker';
 import { subscribeToStore } from '../services/notifications';
 
 const getApiUrl = () => {
-    let url = import.meta.env.VITE_API_URL;
-    if (!url || ((url.includes('127.0.0.1') || url.includes('localhost')) && window.location.hostname !== '127.0.0.1' && window.location.hostname !== 'localhost')) {
-        url = `http://${window.location.hostname}:8000`;
-    }
-    return url;
+    return import.meta.env.VITE_API_URL || "https://situation.chicvill.store";
 };
 
 interface Reservation {
