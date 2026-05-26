@@ -72,6 +72,25 @@ async def confirm_payment(data: Dict):
     else:
         print(f"⚠️ Failed to save payment_key: {order_id}")
 
+    # 선불 결제 승인 성공 시, 세션의 pin_verified 상태를 True로 즉각 활성화 (추가 주문 시 인증번호 생략을 위함)
+    session_id = order.get("session_id")
+    if session_id:
+        import json
+        from ..database import get_session_by_id, save_session
+        session_dict = get_session_by_id(session_id)
+        if session_dict:
+            raw_meta = session_dict.get("metadata") or {}
+            try:
+                metadata = json.loads(raw_meta) if isinstance(raw_meta, str) else dict(raw_meta)
+            except Exception:
+                metadata = {}
+            metadata["pin_verified"] = True
+            session_dict["metadata"] = metadata
+            save_session(session_dict)
+            # 즉각 테이블 및 주방에 승인 신호 발송해 모바일 안전인증 락 해제
+            await manager.send_to_table(session_dict.get("table_id"), {"type": "SESSION_OPENED", "session": session_dict})
+            await manager.broadcast_to_kitchen({"type": "SESSION_OPENED", "session": session_dict})
+
     # 주방 및 테이블에 결제 완료 알림 전송
     msg_confirmed = {"type": "PAYMENT_CONFIRMED", "order_id": order_id, "status": "paid"}
     await manager.broadcast_to_kitchen(msg_confirmed)
@@ -186,3 +205,36 @@ async def get_toss_key():
     masked_key = f"{key[:8]}...{key[-4:]}" if key else "None"
     print(f"🔑 [Config] Serving Toss Client Key: {masked_key}")
     return {"clientKey": key}
+
+
+@router.post("/api/payment/request-phone-to-phone")
+async def request_phone_to_phone(data: Dict):
+    """점장이 카운터폰/패드에서 손님 폰으로 원격 결제 요청 전송 (폰 to 폰)"""
+    session_id = data.get("session_id")
+    order_id = data.get("order_id")
+    amount = data.get("amount")
+    
+    if not session_id or not amount:
+        raise HTTPException(status_code=400, detail="session_id and amount required")
+        
+    from ..database import get_session_by_id
+    session = get_session_by_id(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="세션을 찾을 수 없습니다")
+        
+    table_id = session.get("table_id")
+    store_id = session.get("store_id") or "default_store"
+    
+    payload = {
+        "type": "PHONE_TO_PHONE_PAY_REQUEST",
+        "session_id": session_id,
+        "order_id": order_id,
+        "amount": amount,
+        "store_id": store_id,
+        "table_id": table_id
+    }
+    
+    # 해당 테이블 기기로 실시간 결제 요청 전송
+    await manager.send_to_table(table_id, payload)
+    
+    return {"status": "success", "message": "결제 요청이 손님 휴대폰으로 전송되었습니다."}

@@ -474,6 +474,34 @@ def get_orders_by_session(session_id: str) -> list:
     return sess.get('orders') or [] if sess else []
 
 
+def get_next_display_number(store_id: str) -> str:
+    """매장별 3자리 주문 표시 번호 (001-999 순환, 활성 주문 기준 최댓값+1)"""
+    conn = get_db_conn()
+    if not conn:
+        return "001"
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT COALESCE(MAX((elem->>'display_number')::int), 0)
+            FROM table_sessions s,
+                 jsonb_array_elements(s.orders) AS elem
+            WHERE s.store_id = %s
+              AND s.status != 'closed'
+              AND elem->>'display_number' IS NOT NULL
+              AND elem->>'display_number' ~ '^[0-9]+$'
+        """, (store_id,))
+        row = cur.fetchone()
+        current_max = row[0] if row and row[0] else 0
+        next_num = (current_max % 999) + 1
+        return f"{next_num:03d}"
+    except Exception as e:
+        print(f"[get_next_display_number] ERROR: {e}")
+        return "001"
+    finally:
+        cur.close()
+        conn.close()
+
+
 def get_max_order_seq(session_id: str) -> int:
     conn = get_db_conn()
     if not conn:
@@ -530,10 +558,46 @@ def get_kitchen_orders(store_id: Optional[str] = None) -> list:
         cur.close(); conn.close()
 
 
+def get_ready_orders(store_id: Optional[str] = None) -> list:
+    """전광판용: 조리 완료(ready) 상태 주문을 sessions.orders에서 추출."""
+    conn = get_db_conn()
+    if not conn:
+        return []
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        base = """
+            SELECT
+                s.session_id, s.store_id, s.table_id,
+                elem AS order_data
+            FROM table_sessions s,
+                 jsonb_array_elements(s.orders) AS elem
+            WHERE s.status != 'closed'
+              AND elem->>'status' = 'ready'
+        """
+        if store_id and store_id not in ('Total', 'default_store'):
+            cur.execute(base + " AND s.store_id = %(sid)s ORDER BY elem->>'created_at' ASC",
+                        {'sid': store_id})
+        else:
+            cur.execute(base + " ORDER BY elem->>'created_at' ASC")
+
+        rows = cur.fetchall()
+        result = []
+        for r in rows:
+            o = dict(r['order_data'])
+            o['session_id'] = r['session_id']
+            result.append(_normalize_order(o, r['table_id'], r['store_id']))
+        return result
+    except Exception as e:
+        print(f"[get_ready_orders] ERROR: {e}")
+        return []
+    finally:
+        cur.close(); conn.close()
+
+
 def get_all_active_orders_as_bundles(store_id: Optional[str] = None) -> list:
-    orders = get_kitchen_orders(store_id)
+    all_orders = get_kitchen_orders(store_id) + get_ready_orders(store_id)
     bundles = []
-    for o in orders:
+    for o in all_orders:
         items_raw = o.get('items') or []
         if isinstance(items_raw, str):
             try:
@@ -546,14 +610,15 @@ def get_all_active_orders_as_bundles(store_id: Optional[str] = None) -> list:
             for i in items_raw
         ]
         bundles.append({
-            'id':       o.get('order_id', ''),
-            'type':     'Orders',
-            'title':    f"테이블 {o.get('table_id', '')} 주문",
-            'store_id': o.get('store_id', ''),
-            'status':   o.get('status', ''),
-            'timestamp': o.get('created_at', ''),
-            'table':    o.get('table_id', ''),
-            'items':    bundle_items,
+            'id':         o.get('order_id', ''),
+            'type':       'Orders',
+            'title':      f"테이블 {o.get('table_id', '')} 주문",
+            'store_id':   o.get('store_id', ''),
+            'status':     o.get('status', ''),
+            'timestamp':  o.get('timestamp') or o.get('created_at', ''),
+            'table':      o.get('table_id', ''),
+            'items':      bundle_items,
+            'order_code': o.get('display_number', ''),
         })
     return bundles
 

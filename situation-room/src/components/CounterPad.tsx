@@ -20,11 +20,12 @@ const getApiUrl = () => {
 const STAGE_PIPELINE = [
     { key: 'initial',        label: '비어있음',   color: '#9ca3af', bg: '#ffffff' },
     { key: 'waiting',        label: '고객대기',   color: '#92400e', bg: '#fef3c7' },
-    { key: 'seated',         label: '좌석배정',   color: '#1e40af', bg: '#dbeafe' },
+    { key: 'seated',         label: '주문중',     color: '#1e40af', bg: '#dbeafe' },
     { key: 'ordered',        label: '주문접수',   color: '#c2410c', bg: '#fed7aa' },
+    { key: 'cooking',        label: '조리중',     color: '#0284c7', bg: '#e0f2fe' },
     { key: 'cooking_done',   label: '조리완료',   color: '#6d28d9', bg: '#ede9fe' },
     { key: 'payment_pending',label: '결제대기',   color: '#b91c1c', bg: '#fee2e2' },
-    { key: 'payment_done',   label: '결제완료',   color: '#15803d', bg: '#dcfce7' },
+    { key: 'payment_done',   label: '종료',       color: '#15803d', bg: '#dcfce7' },
     { key: 'closing',        label: '세션종료',   color: '#475569', bg: '#e2e8f0' },
 ];
 
@@ -35,13 +36,18 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const [selectedSessionForPay, setSelectedSessionForPay] = useState<any | null>(null);
     const [selectedOrderForPay, setSelectedOrderForPay] = useState<any | null>(null);
     const [seatRequests, setSeatRequests] = useState<{ table_id: string; timestamp: string }[]>([]);
-    const [joinRequests, setJoinRequests] = useState<{ table_id: string; device_id: string; session_id: string; timestamp: string }[]>([]);
     const [vipPayerInfo, setVipPayerInfo] = useState<{ phone: string; topPercent: number } | null>(null);
     const [vipFlashVisible, setVipFlashVisible] = useState(false);
     const prevOrderCountRef = useRef(0);
     const prevCallCountRef = useRef(0);
     const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
     const initialSelectionDone = useRef(false);
+    
+    // ── 구두 주문 추가를 위한 상태 ──
+    const [showAddOrder, setShowAddOrder] = useState(false);
+    const [selectedMenuName, setSelectedMenuName] = useState('');
+    const [selectedMenuQty, setSelectedMenuQty] = useState(1);
+    const [isSubmittingManualOrder, setIsSubmittingManualOrder] = useState(false);
 
     const [lastTapInfo, setLastTapInfo] = useState<{ id: string; time: number } | null>(null);
 
@@ -99,6 +105,60 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         }
     }, [storeId]);
 
+    // ── 카운터 구두 추가 주문 접수 로직 ──
+    const handleManualOrderSubmit = async () => {
+        if (!selectedSession) return;
+        if (!selectedMenuName) {
+            alert('메뉴를 선택해 주세요.');
+            return;
+        }
+        
+        // bundles에서 Menus 찾기
+        const menuBundle = bundles?.find((b: any) => b.type === 'Menus');
+        const menuItems = menuBundle?.items ?? [];
+        const menu = menuItems.find((m: any) => m.name === selectedMenuName);
+        if (!menu) return;
+        
+        const rawPrice = menu.value;
+        const priceNum = typeof rawPrice === 'number' ? rawPrice : parseInt(String(rawPrice).replace(/[^0-9]/g, '')) || 0;
+        
+        setIsSubmittingManualOrder(true);
+        try {
+            const response = await fetch(`${getApiUrl()}/api/order/direct`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    store_id: storeId || 'default_store',
+                    table_id: selectedTableId,
+                    device_id: 'counter',  // 카운터 직접 구두 주문
+                    payment_status: 'unpaid', // 구두 주문은 기본 후불(미결제)
+                    payment_method: '현금/후불',
+                    total_price: priceNum * selectedMenuQty,
+                    items: [{
+                        name: selectedMenuName,
+                        price: priceNum,
+                        quantity: selectedMenuQty
+                    }]
+                })
+            });
+            
+            if (response.ok) {
+                alert('구두 추가 주문이 정식 접수되어 주방으로 전송되었습니다.');
+                setShowAddOrder(false);
+                setSelectedMenuName('');
+                setSelectedMenuQty(1);
+                fetchSessions(); // 세션 리로드하여 화면 갱신
+            } else {
+                alert('주문 등록에 실패했습니다.');
+            }
+        } catch (e) {
+            console.error('Manual order submit error:', e);
+            alert('서버 오류가 발생했습니다.');
+        } finally {
+            setIsSubmittingManualOrder(false);
+        }
+    };
+
     useEffect(() => {
         fetchSessions();
         const storeTopic  = (storeId && storeId !== 'Total') ? `store/${storeId}` : 'store/+';
@@ -117,18 +177,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 fetchSessions();
                 return;
             }
-            if (data.type === 'JOIN_REQUEST') {
-                setJoinRequests(prev => {
-                    if (prev.some(r => r.session_id === data.session_id && r.device_id === data.device_id)) return prev;
-                    playDingDong();
-                    return [...prev, { table_id: data.table_id, device_id: data.device_id, session_id: data.session_id, timestamp: new Date().toISOString() }];
-                });
-                return;
-            }
-            if (data.type === 'JOIN_RESPONSE') {
-                setJoinRequests(prev => prev.filter(r => r.session_id !== data.session_id || r.device_id !== data.device_id));
-                return;
-            }
             // 외부(고객/주방)에서 발생한 이벤트 → 딩동 + 화면 갱신
             // WAITING_REGISTERED는 App 레벨 useStoreSync가 처리하므로 제외 (중복 딩동 방지)
             const externalEvents = [
@@ -138,9 +186,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             ];
             if (externalEvents.includes(data.type)) {
                 playDingDong();
-                if (data.type === 'SESSION_CLOSED') {
-                    setJoinRequests(prev => prev.filter(r => r.session_id !== data.session_id));
-                }
                 fetchSessions();
             }
         };
@@ -165,23 +210,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
 
     useEffect(() => { fetchSessions(); }, [bundles, fetchSessions]);
 
-    const handleApproveJoin = async (req: any) => {
-        try {
-            await fetch(`${getApiUrl()}/api/session/approve-join`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    session_id: req.session_id,
-                    device_id: req.device_id,
-                    table_id: req.table_id,
-                    approved: true
-                })
-            });
-            setJoinRequests(prev => prev.filter(r => r.session_id !== req.session_id || r.device_id !== req.device_id));
-        } catch (e) {
-            console.error('Approve Join Error:', e);
-        }
-    };
 
     const handleStatusUpdate = async (orderId: string, status: string) => {
         setSessions(prev => prev.map(s => ({
@@ -270,6 +298,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             });
             if (res.ok) {
                 setSeatRequests(prev => prev.filter(r => r.table_id !== directTableId));
+                setSelectedTableId(directTableId); // 승인된 테이블 자동 선택 및 포커싱
                 fetchSessions();
             } else {
                 alert(`세션 개시 실패: ${await res.text()}`);
@@ -292,23 +321,50 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         const session = sessions.find(s => s.table_id === tableId);
         const isSeatReq = seatRequests.some(r => r.table_id === tableId);
         if (session?.status === 'closing') return { label: '세션종료', bg: '#e2e8f0', color: '#475569', stage: 'closing' };
-        if (session?.status === 'serving') {
-            const orders = (session.orders || []).filter((o: any) => o.status !== 'cancelled');
-            const total = orders.reduce((s: number, o: any) => s + (o.total_price ?? o.total ?? 0), 0);
-            const paid = orders.filter((o: any) => o.payment_status === 'paid' || o.payment_status === 'prepaid').reduce((s: number, o: any) => s + (o.total_price ?? o.total ?? 0), 0);
-            if (total > 0 && paid < total) return { label: '결제대기', bg: '#fee2e2', color: '#b91c1c', stage: 'payment_pending' };
-            return { label: '결제완료', bg: '#dcfce7', color: '#15803d', stage: 'payment_done' };
-        }
+        
         if (!session && !isSeatReq) return { label: '빈자리', bg: '#ffffff', color: '#9ca3af', stage: 'initial' };
         if (isSeatReq && !session) return { label: '고객대기', bg: '#fef3c7', color: '#92400e', stage: 'waiting' };
+        
         if (session) {
             const active = (session.orders || []).filter((o: any) => o.status !== 'cancelled');
-            // 세션 있어도 주문 전이면서 seat request 있으면 고객대기 표시 (QR 스캔 직후)
-            if (active.length === 0 && isSeatReq) return { label: '고객대기', bg: '#fef3c7', color: '#92400e', stage: 'waiting' };
-            if (active.length === 0) return { label: '좌석배정', bg: '#dbeafe', color: '#1e40af', stage: 'seated' };
-            if (active.some((o: any) => o.status === 'ready')) return { label: '조리완료', bg: '#ede9fe', color: '#6d28d9', stage: 'cooking_done' };
-            return { label: '주문접수', bg: '#fed7aa', color: '#c2410c', stage: 'ordered' };
+            
+            // 1. 주문이 아직 없는 신규 세션인 경우
+            if (active.length === 0) {
+                if (isSeatReq) return { label: '고객대기', bg: '#fef3c7', color: '#92400e', stage: 'waiting' };
+                return { label: '주문중', bg: '#dbeafe', color: '#1e40af', stage: 'seated' };
+            }
+            
+            // 2. 조리 중인 주문이 있는 경우 -> 조리중 (최우선순위)
+            if (active.some((o: any) => o.status === 'cooking')) {
+                return { label: '조리중', bg: '#e0f2fe', color: '#0284c7', stage: 'cooking' };
+            }
+            
+            // 3. 조리 완료되어 서빙 대기 중인 주문이 있는 경우 -> 조리완료
+            if (active.some((o: any) => o.status === 'ready')) {
+                return { label: '조리완료', bg: '#ede9fe', color: '#6d28d9', stage: 'cooking_done' };
+            }
+            
+            // 4. 새로운 주문 접수 (대기 상태의 미조리 주문이 하나라도 있는 경우) -> 주문접수
+            const isUnprocessed = active.some((o: any) => 
+                o.status === 'waiting_pin' || 
+                o.status === 'pending_payment' || 
+                o.status === 'ordered' ||
+                (!['cooking', 'ready', 'served', 'paid'].includes(o.status))
+            );
+            if (isUnprocessed) {
+                return { label: '주문접수', bg: '#fed7aa', color: '#c2410c', stage: 'ordered' };
+            }
+            
+            // 5. 모든 주문이 조리 완료되어 서빙되었거나 이미 결제된 경우 -> 결제대기 또는 결제완료
+            const total = active.reduce((s: number, o: any) => s + (o.total_price ?? o.total ?? 0), 0);
+            const paid = active.filter((o: any) => o.payment_status === 'paid' || o.payment_status === 'prepaid' || o.status === 'paid').reduce((s: number, o: any) => s + (o.total_price ?? o.total ?? 0), 0);
+            
+            if (total > 0 && paid < total) {
+                return { label: '결제대기', bg: '#fee2e2', color: '#b91c1c', stage: 'payment_pending' };
+            }
+            return { label: '종료', bg: '#dcfce7', color: '#15803d', stage: 'payment_done' };
         }
+        
         return { label: tableId, bg: '#ffffff', color: '#9ca3af', stage: 'initial' };
     }, [sessions, seatRequests]);
 
@@ -359,6 +415,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const activeOrders = selectedSession
         ? (selectedSession.orders || []).filter((o: any) => o.status !== 'cancelled')
         : [];
+    const hasCookingOrder = activeOrders.some((o: any) => o.status === 'cooking');
     const sessionTotal = activeOrders.reduce((sum: number, o: any) => sum + (o.total_price ?? o.total ?? 0), 0);
     const paidTotal = activeOrders
         .filter((o: any) => o.payment_status === 'paid' || o.payment_status === 'prepaid' || o.status === 'paid')
@@ -370,39 +427,72 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     return (
         <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 146px)', overflow: 'hidden', background: 'var(--bg-main)', padding: '10px', gap: '8px', boxSizing: 'border-box' }}>
 
-            {/* ── 좌석 승인 요청 배너 ── */}
-            {seatRequests.length > 0 && (
-                <div style={{ padding: '8px 14px', background: 'linear-gradient(135deg,#fff7ed,#ffedd5)', border: '2px solid #f97316', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#c2410c', whiteSpace: 'nowrap' }}>🔔 좌석 승인 요청 ({seatRequests.length}건)</span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {seatRequests.map(req => (
-                            <div key={req.table_id} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'white', border: '1px solid #fed7aa', borderRadius: '8px', padding: '4px 10px' }}>
-                                <span style={{ fontWeight: '700', fontSize: '0.85rem', color: '#ea580c' }}>{req.table_id}</span>
-                                <span style={{ fontSize: '0.7rem', color: '#9a3412' }}>{new Date(req.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                <button onClick={() => handleOpenSession(req.table_id)} style={{ background: '#f97316', color: 'white', border: 'none', borderRadius: '5px', padding: '3px 8px', fontWeight: '700', fontSize: '0.75rem', cursor: 'pointer' }}>승인</button>
+            {/* ── 좌석 승인 요청 배너 제거 (선결제 도입으로 점주 승인 불필요) ── */}
+
+
+            {/* ── 상단 바: 테이블 그리드 ── */}
+            <div style={{ background: 'var(--surface)', borderBottom: '2px solid var(--border)', borderRadius: '12px', padding: '10px 12px 8px', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>테이블 현황 <span style={{ color: 'var(--accent)' }}>{sessions.length}석 활성</span></span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                        {STAGE_PIPELINE.filter(s => s.key !== 'initial').map(s => (
+                            <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                <div style={{ width: '7px', height: '7px', borderRadius: '2px', background: s.bg, border: `1px solid ${s.color}66`, flexShrink: 0 }} />
+                                <span style={{ fontSize: '0.58rem', color: 'var(--text-muted)' }}>{s.label}</span>
                             </div>
                         ))}
                     </div>
                 </div>
-            )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '5px' }}>
+                    {tables.map(num => {
+                        const tableId = `T${String(num).padStart(2, '0')}`;
+                        const { label, bg, color, stage } = getTableStage(tableId);
+                        const isSelected = selectedTableId === tableId;
+                        const isWaiting = stage === 'waiting';
+                        const hasAlert = isWaiting || stage === 'cooking_done' || stage === 'payment_pending';
 
-            {/* ── 합석(이기종 기기) 승인 요청 배너 ── */}
-            {joinRequests.length > 0 && (
-                <div style={{ padding: '8px 14px', background: 'linear-gradient(135deg,#e0e7ff,#c7d2fe)', border: '2px solid #6366f1', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#4338ca', whiteSpace: 'nowrap' }}>🔔 합석 승인 요청 ({joinRequests.length}건)</span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {joinRequests.map(req => (
-                            <div key={`${req.session_id}-${req.device_id}`} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'white', border: '1px solid #a5b4fc', borderRadius: '8px', padding: '4px 10px' }}>
-                                <span style={{ fontWeight: '700', fontSize: '0.85rem', color: '#4f46e5' }}>{req.table_id}</span>
-                                <span style={{ fontSize: '0.7rem', color: '#3730a3' }}>{new Date(req.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                <button onClick={() => handleApproveJoin(req)} style={{ background: '#6366f1', color: 'white', border: 'none', borderRadius: '5px', padding: '3px 8px', fontWeight: '700', fontSize: '0.75rem', cursor: 'pointer' }}>합석요구</button>
-                            </div>
-                        ))}
-                    </div>
+                        // Determine background, text color, and border based on selection and state
+                        const buttonBg = isSelected
+                            ? (stage === 'initial' ? '#475569' : color)
+                            : (stage === 'initial' ? '#ffffff' : bg);
+
+                        const buttonColor = isSelected
+                            ? '#ffffff'
+                            : (stage === 'initial' ? '#475569' : color);
+
+                        const buttonBorder = isSelected
+                            ? `3.5px solid #0f172a`
+                            : isWaiting 
+                                ? `3.5px solid ${color}` 
+                                : `2.5px solid ${stage === 'initial' ? '#94a3b8' : color}`;
+
+                        return (
+                            <button
+                                key={num}
+                                onClick={() => handleTableTap(tableId)}
+                                className={isWaiting ? 'table-seat-waiting' : ''}
+                                style={{
+                                    padding: '6px 4px',
+                                    borderRadius: '8px',
+                                    border: buttonBorder,
+                                    background: buttonBg,
+                                    color: buttonColor,
+                                    cursor: 'pointer',
+                                    textAlign: 'center',
+                                    boxShadow: isSelected ? `0 0 0 3px ${color}22` : (!isWaiting && hasAlert) ? `0 0 8px ${color}44` : 'none',
+                                    transition: isWaiting ? 'none' : 'all 0.15s',
+                                    ...(isWaiting ? {} : { animation: hasAlert ? 'pulse-mild 2s infinite' : 'none' }),
+                                }}
+                            >
+                                <div style={{ fontSize: stage === 'initial' ? '0.72rem' : '0.85rem', fontWeight: '900', color: 'inherit' }}>{tableId}</div>
+                                <div style={{ lineHeight: 1.1, fontSize: stage === 'initial' ? '0.72rem' : '0.85rem', fontWeight: '900', color: 'inherit' }}>{label}</div>
+                            </button>
+                        );
+                    })}
                 </div>
-            )}
+            </div>
 
-            {/* ── 상단: 선택 테이블 상세 ── */}
+            {/* ── 하단: 선택 테이블 상세 ── */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', overflow: 'auto', minHeight: 0 }}>
                     {selectedTableId && selectedStage ? (
                         <>
@@ -415,28 +505,12 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                     {selectedStage.label}
                                 </span>
                                 {selectedSession && (
-                                    <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--text-muted)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {selectedSession.session_id}
-                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+                                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {selectedSession.session_id}
+                                        </span>
+                                    </div>
                                 )}
-                            </div>
-
-                            {/* ── 진행 그래프 ── */}
-                            <div style={{ background: 'var(--surface)', borderRadius: '10px', padding: '10px 14px', border: '1px solid var(--border)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', padding: '4px 0' }}>
-                                    <span style={{ fontSize: '0.65rem', fontWeight: '700', color: 'var(--text-muted)' }}>진행 단계 :</span>
-                                    {STAGE_PIPELINE.filter(s => s.key !== 'initial').map((s, idx, arr) => {
-                                        const isActive = s.key === selectedStage.stage;
-                                        return (
-                                            <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                <span style={{ fontSize: '0.75rem', fontWeight: isActive ? '900' : '500', color: isActive ? s.color : 'var(--text-muted)' }}>
-                                                    {s.label}
-                                                </span>
-                                                {idx < arr.length - 1 && <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', opacity: 0.5 }}>›</span>}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
                             </div>
 
                             {/* 좌석 개시 버튼 */}
@@ -447,39 +521,96 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                             )}
 
                             {/* ── 주문 목록 (차수별) ── */}
-                            {activeOrders.length > 0 && (
+                            {selectedSession && (
                                 <div style={{ background: 'var(--surface)', borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
                                     <div style={{ padding: '8px 14px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>주문 내역</span>
-                                            {activeOrders.some((o: any) => o.join_order) && (
-                                                <span style={{ fontSize: '0.65rem', fontWeight: '800', background: '#4338ca', color: 'white', padding: '2px 7px', borderRadius: '4px', letterSpacing: '-0.2px' }}>🤝 합석 포함</span>
-                                            )}
                                         </div>
-                                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{activeOrders.length}건</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{activeOrders.length}건</span>
+                                            <button 
+                                                onClick={() => setShowAddOrder(!showAddOrder)} 
+                                                style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', color: '#f97316', padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                            >
+                                                {showAddOrder ? '✕ 닫기' : '➕ 구두 주문 추가'}
+                                            </button>
+                                        </div>
                                     </div>
+                                    
+                                    {/* ── 구두 주문 수동 추가 폼 ── */}
+                                    {showAddOrder && (
+                                        <div style={{ padding: '14px', background: 'rgba(249,115,22,0.03)', borderBottom: '1px solid rgba(249,115,22,0.15)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                                <div style={{ flex: 1, minWidth: '150px' }}>
+                                                    <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px' }}>메뉴 선택 (풀다운)</label>
+                                                    <select 
+                                                        value={selectedMenuName}
+                                                        onChange={(e) => setSelectedMenuName(e.target.value)}
+                                                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: '700', outline: 'none' }}
+                                                    >
+                                                        <option value="">-- 메뉴를 선택해 주세요 --</option>
+                                                        {(bundles?.find((b: any) => b.type === 'Menus')?.items ?? []).map((m: any) => {
+                                                            const val = typeof m.value === 'number' ? m.value : parseInt(String(m.value).replace(/[^0-9]/g, '')) || 0;
+                                                            return (
+                                                                <option key={m.name} value={m.name}>{m.name} ({val.toLocaleString()}원)</option>
+                                                            );
+                                                        })}
+                                                    </select>
+                                                </div>
+                                                
+                                                <div style={{ width: '100px' }}>
+                                                    <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px' }}>수량</label>
+                                                    <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: '8px', background: 'white', overflow: 'hidden' }}>
+                                                        <button 
+                                                            onClick={() => setSelectedMenuQty(q => Math.max(1, q - 1))}
+                                                            style={{ width: '28px', height: '32px', border: 'none', background: 'none', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}
+                                                        >
+                                                            -
+                                                        </button>
+                                                        <span style={{ flex: 1, textAlign: 'center', fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-main)' }}>{selectedMenuQty}</span>
+                                                        <button 
+                                                            onClick={() => setSelectedMenuQty(q => q + 1)}
+                                                            style={{ width: '28px', height: '32px', border: 'none', background: 'none', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                
+                                                <button 
+                                                    disabled={isSubmittingManualOrder}
+                                                    onClick={handleManualOrderSubmit}
+                                                    style={{ marginTop: '16px', background: '#f97316', border: 'none', color: 'white', padding: '10px 16px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer', flexShrink: 0, height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                >
+                                                    {isSubmittingManualOrder ? '등록 중...' : '확인 (주문 등록)'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div style={{ display: 'flex', flexDirection: 'column', overflowY: 'auto', flex: 1 }}>
-                                        {[...activeOrders]
-                                            .sort((a: any, b: any) => (a.order_seq || 0) - (b.order_seq || 0))
-                                            .map((order: any, idx: number) => {
-                                                const isPrepaid = order.payment_status === 'prepaid' || order.payment_status === 'paid';
-                                                const isPaidFull = order.status === 'paid' || order.status === 'served' || isPrepaid;
-                                                const orderAmt = order.total_price ?? order.total ?? 0;
-                                                const isReady = order.status === 'ready';
+                                        {activeOrders.length === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>주문 내역이 없습니다.</div>
+                                        ) : (
+                                            [...activeOrders]
+                                                .sort((a: any, b: any) => (a.order_seq || 0) - (b.order_seq || 0))
+                                                .map((order: any, idx: number) => {
+                                                    const isPrepaid = order.payment_status === 'prepaid' || order.payment_status === 'paid';
+                                                    const isPaidFull = order.status === 'paid' || order.status === 'served' || isPrepaid;
+                                                    const orderAmt = order.total_price ?? order.total ?? 0;
+                                                    const isReady = order.status === 'ready';
                                                 return (
                                                     <div key={order.order_id} style={{
                                                         padding: '10px 14px',
                                                         borderBottom: idx < activeOrders.length - 1 ? '1px solid var(--border)' : 'none',
                                                         display: 'flex', alignItems: 'center', gap: '8px',
-                                                        background: order.join_order ? 'linear-gradient(90deg, #eef2ff 0%, transparent 100%)' : 'transparent',
-                                                        borderLeft: order.join_order ? '3px solid #6366f1' : '3px solid transparent',
+                                                        background: 'transparent',
+                                                        borderLeft: '3px solid transparent',
                                                     }}>
                                                         {/* 차수 배지 */}
                                                         <div style={{ flexShrink: 0, textAlign: 'center', minWidth: '36px' }}>
                                                             <div style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)' }}>#{order.order_seq || 1}</div>
-                                                            {order.join_order && (
-                                                                <div style={{ fontSize: '0.58rem', background: '#6366f1', color: 'white', padding: '1px 4px', borderRadius: '4px', fontWeight: '800', marginTop: '2px', whiteSpace: 'nowrap' }}>합석</div>
-                                                            )}
                                                         </div>
 
                                                         {/* 메뉴 목록 */}
@@ -516,14 +647,13 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                         </div>
                                                     </div>
                                                 );
-                                            })}
+                                            })
+                                        )}
                                     </div>
                                 </div>
                             )}
 
-                            {selectedSession && activeOrders.length === 0 && (
-                                <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '0.85rem', background: 'var(--surface)', borderRadius: '10px', border: '1px solid var(--border)' }}>주문 내역이 없습니다.</div>
-                            )}
+
 
                             {/* ── 합계 + 세션 액션 바 ── */}
                             {selectedSession && (
@@ -553,16 +683,32 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                         <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                                             <button onClick={() => handleResetSession(selectedSession.session_id)} style={{ background: 'transparent', border: '1px solid #fca5a5', color: '#ef4444', padding: '7px 12px', borderRadius: '7px', fontWeight: '500', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>초기화</button>
                                             {unpaidTotal === 0 ? (
-                                                <button onClick={async () => {
-                                                    const msg = activeOrders.length > 0 ? '모든 결제가 완료되었습니다. 세션을 종료하시겠습니까?' : '주문이 없습니다. 세션을 종료하시겠습니까?';
-                                                    if (!window.confirm(msg)) return;
-                                                    try {
-                                                        const r = await fetch(`${getApiUrl()}/api/session/close`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: selectedSession.session_id, force: true }) });
-                                                        if (r.ok) { setSelectedTableId(null); fetchSessions(); }
-                                                        else alert('오류가 발생했습니다.');
-                                                    } catch { alert('오류가 발생했습니다.'); }
-                                                }} style={{ background: 'var(--accent)', border: 'none', color: 'white', padding: '7px 16px', borderRadius: '7px', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                                    {activeOrders.length === 0 ? '종료' : '결제완료'}
+                                                <button 
+                                                    disabled={hasCookingOrder}
+                                                    title={hasCookingOrder ? "주방에서 조리 중인 주문이 있어 세션을 종료할 수 없습니다." : ""}
+                                                    onClick={async () => {
+                                                        const msg = activeOrders.length > 0 ? '모든 결제가 완료되었습니다. 세션을 종료하시겠습니까?' : '주문이 없습니다. 세션을 종료하시겠습니까?';
+                                                        if (!window.confirm(msg)) return;
+                                                        try {
+                                                            const r = await fetch(`${getApiUrl()}/api/session/close`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: selectedSession.session_id, force: true }) });
+                                                            if (r.ok) { setSelectedTableId(null); fetchSessions(); }
+                                                            else alert('오류가 발생했습니다.');
+                                                        } catch { alert('오류가 발생했습니다.'); }
+                                                    }} 
+                                                    style={{ 
+                                                        background: hasCookingOrder ? '#cbd5e1' : 'var(--accent)', 
+                                                        border: 'none', 
+                                                        color: hasCookingOrder ? '#64748b' : 'white', 
+                                                        padding: '7px 16px', 
+                                                        borderRadius: '7px', 
+                                                        fontWeight: '700', 
+                                                        fontSize: '0.85rem', 
+                                                        cursor: hasCookingOrder ? 'not-allowed' : 'pointer', 
+                                                        whiteSpace: 'nowrap',
+                                                        opacity: hasCookingOrder ? 0.65 : 1
+                                                    }}
+                                                >
+                                                    종료
                                                 </button>
                                             ) : (
                                                 <button onClick={() => setSelectedSessionForPay(selectedSession)} style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '7px 16px', borderRadius: '7px', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>전체결제</button>
@@ -582,52 +728,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                     )}
             </div>
 
-            {/* ── 하단 바: 테이블 그리드 ── */}
-            <div style={{ background: 'var(--surface)', borderTop: '2px solid var(--border)', borderRadius: '12px', padding: '10px 12px 8px', flexShrink: 0, boxShadow: '0 -2px 8px rgba(0,0,0,0.04)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)' }}>테이블 현황 <span style={{ color: 'var(--accent)' }}>{sessions.length}석 활성</span></span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
-                        {STAGE_PIPELINE.filter(s => s.key !== 'initial').map(s => (
-                            <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                <div style={{ width: '7px', height: '7px', borderRadius: '2px', background: s.bg, border: `1px solid ${s.color}66`, flexShrink: 0 }} />
-                                <span style={{ fontSize: '0.58rem', color: 'var(--text-muted)' }}>{s.label}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '5px' }}>
-                    {tables.map(num => {
-                        const tableId = `T${String(num).padStart(2, '0')}`;
-                        const { label, bg, color, stage } = getTableStage(tableId);
-                        const isSelected = selectedTableId === tableId;
-                        const isWaiting = stage === 'waiting';
-                        const hasAlert = isWaiting || stage === 'cooking_done' || stage === 'payment_pending';
-                        return (
-                            <button
-                                key={num}
-                                onClick={() => handleTableTap(tableId)}
-                                className={isWaiting ? 'table-seat-waiting' : ''}
-                                style={{
-                                    padding: '4px 2px',
-                                    borderRadius: '6px',
-                                    border: isSelected ? `2px solid ${color}` : isWaiting ? `2px solid ${color}` : `1.5px solid ${stage === 'initial' ? '#e5e7eb' : color + '55'}`,
-                                    ...(isWaiting ? {} : { background: bg }),
-                                    color,
-                                    cursor: 'pointer',
-                                    textAlign: 'center',
-                                    boxShadow: isSelected ? `0 0 0 3px ${color}22` : (!isWaiting && hasAlert) ? `0 0 6px ${color}44` : 'none',
-                                    transition: isWaiting ? 'none' : 'all 0.15s',
-                                    ...(isWaiting ? {} : { animation: hasAlert ? 'pulse-mild 2s infinite' : 'none' }),
-                                }}
-                            >
-                                <div style={{ fontSize: '0.6rem', fontWeight: '700', opacity: 0.6 }}>{tableId}</div>
-                                <div style={{ lineHeight: 1.1, fontSize: '0.65rem', fontWeight: '800' }}>{label}</div>
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
             {/* ── 결제 모달 ── */}
             {(selectedSessionForPay || selectedOrderForPay) && (
                 <PaymentModal
@@ -639,7 +739,40 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                     }
                     onClose={() => { setSelectedSessionForPay(null); setSelectedOrderForPay(null); }}
                     onPayerInfo={(phone, topPercent) => setVipPayerInfo({ phone, topPercent })}
-                    onSubmit={async () => {
+                    onSubmit={async (method) => {
+                        if (method === '폰 to 폰 결제') {
+                            const active = selectedSessionForPay || (selectedOrderForPay ? sessions.find(s => s.orders?.some((o: any) => o.order_id === selectedOrderForPay.order_id)) : null);
+                            if (active) {
+                                try {
+                                    const amount = selectedOrderForPay
+                                        ? (selectedOrderForPay.total_price ?? selectedOrderForPay.total ?? 0)
+                                        : (active.orders || [])
+                                            .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
+                                            .reduce((sum: number, o: any) => sum + (o.total_price ?? o.total ?? 0), 0);
+                                            
+                                    const res = await fetch(`${getApiUrl()}/api/payment/request-phone-to-phone`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            session_id: active.session_id,
+                                            order_id: selectedOrderForPay?.order_id || null,
+                                            amount: amount
+                                        })
+                                    });
+                                    if (res.ok) {
+                                        alert('📲 고객 휴대폰으로 폰 to 폰 원격 결제 요청을 전송했습니다. 고객이 휴대폰에서 최종 결제하면 이 화면도 자동으로 완료 갱신됩니다.');
+                                        setSelectedSessionForPay(null);
+                                        setSelectedOrderForPay(null);
+                                    } else {
+                                        alert('결제 요청 전송 실패: ' + await res.text());
+                                    }
+                                } catch (e) {
+                                    alert('서버와 통신 중 오류가 발생했습니다.');
+                                }
+                            }
+                            return;
+                        }
+
                         if (selectedOrderForPay) {
                             await handlePartialPayment(selectedOrderForPay.order_id);
                         } else {

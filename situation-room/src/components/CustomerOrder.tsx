@@ -276,10 +276,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
       setIsOrdered(true);
       setShowPayModal(false);
       setIsCartView(false);
-      setTimeout(() => {
-        setIsOrdered(false);
-        setCart({});
-      }, 3000);
+      setCart({});
     } catch (err) {
       alert(isCall ? "호출 실패!" : "주문 전송 실패!");
     }
@@ -287,11 +284,72 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
 
   if (isOrdered) {
     return (
-      <div className="mobile-app-container flex-center animate-fade-in">
-        <div style={{ textAlign: 'center' }}>
-          <div className="success-lottie" style={{ fontSize: '4rem' }}>✅</div>
-          <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>주문 전송 완료!</h1>
-          <p style={{ color: 'var(--text-muted)' }}>주방으로 주문이 전달되었습니다.</p>
+      <div className="mobile-app-container animate-fade-in" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        {/* 헤더 */}
+        <header className="mobile-header">
+          <div className="header-top" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h1 style={{ margin: 0 }}>MQ <span>Premium</span></h1>
+            <div className="table-tag" style={{ background: 'var(--accent-orange)', padding: '4px 12px', borderRadius: '50px', fontWeight: 'bold' }}>Table {tableNo}</div>
+          </div>
+        </header>
+
+        {/* 주문 완료 감사 안내 */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '40px 24px',
+          textAlign: 'center',
+          gap: '16px'
+        }}>
+          <div style={{ fontSize: '5rem', lineHeight: 1 }}>✅</div>
+          <h2 style={{ fontSize: '1.8rem', margin: '0', fontWeight: '800', color: 'white' }}>주문해 주셔서 감사합니다!</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: 1.7, margin: 0 }}>
+            주문이 주방으로 전달되었습니다.<br/>
+            잠시만 기다려 주세요. 😊
+          </p>
+          <div style={{
+            marginTop: '12px',
+            padding: '16px 24px',
+            borderRadius: '16px',
+            background: 'rgba(249, 115, 22, 0.08)',
+            border: '1px solid rgba(249, 115, 22, 0.25)',
+            color: '#f97316',
+            fontSize: '0.95rem',
+            fontWeight: '600',
+            lineHeight: 1.6
+          }}>
+            추가 주문이 필요하시면<br/>
+            아래 <strong>추가주문</strong> 버튼을 눌러주세요.
+          </div>
+        </div>
+
+        {/* 추가주문 버튼 */}
+        <div style={{ padding: '16px 20px 40px' }}>
+          <button
+            onClick={() => setIsOrdered(false)}
+            style={{
+              width: '100%',
+              padding: '18px',
+              borderRadius: '18px',
+              background: 'var(--accent-orange)',
+              color: 'white',
+              border: 'none',
+              fontWeight: '800',
+              fontSize: '1.2rem',
+              boxShadow: '0 6px 20px rgba(249, 115, 22, 0.35)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              letterSpacing: '0.02em'
+            }}
+          >
+            🍽️ 추가주문
+          </button>
         </div>
       </div>
     );

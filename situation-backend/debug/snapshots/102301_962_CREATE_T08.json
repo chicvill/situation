@@ -1,0 +1,23 @@
+{
+  "snapshot_time": "2026-05-26T10:23:01.966570",
+  "label": "CREATE",
+  "session": {
+    "session_id": "SESS-A95A74C6",
+    "store_id": "default_store",
+    "table_id": "T08",
+    "device_id": "DEV-MG3D8S9UQ",
+    "status": "active",
+    "checkin_time": "2026-05-26T10:22:24.738216",
+    "checkout_time": null,
+    "metadata": {
+      "pin": "2424",
+      "pin_verified": true
+    },
+    "orders": [],
+    "splits": [],
+    "calls": [],
+    "parking": null,
+    "point": null,
+    "version": 1
+  }
+}

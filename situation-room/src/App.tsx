@@ -31,7 +31,6 @@ import { useStoreSync } from './hooks/useStoreSync';
 import { TopBar } from './layout/TopBar';
 import { BottomNav } from './layout/BottomNav';
 import { SideDrawer } from './layout/SideDrawer';
-import { MqttDebugOverlay } from './components/MqttDebugOverlay';
 
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
@@ -122,12 +121,36 @@ function App() {
     receiptUrl?: string;
   } | null>(null);
 
+  const [storeDetails, setStoreDetails] = useState<any>(null);
+
+  const fetchStoreDetails = () => {
+    if (storeId && user && user.role !== 'customer') {
+      fetch(`${API_BASE}/api/stores`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            const currentStore = data.find((s: any) => s.store_id === storeId);
+            if (currentStore) {
+              setStoreDetails(currentStore);
+            } else {
+              setStoreDetails(null);
+            }
+          }
+        })
+        .catch(err => console.error('Error fetching store details:', err));
+    }
+  };
+
+  useEffect(() => {
+    fetchStoreDetails();
+  }, [storeId, user]);
+
   const safeBundles = Array.isArray(bundles) ? bundles : [];
   const isCustomerMode = user?.role === 'customer';
   
   // 지식 번들에서 상호명을 찾아 storeName 업데이트 (필요한 경우)
   const storeBundle = safeBundles.find(b => b.type === 'StoreConfig' && (b.store_id === storeId || !b.store_id));
-  const resolvedStoreName = storeBundle?.items?.find(i => i.name === '상호명' || i.name === 'brand')?.value || initialStoreName || '우리식당';
+  const resolvedStoreName = storeBundle?.items?.find(i => i.name === '상호명' || i.name === 'brand')?.value || storeDetails?.store_name || user?.storeName || initialStoreName || '우리식당';
 
   // storeName이 변경되었으면 동기화
   useEffect(() => {
@@ -159,30 +182,6 @@ function App() {
     setUser(null);
     localStorage.removeItem('mqnet_user');
   };
-
-  const [storeDetails, setStoreDetails] = useState<any>(null);
-
-  const fetchStoreDetails = () => {
-    if (storeId && user && user.role !== 'customer') {
-      fetch(`${API_BASE}/api/stores`)
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            const currentStore = data.find((s: any) => s.store_id === storeId);
-            if (currentStore) {
-              setStoreDetails(currentStore);
-            } else {
-              setStoreDetails(null);
-            }
-          }
-        })
-        .catch(err => console.error('Error fetching store details:', err));
-    }
-  };
-
-  useEffect(() => {
-    fetchStoreDetails();
-  }, [storeId, user]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -445,7 +444,7 @@ function App() {
       case 'tech': return <TechInfo />;
       case 'paper': return <PaperViewer />;
       case 'stats':
-      case 'admin': return <AdminDashboard bundles={bundles} storeDetails={storeDetails} />;
+      case 'admin': return <AdminDashboard bundles={bundles} storeDetails={storeDetails} user={user} activeTab={activeTab} />;
       case 'home':
         return (
           <WelcomeHub
@@ -477,7 +476,6 @@ function App() {
 
   return (
     <div className={`saas-container mobile-full-mode ${isCustomerMode ? 'customer-mode' : ''}`}>
-      <MqttDebugOverlay />
       
       {receiptData && (
         <ReceiptModal
@@ -560,6 +558,10 @@ function App() {
           onClose={() => setIsMenuOpen(false)}
           onNavigate={(tab) => navigateTo(tab as MainTab)}
           onLogout={handleLogout}
+          onSwitchStore={() => {
+            setSelectedAdminStore(null);
+            setIsMenuOpen(false);
+          }}
         />
       )}
 

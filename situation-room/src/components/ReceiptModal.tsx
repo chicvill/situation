@@ -14,6 +14,37 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
 }) => {
   const today = new Date().toLocaleString();
 
+  const handleSaveAsFile = () => {
+    const receiptText = `
+========================================
+             영 수 증 (RECEIPT)
+========================================
+매장명   : 시크앤프레시 (Chic & Fresh)
+발행일시 : ${today}
+주문번호 : ${orderId}
+결제수단 : ${paymentMethod}
+----------------------------------------
+상품명                      수량    금액
+----------------------------------------
+${items.map(item => `${item.name.padEnd(20)} ${item.value.padStart(15)}`).join('\n')}
+----------------------------------------
+총 결제 금액: ₩ ${totalPrice.toLocaleString()}원
+========================================
+이용해 주셔서 감사합니다!
+`;
+    
+    const blob = new Blob([receiptText], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `영수증_${orderId}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    alert('영수증이 텍스트 파일로 성공적으로 저장되었습니다! 💾');
+  };
+
   return (
     <div className="receipt-modal-overlay animate-fade-in" style={{ 
       zIndex: 5000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
@@ -90,6 +121,12 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </div>
           )}
           <button 
+            onClick={handleSaveAsFile}
+            style={{ padding: '15px', background: '#f97316', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(249,115,22,0.2)' }}
+          >
+            💾 파일로 저장하기
+          </button>
+          <button 
             onClick={() => window.print()}
             style={{ padding: '15px', background: '#f1f5f9', color: '#1e293b', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
           >
@@ -99,7 +136,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             onClick={onClose}
             style={{ padding: '15px', background: '#1e293b', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
           >
-            닫기
+            취소
           </button>
         </div>
 

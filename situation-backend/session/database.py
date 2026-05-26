@@ -35,6 +35,8 @@ from .db.session_db import (
     get_max_order_seq,
     get_kitchen_orders,
     get_all_active_orders_as_bundles,
+    get_ready_orders,
+    get_next_display_number,
     # calls (moved from operations_db)
     append_call,
     save_call,
@@ -135,6 +137,8 @@ __all__ = [
     "get_max_order_seq",
     "get_kitchen_orders",
     "get_all_active_orders_as_bundles",
+    "get_ready_orders",
+    "get_next_display_number",
     # calls
     "append_call",
     "save_call",

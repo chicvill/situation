@@ -833,6 +833,12 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       const orderId = orderData.order_id;
       PaymentService.log("CP-01", "Success: Order created", { orderId });
 
+      // [FIX] 주문이 백엔드에 성공적으로 생성되면 무조건 장바구니를 비웁니다.
+      // (가상결제 등 외부 PG창을 닫아도 다음 차수 주문 시 이전 항목이 누적되지 않도록 방지)
+      setCart([]);
+      refreshOrders();
+      generateAiStory(currentCart);
+
       // [CP-02] 결제 수단 분기
       const isCounterPay = method.includes('카운터') || method.includes('현금') || method.includes('cash');
 
@@ -845,9 +851,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           // Dutch pay cash: fire payment_finished for unified Dutch tracking
           setTimeout(() => window.dispatchEvent(new CustomEvent('payment_finished', { detail: { success: true } })), 0);
         } else {
-          setCart([]);
-          refreshOrders();
-          generateAiStory(currentCart);
           setShowProgress(true);
         }
       } else {

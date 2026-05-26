@@ -6,7 +6,7 @@ from ..state import manager
 from ..models import OrderRequest, StatusUpdate
 from ..database import (
     save_order, get_active_session, update_order_status,
-    get_max_order_seq, get_store_use_kitchen
+    get_max_order_seq, get_store_use_kitchen, get_next_display_number
 )
 
 router = APIRouter()
@@ -54,6 +54,29 @@ async def process_order(order_req: OrderRequest):
     current_max_seq = get_max_order_seq(session_id)
     next_seq = current_max_seq + 1
 
+    # 모바일 기기로부터 주문이 들어온 경우 중, 세션이 아직 PIN 미인증 상태인 경우
+    is_mobile_order = order_req.device_id and order_req.device_id != "counter"
+    
+    # 세션의 pin_verified 상태 파싱
+    import json
+    raw_meta = session_dict.get('metadata') or {}
+    try:
+        metadata = json.loads(raw_meta) if isinstance(raw_meta, str) else dict(raw_meta)
+    except Exception:
+        metadata = {}
+    pin_verified = metadata.get('pin_verified', False)
+
+    # QR 선불 결제인 경우 (결제 상태가 paid인 경우) 승인번호 없이 자동 승인 처리
+    if is_mobile_order and order_req.payment_status == "paid":
+        pin_verified = True
+        metadata["pin_verified"] = True
+        session_dict["metadata"] = metadata
+        from ..database import save_session
+        save_session(session_dict)
+        # 즉각 테이블 및 주방에 승인 신호 발송
+        await manager.send_to_table(table_id_val, {"type": "SESSION_OPENED", "session": session_dict})
+        await manager.broadcast_to_kitchen({"type": "SESSION_OPENED", "session": session_dict})
+
     # 3. 주문 객체 생성
     order_id = f"ORD-{uuid.uuid4().hex[:8].upper()}"
     if order_req.payment_status == "pending":
@@ -62,6 +85,8 @@ async def process_order(order_req: OrderRequest):
         initial_status = "cooking"
     else:
         initial_status = "ready"
+        
+    display_number = get_next_display_number(store_id_val)
     new_order = {
         "order_id": order_id,
         "session_id": session_id,
@@ -75,7 +100,8 @@ async def process_order(order_req: OrderRequest):
         "payment_method": order_req.payment_method,
         "join_order": order_req.join_order,
         "order_seq": next_seq,
-        "timestamp": datetime.now().isoformat()
+        "display_number": display_number,
+        "timestamp": datetime.utcnow().isoformat() + 'Z'
     }
 
     # 4. DB 저장
@@ -90,11 +116,17 @@ async def process_order(order_req: OrderRequest):
     metadata = order_req.metadata or {}
     phone = metadata.get("phone")
     if phone:
-        from ..database import update_customer_points
+        from ..database import update_customer_points, use_customer_points
         # 기본 0.1% 적립
         pts = int(order_req.total_price * 0.001)
         update_customer_points(phone, pts, effective_store_id)
         print(f"[Checkpoint 4] Accumulated {pts}P for {phone} under Store {effective_store_id}")
+
+        # 사용한 포인트 차감 처리
+        use_pts = int(metadata.get("usePoints") or metadata.get("use_points") or 0)
+        if use_pts > 0:
+            use_customer_points(phone, use_pts, effective_store_id)
+            print(f"[Checkpoint 4] Deducted {use_pts}P used points for {phone} under Store {effective_store_id}")
 
         # 주방/카운터에 실시간 포인트 적립 브로드캐스트 전송
         await manager.broadcast_to_kitchen({
@@ -106,12 +138,15 @@ async def process_order(order_req: OrderRequest):
 
     print(f"[Checkpoint 5] Order Saved Successfully: {order_id}")
 
-    # 5. 주방에 알림 전송
-    await manager.broadcast_to_kitchen({
-        "type": "NEW_ORDER",
-        "order": new_order
-    })
-    print(f"[Checkpoint 6] Broadcast NEW_ORDER sent to kitchen monitors.")
+    # 5. 주방에 알림 전송 (PIN 인증 완료 상태 또는 카운터 주문일 때만 즉각 전송)
+    if initial_status != "waiting_pin":
+        await manager.broadcast_to_kitchen({
+            "type": "NEW_ORDER",
+            "order": new_order
+        })
+        print(f"[Checkpoint 6] Broadcast NEW_ORDER sent to kitchen monitors.")
+    else:
+        print(f"[Checkpoint 6 Bypassed] Waiting for PIN verification. NEW_ORDER broadcast postponed.")
 
     return {"status": "success", "order_id": order_id, "order_seq": next_seq}
 
@@ -136,15 +171,19 @@ async def update_items(data: Dict):
 
 @router.post("/api/order/status")
 async def update_status(update: StatusUpdate):
+    from ..database import get_order_by_id
     success = update_order_status(update.order_id, update.status)
     if success:
-        # 상태 변경 알림 (관련 테이블 및 주방 전체)
-        # 어떤 테이블의 주문인지 확인하기 위해 전체 주문 정보를 가져오면 좋겠지만,
-        # 일단은 브로드캐스트로 처리 (프론트엔드에서 필터링 가능)
-        msg = {"type": "STATUS_UPDATE", "order_id": update.order_id, "status": update.status}
+        order = get_order_by_id(update.order_id)
+        store_id = order.get("store_id", "") if order else ""
+        table_id = order.get("table_id", "") if order else ""
+        msg = {
+            "type": "STATUS_UPDATE",
+            "order_id": update.order_id,
+            "status": update.status,
+            "store_id": store_id,
+            "table_id": table_id,
+        }
         await manager.broadcast_to_kitchen(msg)
-        # 모든 테이블에도 전송 (모바일 화면 갱신용)
-        for table_id in manager.active_connections:
-            await manager.send_to_table(table_id, msg)
         return {"status": "success"}
     return {"status": "failed"}

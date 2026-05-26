@@ -3,6 +3,7 @@ import { API_BASE } from '../../config';
 import { subscribeTopic } from '../../services/mqttClient';
 import { subscribeToStore } from '../../services/notifications';
 import { PaymentModal } from '../PaymentModal';
+import { ReceiptModal } from '../ReceiptModal';
 import { PaymentService } from '../../services/paymentService';
 import type { BundleData } from '../../types';
 
@@ -11,8 +12,7 @@ import type { BundleData } from '../../types';
 ───────────────────────────────────────────── */
 type FlowPhase =
   | 'loading'           // 메뉴 로딩 + 세션 확인
-  | 'greeting'          // AI 인사 + 카테고리 스트립, 승인 대기
-  | 'waiting_approval'  // 카운터 승인 명시적 대기
+  | 'greeting'          // AI 인사 + 카테고리 스트립
   | 'active'            // 세션 활성 → 메뉴 스트립 + 카트
   | 'pre_payment'       // 포인트·영수증·주차 확인
   | 'payment'           // 결제 진행
@@ -28,6 +28,7 @@ interface Order {
   order_id: string; order_seq: number;
   total_price: number; status: string; payment_status: string;
   items: { name: string; quantity: number; price: number }[];
+  payment_method?: string;
 }
 interface Props {
   bundles: BundleData[];
@@ -141,14 +142,13 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   const [isListening, setIsListening] = useState(false);
   const [allOrders, setAllOrders] = useState<Order[]>([]);  // 전체 주문 누적
   const [orderRound, setOrderRound] = useState(1);          // 몇 차 주문
+  
+  const [activeSession, setActiveSession] = useState<any | null>(null);
 
   /* ── Pre-payment state ── */
-  const [userPhone, setUserPhone] = useState('');
-  const [cashReceipt, setCashReceipt] = useState<'personal' | 'business' | 'none'>('none');
+  const [userPhone, setUserPhone] = useState(() => localStorage.getItem('user_phone') || '');
   const [vehicleNumber, setVehicleNumber] = useState('');
-  const [parkingWanted, setParkingWanted] = useState(false);
   const [parkingApplied, setParkingApplied] = useState(false);
-  const [selectedPayMethod, setSelectedPayMethod] = useState('');
 
   /* ── Modal / overlay state ── */
   const [showDutchModal, setShowDutchModal] = useState(false);
@@ -164,8 +164,15 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   const [callOverlay, setCallOverlay] = useState<{ callId: string; status: 'pending' | 'completed' } | null>(null);
   const [isOrdering, setIsOrdering] = useState(false);
 
-  /* ── Waiting type: new_session = 카운터가 새 세션 승인 대기, join = 합석 대기 ── */
-  const [waitingType, setWaitingType] = useState<'new_session' | 'join'>('new_session');
+  // ── 모바일 영수증 노출용 상태 ──
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptOrderId, setReceiptOrderId] = useState('');
+  const [receiptTotal, setReceiptTotal] = useState(0);
+  const [receiptMethod, setReceiptMethod] = useState('');
+  const [receiptItems, setReceiptItems] = useState<{ name: string; value: string }[]>([]);
+  const [remotePayRequest, setRemotePayRequest] = useState<{ amount: number; orderId: string | null } | null>(null);
+
+
 
   /* ── Refs ── */
   const sessionIdRef = useRef('');
@@ -210,14 +217,16 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
     } catch (_) {}
   }, [tableId, storeId]);
 
-  const activateSession = useCallback((sid: string, orders: Order[] = []) => {
-    sessionIdRef.current = sid;
+  const activateSession = useCallback((session: any, orders: Order[] = []) => {
+    sessionIdRef.current = session?.session_id || '';
+    setActiveSession(session);
     setAllOrders(orders);
+    
     phaseRef.current = 'active';
     setPhase('active');
   }, []);
 
-  const joinSession = useCallback(async (): Promise<'active' | 'waiting_new' | 'waiting_join' | 'greeting'> => {
+  const joinSession = useCallback(async (): Promise<'active_new' | 'active_existing' | 'greeting'> => {
     try {
       const res = await fetch(`${API_BASE}/api/checkin/request`, {
         method: 'POST',
@@ -226,21 +235,16 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
       });
       const data = await res.json();
       if (data.status === 'active') {
-        activateSession(data.session?.session_id || '', data.orders || []);
-        return 'active';
-      } else if (data.status === 'waiting_approval') {
-        // 합석 대기: 서버가 join:true 또는 existing_session을 반환할 때
-        const isJoin = !!(data.join || data.is_join || data.existing_session);
-        const wt: 'new_session' | 'join' = isJoin ? 'join' : 'new_session';
-        setWaitingType(wt);
-        phaseRef.current = 'waiting_approval';
-        setPhase('waiting_approval');
-        return isJoin ? 'waiting_join' : 'waiting_new';
+        const existingOrders: Order[] = data.orders || [];
+        activateSession(data.session, existingOrders);
+        phaseRef.current = 'active';
+        setPhase('active');
+        return existingOrders.length === 0 ? 'active_new' : 'active_existing';
       } else {
-        // 세션 없음 → greeting으로 진입
-        phaseRef.current = 'greeting';
-        setPhase('greeting');
-        return 'greeting';
+        activateSession(data.session || null, []);
+        phaseRef.current = 'active';
+        setPhase('active');
+        return 'active_new';
       }
     } catch (_) {
       phaseRef.current = 'greeting';
@@ -258,11 +262,13 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
     const handleTableMsg = (msg: any) => {
       switch (msg.type) {
         case 'SESSION_OPENED': {
-          // 카운터가 세션을 열었음 → MQTT 메시지를 신뢰하고 바로 active로 전환
-          const sid = msg.session?.session_id || msg.session_id || sessionIdRef.current || '';
-          activateSession(sid, []);
+          const sessObj = msg.session || { session_id: msg.session_id || sessionIdRef.current || '', metadata: { pin_verified: true } };
+          activateSession(sessObj, []);
           refreshOrders();
-          addAiMsg('좌석 승인이 완료되었습니다! 원하시는 메뉴를 선택해 주세요. 🛒');
+          
+          phaseRef.current = 'active';
+          setPhase('active');
+          // 좌석 승인 완료 안내 - 불필요하여 제거됨
           break;
         }
         case 'SESSION_CLOSED':
@@ -270,19 +276,6 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           phaseRef.current = 'greeting'; setPhase('greeting');
           setCart([]); setAllOrders([]);
           addAiMsg('세션이 종료되었습니다. 이용해 주셔서 감사합니다! 😊', true);
-          break;
-        case 'JOIN_RESPONSE':
-          if (msg.device_id === deviceId) {
-            if (msg.approved) {
-              activateSession(msg.session_id, []);
-              refreshOrders();
-              addAiMsg(`합석이 승인되었습니다! 메뉴를 선택해 주세요. 🛒`);
-              setOrderRound(r => r + 1);
-            } else {
-              phaseRef.current = 'greeting'; setPhase('greeting');
-              addAiMsg('합석이 거부되었습니다. 카운터에 문의해 주세요.');
-            }
-          }
           break;
         case 'ORDER_READY':
           playDing();
@@ -299,6 +292,12 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         case 'POINT_CONFIRMED':
           addAiMsg('포인트가 정상 적립되었습니다. 🎁', false);
           break;
+        case 'PHONE_TO_PHONE_PAY_REQUEST': {
+          playDing();
+          addAiMsg(`📲 점장 휴대폰으로부터 결제 요청이 도착했습니다. 화면의 결제창에서 바로 결제해 주시면 됩니다. 😊`);
+          setRemotePayRequest({ amount: msg.amount, orderId: msg.order_id || null });
+          break;
+        }
         default:
           refreshOrders();
       }
@@ -324,18 +323,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
     if (menus.length > 0 && phase === 'loading') {
       joinSession().then((result) => {
         setTimeout(() => {
-          if (result === 'active') {
-            addAiMsg(`이전에 승인된 테이블입니다. 바로 주문하세요! 🛒`, true);
-          } else if (result === 'waiting_new') {
-            addAiMsg(
-              `안녕하세요! 저는 ${storeName} AI 도우미입니다. 😊`,
-              false
-            );
-            setTimeout(() => {
-              addAiMsg('카운터에서 좌석을 확인 중입니다. 승인이 완료되면 자동으로 주문 화면이 열립니다.', true);
-            }, 400);
-          } else if (result === 'waiting_join') {
-            addAiMsg('합석을 요청했습니다. 카운터에서 합석 여부를 확인 중입니다. 잠시만 기다려 주세요.', true);
+          if (result === 'active_existing') {
+            addAiMsg(`추가 주문입니까? 합석이 아니면 취소해주세요. 🛒`, true);
           } else {
             addAiMsg(
               `안녕하세요! 저는 ${storeName} AI 도우미입니다. 😊 위 카테고리를 눌러 메뉴를 보시고, [+] 버튼이나 🎙️ 음성 버튼으로 편하게 주문하세요!`,
@@ -343,40 +332,18 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
             );
           }
           if (phaseRef.current === 'loading') {
-            phaseRef.current = 'greeting'; setPhase('greeting');
+            phaseRef.current = 'active'; setPhase('active');
           }
         }, 600);
       });
     }
   }, [menus.length, hasTableParam]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ── 승인 대기 폴링: 5초마다 확인 → 승인 시 즉시 active 전환 ── */
-  useEffect(() => {
-    if (phase !== 'waiting_approval') return;
-
-    const interval = setInterval(async () => {
-      if (phaseRef.current !== 'waiting_approval') return;
-      try {
-        const res = await fetch(`${API_BASE}/api/checkin/request`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tableNo, deviceId, store: storeName, store_id: storeId })
-        });
-        const data = await res.json();
-        if (data.status === 'active' && phaseRef.current === 'waiting_approval') {
-          activateSession(data.session?.session_id || '', data.orders || []);
-          addAiMsg('좌석 승인이 완료되었습니다! 원하시는 메뉴를 선택해 주세요. 🛒', true);
-        }
-      } catch (_) {}
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [phase, tableNo, deviceId, storeName, storeId, activateSession, addAiMsg]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Phase별 AI 멘트 ── */
   useEffect(() => {
     if (phase === 'paid') {
-      addAiMsg('결제가 완료되었습니다! 맛있게 드세요. 🎉 추가 주문은 하단 [추가주문] 버튼을 이용하세요.');
+      addAiMsg('주문해 주셔서 감사합니다! 🎉 추가 주문이 필요하시면 아래 [추가주문] 버튼을 눌러주세요.');
     }
   }, [phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -426,6 +393,11 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
      Cart actions
   ───────────────────────────────────────────── */
   const addToCart = useCallback((item: MenuItem) => {
+    if (phaseRef.current === 'paid') {
+      setVoiceToast('💡 추가 주문을 원하시면 하단의 [➕추가주문] 버튼을 먼저 눌러주세요.');
+      setTimeout(() => setVoiceToast(null), 3000);
+      return;
+    }
     setCart(prev => {
       const ex = prev.find(c => c.name === item.name);
       if (ex) return prev.map(c => c.name === item.name ? { ...c, qty: c.qty + 1 } : c);
@@ -538,6 +510,10 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   const executeOrder = useCallback(async (method: string, extraData?: any) => {
     setIsOrdering(true);
     try {
+      if (extraData?.phone) {
+        setUserPhone(extraData.phone);
+        localStorage.setItem('user_phone', extraData.phone);
+      }
       const finalAmount = extraData?.dutchAmount !== undefined ? extraData.dutchAmount : cartTotal - (extraData?.usePoints || 0);
       const res = await fetch(`${API_BASE}/api/order/direct`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -547,18 +523,23 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           total_price: finalAmount,
           payment_status: (method.includes('카운터') || method.includes('현금')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
           payment_method: method,
-          metadata: { ...extraData, cash_receipt: cashReceipt, phone: userPhone, round: orderRound }
+          is_takeout: extraData?.isTakeout ?? false,
+          metadata: { ...extraData, phone: extraData?.phone || userPhone, round: orderRound }
         })
       });
       if (!res.ok) { const e = await res.json(); throw new Error(e.detail || '주문 생성 실패'); }
       const orderData = await res.json();
       const orderId = orderData.order_id;
 
+      // [FIX] 무조건 장바구니 비우기
+      setCart([]);
+      refreshOrders();
+
       const isTestPay = method.includes('가상 결제') || method.includes('테스트');
 
       if (method.includes('카운터') || method.includes('현금') || isTestPay) {
-        setCart([]); refreshOrders();
-        phaseRef.current = 'paid'; setPhase('paid');
+        phaseRef.current = 'paid';
+        setPhase('paid');
         if (isTestPay) alert('테스트 결제가 성공적으로 완료되었습니다.');
       } else {
         localStorage.setItem('receipt_items_' + orderId, JSON.stringify(cart.map(c => ({ name: c.name, value: `${c.qty}개` }))));
@@ -573,7 +554,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
     } finally {
       setIsOrdering(false);
     }
-  }, [tableId, deviceId, storeId, cart, cartTotal, cashReceipt, userPhone, orderRound, refreshOrders]);
+  }, [tableId, deviceId, storeId, cart, cartTotal, userPhone, orderRound, refreshOrders, activeSession]);
+
 
   /* ─────────────────────────────────────────────
      Dutch pay
@@ -627,8 +609,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   /* ─────────────────────────────────────────────
      Main render
   ───────────────────────────────────────────── */
-  const showCategoryStrip = phase !== 'loading';
-  const showMenuStrip = phase === 'active' || phase === 'pre_payment' || phase === 'payment' || phase === 'paid';
+  const showCategoryStrip = phase !== 'loading' && phase !== 'paid';
+  const showMenuStrip = phase === 'active' || phase === 'pre_payment' || phase === 'payment';
   const showCart = cart.length > 0 && showMenuStrip;
 
   return (
@@ -677,53 +659,6 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         </div>
       )}
 
-      {/* ── 승인 대기 전체 화면 ── */}
-      {phase === 'waiting_approval' && (
-        <div style={{
-          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
-          padding: '40px 24px', gap: 20,
-        }}>
-          <div style={{
-            width: 80, height: 80, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 36, boxShadow: '0 0 0 0 rgba(245,158,11,0.4)',
-            animation: 'pulse-ring 1.5s ease-in-out infinite',
-          }}>
-            ⏳
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#92400e', marginBottom: 8 }}>
-              {waitingType === 'join' ? '합석 승인 대기 중' : '좌석 승인 대기 중'}
-            </div>
-            <div style={{ fontSize: '0.88rem', color: '#78350f', lineHeight: 1.6 }}>
-              {waitingType === 'join'
-                ? '카운터에서 합석 여부를 확인 중입니다.\n승인되면 자동으로 주문 화면이 열립니다.'
-                : '카운터에서 좌석을 확인 중입니다.\n잠시만 기다려 주세요.'}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-            {[0, 1, 2].map(i => (
-              <div key={i} style={{
-                width: 8, height: 8, borderRadius: '50%', background: '#f59e0b',
-                animation: `dot-bounce 1.2s ease-in-out ${i * 0.2}s infinite`,
-              }} />
-            ))}
-          </div>
-          <style>{`
-            @keyframes pulse-ring {
-              0%   { box-shadow: 0 0 0 0 rgba(245,158,11,0.45); }
-              70%  { box-shadow: 0 0 0 18px rgba(245,158,11,0); }
-              100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
-            }
-            @keyframes dot-bounce {
-              0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
-              40%            { transform: scale(1.2); opacity: 1; }
-            }
-          `}</style>
-        </div>
-      )}
 
       {/* ── 메뉴 스크롤 ── */}
       {showMenuStrip && (
@@ -810,111 +745,132 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         ))}
       </nav>
 
-      {/* ── Pre-payment Sheet ── */}
+      {/* ── Pre-payment Modal ── */}
       {phase === 'pre_payment' && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.7)', zIndex: 9000, display: 'flex', alignItems: 'flex-end' }}>
-          <div style={{ width: '100%', background: 'white', borderRadius: '20px 20px 0 0', padding: '24px 20px', maxHeight: '80vh', overflowY: 'auto' }}>
-            <div style={{ width: 36, height: 4, background: '#e2e8f0', borderRadius: 2, margin: '0 auto 20px' }} />
-            <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#1e293b', margin: '0 0 18px' }}>결제 전 확인</h3>
-
-            {/* 주문 내역 */}
-            <div style={{ background: '#f8fafc', borderRadius: 12, padding: '12px 14px', marginBottom: 16 }}>
-              {cart.map(c => (
-                <div key={c.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', padding: '3px 0', color: '#334155' }}>
-                  <span>{c.name} ×{c.qty}</span>
-                  <span style={{ fontWeight: 700 }}>{(c.price * c.qty).toLocaleString()}원</span>
-                </div>
-              ))}
-              <div style={{ borderTop: '1px solid #e2e8f0', marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between', fontWeight: 900, color: '#f97316' }}>
-                <span>합계</span><span>{cartTotal.toLocaleString()}원</span>
-              </div>
-            </div>
-
-            {/* 포인트 적립 */}
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>포인트 적립 (선택)</label>
-              <input type="tel" placeholder="휴대폰 번호 입력" value={userPhone}
-                onChange={e => setUserPhone(e.target.value.replace(/[^0-9]/g, ''))}
-                style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: '0.9rem', color: '#1e293b', background: '#f8fafc', outline: 'none', boxSizing: 'border-box' }} />
-            </div>
-
-            {/* 현금영수증 (5만원 이상) */}
-            {cartTotal >= 50000 && (
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>현금영수증</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {(['personal', 'business', 'none'] as const).map(v => (
-                    <button key={v} onClick={() => setCashReceipt(v)} style={{
-                      flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer',
-                      background: cashReceipt === v ? '#2563eb' : '#f1f5f9',
-                      color: cashReceipt === v ? 'white' : '#475569',
-                      border: cashReceipt === v ? 'none' : '1.5px solid #e2e8f0',
-                    }}>{{ personal: '개인소득', business: '사업자', none: '미발행' }[v]}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 주차 */}
-            <div style={{ marginBottom: 18 }}>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>주차 할인 (2시간)</label>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setParkingWanted(true)} style={{ flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', background: parkingWanted ? '#059669' : '#f1f5f9', color: parkingWanted ? 'white' : '#475569', border: parkingWanted ? 'none' : '1.5px solid #e2e8f0' }}>주차했어요 🚗</button>
-                <button onClick={() => setParkingWanted(false)} style={{ flex: 1, padding: '8px 4px', borderRadius: 8, fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', background: !parkingWanted ? '#64748b' : '#f1f5f9', color: !parkingWanted ? 'white' : '#475569', border: !parkingWanted ? 'none' : '1.5px solid #e2e8f0' }}>해당없음</button>
-              </div>
-              {parkingWanted && !parkingApplied && (
-                <div style={{ marginTop: 8 }}>
-                  <input type="text" placeholder="차량번호 뒤 4자리" maxLength={4} value={vehicleNumber}
-                    onChange={e => setVehicleNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                    style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: '0.9rem', textAlign: 'center', letterSpacing: 8, fontWeight: 800, color: '#1e293b', background: '#f8fafc', outline: 'none', boxSizing: 'border-box' }} />
-                  <button onClick={handleParkingSubmit} style={{ width: '100%', marginTop: 6, padding: 10, background: '#059669', color: 'white', border: 'none', borderRadius: 10, fontWeight: 800, cursor: 'pointer', fontSize: '0.88rem' }}>주차 등록</button>
-                </div>
-              )}
-              {parkingApplied && <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#059669', fontWeight: 700 }}>✓ 주차 할인 신청 완료</p>}
-            </div>
-
-            {/* 결제 수단 */}
-            <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>결제 수단</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-              {['신용카드', '토스페이', '카카오페이', '계좌이체', '카운터 결제'].map(m => (
-                <button key={m} onClick={() => setSelectedPayMethod(m)} style={{
-                  padding: '10px 8px', borderRadius: 10, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
-                  background: selectedPayMethod === m ? '#2563eb' : '#f1f5f9',
-                  color: selectedPayMethod === m ? 'white' : '#334155',
-                  border: selectedPayMethod === m ? 'none' : '1.5px solid #e2e8f0',
-                }}>{m}</button>
-              ))}
-            </div>
-
-            <button onClick={() => {
-              if (!selectedPayMethod) { setVoiceToast('결제 수단을 선택해 주세요.'); setTimeout(() => setVoiceToast(null), 2000); return; }
-              phaseRef.current = 'payment'; setPhase('payment');
-              executeOrder(selectedPayMethod, { usePoints: 0 });
-            }} style={{
-              width: '100%', padding: 14, background: '#f97316', color: 'white', border: 'none',
-              borderRadius: 12, fontWeight: 900, fontSize: '1rem', cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(249,115,22,0.35)'
-            }}>
-              {cartTotal.toLocaleString()}원 결제하기
-            </button>
-
-            <button onClick={() => { phaseRef.current = 'active'; setPhase('active'); }} style={{ width: '100%', marginTop: 8, padding: 12, background: 'none', color: '#94a3b8', border: '1px solid #e2e8f0', borderRadius: 12, fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer' }}>
-              메뉴 더 보기
-            </button>
-          </div>
-        </div>
+        <PaymentModal
+          totalPrice={cartTotal}
+          onClose={() => { phaseRef.current = 'active'; setPhase('active'); }}
+          onSubmit={(method, extra) => executeOrder(method, extra)}
+          initialPhone={userPhone}
+          bundles={bundles}
+        />
       )}
 
-      {/* ── 결제 완료 화면 ── */}
+
+
+      {/* ── 결제 완료 전체화면 (메뉴 숨김) ── */}
       {phase === 'paid' && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)', padding: '16px 14px', zIndex: 8000, borderBottom: '2px solid #a7f3d0', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: '2rem' }}>✅</span>
-          <div>
-            <div style={{ fontWeight: 900, fontSize: '0.95rem', color: '#065f46' }}>결제 완료!</div>
-            <div style={{ fontSize: '0.8rem', color: '#059669', marginTop: 2 }}>
-              주문 내역 {allOrders.length > 0 ? `(${allOrders.length}차)` : ''} | 추가 주문은 하단 [➕추가주문]을 이용하세요
-            </div>
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 8000,
+          background: 'linear-gradient(160deg, #0f172a 0%, #1e293b 60%, #0f2027 100%)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          padding: '40px 28px',
+          gap: 0,
+        }}>
+          {/* 영수증 버튼 - 우상단 */}
+          <button
+            onClick={() => {
+              const lastOrder = allOrders[allOrders.length - 1];
+              if (lastOrder) {
+                setReceiptOrderId(lastOrder.order_id);
+                setReceiptTotal(lastOrder.total_price);
+                setReceiptMethod(lastOrder.payment_method || '사전 결제');
+                setReceiptItems((lastOrder.items || []).map((i: any) => ({ name: i.name, value: `${i.quantity || i.qty || 1}개` })));
+                setShowReceipt(true);
+              } else {
+                const keys = Object.keys(localStorage).filter(k => k.startsWith('receipt_items_'));
+                if (keys.length > 0) {
+                  const key = keys[keys.length - 1];
+                  const orderId = key.replace('receipt_items_', '');
+                  const storedItems = JSON.parse(localStorage.getItem(key) || '[]');
+                  setReceiptOrderId(orderId);
+                  setReceiptTotal(storedItems.reduce((s: number, i: any) => s + (i.price ?? 0), 0) || cartTotal);
+                  setReceiptMethod('사전 결제');
+                  setReceiptItems(storedItems);
+                  setShowReceipt(true);
+                } else {
+                  alert('영수증 상세 내역이 존재하지 않습니다.');
+                }
+              }
+            }}
+            style={{
+              position: 'absolute', top: 20, right: 20,
+              background: 'rgba(255,255,255,0.08)', color: '#94a3b8',
+              border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px',
+              padding: '8px 14px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer',
+            }}
+          >
+            🧾 영수증
+          </button>
+
+          {/* 감사 아이콘 */}
+          <div style={{ fontSize: '5.5rem', marginBottom: '20px', filter: 'drop-shadow(0 0 30px rgba(249,115,22,0.4))' }}>✅</div>
+
+          {/* 감사 메시지 */}
+          <h2 style={{
+            fontSize: '1.9rem', fontWeight: 900, color: 'white',
+            margin: '0 0 12px', textAlign: 'center', letterSpacing: '-0.02em'
+          }}>주문해 주셔서 감사합니다!</h2>
+
+          <p style={{
+            color: '#94a3b8', fontSize: '1rem', lineHeight: 1.7,
+            margin: '0 0 28px', textAlign: 'center'
+          }}>
+            주문이 주방으로 전달되었습니다.<br/>
+            잠시만 기다려 주세요. 😊
+          </p>
+
+          {/* 안내 박스 */}
+          <div style={{
+            padding: '16px 22px',
+            borderRadius: '16px',
+            background: 'rgba(249, 115, 22, 0.1)',
+            border: '1px solid rgba(249, 115, 22, 0.25)',
+            color: '#fb923c',
+            fontSize: '0.95rem',
+            fontWeight: 600,
+            lineHeight: 1.7,
+            textAlign: 'center',
+            marginBottom: '32px',
+            width: '100%',
+            maxWidth: '320px',
+            boxSizing: 'border-box' as const,
+          }}>
+            추가 주문이 필요하시면<br/>
+            아래 <strong style={{ color: '#f97316' }}>추가주문</strong> 버튼을 눌러주세요.
           </div>
+
+          {/* 추가주문 버튼 */}
+          <button
+            onClick={() => {
+              phaseRef.current = 'active';
+              setPhase('active');
+              setOrderRound(r => r + 1);
+              addAiMsg(`${orderRound + 1}차 추가 주문을 시작합니다! 메뉴를 선택해 주세요. 🛒`);
+            }}
+            style={{
+              width: '100%',
+              maxWidth: '320px',
+              padding: '18px',
+              borderRadius: '18px',
+              background: 'linear-gradient(135deg, #f97316, #ea580c)',
+              color: 'white',
+              border: 'none',
+              fontWeight: 800,
+              fontSize: '1.2rem',
+              boxShadow: '0 8px 24px rgba(249, 115, 22, 0.4)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              letterSpacing: '0.02em',
+              boxSizing: 'border-box' as const,
+            }}
+          >
+            🍽️ 추가주문
+          </button>
         </div>
       )}
 
@@ -1038,6 +994,69 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         <div style={{ position: 'fixed', bottom: 90, left: '50%', transform: 'translateX(-50%)', background: 'rgba(15,23,42,0.95)', border: '1.5px solid #f97316', color: 'white', padding: '10px 20px', borderRadius: 50, fontSize: '0.8rem', fontWeight: 800, zIndex: 13000, whiteSpace: 'nowrap' }}>
           {voiceToast}
         </div>
+      )}
+
+      {/* ── 모바일 영수증 모달 ── */}
+      {showReceipt && (
+        <ReceiptModal
+          orderId={receiptOrderId}
+          totalPrice={receiptTotal}
+          paymentMethod={receiptMethod}
+          items={receiptItems}
+          onClose={() => setShowReceipt(false)}
+        />
+      )}
+
+      {/* ── 원격 결제 요청 모달 (폰 to 폰) ── */}
+      {remotePayRequest && (
+        <PaymentModal
+          totalPrice={remotePayRequest.amount}
+          onClose={() => setRemotePayRequest(null)}
+          onSubmit={async (method) => {
+            const isTestPay = method.includes('가상 결제') || method.includes('테스트');
+            if (isTestPay) {
+              try {
+                const endpoint = remotePayRequest.orderId 
+                  ? `${API_BASE}/api/order/status` 
+                  : `${API_BASE}/api/session/close`;
+                
+                const body = remotePayRequest.orderId
+                  ? { order_id: remotePayRequest.orderId, status: 'paid' }
+                  : { session_id: sessionIdRef.current };
+                  
+                const res = await fetch(endpoint, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(body)
+                });
+                
+                if (res.ok) {
+                  alert('결제가 완료되었습니다. 이용해 주셔서 감사합니다! ✅');
+                  setRemotePayRequest(null);
+                  phaseRef.current = 'paid';
+                  setPhase('paid');
+                  refreshOrders();
+                } else {
+                  alert('결제 처리 실패: ' + await res.text());
+                }
+              } catch (e) {
+                alert('네트워크 오류가 발생했습니다.');
+              }
+            } else {
+              const orderId = remotePayRequest.orderId || `SESS-${sessionIdRef.current.substring(5, 13)}-${Date.now().toString().substring(8)}`;
+              localStorage.setItem('receipt_items_' + orderId, JSON.stringify([{ name: '원격 주문 결제', value: '1개' }]));
+              await PaymentService.requestTossPayment(method, {
+                amount: remotePayRequest.amount,
+                orderId: orderId,
+                orderName: remotePayRequest.orderId ? `주문 번호 결제` : `테이블 전체 식사 결제`,
+                customerName: '손님'
+              });
+              setRemotePayRequest(null);
+            }
+          }}
+          initialPhone={userPhone}
+          bundles={bundles}
+        />
       )}
 
       {/* Loading overlay */}

@@ -15,7 +15,7 @@ from .db.session_db import init_archive_table
 from .state import manager, load_pool, save_pool, POOL_FILE  # noqa: F401 — re-exported for legacy imports
 from .models import OrderItem, OrderRequest, StatusUpdate, StoreCreateRequest, StoreUpdateRequest  # noqa: F401
 
-from .routers import store, pool, session_routes, payment, order, operations, staff, chat, manual, notify
+from .routers import store, pool, session_routes, payment, order, operations, staff, chat, manual, notify, stats
 from .routers import auth_router
 from .routers import debug_router
 from .mqtt_handler import run_mqtt_client
@@ -121,4 +121,5 @@ app.include_router(chat.router)
 app.include_router(manual.router)
 app.include_router(notify.router)
 app.include_router(debug_router.router)
+app.include_router(stats.router)
 # app.include_router(websocket.router)  # Removed as part of MQTT migration

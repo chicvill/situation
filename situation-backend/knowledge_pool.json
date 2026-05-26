@@ -1,25 +1,11 @@
 [
   {
-    "type": "Log",
-    "title": "고객 문의",
-    "items": [
-      {
-        "name": "문의 내용",
-        "value": "뭘 할 수 있을까"
-      }
-    ],
-    "store": "시크빌",
-    "timestamp": "2026-05-17 20:16:30",
-    "id": "BND-35E45FF9",
-    "store_id": "store-chicvill03"
-  },
-  {
     "id": "MENUS_store-1",
     "type": "Menus",
     "title": "메뉴 정보",
     "store_id": "store-1",
     "store": "미소 한식당",
-    "timestamp": "2026-05-17 16:32:46",
+    "timestamp": "2026-05-26 12:39:38",
     "items": [
       {
         "name": "된장찌개",
@@ -85,7 +71,7 @@
     "title": "메뉴 정보",
     "store_id": "store-2",
     "store": "블루버드 카페",
-    "timestamp": "2026-05-17 16:32:46",
+    "timestamp": "2026-05-26 12:39:38",
     "items": [
       {
         "name": "아메리카노",
@@ -99,7 +85,7 @@
         "value": 5500,
         "icon": "🥛",
         "category": "커피",
-        "description": "부드러운 우유 거품과 에스프레소의 조화"
+        "description": "부드러운 우유 거품 and 에스프레소의 조화"
       },
       {
         "name": "카푸치노",
@@ -158,7 +144,7 @@
     "title": "메뉴 정보",
     "store_id": "store-3",
     "store": "나폴리 피자",
-    "timestamp": "2026-05-17 16:32:46",
+    "timestamp": "2026-05-26 12:39:38",
     "items": [
       {
         "name": "마르게리타",
@@ -190,7 +176,7 @@
       },
       {
         "name": "봉골레",
-        "value": "15000",
+        "value": 15000,
         "icon": "🍝",
         "category": "파스타",
         "description": "신선한 바지락과 마늘·화이트와인의 바다 향 파스타"
@@ -226,991 +212,97 @@
     ]
   },
   {
-    "id": "store-config-store-chicvill",
-    "type": "StoreConfig",
-    "title": "매장 정보",
-    "store": "시크빌",
+    "id": "MENUS_store-chicvill",
+    "type": "Menus",
+    "title": "메뉴 정보",
     "store_id": "store-chicvill",
-    "status": "approved",
-    "items": [
-      {
-        "name": "상호명",
-        "value": "시크빌"
-      },
-      {
-        "name": "사업자번호",
-        "value": "5871301146"
-      },
-      {
-        "name": "대표자",
-        "value": "김종심"
-      },
-      {
-        "name": "개업일자",
-        "value": "20191216"
-      },
-      {
-        "name": "정산계좌",
-        "value": "농협은행 13002752081538"
-      },
-      {
-        "name": "연락처",
-        "value": "01082817377"
-      },
-      {
-        "name": "테이블설정",
-        "value": "1번: 4인석, 2번: 2인석, 3번: 4인석, 4번: 4인석, 5번: 2인석, 6번: 6인석"
-      }
-    ]
-  },
-  {
-    "id": "USER-1779004862338",
-    "type": "PersonalInfos",
-    "title": "김종심님 가입 완료 (점주)",
-    "items": [
-      {
-        "name": "이름",
-        "value": "김종심"
-      },
-      {
-        "name": "아이디",
-        "value": "chicvill"
-      },
-      {
-        "name": "비밀번호",
-        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
-      },
-      {
-        "name": "권한",
-        "value": "owner"
-      },
-      {
-        "name": "사업자번호",
-        "value": "5871301146"
-      },
-      {
-        "name": "개업일자",
-        "value": "20191216"
-      },
-      {
-        "name": "휴대폰",
-        "value": "01082817377"
-      }
-    ],
-    "status": "approved",
-    "timestamp": "2026. 5. 17. 오후 5:01:02",
     "store": "시크빌",
-    "store_id": "store-chicvill"
-  },
-  {
+    "timestamp": "2026-05-26 12:39:38",
     "items": [
       {
-        "name": "명품 한우 숯불구이",
-        "value": "35000",
+        "name": "명품 한우 갈비살",
+        "value": 42000,
         "icon": "🥩",
-        "category": "식사",
-        "description": "최고급 1++ 등급 한우를 참숯으로 부드럽게 구워낸 명품 시그니처 구이"
+        "category": "구이류",
+        "description": "한우 고유의 고소한 맛과 부드러운 육질이 일품인 최상급 갈비살 (150g)"
+      },
+      {
+        "name": "명품 한우 등심",
+        "value": 45000,
+        "icon": "🥩",
+        "category": "구이류",
+        "description": "풍부한 마블링에서 우러나는 진한 풍미의 최고급 등심 (150g)"
+      },
+      {
+        "name": "명품 한우 안심",
+        "value": 48000,
+        "icon": "🥩",
+        "category": "구이류",
+        "description": "가장 부드럽고 담백하며 육즙이 가득한 프리미엄 안심 (150g)"
+      },
+      {
+        "name": "한우 생육회",
+        "value": 28000,
+        "icon": "🥩",
+        "category": "요리류",
+        "description": "당일 도축한 한우 우둔살을 특제 양념으로 맛깔나게 버무린 육회 (150g)"
       },
       {
         "name": "시골 순두부찌개",
-        "value": "9000",
+        "value": 9000,
         "icon": "🍲",
-        "category": "식사",
-        "description": "매일 아침 직접 만든 순두부와 신선한 바지락으로 국물 맛을 낸 얼큰 찌개"
+        "category": "식사류",
+        "description": "정선 콩으로 만든 고소한 순두부와 국산 멸치 육수로 끓인 찌개"
+      },
+      {
+        "name": "한우 차돌된장찌개",
+        "value": 10000,
+        "icon": "🍲",
+        "category": "식사류",
+        "description": "구수한 된장에 부드러운 한우 차돌박이를 듬뿍 넣고 끓여낸 찌개"
+      },
+      {
+        "name": "함흥 비빔냉면",
+        "value": 9000,
+        "icon": "🍜",
+        "category": "식사류",
+        "description": "직접 뽑은 쫄깃한 면발과 매콤새콤한 수제 비빔 양념의 함흥 냉면"
+      },
+      {
+        "name": "함흥 물냉면",
+        "value": 9000,
+        "icon": "🍜",
+        "category": "식사류",
+        "description": "깊고 깔끔한 소고기 육수에 얼음을 동동 띄워 시원하게 즐기는 물냉면"
+      },
+      {
+        "name": "소주",
+        "value": 5000,
+        "icon": "🍶",
+        "category": "주류/음료",
+        "description": "참이슬 / 처음처럼 / 진로 중 선택"
+      },
+      {
+        "name": "맥주",
+        "value": 6000,
+        "icon": "🍺",
+        "category": "주류/음료",
+        "description": "카스 / 테라 / 켈리 중 선택"
       },
       {
         "name": "프리미엄 콜드브루 커피",
-        "value": "4500",
+        "value": 4500,
         "icon": "☕",
-        "category": "음료",
-        "description": "스페셜티 에티오피아 원두를 18시간 동안 저온 추출한 고소한 아로마"
-      }
-    ],
-    "type": "Menus",
-    "title": "메뉴 정보",
-    "store": "시크빌",
-    "store_id": "store-chicvill",
-    "id": "MENUS_ONBOARD_1779004885969"
-  },
-  {
-    "id": "USER-01011111111",
-    "type": "PersonalInfos",
-    "title": "일잘해님 등록 완료 (직원)",
-    "items": [
-      {
-        "name": "이름",
-        "value": "일잘해"
+        "category": "주류/음료",
+        "description": "시크빌이 직접 내린 깊고 풍부한 에티오피아 콜드브루"
       },
       {
-        "name": "아이디",
-        "value": "01011111111"
-      },
-      {
-        "name": "비밀번호",
-        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
-      },
-      {
-        "name": "권한",
-        "value": "manager"
-      }
-    ],
-    "status": "approved",
-    "timestamp": "2026-05-17 17:03:12",
-    "store": "시크빌",
-    "store_id": "store-chicvill"
-  },
-  {
-    "items": [
-      {
-        "name": "망고베리스무디",
-        "value": "5.9",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "블루베리스무디",
-        "value": "5.9",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "파인애플스무디",
-        "value": "5.9",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "바나나스무디",
-        "value": "5.9",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "딸기스무디",
-        "value": "5.9",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "호두스무디",
-        "value": "5.0",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "팥빙수 (2인)",
-        "value": "12,0",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "인절미 빙수(2인)",
-        "value": "12,0",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "망고빙수 (2인)",
-        "value": "12,0",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "생망고 빙수",
-        "value": "15.0",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "생딸기망고빙수",
-        "value": "16.5",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "바나나 밀크쉐이크",
-        "value": "6.0",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "블루베리 밀크쉐이크",
-        "value": "6.0",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "디카페 인도네시아 300ml",
-        "value": "10.0",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "디카페 인도네시아 500ml",
-        "value": "17.0",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "드립커피 200g",
-        "value": "21.0",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "드립커피 500g",
-        "value": "34.0",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "아이스커피",
-        "value": "4.0",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      }
-    ],
-    "type": "Menus",
-    "title": "메뉴 정보",
-    "store": "시크빌",
-    "store_id": "store-chicvill",
-    "id": "MENUS_1779005106296"
-  },
-  {
-    "id": "store-config-store-chicvill02",
-    "type": "StoreConfig",
-    "title": "매장 정보",
-    "store": "시크빌",
-    "store_id": "store-chicvill02",
-    "status": "approved",
-    "items": [
-      {
-        "name": "상호명",
-        "value": "시크빌"
-      },
-      {
-        "name": "사업자번호",
-        "value": "5871301146"
-      },
-      {
-        "name": "대표자",
-        "value": "김종심"
-      },
-      {
-        "name": "개업일자",
-        "value": "20191216"
-      },
-      {
-        "name": "테이블설정",
-        "value": "1번: 4인석, 2번: 2인석, 3번: 4인석, 4번: 4인석, 5번: 2인석, 6번: 6인석"
+        "name": "보리차",
+        "value": 0,
+        "icon": "☕",
+        "category": "주류/음료",
+        "description": "정성으로 끓여낸 구수한 옥수수 보리차 (무료제공)"
       }
     ]
-  },
-  {
-    "id": "USER-1779005623347",
-    "type": "PersonalInfos",
-    "title": "김종심님 가입 완료 (점주)",
-    "items": [
-      {
-        "name": "이름",
-        "value": "김종심"
-      },
-      {
-        "name": "아이디",
-        "value": "chicvill02"
-      },
-      {
-        "name": "비밀번호",
-        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
-      },
-      {
-        "name": "권한",
-        "value": "owner"
-      },
-      {
-        "name": "사업자번호",
-        "value": "5871301146"
-      },
-      {
-        "name": "개업일자",
-        "value": "20191216"
-      },
-      {
-        "name": "휴대폰",
-        "value": "01082817377"
-      }
-    ],
-    "status": "approved",
-    "timestamp": "2026. 5. 17. 오후 5:13:43",
-    "store": "시크빌",
-    "store_id": "store-chicvill02"
-  },
-  {
-    "items": [
-      {
-        "name": "광어",
-        "value": "30000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "우럭",
-        "value": "30000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "송어",
-        "value": "30000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "연어",
-        "value": "30000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "도다리",
-        "value": "30000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "도다리 세꼬시",
-        "value": "30000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "아나고 세꼬시",
-        "value": "30000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "우럭 세꼬시",
-        "value": "30000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "졸돔 세꼬시",
-        "value": "45000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "명개",
-        "value": "10000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "낙지",
-        "value": "18000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "전복",
-        "value": "15000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "해삼",
-        "value": "20000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "개불",
-        "value": "25000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "가리비회",
-        "value": "25000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "해산물 모듬",
-        "value": "35000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "매운탕",
-        "value": "6000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "생여러탕",
-        "value": "23000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "회모듬",
-        "value": "9000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "명계밥",
-        "value": "8000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "활어초밥",
-        "value": "8000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "광어초밥",
-        "value": "15000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "연어초밥",
-        "value": "15000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "광어+연어초밥",
-        "value": "18000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "새우초밥",
-        "value": "12000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "공기밥",
-        "value": "1000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "미역사리",
-        "value": "1000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "유자차",
-        "value": "2000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "소주",
-        "value": "4000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "맥주",
-        "value": "5000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "막걸리",
-        "value": "5000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "청하",
-        "value": "5000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      }
-    ],
-    "type": "Menus",
-    "title": "메뉴 정보",
-    "store": "시크빌",
-    "store_id": "store-chicvill02"
-  },
-  {
-    "id": "USER-01011221122",
-    "type": "PersonalInfos",
-    "title": "일잘해님 등록 완료 (직원)",
-    "items": [
-      {
-        "name": "이름",
-        "value": "일잘해"
-      },
-      {
-        "name": "아이디",
-        "value": "01011221122"
-      },
-      {
-        "name": "비밀번호",
-        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
-      },
-      {
-        "name": "권한",
-        "value": "manager"
-      }
-    ],
-    "status": "approved",
-    "timestamp": "2026-05-17 17:15:55",
-    "store": "시크빌",
-    "store_id": "store-chicvill02"
-  },
-  {
-    "id": "store-config-store-chicvill03",
-    "type": "StoreConfig",
-    "title": "매장 정보",
-    "store": "시크빌",
-    "store_id": "store-chicvill03",
-    "status": "approved",
-    "items": [
-      {
-        "name": "상호명",
-        "value": "시크빌"
-      },
-      {
-        "name": "사업자번호",
-        "value": "8671301146"
-      },
-      {
-        "name": "대표자",
-        "value": "김종심"
-      },
-      {
-        "name": "개업일자",
-        "value": "20191216"
-      },
-      {
-        "name": "정산계좌",
-        "value": "농협은행 13002752081538"
-      },
-      {
-        "name": "연락처",
-        "value": "01082817377"
-      },
-      {
-        "name": "테이블설정",
-        "value": "1번: 4인석, 2번: 4인석, 3번: 4인석, 4번: 4인석, 5번: 2인석, 6번: 6인석"
-      }
-    ]
-  },
-  {
-    "id": "USER-1779009256836",
-    "type": "PersonalInfos",
-    "title": "김종심님 가입 완료 (점주)",
-    "items": [
-      {
-        "name": "이름",
-        "value": "김종심"
-      },
-      {
-        "name": "아이디",
-        "value": "chicvill03"
-      },
-      {
-        "name": "비밀번호",
-        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
-      },
-      {
-        "name": "권한",
-        "value": "owner"
-      },
-      {
-        "name": "사업자번호",
-        "value": "8671301146"
-      },
-      {
-        "name": "개업일자",
-        "value": "20191216"
-      },
-      {
-        "name": "휴대폰",
-        "value": "01082817377"
-      }
-    ],
-    "status": "approved",
-    "timestamp": "2026. 5. 17. 오후 6:14:16",
-    "store": "시크빌",
-    "store_id": "store-chicvill03"
-  },
-  {
-    "items": [
-      {
-        "name": "광어",
-        "value": "30000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "우럭",
-        "value": "35000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "송어",
-        "value": "30000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "연어",
-        "value": "30000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "도다리",
-        "value": "30000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "명개",
-        "value": "10000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "낙지",
-        "value": "18000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "전복",
-        "value": "15000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "해삼",
-        "value": "25000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "개불",
-        "value": "25000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "가리비",
-        "value": "25000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "해산물 모둠",
-        "value": "35000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "매운탕",
-        "value": "6000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "생선 (1마리)",
-        "value": "23000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "회모듬",
-        "value": "9000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "명개밥",
-        "value": "8000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "활어회밥",
-        "value": "8000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "광어초밥",
-        "value": "15000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "연어초밥",
-        "value": "15000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "광어+연어초밥",
-        "value": "15000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "새우초밥",
-        "value": "12000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "공기밥",
-        "value": "1000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "미역사리",
-        "value": "2000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "소주",
-        "value": "4000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "맥주",
-        "value": "5000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "막걸리",
-        "value": "5000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "청하",
-        "value": "6000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      },
-      {
-        "name": "매화수",
-        "value": "2000",
-        "icon": "🍴",
-        "category": "추천",
-        "description": "AI 스캔으로 등록된 메뉴입니다."
-      }
-    ],
-    "type": "Menus",
-    "title": "메뉴 정보",
-    "store": "시크빌",
-    "store_id": "store-chicvill03",
-    "id": "MENUS_ONBOARD_1779009290946"
-  },
-  {
-    "id": "USER-01011112222",
-    "type": "PersonalInfos",
-    "title": "일잘해님 등록 완료 (직원)",
-    "items": [
-      {
-        "name": "이름",
-        "value": "일잘해"
-      },
-      {
-        "name": "아이디",
-        "value": "01011112222"
-      },
-      {
-        "name": "비밀번호",
-        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
-      },
-      {
-        "name": "권한",
-        "value": "manager"
-      }
-    ],
-    "status": "approved",
-    "timestamp": "2026-05-17 18:15:54",
-    "store": "시크빌",
-    "store_id": "store-chicvill03"
-  },
-  {
-    "id": "USER-01022223333",
-    "type": "PersonalInfos",
-    "title": "너무해님 등록 완료 (직원)",
-    "items": [
-      {
-        "name": "이름",
-        "value": "너무해"
-      },
-      {
-        "name": "아이디",
-        "value": "01022223333"
-      },
-      {
-        "name": "비밀번호",
-        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
-      },
-      {
-        "name": "권한",
-        "value": "manager"
-      }
-    ],
-    "status": "approved",
-    "timestamp": "2026-05-17 18:16:51",
-    "store": "시크빌",
-    "store_id": "store-chicvill03"
-  },
-  {
-    "id": "EMP-01011112222",
-    "type": "Employee",
-    "title": "일잘해 사원 정보",
-    "store_id": "store-chicvill03",
-    "status": "approved",
-    "timestamp": "2026-05-17T21:08:59.955207",
-    "items": [
-      {
-        "name": "이름",
-        "value": "일잘해"
-      },
-      {
-        "name": "아이디",
-        "value": "01011112222"
-      },
-      {
-        "name": "직책",
-        "value": "점장"
-      },
-      {
-        "name": "시급",
-        "value": "20000"
-      },
-      {
-        "name": "상태",
-        "value": "approved"
-      },
-      {
-        "name": "누적시간",
-        "value": "0.0"
-      },
-      {
-        "name": "누적임금",
-        "value": "0"
-      },
-      {
-        "name": "지불된임금",
-        "value": "0"
-      },
-      {
-        "name": "미지급임금",
-        "value": "0"
-      },
-      {
-        "name": "계약정보",
-        "value": "{\"end\": \"2029-12-31\", \"start\": \"2026-05-17\"}"
-      },
-      {
-        "name": "스케줄",
-        "value": "[{\"schedule_id\": \"SCHED-F1F7A7\", \"staff_id\": \"01011112222\", \"store_id\": \"store-chicvill03\", \"day_of_week\": 2, \"start_time\": \"09:00\", \"end_time\": \"18:00\"}, {\"schedule_id\": \"SCHED-FA616E\", \"staff_id\": \"01011112222\", \"store_id\": \"store-chicvill03\", \"day_of_week\": 4, \"start_time\": \"09:00\", \"end_time\": \"18:00\"}, {\"schedule_id\": \"SCHED-C1649F\", \"staff_id\": \"01011112222\", \"store_id\": \"store-chicvill03\", \"day_of_week\": 5, \"start_time\": \"09:00\", \"end_time\": \"18:00\"}, {\"schedule_id\": \"SCHED-97A002\", \"staff_id\": \"01011112222\", \"store_id\": \"store-chicvill03\", \"day_of_week\": 6, \"start_time\": \"09:00\", \"end_time\": \"18:00\"}]"
-      }
-    ],
-    "store": "시크빌"
   }
 ]

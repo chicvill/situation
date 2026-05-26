@@ -28,19 +28,26 @@ async def check_in(data: Dict):
         alt = "default_store" if store_id != "default_store" else "Total"
         active = get_active_session(alt, table_id)
 
-    # ① 세션 없음 → 카운터 고객대기 알림 전송 후 승인 대기
+    # ① 세션 없음 → 즉시 임시 세션 자동 개시 (수동 승인 대기 단계 완전 생략)
     if not active:
-        print(f"[check_in] {table_id} 세션 없음 → SEAT_REQUEST 알림 전송 후 대기")
-        ts = datetime.now().isoformat()
-        
-        # 카운터에 고객 알림 (이미 요청 중이면 중복 생략)
-        already_requested = any(r["table_id"] == table_id for r in manager.get_seat_requests())
-        if not already_requested:
-            manager.add_seat_request(table_id, store_id, ts)
-            seat_msg = {"type": "SEAT_REQUEST", "table_id": table_id, "store_id": store_id, "timestamp": ts}
-            await manager.broadcast_to_kitchen(seat_msg)
+        print(f"[check_in] {table_id} 세션 없음 → 즉시 자동 세션 개시 및 PIN 생성")
+        import random
+        pin_num = f"{random.randint(1000, 9999)}"
+        active = {
+            "session_id": f"SESS-{uuid.uuid4().hex[:8].upper()}",
+            "store_id": store_id,
+            "table_id": table_id,
+            "device_id": device_id,
+            "status": "active",
+            "checkin_time": datetime.now().isoformat(),
+            "metadata": {"pin": pin_num, "pin_verified": True}
+        }
+        try:
+            save_session(active)
+        except Exception as e:
+            print(f"Auto Session Save DB Error: {e}")
             
-        return {"status": "no_session"}
+        return {"status": "active", "session": active, "orders": []}
 
     orders = get_orders_by_session(active['session_id'])
     session_store_id = active.get('store_id') or store_id
@@ -48,62 +55,40 @@ async def check_in(data: Dict):
 
     print(f"[check_in] {table_id} 세션={active['session_id']} 주문수={len(orders)} first_device={first_device!r} 요청기기={device_id!r}")
 
-    # ② 주문 없는 테이블 → 무조건 통과 (보호할 주문 없음) + 카운터 고객대기 알림
+    # ② 주문 없는 테이블 → 무조건 통과 (보호할 주문 없음)
     if not orders:
         if device_id and not first_device:
             update_session_device_id(active['session_id'], device_id)
-        # 기존 세션이어도 주문 전이면 고객이 방금 도착한 것 → 카운터에 알림
-        already_requested = any(r["table_id"] == table_id for r in manager.get_seat_requests())
-        if not already_requested:
-            ts = datetime.now().isoformat()
-            manager.add_seat_request(table_id, session_store_id, ts)
-            seat_msg = {"type": "SEAT_REQUEST", "table_id": table_id, "store_id": session_store_id, "timestamp": ts}
-            await manager.broadcast_to_kitchen(seat_msg)
-            print(f"[check_in] 기존 세션 있음 + 주문 없음 → SEAT_REQUEST 알림")
         print(f"[check_in] 주문 없음 → active")
         return {"status": "active", "session": active, "orders": orders}
 
-    # ③ 주문 있는 테이블, 같은 디바이스 → 2차/3차 주문
-    if not first_device or first_device == device_id:
-        print(f"[check_in] 동일 기기 → active")
-        return {"status": "active", "session": active, "orders": orders}
+    # ③ 주문 있는 테이블 → 테이블 활성화 상태면 기기 불문 즉시 통과 및 자동 승인
+    if device_id:
+        try:
+            raw_meta = active.get('metadata') or {}
+            metadata = json.loads(raw_meta) if isinstance(raw_meta, str) else dict(raw_meta)
+        except Exception:
+            metadata = {}
+        approved_devices = metadata.get('approved_devices', [])
+        if device_id not in approved_devices:
+            approved_devices.append(device_id)
+            metadata['approved_devices'] = approved_devices
+            conn = get_db_conn()
+            if conn:
+                try:
+                    cur = conn.cursor()
+                    cur.execute(
+                        "UPDATE table_sessions SET metadata = %s WHERE session_id = %s",
+                        (json.dumps(metadata), active['session_id'])
+                    )
+                    conn.commit()
+                    cur.close()
+                    conn.close()
+                except Exception as e:
+                    print(f"Auto-approve join metadata update error: {e}")
 
-    # 승인된 기기 확인 (합류 후 폴링 중인 2번째 폰)
-    try:
-        raw_meta = active.get('metadata') or {}
-        metadata = json.loads(raw_meta) if isinstance(raw_meta, str) else dict(raw_meta)
-    except Exception:
-        metadata = {}
-    if device_id in metadata.get('approved_devices', []):
-        print(f"[check_in] 승인된 기기 → active")
-        return {"status": "active", "session": active, "orders": orders, "is_joined": True}
-
-    # ④ 주문 있는 테이블, 다른 디바이스 → 합류 승인 요청
-    join_call_id = f"JOIN-{active['session_id']}-{device_id}"
-    msg = {
-        "type": "JOIN_REQUEST",
-        "call_id": join_call_id,
-        "device_id": device_id,
-        "session_id": active['session_id'],
-        "table_id": table_id,
-        "store_id": session_store_id,
-    }
-    print(f"[check_in] 다른 기기 → JOIN_REQUEST store={session_store_id!r} table={table_id!r}")
-
-    # DB에 저장: CallManager가 탭 전환 후 마운트되어도 fetchCalls로 복구 가능
-    from ..database import save_call
-    save_call({
-        "call_id": join_call_id,
-        "table_id": table_id,
-        "session_id": active['session_id'],
-        "call_type": "기기 합류 요청",
-        "status": "pending",
-        "timestamp": datetime.now().isoformat(),
-    })
-
-    await manager.send_to_table(table_id, msg)
-    await manager.broadcast_to_kitchen(msg)
-    return {"status": "waiting_approval", "session_id": active['session_id']}
+    print(f"[check_in] 테이블 세션 활성 → 자동 승인 및 active 반환")
+    return {"status": "active", "session": active, "orders": orders}
 
 
 @router.post("/api/session/check-in")
@@ -119,13 +104,46 @@ async def open_session_manually(data: Dict):
     if not table_id:
         raise HTTPException(status_code=400, detail="table_id required")
 
-    # 이미 활성 세션이 있으면 seat request만 제거 후 반환 (중복 개설 방지)
+    # 이미 활성 세션이 있으면 기존 세션 자동 인증 처리 후 반환 (승인 신호 전달)
     active = get_active_session(store_id, table_id)
     if active:
+        raw_meta = active.get("metadata") or {}
+        try:
+            metadata = json.loads(raw_meta) if isinstance(raw_meta, str) else dict(raw_meta)
+        except Exception:
+            metadata = {}
+            
+        if not metadata.get("pin_verified", False):
+            metadata["pin_verified"] = True
+            active["metadata"] = metadata
+            save_session(active)
+            
+            # 대기 중인 주문들을 정식 조리로 전환
+            from ..database import get_orders_by_session, update_order_status, get_store_use_kitchen, get_order_by_id
+            orders = get_orders_by_session(active["session_id"])
+            use_kitchen = get_store_use_kitchen(store_id)
+            
+            for order in orders:
+                if order.get("status") == "waiting_pin":
+                    new_status = "cooking" if use_kitchen else "ready"
+                    update_order_status(order["order_id"], new_status)
+                    
+                    # 주방에 실시간 주문 전송
+                    updated_order = get_order_by_id(order["order_id"])
+                    if updated_order:
+                        await manager.broadcast_to_kitchen({
+                            "type": "NEW_ORDER",
+                            "order": updated_order
+                        })
+        
         manager.remove_seat_request(table_id)
+        await manager.send_to_table(table_id, {"type": "SESSION_OPENED", "session": active})
+        await manager.broadcast_to_kitchen({"type": "SESSION_OPENED", "session": active})
         return active
 
     # 새 세션 생성 — device_id는 빈 문자열로 설정해 첫 고객 QR 스캔 시 소유권 이전
+    import random
+    pin_num = f"{random.randint(1000, 9999)}"
     new_session = {
         "session_id": f"SESS-{uuid.uuid4().hex[:8].upper()}",
         "store_id": store_id,
@@ -133,7 +151,7 @@ async def open_session_manually(data: Dict):
         "device_id": "",
         "status": "active",
         "checkin_time": datetime.now().isoformat(),
-        "metadata": {}
+        "metadata": {"pin": pin_num, "pin_verified": True}
     }
 
     try:
@@ -500,4 +518,65 @@ async def process_situation(data: Dict):
         # 실시간 알림
         await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "id": result["id"], "type": result["type"]})
         return result
+
+
+@router.post("/api/session/verify-pin")
+async def verify_session_pin(data: Dict):
+    session_id = data.get("session_id")
+    pin = data.get("pin")
+    
+    if not session_id or not pin:
+        raise HTTPException(status_code=400, detail="session_id and pin required")
+        
+    session = get_session_by_id(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    raw_meta = session.get("metadata") or {}
+    try:
+        metadata = json.loads(raw_meta) if isinstance(raw_meta, str) else dict(raw_meta)
+    except Exception:
+        metadata = {}
+        
+    expected_pin = metadata.get("pin")
+    if not expected_pin:
+        raise HTTPException(status_code=400, detail="No PIN generated for this session")
+        
+    if str(expected_pin) != str(pin):
+        raise HTTPException(status_code=400, detail="Invalid PIN number")
+        
+    # PIN 검증 성공 처리
+    metadata["pin_verified"] = True
+    session["metadata"] = metadata
+    save_session(session)
+    
+    # 세션에 속한 'waiting_pin' 주문들을 정식 조리로 전환
+    orders = get_orders_by_session(session_id)
+    updated_count = 0
+    
+    store_id = session.get("store_id") or "default_store"
+    from ..database import get_store_use_kitchen, get_order_by_id
+    use_kitchen = get_store_use_kitchen(store_id)
+    
+    for order in orders:
+        if order.get("status") == "waiting_pin":
+            new_status = "cooking" if use_kitchen else "ready"
+            update_order_status(order["order_id"], new_status)
+            
+            # DB에서 업데이트된 주문 전체 내역 로드
+            updated_order = get_order_by_id(order["order_id"])
+            if updated_order:
+                # 주방 모니터 실시간 NEW_ORDER 전송
+                await manager.broadcast_to_kitchen({
+                    "type": "NEW_ORDER",
+                    "order": updated_order
+                })
+                updated_count += 1
+                
+    # 카운터 및 관련 채널에 세션 상태 동기화 알림 발송
+    await manager.send_to_table(session.get("table_id"), {"type": "SESSION_OPENED", "session": session})
+    await manager.broadcast_to_kitchen({"type": "SESSION_OPENED", "session": session})
+    
+    return {"status": "success", "verified": True, "activated_orders_count": updated_count}
+
     raise HTTPException(status_code=500, detail="Failed to save situation")

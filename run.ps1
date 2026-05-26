@@ -30,14 +30,15 @@ Start-Process cmd -ArgumentList "/k cd /d `"$BASE\situation-backend`" && `"$BASE
 Start-Sleep -Seconds 3
 
 # [3/3] 프론트엔드
-Write-Host "[3/3] Starting Frontend App (port 5173)..." -ForegroundColor Green
+Write-Host "[3/3] Starting Frontend App (port 3000)..." -ForegroundColor Green
 Start-Process cmd -ArgumentList "/k cd /d `"$BASE\situation-room`" && npm run dev" -WindowStyle Normal
 
 Write-Host ""
 Write-Host "------------------------------------------------------"
 Write-Host " MQTT Broker  : TCP localhost:1885 / WS localhost:9001"
 Write-Host " Backend API  : http://localhost:8000"
-Write-Host " Frontend     : http://localhost:5173"
+Write-Host " Frontend Local : http://localhost:3000"
+Write-Host " Frontend Mobile: http://192.168.219.152:3000 (스마트폰/태블릿 접속)"
 Write-Host "------------------------------------------------------"
 Write-Host ""
 Pause

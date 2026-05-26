@@ -18,14 +18,16 @@ type Step = 'select' | 'points';
 type Method = { id: string; icon: string; name: string; desc: string; color: string; };
 
 const METHODS: Method[] = [
-  { id: 'card',     icon: '💳', name: '카드 / 간편결제', desc: '신용카드, 토스페이, 삼성페이 등',   color: '#3b82f6' },
-  { id: 'transfer', icon: '🏦', name: '계좌이체',         desc: '실시간 은행 이체',                  color: '#8b5cf6' },
-  { id: 'cash',     icon: '💵', name: '카운터에서 결제',   desc: '매장 현장 결제',                    color: '#10b981' },
-  { id: 'test',     icon: '⚡', name: '가상 결제 (테스트)', desc: '실결제 없이 즉시 결제 완료 처리', color: '#f59e0b' },
+  { id: 'card',          icon: '💳', name: '카드 / 간편결제', desc: '신용카드, 토스페이, 삼성페이 등',   color: '#3b82f6' },
+  { id: 'transfer',      icon: '🏦', name: '계좌이체',         desc: '실시간 은행 이체',                  color: '#8b5cf6' },
+  { id: 'cash',          icon: '💵', name: '카운터에서 결제',   desc: '매장 현장 결제',                    color: '#10b981' },
+  { id: 'phonetophone',  icon: '📲', name: '폰 to 폰 결제',   desc: '고객 휴대폰으로 원격 결제 요청 전송', color: '#ec4899' },
+  { id: 'test',          icon: '⚡', name: '가상 결제 (테스트)', desc: '실결제 없이 즉시 결제 완료 처리', color: '#f59e0b' },
 ];
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
   totalPrice, onClose, onSubmit,
+  isCounter,
   bundles,
   initialPhone = '', onPhoneChange, onPayerInfo,
 }) => {
@@ -38,6 +40,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [usePoints, setUsePoints] = React.useState(0);
   const [requestCashReceipt, setRequestCashReceipt] = React.useState(false);
   const [accumulatePoints, setAccumulatePoints] = React.useState(!!initialPhone);
+  const [isTakeout, setIsTakeout] = React.useState(false);
 
 
   const finalTotal = totalPrice - usePoints;
@@ -91,13 +94,38 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:'1.5rem', cursor:'pointer', lineHeight:1 }}>×</button>
       </div>
 
+      {/* 포장 / 매장 선택 토글 */}
+      <div style={{ marginBottom: '20px' }}>
+        <div style={{ color:'var(--text-muted)', fontSize:'0.75rem', fontWeight:600, marginBottom:'10px' }}>주문 유형을 선택해 주세요</div>
+        <div style={{ display:'flex', gap:'10px' }}>
+          {[{ val: false, icon: '🍽️', label: '매장에서' }, { val: true, icon: '📦', label: '포장' }].map(opt => (
+            <button
+              key={String(opt.val)}
+              onClick={() => setIsTakeout(opt.val)}
+              style={{
+                flex: 1, padding: '14px 10px', borderRadius: '14px', cursor: 'pointer',
+                border: isTakeout === opt.val ? '2px solid var(--accent-orange)' : '2px solid var(--border)',
+                background: isTakeout === opt.val ? 'rgba(249,115,22,0.08)' : 'transparent',
+                fontWeight: 700, fontSize: '0.95rem',
+                color: isTakeout === opt.val ? 'var(--accent-orange)' : 'var(--text-muted)',
+                transition: 'all 0.18s',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px'
+              }}
+            >
+              <span style={{ fontSize: '1.6rem' }}>{opt.icon}</span>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div style={{ color:'var(--text-muted)', fontSize:'0.85rem', fontWeight:500, marginBottom:'15px', display:'flex', alignItems:'center', gap:'8px' }}>
         결제 수단을 선택해 주세요.
       </div>
 
       {/* 결제 수단 버튼 */}
       <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'30px' }}>
-        {METHODS.map(m => (
+        {METHODS.filter(m => isCounter ? true : (m.id !== 'cash' && m.id !== 'phonetophone')).map(m => (
           <button
             key={m.id}
             onClick={() => {
@@ -320,10 +348,22 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           <span style={{ color:'var(--accent-orange)', fontSize:'1.8rem', fontWeight:900 }}>{finalTotal.toLocaleString()}원</span>
         </div>
 
+        {/* 선결제 취소 불가 경고 */}
+        <div style={{
+          marginBottom: '16px', padding: '12px 16px', borderRadius: '12px',
+          background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.25)',
+          display: 'flex', alignItems: 'flex-start', gap: '8px'
+        }}>
+          <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚠️</span>
+          <span style={{ fontSize: '0.78rem', color: '#dc2626', fontWeight: 600, lineHeight: 1.5 }}>
+            선결제 완료 후에는 주문 취소가 불가능하오니 신중하게 선택해 주세요.
+          </span>
+        </div>
+
         <button
           onClick={async () => {
             try {
-              await onSubmit(selectedMethod?.name || '기타', { phone: phoneForPoints, usePoints });
+              await onSubmit(selectedMethod?.name || '기타', { phone: phoneForPoints, usePoints, isTakeout });
               onClose();
             } catch (err) {
               alert('결제 처리 중 오류가 발생했습니다.');

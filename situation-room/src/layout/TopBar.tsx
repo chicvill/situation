@@ -61,6 +61,37 @@ export const TopBar: React.FC<TopBarProps> = ({
         }} title={storeName}>
           {storeName || '우리식당'}
         </div>
+        {user?.role === 'admin' && (
+          <button
+            onClick={_onSwitchStore}
+            style={{
+              background: 'rgba(249,115,22,0.12)',
+              color: 'var(--accent-orange)',
+              border: '1px solid rgba(249,115,22,0.3)',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              fontSize: '0.72rem',
+              fontWeight: '800',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              marginLeft: '4px',
+              transition: 'all 0.2s',
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'var(--accent-orange)';
+              e.currentTarget.style.color = 'white';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(249,115,22,0.12)';
+              e.currentTarget.style.color = 'var(--accent-orange)';
+            }}
+          >
+            🔄 매장변경
+          </button>
+        )}
       </div>
 
       {/* Right: user badge + clock */}

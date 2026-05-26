@@ -1,0 +1,113 @@
+{
+  "snapshot_time": "2026-05-26T11:26:15.911592",
+  "label": "CREATE",
+  "session": {
+    "session_id": "SESS-D5E603C9",
+    "store_id": "store-chicvill",
+    "table_id": "T03",
+    "device_id": "DEV-TEST-PARK",
+    "status": "active",
+    "checkin_time": "2026-05-26T11:22:43.784303",
+    "checkout_time": null,
+    "metadata": {
+      "pin": "8241",
+      "pin_verified": true,
+      "approved_devices": [
+        "DEV-TEST-CALL",
+        "DEV-TEST-PARK",
+        "DEV-TEST-PAYFLOW-A"
+      ]
+    },
+    "orders": [
+      {
+        "seq": 1,
+        "items": [
+          {
+            "name": "에스프레소",
+            "price": 5000,
+            "quantity": 1
+          }
+        ],
+        "total": 5000,
+        "status": "cooking",
+        "order_id": "ORD-CFECA46F",
+        "created_at": "2026-05-26T02:23:37.903585Z",
+        "payment_method": "Card",
+        "payment_status": "paid",
+        "total_price": 5000,
+        "order_seq": 1,
+        "timestamp": "2026-05-26T02:23:37.903585Z",
+        "table_id": "T03",
+        "store_id": "store-chicvill"
+      },
+      {
+        "seq": 2,
+        "items": [
+          {
+            "name": "에스프레소",
+            "price": 5000,
+            "quantity": 1
+          }
+        ],
+        "total": 5000,
+        "status": "cooking",
+        "order_id": "ORD-1CCE8B1C",
+        "created_at": "2026-05-26T02:25:57.166055Z",
+        "payment_method": "Card",
+        "payment_status": "paid",
+        "total_price": 5000,
+        "order_seq": 2,
+        "timestamp": "2026-05-26T02:25:57.166055Z",
+        "table_id": "T03",
+        "store_id": "store-chicvill"
+      },
+      {
+        "seq": 3,
+        "items": [
+          {
+            "name": "아이스 아메리카노",
+            "price": 4500,
+            "quantity": 2
+          }
+        ],
+        "total": 9000,
+        "status": "cooking",
+        "order_id": "ORD-D0B2F866",
+        "created_at": "2026-05-26T02:26:10.046686Z",
+        "payment_method": "TossPay",
+        "payment_status": "paid",
+        "total_price": 9000,
+        "order_seq": 3,
+        "timestamp": "2026-05-26T02:26:10.046686Z",
+        "table_id": "T03",
+        "store_id": "store-chicvill"
+      }
+    ],
+    "splits": [],
+    "calls": [
+      {
+        "type": "물티슈 2개 주세요",
+        "status": "completed",
+        "call_id": "CALL-F933",
+        "created_at": "2026-05-26T11:23:23.952441",
+        "resolved_at": "2026-05-26T11:23:24.212099"
+      },
+      {
+        "type": "물티슈 2개 주세요",
+        "status": "completed",
+        "call_id": "CALL-5806",
+        "created_at": "2026-05-26T11:25:43.058168",
+        "resolved_at": "2026-05-26T11:25:43.320506"
+      }
+    ],
+    "parking": {
+      "status": "applied",
+      "created_at": "2026-05-26T11:25:51.524149",
+      "parking_id": "PARK-E002",
+      "vehicle_number": "82가1234",
+      "discount_minutes": 120
+    },
+    "point": null,
+    "version": 14
+  }
+}

@@ -7,6 +7,7 @@ interface SideDrawerProps {
   onClose: () => void;
   onNavigate: (tab: string) => void;
   onLogout: () => void;
+  onSwitchStore?: () => void;
 }
 
 export const SideDrawer: React.FC<SideDrawerProps> = ({
@@ -16,6 +17,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
   onClose,
   onNavigate,
   onLogout,
+  onSwitchStore,
 }) => {
   return (
     <>
@@ -67,6 +69,38 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
             </>
           )}
           <hr />
+          {user?.role === 'admin' && onSwitchStore && (
+            <button 
+              onClick={onSwitchStore}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                border: '1.5px dashed rgba(249,115,22,0.4)',
+                background: 'rgba(249,115,22,0.08)',
+                color: 'var(--accent-orange)',
+                fontWeight: '800',
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                marginBottom: '10px',
+                transition: 'all 0.2s',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.background = 'var(--accent-orange)';
+                e.currentTarget.style.color = 'white';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.background = 'rgba(249,115,22,0.08)';
+                e.currentTarget.style.color = 'var(--accent-orange)';
+              }}
+            >
+              🔄 매장 선택 홈 (관리자)
+            </button>
+          )}
           <button onClick={onLogout} style={{ color: '#f87171' }}>🔓 로그아웃</button>
         </nav>
       </div>
