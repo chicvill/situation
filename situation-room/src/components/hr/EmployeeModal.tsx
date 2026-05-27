@@ -97,7 +97,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         method: 'POST',
         body: JSON.stringify({
           staff_id: employee.id,
-          new_staff_id: editPhone.replace(/[^0-9]/g, '').trim(),
+          new_staff_id: editPhone.trim(),
           name: editName.trim(),
           role: editRole,
           hourly_wage: parseInt(editWage.replace(/[^0-9]/g, '') || '10500'),
@@ -116,7 +116,6 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       if (response.ok) {
         alert('✅ 직원의 개인정보, 계약조건 및 스케줄이 모두 성공적으로 업데이트되었습니다.');
         setIsEditingAll(false);
-        window.location.reload();
       } else {
         const errResult = await response.json();
         alert(`❌ 저장 실패: ${errResult.detail || '오류 발생'}`);

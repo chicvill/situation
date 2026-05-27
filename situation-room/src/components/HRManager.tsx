@@ -22,6 +22,16 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
     const [payrollModal, setPayrollModal] = useState<PayrollInfo | null>(null);
     const [isScanningQr, setIsScanningQr] = useState(false);
 
+    // Sync selectedEmployee with latest bundles data
+    React.useEffect(() => {
+        if (selectedEmployee) {
+            const updated = bundles.find(b => b.id === selectedEmployee.id);
+            if (updated && JSON.stringify(updated) !== JSON.stringify(selectedEmployee)) {
+                setSelectedEmployee(updated as any);
+            }
+        }
+    }, [bundles, selectedEmployee]);
+
     // 신규 사원 직접 등록 폼 활성화 및 입력 상태들
     const [showRegisterForm, setShowRegisterForm] = useState(false);
     const [regName, setRegName] = useState('');
