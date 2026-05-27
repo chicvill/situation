@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 from typing import Optional
 from psycopg2.extras import RealDictCursor  # type: ignore
+from session.hr_calc import calculate_payroll_for_logs  # type: ignore
 from .connection import get_db_conn
 
 
@@ -164,7 +165,6 @@ def get_all_staff_as_bundles(store_id: Optional[str] = None):
             paid_logs = [log for log in logs if log.get('paid')]
 
             hourly_wage = int(staff.get('hourly_wage') or 0)
-            from ..hr_calc import calculate_payroll_for_logs
             unpaid_calc = calculate_payroll_for_logs(unpaid_logs, hourly_wage)
             paid_calc = calculate_payroll_for_logs(paid_logs, hourly_wage)
 

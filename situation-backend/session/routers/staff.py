@@ -450,7 +450,7 @@ async def get_staff_payroll(staff_id: str, month: Optional[str] = None):
 
     logs = get_staff_attendance_logs(staff_id, month)
 
-    from ..hr_calc import calculate_payroll_for_logs
+    from session.hr_calc import calculate_payroll_for_logs
     hourly_wage = staff['hourly_wage']
     
     payroll_data = calculate_payroll_for_logs(logs, hourly_wage)
@@ -475,7 +475,7 @@ async def get_staff_payroll(staff_id: str, month: Optional[str] = None):
 @router.post("/api/attendance/pay/{staff_id}")
 async def pay_staff_endpoint(staff_id: str):
     from ..database import get_db_conn, get_staff, get_staff_attendance_logs
-    from ..hr_calc import calculate_payroll_for_logs
+    from session.hr_calc import calculate_payroll_for_logs
     import uuid
     from datetime import datetime
 
