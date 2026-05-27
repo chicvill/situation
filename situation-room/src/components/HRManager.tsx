@@ -493,19 +493,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                                 key={e.id}
                                 bundle={e}
                                 isSelected={selectedEmployee?.id === e.items?.find((i: any) => i.name === '아이디')?.value || selectedEmployee?.id === e.id}
-                                userRole={user.role}
-                                editingWageId={editingWage?.id ?? null}
-                                editingPhoneId={editingPhone?.id ?? null}
-                                isProcessing={isProcessing}
                                 onSelect={setSelectedEmployee}
-                                onEditWageStart={(id, wage) => setEditingWage({ id, wage })}
-                                onEditPhoneStart={(id, phone) => setEditingPhone({ id, phone })}
-                                onUpdateWage={handleUpdateWage}
-                                onUpdatePhone={handleUpdatePhone}
-                                onForceAttendance={handleForceAttendance}
-                                onPaySalary={handlePaySalary}
-                                onResignEmployee={handleResignEmployee}
-                                onOpenPayroll={setPayrollModal}
                             />
                         ))}
                         {employees.length === 0 && (
@@ -514,294 +502,344 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                     </div>
                 </div>
 
-                {/* 사원 상세 계약 조건 및 스케줄 화면 */}
+                {/* 사원 상세 계약 조건 및 스케줄 화면 (모달 팝업으로 변경) */}
+                {/* 사원 상세 계약 조건 및 스케줄 화면 (모달 팝업으로 변경) */}
                 {selectedEmployee && (
-                    <div className="glass-panel animate-fade-in" style={{ padding: '24px', borderRadius: '20px', border: '1.5px solid rgba(255,255,255,0.06)', background: 'linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '12px' }}>
-                            <h4 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--accent-orange)' }}>🔒 {selectedEmployee.name} ({selectedEmployee.role}) 상세 근로 조건 및 스케줄</h4>
-                            <button onClick={() => setSelectedEmployee(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '1.1rem', cursor: 'pointer' }}>✕</button>
-                        </div>
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', zIndex: 1050, backdropFilter: 'blur(8px)',
+                        padding: '20px'
+                    }} onClick={() => setSelectedEmployee(null)}>
+                        <div style={{
+                            width: '100%', maxWidth: '850px', maxHeight: '90vh', overflowY: 'auto',
+                            padding: '28px', borderRadius: '24px',
+                            background: '#141414', border: '1px solid rgba(255,255,255,0.08)',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                            color: '#eee', position: 'relative'
+                        }} onClick={(ev) => ev.stopPropagation()}>
+                            
+                            {/* 모달 헤더 */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '14px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <span style={{ fontSize: '1.4rem' }}>👤</span>
+                                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
+                                        {selectedEmployee.name} ({selectedEmployee.role}) 상세 정보
+                                    </h3>
+                                </div>
+                                <button onClick={() => setSelectedEmployee(null)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '1.4rem', cursor: 'pointer' }}>✕</button>
+                            </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '25px' }}>
-                            <div style={{ background: 'rgba(0,0,0,0.15)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                                <h5 style={{ margin: '0 0 14px 0', fontSize: '0.95rem', fontWeight: 800 }}>📌 계약 요건 및 가이드</h5>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ color: 'var(--text-muted)' }}>근로 계약 기간:</span>
-                                        <strong style={{ color: 'var(--text-main)' }}>{selectedEmployee.contract?.start || '2026-05-01'} ~ {selectedEmployee.contract?.end || '2026-10-31'}</strong>
+                            {/* 1. 사원 상세 카드 영역 (그림 2 구현) */}
+                            <div style={{
+                                padding: '20px', borderRadius: '16px',
+                                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
+                                marginBottom: '24px'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                        <div style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-main)' }}>
+                                            👤 {selectedEmployee.name}
+                                        </div>
+                                        {editingPhone?.id === selectedEmployee.rawBundle?.id ? (
+                                            <input
+                                                autoFocus
+                                                defaultValue={selectedEmployee.id}
+                                                onBlur={(ev) => handleUpdatePhone(selectedEmployee.rawBundle, ev.target.value)}
+                                                onKeyDown={(ev) => ev.key === 'Enter' && handleUpdatePhone(selectedEmployee.rawBundle, (ev.target as HTMLInputElement).value)}
+                                                style={{ width: '160px', background: 'var(--surface)', color: 'var(--text-main)', border: '2px solid var(--accent-orange)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.82rem' }}
+                                            />
+                                        ) : (
+                                            <span
+                                                onClick={() => (user.role === 'owner' || user.role === 'admin') && setEditingPhone({ id: selectedEmployee.rawBundle?.id || '', phone: selectedEmployee.id })}
+                                                style={{ fontSize: '0.88rem', color: 'var(--text-muted)', cursor: (user.role === 'owner' || user.role === 'admin') ? 'pointer' : 'default', borderBottom: (user.role === 'owner' || user.role === 'admin') ? '1px dashed var(--accent-orange)' : 'none', width: 'fit-content' }}
+                                            >
+                                                📞 {selectedEmployee.id}
+                                            </span>
+                                        )}
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ color: 'var(--text-muted)' }}>근무 구분:</span>
-                                        <strong>{selectedEmployee.contract?.end === '9999-12-31' ? '정규 근로자' : '임시/단기 알바생'}</strong>
+                                    <span className={`role-badge ${selectedEmployee.role === '점장' ? 'owner-gold' : 'staff-blue'}`} style={{ fontSize: '0.8rem', padding: '4px 10px', borderRadius: '8px' }}>
+                                        {selectedEmployee.role}
+                                    </span>
+                                </div>
+
+                                {/* 그리드 통계 */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                                    <div style={{ padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px' }}>
+                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '2px' }}>계약 시급</div>
+                                        {editingWage?.id === selectedEmployee.rawBundle?.id ? (
+                                            <input
+                                                autoFocus
+                                                defaultValue={selectedEmployee.wage}
+                                                onBlur={(ev) => handleUpdateWage(selectedEmployee.rawBundle, ev.target.value)}
+                                                onKeyDown={(ev) => ev.key === 'Enter' && handleUpdateWage(selectedEmployee.rawBundle, (ev.target as HTMLInputElement).value)}
+                                                style={{ width: '100px', background: 'var(--surface)', color: 'var(--text-main)', border: '2px solid var(--accent-orange)', padding: '4px', borderRadius: '6px', fontSize: '0.85rem' }}
+                                            />
+                                        ) : (
+                                            <div
+                                                onClick={() => (user.role === 'owner' || user.role === 'admin') && setEditingWage({ id: selectedEmployee.rawBundle?.id || '', wage: selectedEmployee.wage })}
+                                                style={{ fontWeight: 700, fontSize: '1.1rem', borderBottom: '2px dashed var(--accent-orange)', cursor: (user.role === 'owner' || user.role === 'admin') ? 'pointer' : 'default', width: 'fit-content' }}
+                                            >
+                                                {parseInt(selectedEmployee.wage).toLocaleString()}원
+                                            </div>
+                                        )}
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ color: 'var(--text-muted)' }}>퇴직금 대상 여부:</span>
-                                        <strong style={{ color: parseFloat(selectedEmployee.hours) >= 60 ? '#10b981' : 'var(--text-muted)' }}>
-                                            {parseFloat(selectedEmployee.hours) >= 60 ? '✅ 지급 대상 (주 15시간 이상)' : '❌ 미대상 (누적근무 부족)'}
-                                        </strong>
+                                    <div style={{ padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px' }}>
+                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '2px' }}>누적 근무</div>
+                                        <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{selectedEmployee.hours}시간</div>
                                     </div>
-                                    <div style={{ marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-                                        ⚠️ <strong>퇴직금 산정 안내:</strong> 근로자 퇴직급여 보장법에 따라, 단기 알바생이라 하더라도 주당 평균 근로시간이 15시간 이상이고 연속 근로 기간이 1년 이상이 될 경우 법적 퇴직금 지급 대상이 됩니다.
+                                    <div style={{ padding: '12px', background: 'rgba(0,0,0,0.3)', borderRadius: '10px' }}>
+                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '2px' }}>총 누적임금</div>
+                                        <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{parseInt(selectedEmployee.cumulativeWage).toLocaleString()}원</div>
                                     </div>
+                                    <div style={{ padding: '12px', background: parseInt(selectedEmployee.unpaidWage) > 0 ? 'rgba(249,115,22,0.07)' : 'rgba(0,0,0,0.3)', borderRadius: '10px', border: parseInt(selectedEmployee.unpaidWage) > 0 ? '1px solid rgba(249,115,22,0.2)' : 'none' }}>
+                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '2px' }}>미지급 잔액</div>
+                                        <div style={{ fontWeight: 900, fontSize: '1.1rem', color: parseInt(selectedEmployee.unpaidWage) > 0 ? 'var(--accent-orange)' : '#10b981' }}>
+                                            {parseInt(selectedEmployee.unpaidWage).toLocaleString()}원
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 액션 버튼 세트 */}
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                    <button
+                                        onClick={() => setPayrollModal({
+                                            id: selectedEmployee.id,
+                                            name: selectedEmployee.name,
+                                            role: selectedEmployee.role,
+                                            wage: selectedEmployee.wage,
+                                            hours: selectedEmployee.hours,
+                                            cumulativeWage: selectedEmployee.cumulativeWage,
+                                            paidWage: selectedEmployee.paidWage,
+                                            unpaidWage: selectedEmployee.unpaidWage
+                                        })}
+                                        style={{ background: 'var(--surface)', color: 'var(--text-main)', border: '1.5px solid var(--border)', borderRadius: '8px', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                                    >
+                                        📄 명세서
+                                    </button>
+                                    {(user.role === 'owner' || user.role === 'admin') && (
+                                        <>
+                                            <button
+                                                onClick={(ev) => handleForceAttendance(ev, selectedEmployee.rawBundle, 'check-in')}
+                                                style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid #10b981', borderRadius: '8px', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                                            >
+                                                🏃 출근
+                                            </button>
+                                            <button
+                                                onClick={(ev) => handleForceAttendance(ev, selectedEmployee.rawBundle, 'check-out')}
+                                                style={{ background: 'rgba(249, 115, 22, 0.1)', color: 'var(--accent-orange)', border: '1px solid var(--accent-orange)', borderRadius: '8px', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
+                                            >
+                                                🏠 퇴근
+                                            </button>
+                                        </>
+                                    )}
+                                    {user.role === 'owner' && parseInt(selectedEmployee.unpaidWage) > 0 && (
+                                        <button
+                                            onClick={() => handlePaySalary(selectedEmployee.id, selectedEmployee.name)}
+                                            className="confirm-btn success-green"
+                                            style={{ fontSize: '0.8rem', padding: '8px 16px', borderRadius: '8px', fontWeight: 800 }}
+                                        >
+                                            💸 급여 지급
+                                        </button>
+                                    )}
+                                    {user.role === 'owner' && (
+                                        <button onClick={() => handleResignEmployee(selectedEmployee.rawBundle)} className="del-btn" style={{ fontSize: '0.8rem', padding: '8px 16px', borderRadius: '8px', fontWeight: 800 }}>퇴사</button>
+                                    )}
                                 </div>
                             </div>
 
-                            <div style={{ background: 'rgba(0,0,0,0.15)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                                    <h5 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800 }}>📅 주간 요일별 출퇴근 스케줄</h5>
-                                    {(user.role === 'owner' || user.role === 'admin') && (
-                                        !isEditingSchedule ? (
-                                            <button
-                                                onClick={handleStartEditSchedule}
-                                                style={{ background: 'rgba(249,115,22,0.1)', color: 'var(--accent-orange)', border: '1px solid var(--accent-orange)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
-                                            >
-                                                ⚙️ 스케줄 수정
-                                            </button>
-                                        ) : (
-                                            <div style={{ display: 'flex', gap: '6px' }}>
-                                                <button
-                                                    onClick={() => setIsEditingSchedule(false)}
-                                                    style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
-                                                >
-                                                    취소
-                                                </button>
-                                                <button
-                                                    onClick={handleSaveSchedule}
-                                                    disabled={isProcessing}
-                                                    style={{ background: '#10b981', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
-                                                >
-                                                    {isProcessing ? '저장 중...' : '저장 완료'}
-                                                </button>
-                                            </div>
-                                        )
-                                    )}
+                            {/* 2. 주간 요일별 출퇴근 스케줄 및 가이드 */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+                                <div style={{ background: 'rgba(0,0,0,0.15)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                    <h5 style={{ margin: '0 0 12px 0', fontSize: '0.9rem', fontWeight: 800 }}>📌 계약 조건</h5>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.82rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ color: 'var(--text-muted)' }}>계약 기간:</span>
+                                            <strong style={{ color: 'var(--text-main)' }}>{selectedEmployee.contract?.start || '2026-05-01'} ~ {selectedEmployee.contract?.end || '2026-10-31'}</strong>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ color: 'var(--text-muted)' }}>근무 구분:</span>
+                                            <strong>{selectedEmployee.contract?.end === '9999-12-31' ? '정규 근로자' : '임시/단기 알바생'}</strong>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ color: 'var(--text-muted)' }}>퇴직금 대상 여부:</span>
+                                            <strong style={{ color: parseFloat(selectedEmployee.hours) >= 60 ? '#10b981' : 'var(--text-muted)' }}>
+                                                {parseFloat(selectedEmployee.hours) >= 60 ? '✅ 지급 대상 (주 15시간 이상)' : '❌ 미대상 (누적근무 부족)'}
+                                            </strong>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                {isEditingSchedule ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
-                                        {["월", "화", "수", "목", "금", "토", "일"].map((dayName, idx) => {
-                                            const daySched = editSchedules[idx] || { active: false, start: '09:00', end: '18:00' };
-                                            return (
-                                                <div key={dayName} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 10px', background: daySched.active ? 'rgba(16, 185, 129, 0.04)' : 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '80px' }}>
+                                <div style={{ background: 'rgba(0,0,0,0.15)', padding: '16px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                        <h5 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800 }}>📅 출퇴근 스케줄</h5>
+                                        {(user.role === 'owner' || user.role === 'admin') && (
+                                            !isEditingSchedule ? (
+                                                <button
+                                                    onClick={handleStartEditSchedule}
+                                                    style={{ background: 'rgba(249,115,22,0.1)', color: 'var(--accent-orange)', border: '1px solid var(--accent-orange)', padding: '3px 8px', borderRadius: '5px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}
+                                                >
+                                                    ⚙️ 수정
+                                                </button>
+                                            ) : (
+                                                <div style={{ display: 'flex', gap: '4px' }}>
+                                                    <button
+                                                        onClick={() => setIsEditingSchedule(false)}
+                                                        style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid var(--border)', padding: '3px 8px', borderRadius: '5px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}
+                                                    >
+                                                        취소
+                                                    </button>
+                                                    <button
+                                                        onClick={handleSaveSchedule}
+                                                        disabled={isProcessing}
+                                                        style={{ background: '#10b981', color: 'white', border: 'none', padding: '3px 8px', borderRadius: '5px', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}
+                                                    >
+                                                        저장
+                                                    </button>
+                                                </div>
+                                            )
+                                        )}
+                                    </div>
+
+                                    {isEditingSchedule ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '180px', overflowY: 'auto' }}>
+                                            {["월", "화", "수", "목", "금", "토", "일"].map((dayName, idx) => {
+                                                const daySched = editSchedules[idx] || { active: false, start: '09:00', end: '18:00' };
+                                                return (
+                                                    <div key={dayName} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 6px', background: daySched.active ? 'rgba(16, 185, 129, 0.04)' : 'transparent', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.03)' }}>
                                                         <input
                                                             type="checkbox"
                                                             checked={daySched.active}
                                                             onChange={(ev) => setEditSchedules({ ...editSchedules, [idx]: { ...daySched, active: ev.target.checked } })}
-                                                            style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#10b981' }}
+                                                            style={{ cursor: 'pointer', accentColor: '#10b981' }}
                                                         />
-                                                        <span style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>{dayName}요일</span>
+                                                        <span style={{ fontSize: '0.75rem', fontWeight: 'bold', width: '36px' }}>{dayName}</span>
+                                                        {daySched.active ? (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                <input type="time" value={daySched.start} onChange={(ev) => setEditSchedules({ ...editSchedules, [idx]: { ...daySched, start: ev.target.value } })} style={{ padding: '2px 4px', fontSize: '0.72rem', background: '#000', border: '1px solid var(--border)', color: '#fff' }} />
+                                                                <span style={{ opacity: 0.5, fontSize: '0.7rem' }}>~</span>
+                                                                <input type="time" value={daySched.end} onChange={(ev) => setEditSchedules({ ...editSchedules, [idx]: { ...daySched, end: ev.target.value } })} style={{ padding: '2px 4px', fontSize: '0.72rem', background: '#000', border: '1px solid var(--border)', color: '#fff' }} />
+                                                            </div>
+                                                        ) : (
+                                                            <span style={{ opacity: 0.4, fontSize: '0.72rem' }}>휴무</span>
+                                                        )}
                                                     </div>
-
-                                                    {daySched.active ? (
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                            <input type="time" value={daySched.start} onChange={(ev) => setEditSchedules({ ...editSchedules, [idx]: { ...daySched, start: ev.target.value } })} style={{ padding: '4px 6px', fontSize: '0.78rem', borderRadius: '5px', background: '#000', border: '1px solid var(--border)', color: '#fff' }} />
-                                                            <span style={{ opacity: 0.6, fontSize: '0.75rem' }}>~</span>
-                                                            <input type="time" value={daySched.end} onChange={(ev) => setEditSchedules({ ...editSchedules, [idx]: { ...daySched, end: ev.target.value } })} style={{ padding: '4px 6px', fontSize: '0.78rem', borderRadius: '5px', background: '#000', border: '1px solid var(--border)', color: '#fff' }} />
-                                                        </div>
-                                                    ) : (
-                                                        <span style={{ opacity: 0.4, fontSize: '0.75rem' }}>휴무</span>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <div style={{ overflowX: 'auto' }}>
-                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
-                                            <thead>
-                                                <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                                                    <th style={{ padding: '8px' }}>근무 요일</th>
-                                                    <th style={{ padding: '8px' }}>출근 시각</th>
-                                                    <th style={{ padding: '8px' }}>퇴근 시각</th>
-                                                    <th style={{ padding: '8px' }}>출퇴근 가드레일</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {["월", "화", "수", "목", "금", "토", "일"].map((day, idx) => {
-                                                    const sched = selectedEmployee.schedule?.find((s) => s.day_of_week === idx);
-                                                    return (
-                                                        <tr key={day} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                                                            <td style={{ padding: '8px', fontWeight: 'bold' }}>{day}요일</td>
-                                                            <td style={{ padding: '8px', color: sched ? 'var(--text-main)' : 'rgba(255,255,255,0.2)' }}>
-                                                                {sched ? sched.start_time : '휴무'}
-                                                            </td>
-                                                            <td style={{ padding: '8px', color: sched ? 'var(--text-main)' : 'rgba(255,255,255,0.2)' }}>
-                                                                {sched ? sched.end_time : '휴무'}
-                                                            </td>
-                                                            <td style={{ padding: '8px', color: 'var(--accent-orange)', fontSize: '0.75rem' }}>
-                                                                {sched ? "전후 5분 내 인증 필수" : "-"}
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* 이 직원의 출퇴근 기록 추가 */}
-                        <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                            <h5 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 800, color: 'var(--accent-orange)' }}>
-                                🕒 {selectedEmployee.name} 사원의 출퇴근 내역 (총 {employeeAttendance.length}건)
-                            </h5>
-                            <div style={{ maxHeight: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {employeeAttendance.length > 0 ? employeeAttendance.map(a => {
-                                    const checkinRaw = a.items?.find((i: any) => i.name === '출근시간')?.value || '';
-                                    const checkoutRaw = a.items?.find((i: any) => i.name === '퇴근시간')?.value || '';
-                                    const workMinutes = parseInt(a.items?.find((i: any) => i.name === '근무분수')?.value || '0');
-                                    const tardy = a.items?.find((i: any) => i.name === '지각여부')?.value === '지각';
-                                    const paid = a.items?.find((i: any) => i.name === '정산상태')?.value === '지급';
-                                    const isWorking = a.status === 'working';
-
-                                    const fmtTime = (raw: string) => {
-                                        if (!raw) return '-';
-                                        try { return new Date(raw).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }); }
-                                        catch { return raw.slice(11, 16) || '-'; }
-                                    };
-                                    const fmtDate = (raw: string) => {
-                                        if (!raw) return '';
-                                        try { return new Date(raw).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' }); }
-                                        catch { return raw.slice(0, 10); }
-                                    };
-                                    const workHours = workMinutes > 0
-                                        ? `${Math.floor(workMinutes / 60)}시간 ${workMinutes % 60}분`
-                                        : null;
-
-                                    return (
-                                        <div key={a.id} style={{
-                                            padding: '10px 14px',
-                                            background: 'rgba(255,255,255,0.02)',
-                                            border: `1px solid ${isWorking ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.04)'}`,
-                                            borderRadius: '10px',
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center',
-                                            gap: '10px',
-                                        }}>
-                                            <div style={{ minWidth: 0, flex: 1 }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px', flexWrap: 'wrap' }}>
-                                                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{fmtDate(checkinRaw)}</span>
-                                                    {isWorking && <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>근무중</span>}
-                                                </div>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', flexWrap: 'wrap' }}>
-                                                    <span>🏃 <strong style={{ color: '#10b981' }}>{fmtTime(checkinRaw)}</strong></span>
-                                                    <span style={{ color: 'var(--text-muted)' }}>→</span>
-                                                    <span>🏠 <strong style={{ color: isWorking ? 'var(--text-muted)' : 'var(--accent-orange)' }}>{isWorking ? '퇴근 전' : fmtTime(checkoutRaw)}</strong></span>
-                                                    {workHours && <span style={{ color: '#a0aec0', fontSize: '0.72rem' }}>({workHours})</span>}
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '5px', marginTop: '3px', flexWrap: 'wrap' }}>
-                                                    {tardy && <span style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>⚠️ 지각</span>}
-                                                    <span style={{ background: paid ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)', color: paid ? '#10b981' : '#f59e0b', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>
-                                                        {paid ? '정산완료' : '미정산'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            {(user.role === 'owner' || user.role === 'admin') && (
-                                                <button
-                                                    onClick={(ev) => handleDeleteLog(ev, a.id)}
-                                                    style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', padding: '4px 8px', borderRadius: '5px', fontSize: '0.68rem', cursor: 'pointer', flexShrink: 0 }}
-                                                >
-                                                    삭제
-                                                </button>
-                                            )}
+                                                );
+                                            })}
                                         </div>
-                                    );
-                                }) : (
-                                    <div style={{ textAlign: 'center', padding: '30px', opacity: 0.5, fontSize: '0.8rem' }}>기록된 출퇴근 로그가 없습니다.</div>
-                                )}
+                                    ) : (
+                                        <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'left' }}>
+                                                <tbody>
+                                                    {["월", "화", "수", "목", "금", "토", "일"].map((day, idx) => {
+                                                        const sched = selectedEmployee.schedule?.find((s) => s.day_of_week === idx);
+                                                        return (
+                                                            <tr key={day} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                                                <td style={{ padding: '4px', fontWeight: 'bold' }}>{day}요일</td>
+                                                                <td style={{ padding: '4px', color: sched ? 'var(--text-main)' : 'rgba(255,255,255,0.2)' }}>
+                                                                    {sched ? `${sched.start_time} ~ ${sched.end_time}` : '휴무'}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* 3. 일별 출퇴근 기록 로그 (그림 1 구현) */}
+                            <div style={{ paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                                <h4 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: 800 }}>
+                                    🕒 일별 출퇴근 기록 ({selectedEmployee.name})
+                                </h4>
+                                <p style={{ margin: '0 0 14px 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                    임금 계산 근거 — 출근·퇴근 시각, 근무 시간 확인
+                                </p>
+                                <div style={{ maxHeight: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {employeeAttendance.length > 0 ? employeeAttendance.map(a => {
+                                        const checkinRaw = a.items?.find((i: any) => i.name === '출근시간')?.value || '';
+                                        const checkoutRaw = a.items?.find((i: any) => i.name === '퇴근시간')?.value || '';
+                                        const workMinutes = parseInt(a.items?.find((i: any) => i.name === '근무분수')?.value || '0');
+                                        const tardy = a.items?.find((i: any) => i.name === '지각여부')?.value === '지각';
+                                        const paid = a.items?.find((i: any) => i.name === '정산상태')?.value === '지급';
+                                        const isWorking = a.status === 'working';
+
+                                        const fmtTime = (raw: string) => {
+                                            if (!raw) return '-';
+                                            try { return new Date(raw).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }); }
+                                            catch { return raw.slice(11, 16) || '-'; }
+                                        };
+                                        const fmtDate = (raw: string) => {
+                                            if (!raw) return '';
+                                            try { return new Date(raw).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' }); }
+                                            catch { return raw.slice(0, 10); }
+                                        };
+                                        const workHours = workMinutes > 0
+                                            ? `${Math.floor(workMinutes / 60)}시간 ${workMinutes % 60}분`
+                                            : null;
+
+                                        return (
+                                            <div key={a.id} style={{
+                                                padding: '10px 14px',
+                                                background: 'rgba(255,255,255,0.02)',
+                                                border: `1px solid ${isWorking ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                                                borderRadius: '10px',
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                gap: '10px',
+                                            }}>
+                                                <div style={{ minWidth: 0, flex: 1 }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px', flexWrap: 'wrap' }}>
+                                                        <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{fmtDate(checkinRaw)}</span>
+                                                        {isWorking && <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>근무중</span>}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', flexWrap: 'wrap' }}>
+                                                        <span>🏃 <strong style={{ color: '#10b981' }}>{fmtTime(checkinRaw)}</strong></span>
+                                                        <span style={{ color: 'var(--text-muted)' }}>→</span>
+                                                        <span>🏠 <strong style={{ color: isWorking ? 'var(--text-muted)' : 'var(--accent-orange)' }}>{isWorking ? '퇴근 전' : fmtTime(checkoutRaw)}</strong></span>
+                                                        {workHours && <span style={{ color: '#a0aec0', fontSize: '0.72rem' }}>({workHours})</span>}
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '5px', marginTop: '3px', flexWrap: 'wrap' }}>
+                                                        {tardy && <span style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>⚠️ 지각</span>}
+                                                        <span style={{ background: paid ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)', color: paid ? '#10b981' : '#f59e0b', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>
+                                                            {paid ? '정산완료' : '미정산'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                {(user.role === 'owner' || user.role === 'admin') && (
+                                                    <button
+                                                        onClick={(ev) => handleDeleteLog(ev, a.id)}
+                                                        style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', padding: '4px 8px', borderRadius: '5px', fontSize: '0.68rem', cursor: 'pointer', flexShrink: 0 }}
+                                                    >
+                                                        삭제
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    }) : (
+                                        <div style={{ textAlign: 'center', padding: '30px', opacity: 0.5, fontSize: '0.8rem' }}>기록된 출퇴근 로그가 없습니다.</div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
                 )}
+
+                {/* 누적 급여 명세서 확인 모달 */}
+                {payrollModal && (
+                    <PayrollModal
+                        payrollModal={payrollModal}
+                        isProcessing={isProcessing}
+                        userRole={user.role}
+                        onClose={() => setPayrollModal(null)}
+                        onPaySalary={handlePaySalary}
+                    />
+                )}
             </div>
-
-            {/* 일별 출퇴근 기록 로그 */}
-            <div className="glass-panel" style={{ marginTop: '25px', padding: '24px', borderRadius: '20px' }}>
-                <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', fontWeight: 800 }}>🕒 일별 출퇴근 기록 ({storeName})</h3>
-                <p style={{ margin: '0 0 16px 0', fontSize: '0.78rem', color: 'var(--text-muted)' }}>임금 계산 근거 — 출근·퇴근 시각, 근무 시간 확인</p>
-                <div style={{ maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {attendance.length > 0 ? attendance.map(a => {
-                        const staffName = a.items?.find((i: any) => i.name === '직원명')?.value || '-';
-                        const checkinRaw = a.items?.find((i: any) => i.name === '출근시간')?.value || '';
-                        const checkoutRaw = a.items?.find((i: any) => i.name === '퇴근시간')?.value || '';
-                        const workMinutes = parseInt(a.items?.find((i: any) => i.name === '근무분수')?.value || '0');
-                        const tardy = a.items?.find((i: any) => i.name === '지각여부')?.value === '지각';
-                        const paid = a.items?.find((i: any) => i.name === '정산상태')?.value === '지급';
-                        const isWorking = a.status === 'working';
-
-                        const fmtTime = (raw: string) => {
-                            if (!raw) return '-';
-                            try { return new Date(raw).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }); }
-                            catch { return raw.slice(11, 16) || '-'; }
-                        };
-                        const fmtDate = (raw: string) => {
-                            if (!raw) return '';
-                            try { return new Date(raw).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' }); }
-                            catch { return raw.slice(0, 10); }
-                        };
-                        const workHours = workMinutes > 0
-                            ? `${Math.floor(workMinutes / 60)}시간 ${workMinutes % 60}분`
-                            : null;
-
-                        return (
-                            <div key={a.id} style={{
-                                padding: '12px 14px',
-                                background: 'rgba(255,255,255,0.02)',
-                                border: `1px solid ${isWorking ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.04)'}`,
-                                borderRadius: '12px',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                gap: '10px',
-                            }}>
-                                <div style={{ minWidth: 0, flex: 1 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px', flexWrap: 'wrap' }}>
-                                        <span style={{ fontWeight: 800, fontSize: '0.9rem' }}>👤 {staffName}</span>
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{fmtDate(checkinRaw)}</span>
-                                        {isWorking && <span style={{ fontSize: '0.7rem', background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '2px 7px', borderRadius: '4px', fontWeight: 700 }}>근무중</span>}
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', flexWrap: 'wrap' }}>
-                                        <span>🏃 <strong style={{ color: '#10b981' }}>{fmtTime(checkinRaw)}</strong></span>
-                                        <span style={{ color: 'var(--text-muted)' }}>→</span>
-                                        <span>🏠 <strong style={{ color: isWorking ? 'var(--text-muted)' : 'var(--accent-orange)' }}>{isWorking ? '퇴근 전' : fmtTime(checkoutRaw)}</strong></span>
-                                        {workHours && <span style={{ color: '#a0aec0', fontSize: '0.78rem' }}>({workHours})</span>}
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '5px', marginTop: '5px', flexWrap: 'wrap' }}>
-                                        {tardy && <span style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>⚠️ 지각</span>}
-                                        <span style={{ background: paid ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)', color: paid ? '#10b981' : '#f59e0b', fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
-                                            {paid ? '정산완료' : '미정산'}
-                                        </span>
-                                    </div>
-                                </div>
-                                {(user.role === 'owner' || user.role === 'admin') && (
-                                    <button
-                                        onClick={(ev) => handleDeleteLog(ev, a.id)}
-                                        style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', padding: '5px 10px', borderRadius: '6px', fontSize: '0.72rem', cursor: 'pointer', flexShrink: 0 }}
-                                    >
-                                        삭제
-                                    </button>
-                                )}
-                            </div>
-                        );
-                    }) : (
-                        <div style={{ textAlign: 'center', padding: '50px', opacity: 0.5 }}>기록된 출퇴근 로그가 없습니다.</div>
-                    )}
-                </div>
-            </div>
-
-            {/* 누적 급여 명세서 확인 모달 */}
-            {payrollModal && (
-                <PayrollModal
-                    payrollModal={payrollModal}
-                    isProcessing={isProcessing}
-                    userRole={user.role}
-                    onClose={() => setPayrollModal(null)}
-                    onPaySalary={handlePaySalary}
-                />
-            )}
         </div>
     );
 };
+

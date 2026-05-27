@@ -31,6 +31,7 @@ export interface EmployeeDetail {
   unpaidWage: string;
   contract: { start?: string; end?: string };
   schedule: ScheduleEntry[];
+  rawBundle: Bundle;
 }
 
 export interface PayrollInfo {
