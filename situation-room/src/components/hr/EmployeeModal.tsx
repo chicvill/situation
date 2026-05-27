@@ -142,7 +142,8 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         justifyContent: 'center',
         zIndex: 1050,
         backdropFilter: 'blur(6px)',
-        padding: '20px',
+        padding: '10px',
+        boxSizing: 'border-box',
       }}
       onClick={onClose}
     >
@@ -152,8 +153,9 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
           maxWidth: '850px',
           maxHeight: '90vh',
           overflowY: 'auto',
-          padding: '30px',
-          borderRadius: '24px',
+          padding: '16px',
+          borderRadius: '16px',
+          boxSizing: 'border-box',
           background: '#ffffff',
           border: '1px solid #e2e8f0',
           boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
@@ -164,19 +166,19 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         onClick={(ev) => ev.stopPropagation()}
       >
         {/* 모달 헤더 */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #f1f5f9', paddingBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '1.6rem' }}>👤</span>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a' }}>
-                {employee.name} ({employee.role}) {isEditingAll ? '정보 수정' : '상세 정보'}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 200px', minWidth: 0 }}>
+            <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>👤</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'normal', wordBreak: 'keep-all' }}>
+                {employee.name} ({employee.role}) {isEditingAll ? '수정' : '상세'}
               </h3>
-              <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
-                사원 마스터 데이터 조회 및 계약 관리
+              <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: '#64748b', whiteSpace: 'normal', wordBreak: 'keep-all' }}>
+                사원 마스터 데이터 관리
               </p>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
             {isEditingAll ? (
               <button onClick={() => setIsEditingAll(false)} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#1e293b', fontSize: '0.85rem', fontWeight: 800, borderRadius: '8px', padding: '6px 14px', cursor: 'pointer' }}>
                 수정 닫기
@@ -213,7 +215,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
           /* ─── [수정 모드] 통합 마스터 정보 및 스케줄 수정 폼 ─── */
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {/* 1. 개인 신상 정보 */}
-            <div style={{ padding: '20px', borderRadius: '16px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <div style={{ padding: '14px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
               <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', borderLeft: '3px solid #f97316', paddingLeft: '8px' }}>
                 1. 인적 사항 및 개인정보
               </h4>
@@ -242,7 +244,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
             </div>
 
             {/* 2. 계약 근로 조건 */}
-            <div style={{ padding: '20px', borderRadius: '16px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <div style={{ padding: '14px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
               <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', borderLeft: '3px solid #f97316', paddingLeft: '8px' }}>
                 2. 근무 및 계약 근로 조건
               </h4>
@@ -284,8 +286,8 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
               </div>
             </div>
 
-            {/* 3. 요일별 출퇴근 근로 스케줄 */}
-            <div style={{ padding: '20px', borderRadius: '16px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            {/* 3. 주간 출퇴근 근로 스케줄 */}
+            <div style={{ padding: '14px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
               <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', borderLeft: '3px solid #f97316', paddingLeft: '8px' }}>
                 3. 주간 출퇴근 근로 스케줄
               </h4>
@@ -358,16 +360,16 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
             
             {/* 맨 위에 강제출근/퇴근 버튼 */}
             {(userRole === 'owner' || userRole === 'admin') && (
-              <div style={{ display: 'flex', gap: '12px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button
                   onClick={(ev) => handleForceAttendance(ev, employee.rawBundle, 'check-in')}
-                  style={{ flex: 1, background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '12px', padding: '14px', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
+                  style={{ flex: '1 1 130px', background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '10px', padding: '12px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}
                 >
                   🏃 강제 출근 등록
                 </button>
                 <button
                   onClick={(ev) => handleForceAttendance(ev, employee.rawBundle, 'check-out')}
-                  style={{ flex: 1, background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', borderRadius: '12px', padding: '14px', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
+                  style={{ flex: '1 1 130px', background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', borderRadius: '10px', padding: '12px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '4px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}
                 >
                   🏠 강제 퇴근 등록
                 </button>
