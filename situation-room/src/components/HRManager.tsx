@@ -97,7 +97,6 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                 alert('삭제 중 오류가 발생했습니다.');
             } else {
                 alert('✅ 근태 기록이 삭제되었습니다. 누적 근무시간 및 임금이 다시 계산됩니다.');
-                window.location.reload();
             }
         } catch (err) {
             console.error(err);
@@ -138,7 +137,6 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
             if (response.ok) {
                 alert(`✨ ${name} 사원의 급여 지급 및 정산이 완료되었습니다! 미지급 잔액이 0원으로 조정됩니다.`);
                 setPayrollModal(null);
-                window.location.reload();
             } else {
                 throw new Error('급여 지급 처리에 실패했습니다.');
             }

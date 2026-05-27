@@ -61,7 +61,6 @@ export const useAttendance = ({
         } else {
           alert(`🏠 예외 퇴근 완료!\n\n${empName}님, 점주 승인으로 강제 퇴근 기록되었습니다.`);
         }
-        window.location.reload();
       }
     } catch (err: any) {
       alert(`❌ 서버 연동 에러: ${err.message}`);
