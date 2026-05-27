@@ -11,6 +11,13 @@ import { EmployeeModal } from './hr/EmployeeModal';
 /** 2025년 법정 최저임금 (원/시간) */
 const MINIMUM_WAGE_2025 = 10030;
 
+/** SHA-256 해시 (PersonalInfos 비밀번호 저장용) */
+const hashPassword = async (pw: string): Promise<string> => {
+    if (!crypto?.subtle) return pw;
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
 export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any, onRefresh?: () => void }> = ({ bundles, user, storeDetails, onRefresh }) => {
     const { storeId, storeName } = useStoreFilter();
     const params = new URLSearchParams(window.location.search);
@@ -206,6 +213,34 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
             });
 
             if (response.ok) {
+                // ── PersonalInfos 번들 생성 (로그인용 ID + 암호화 PW) ──
+                const existingPersonal = bundles.find(b =>
+                    b.type === 'PersonalInfos' &&
+                    b.items?.find((i: any) => i.name === '아이디')?.value === cleanPhone
+                );
+                if (!existingPersonal) {
+                    const hashedTempPw = await hashPassword(regTempPw.trim() || '1212');
+                    const personalBundle = {
+                        id: `USER-${Date.now()}`,
+                        type: 'PersonalInfos',
+                        title: `${regName.trim()}님 가입 정보 (직접 등록)`,
+                        items: [
+                            { name: '이름', value: regName.trim() },
+                            { name: '아이디', value: cleanPhone },
+                            { name: '비밀번호', value: hashedTempPw },
+                            { name: '권한', value: regRole },
+                        ],
+                        status: 'approved',
+                        timestamp: new Date().toLocaleString(),
+                        store: storeName || '',
+                        store_id: storeId === 'Total' ? 'store-korean' : storeId,
+                    };
+                    await apiFetch(`/api/bundle/${personalBundle.id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(personalBundle),
+                    });
+                }
+
                 alert(`🎉 [직원 즉시 등록 완료]\n\n사원 ${regName}님이 성공적으로 등록되었습니다!\n임시 비밀번호는 "${regTempPw}" 입니다.`);
                 setRegName('');
                 setRegPhone('');
