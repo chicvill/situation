@@ -25,6 +25,7 @@ import QROrderFlow from './components/v2/QROrderFlow';
 import { AdminStoreManager } from './components/AdminStoreManager';
 import { NotificationToast } from './components/NotificationToast';
 import { WelcomeHub } from './components/WelcomeHub';
+import { StaffDashboard } from './components/StaffDashboard';
 import { useSituation } from './hooks/useSituation';
 import { useStoreFilter } from './hooks/useStoreFilter';
 import { useStoreSync } from './hooks/useStoreSync';
@@ -446,6 +447,21 @@ function App() {
       case 'stats':
       case 'admin': return <AdminDashboard bundles={bundles} storeDetails={storeDetails} user={user} activeTab={activeTab} />;
       case 'home':
+        if (user?.role === 'staff' || user?.role === 'manager') {
+          return (
+            <StaffDashboard
+              user={user}
+              bundles={bundles}
+              storeName={storeName}
+              onProfileUpdated={(updatedUser) => {
+                setUser(updatedUser);
+                localStorage.setItem('mqnet_user', JSON.stringify(updatedUser));
+              }}
+              onLogout={handleLogout}
+              onRefresh={fetchInitialData}
+            />
+          );
+        }
         return (
           <WelcomeHub
             user={user}

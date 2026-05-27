@@ -151,6 +151,24 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
               onFocus={(e) => e.target.style.borderColor = 'var(--accent-orange)'}
               onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
             />
+            {password.length > 0 && (
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                {[
+                  { label: '8자 이상', ok: password.length >= 8 },
+                  { label: '영문', ok: /[a-zA-Z]/.test(password) },
+                  { label: '숫자', ok: /[0-9]/.test(password) },
+                  { label: '특수문자', ok: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]/.test(password) },
+                ].map(({ label, ok }) => (
+                  <span key={label} style={{
+                    fontSize: '0.7rem', padding: '3px 8px', borderRadius: '6px', fontWeight: 700,
+                    background: ok ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.12)',
+                    color: ok ? '#10b981' : '#ef4444',
+                  }}>
+                    {ok ? '✓' : '✗'} {label}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {user?.role !== 'admin' && user?.role !== 'owner' && (
