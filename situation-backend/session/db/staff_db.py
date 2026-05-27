@@ -159,36 +159,18 @@ def get_all_staff_as_bundles(store_id: Optional[str] = None):
             cur.execute("SELECT * FROM table_attendance_logs WHERE staff_id = %(staff_id)s AND store_id = %(store_id)s", {'staff_id': staff_id, 'store_id': staff['store_id']})
             logs = cur.fetchall()
 
-            total_minutes = sum(log['work_minutes'] or 0 for log in logs)
-            total_hours = total_minutes / 60.0
-            hourly_wage = staff['hourly_wage']
+            # Split logs into paid and unpaid based on their paid status
+            unpaid_logs = [log for log in logs if not log.get('paid')]
+            paid_logs = [log for log in logs if log.get('paid')]
 
-            # Base wage
-            base_wage = int(total_hours * hourly_wage)
+            from ..hr_calc import calculate_payroll_for_logs
+            unpaid_calc = calculate_payroll_for_logs(unpaid_logs, hourly_wage)
+            paid_calc = calculate_payroll_for_logs(paid_logs, hourly_wage)
 
-            # Weekly Holiday Allowance
-            weekly_holiday_allowance = 0
-            if total_hours >= 60.0:
-                weekly_holiday_allowance = int((total_hours / 40.0) * 8.0 * hourly_wage)
-
-            # Distribute Paid and Unpaid
-            paid_wage = 0
-            unpaid_wage = 0
-            for log in logs:
-                log_mins = log['work_minutes'] or 0
-                log_wage = int((log_mins / 60.0) * hourly_wage)
-                if log.get('paid'):
-                    paid_wage += log_wage
-                else:
-                    unpaid_wage += log_wage
-
-            # Handle holiday allowance in paid/unpaid
-            if weekly_holiday_allowance > 0:
-                has_unpaid_logs = any(not log.get('paid') for log in logs)
-                if has_unpaid_logs:
-                    unpaid_wage += weekly_holiday_allowance
-                else:
-                    paid_wage += weekly_holiday_allowance
+            total_hours = unpaid_calc['total_hours'] + paid_calc['total_hours']
+            paid_wage = paid_calc['net_payroll']
+            unpaid_wage = unpaid_calc['net_payroll']
+            total_wage = paid_wage + unpaid_wage
 
             contract_period = staff['contract_period']
             if isinstance(contract_period, str):
@@ -202,7 +184,7 @@ def get_all_staff_as_bundles(store_id: Optional[str] = None):
                 {"name": "시급", "value": str(hourly_wage)},
                 {"name": "상태", "value": staff['status']},
                 {"name": "누적시간", "value": f"{total_hours:.1f}"},
-                {"name": "누적임금", "value": str(base_wage + weekly_holiday_allowance)},
+                {"name": "누적임금", "value": str(total_wage)},
                 {"name": "지불된임금", "value": str(paid_wage)},
                 {"name": "미지급임금", "value": str(unpaid_wage)},
                 {"name": "계약정보", "value": json.dumps(contract_period)},

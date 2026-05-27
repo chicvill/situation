@@ -291,13 +291,34 @@ def init_db_v2():
                 store_id TEXT NOT NULL DEFAULT 'default_store',
                 day_of_week INTEGER NOT NULL,
                 start_time TEXT NOT NULL,
-                end_time TEXT NOT NULL
+                end_time TEXT NOT NULL,
+                effective_date TEXT DEFAULT '2000-01-01'
             )
         """)
         try:
             cur.execute("ALTER TABLE table_staff_schedules ADD COLUMN IF NOT EXISTS store_id TEXT NOT NULL DEFAULT 'default_store'")
+            cur.execute("ALTER TABLE table_staff_schedules ADD COLUMN IF NOT EXISTS effective_date TEXT DEFAULT '2000-01-01'")
         except Exception:
             pass
+
+        # 11-2. 급여 대장 (table_payroll_records)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS table_payroll_records (
+                payroll_id TEXT PRIMARY KEY,
+                staff_id TEXT NOT NULL,
+                store_id TEXT NOT NULL,
+                payroll_month TEXT NOT NULL,
+                base_wage INTEGER NOT NULL,
+                overtime_allowance INTEGER NOT NULL DEFAULT 0,
+                night_allowance INTEGER NOT NULL DEFAULT 0,
+                holiday_allowance INTEGER NOT NULL DEFAULT 0,
+                tax_deduction INTEGER NOT NULL DEFAULT 0,
+                net_payroll INTEGER NOT NULL,
+                paid BOOLEAN DEFAULT FALSE,
+                paid_at TEXT,
+                UNIQUE(staff_id, payroll_month)
+            )
+        """)
 
         # 12. 매장 관리용 테이블
         cur.execute("""

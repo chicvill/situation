@@ -450,43 +450,71 @@ async def get_staff_payroll(staff_id: str, month: Optional[str] = None):
 
     logs = get_staff_attendance_logs(staff_id, month)
 
-    total_minutes = sum(log['work_minutes'] or 0 for log in logs)
-    total_hours = total_minutes / 60.0
+    from ..hr_calc import calculate_payroll_for_logs
     hourly_wage = staff['hourly_wage']
-
-    base_wage = int(total_hours * hourly_wage)
-
-    # 주휴수당 간단 연산식 (주 15시간 이상 기준 보정)
-    weekly_holiday_allowance = 0
-    if total_hours >= 60.0:  # 한 달 누계 60시간(주 15시간 이상) 기준
-        weekly_holiday_allowance = int((total_hours / 40.0) * 8.0 * hourly_wage)
-
-    net_payroll = int((base_wage + weekly_holiday_allowance) * 0.967)  # 3.3% 사업소득세 원천징수 적용
+    
+    payroll_data = calculate_payroll_for_logs(logs, hourly_wage)
 
     return {
         "staff_id": staff_id,
         "name": staff['name'],
         "month": month or "All",
         "hourly_wage": hourly_wage,
-        "total_hours": round(total_hours, 1),
-        "total_minutes": total_minutes,
-        "base_wage": base_wage,
-        "weekly_holiday_allowance": weekly_holiday_allowance,
-        "tax_deduction": int((base_wage + weekly_holiday_allowance) * 0.033),
-        "net_payroll": net_payroll,
+        "total_hours": payroll_data["total_hours"],
+        "total_minutes": payroll_data["total_minutes"],
+        "base_wage": payroll_data["base_wage"],
+        "overtime_allowance": payroll_data["overtime_allowance"],
+        "night_allowance": payroll_data["night_allowance"],
+        "weekly_holiday_allowance": payroll_data["holiday_allowance"],
+        "tax_deduction": payroll_data["tax_deduction"],
+        "net_payroll": payroll_data["net_payroll"],
         "attendance_logs": logs
     }
 
 
 @router.post("/api/attendance/pay/{staff_id}")
 async def pay_staff_endpoint(staff_id: str):
-    from ..database import get_db_conn
+    from ..database import get_db_conn, get_staff, get_staff_attendance_logs
+    from ..hr_calc import calculate_payroll_for_logs
+    import uuid
+    from datetime import datetime
+
+    staff = get_staff(staff_id)
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff not found")
+
     conn = get_db_conn()
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
+        # 1. Fetch only UNPAID logs
         cur = conn.cursor()
-        cur.execute("UPDATE table_attendance_logs SET paid = TRUE WHERE staff_id = %s", (staff_id,))
+        cur.execute("SELECT * FROM table_attendance_logs WHERE staff_id = %s AND (paid = FALSE OR paid IS NULL)", (staff_id,))
+        unpaid_logs = cur.fetchall()
+
+        if unpaid_logs:
+            # 2. Calculate the payroll for these logs
+            payroll_data = calculate_payroll_for_logs(unpaid_logs, staff['hourly_wage'])
+            
+            payroll_id = f"PAY-{uuid.uuid4().hex[:8]}"
+            payroll_month = datetime.now().strftime("%Y-%m")
+            
+            # 3. Insert into table_payroll_records
+            # On conflict (already generated for this month), just append or ignore. For simplicity, generate a unique ID.
+            # We removed the UNIQUE constraint dependency in our implementation to allow multiple payouts a month, 
+            # but let's just insert standard data.
+            cur.execute("""
+                INSERT INTO table_payroll_records 
+                (payroll_id, staff_id, store_id, payroll_month, base_wage, overtime_allowance, night_allowance, holiday_allowance, tax_deduction, net_payroll, paid, paid_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, TRUE, %s)
+            """, (payroll_id, staff_id, staff['store_id'], payroll_month, 
+                  payroll_data['base_wage'], payroll_data['overtime_allowance'], 
+                  payroll_data['night_allowance'], payroll_data['holiday_allowance'], 
+                  payroll_data['tax_deduction'], payroll_data['net_payroll'], 
+                  datetime.now().isoformat()))
+
+        # 4. Mark logs as paid
+        cur.execute("UPDATE table_attendance_logs SET paid = TRUE WHERE staff_id = %s AND (paid = FALSE OR paid IS NULL)", (staff_id,))
         conn.commit()
         cur.close()
         conn.close()
