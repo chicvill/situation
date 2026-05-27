@@ -578,7 +578,7 @@ async def update_staff_all_endpoint(data: Dict):
                 raise HTTPException(status_code=400, detail="이미 등록된 전화번호(ID)입니다.")
             
             cur.execute("UPDATE table_staff_schedules SET staff_id = %s WHERE staff_id = %s", (new_staff_id, staff_id))
-            cur.execute("UPDATE table_staff_attendance SET staff_id = %s WHERE staff_id = %s", (new_staff_id, staff_id))
+            cur.execute("UPDATE table_attendance_logs SET staff_id = %s WHERE staff_id = %s", (new_staff_id, staff_id))
             cur.execute("UPDATE table_staff_accounts SET staff_id = %s WHERE staff_id = %s", (new_staff_id, staff_id))
             
             # Update PersonalInfos bundle ID in JSON pool
