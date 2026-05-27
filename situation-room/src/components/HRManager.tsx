@@ -115,6 +115,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                 body: JSON.stringify({ ...bundle, status: 'resigned', store: storeName, store_id: storeId }),
             });
             alert('🚫 퇴사 처리가 완료되었습니다.');
+            if (onRefresh) onRefresh();
         } catch (err) { console.error(err); } finally { setIsProcessing(false); }
     };
 
@@ -127,6 +128,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                 body: JSON.stringify({ ...bundle, status: 'approved', store: storeName, store_id: storeId }),
             });
             alert('✅ 계정이 승인되었습니다.');
+            if (onRefresh) onRefresh();
         } catch (err) { console.error(err); } finally { setIsProcessing(false); }
     };
 
@@ -140,6 +142,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
             if (response.ok) {
                 alert(`✨ ${name} 사원의 급여 지급 및 정산이 완료되었습니다! 미지급 잔액이 0원으로 조정됩니다.`);
                 setPayrollModal(null);
+                if (onRefresh) onRefresh();
             } else {
                 throw new Error('급여 지급 처리에 실패했습니다.');
             }
@@ -209,7 +212,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                     6: { active: false, start: '09:00', end: '18:00' },
                 });
                 setShowRegisterForm(false);
-                window.location.reload();
+                if (onRefresh) onRefresh();
             } else {
                 const errResult = await response.json();
                 alert(`❌ 등록 실패: ${errResult.detail || '서버 오류'}`);
@@ -434,6 +437,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                         handleResignEmployee={handleResignEmployee}
                         handleDeleteLog={handleDeleteLog}
                         setPayrollModal={setPayrollModal}
+                        onRefresh={onRefresh}
                     />
                 )}
 
