@@ -224,6 +224,23 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
           </div>
         </div>
 
+        {/* ── 구형 ID 경고 배너 ── */}
+        {!/^01[0-9]{8,9}$/.test(employee.id) && (
+          <div style={{
+            marginBottom: '16px', padding: '12px 16px', borderRadius: '12px',
+            background: 'rgba(249,115,22,0.08)', border: '1.5px solid rgba(249,115,22,0.35)',
+            display: 'flex', gap: '10px', alignItems: 'flex-start',
+          }}>
+            <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>⚠️</span>
+            <div style={{ fontSize: '0.8rem', color: '#92400e', lineHeight: '1.6' }}>
+              <strong style={{ color: '#c2410c', display: 'block', marginBottom: '2px' }}>구형 ID — QR 출퇴근 불가</strong>
+              이 직원의 ID(<code style={{ background: 'rgba(0,0,0,0.08)', padding: '1px 5px', borderRadius: '4px' }}>{employee.id}</code>)는
+              전화번호 형식이 아니므로 QR 키오스크 및 스마트폰 출퇴근이 작동하지 않습니다.<br />
+              <strong>퇴사 처리 후 전화번호로 신규 등록</strong>하면 정상 이용 가능합니다.
+            </div>
+          </div>
+        )}
+
         {isEditingAll ? (
           /* ─── [수정 모드] 통합 마스터 정보 및 스케줄 수정 폼 ─── */
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

@@ -22,6 +22,8 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   const unpaidWage = bundle.items?.find((i) => i.name === '미지급임금')?.value || '0';
   const contractStr = bundle.items?.find((i) => i.name === '계약정보')?.value || '{}';
   const scheduleStr = bundle.items?.find((i) => i.name === '스케줄')?.value || '[]';
+  /** 전화번호 형식이 아닌 구형 ID 여부 */
+  const isLegacyId = !/^01[0-9]{8,9}$/.test(id);
 
   const handleCardClick = () => {
     onSelect({
@@ -48,15 +50,24 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-        <span style={{ fontSize: '1.2rem' }}>👤</span>
+        <span style={{ fontSize: '1.2rem' }}>{isLegacyId ? '⚠️' : '👤'}</span>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           <strong style={{ fontSize: '0.95rem', color: 'var(--text-main)' }}>{name}</strong>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>📞 {id}</span>
+          <span style={{ fontSize: '0.78rem', color: isLegacyId ? '#f97316' : 'var(--text-muted)' }}>
+            {isLegacyId ? `🔧 구형ID: ${id}` : `📞 ${id}`}
+          </span>
         </div>
       </div>
-      <span className={`role-badge ${role === '점장' ? 'owner-gold' : 'staff-blue'}`} style={{ fontSize: '0.75rem', padding: '4px 10px', borderRadius: '8px', fontWeight: 600 }}>
-        {role}
-      </span>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+        <span className={`role-badge ${role === '점장' ? 'owner-gold' : 'staff-blue'}`} style={{ fontSize: '0.75rem', padding: '4px 10px', borderRadius: '8px', fontWeight: 600 }}>
+          {role}
+        </span>
+        {isLegacyId && (
+          <span style={{ fontSize: '0.65rem', padding: '2px 7px', borderRadius: '6px', fontWeight: 700, background: 'rgba(249,115,22,0.15)', color: '#f97316' }}>
+            재등록 필요
+          </span>
+        )}
+      </div>
     </div>
   );
 };
