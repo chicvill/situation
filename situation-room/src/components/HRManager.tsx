@@ -55,7 +55,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
 
     const employeeAttendance = selectedEmployee ? attendance.filter(a => {
         const staffId = a.items?.find((i: any) => i.name === '아이디')?.value;
-        return staffId === selectedEmployee.id;
+        return staffId === selectedEmployee.id || staffId === selectedEmployee.id.replace('EMP-', '');
     }) : [];
 
     // 승인 대기 계정 필터링 (계층적 승인 + 매장 격리)
