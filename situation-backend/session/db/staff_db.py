@@ -163,6 +163,7 @@ def get_all_staff_as_bundles(store_id: Optional[str] = None):
             unpaid_logs = [log for log in logs if not log.get('paid')]
             paid_logs = [log for log in logs if log.get('paid')]
 
+            hourly_wage = int(staff.get('hourly_wage') or 0)
             from ..hr_calc import calculate_payroll_for_logs
             unpaid_calc = calculate_payroll_for_logs(unpaid_logs, hourly_wage)
             paid_calc = calculate_payroll_for_logs(paid_logs, hourly_wage)
@@ -204,5 +205,8 @@ def get_all_staff_as_bundles(store_id: Optional[str] = None):
         conn.close()
         return bundles
     except Exception as e:
-        print(f"Get All Staff As Bundles Error: {e}")
+        import traceback
+        print("=== Get All Staff As Bundles Error ===")
+        traceback.print_exc()
+        print("======================================")
         return []
