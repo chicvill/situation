@@ -53,16 +53,9 @@ export const PayrollModal: React.FC<PayrollModalProps> = ({
           <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)', margin: '4px 0' }} />
 
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: 'var(--text-muted)' }}>기본 근로 소득:</span>
-            <span>{Math.floor((Number(payrollModal.wage) || 0) * (Number(payrollModal.hours) || 0)).toLocaleString()}원</span>
+            <span style={{ color: 'var(--text-muted)' }}>총 근로 및 제수당 포함액:</span>
+            <span>{Math.floor(Number(payrollModal.cumulativeWage) || 0).toLocaleString()}원</span>
           </div>
-
-          {parseFloat(payrollModal.hours) >= 60 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981' }}>
-              <span>주휴수당 가산 (상용):</span>
-              <span>+{Math.floor(((Number(payrollModal.hours) || 0) / 40.0) * 8.0 * (Number(payrollModal.wage) || 0)).toLocaleString()}원</span>
-            </div>
-          )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444' }}>
             <span>원천세 징수 (3.3%):</span>
