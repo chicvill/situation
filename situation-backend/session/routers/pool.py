@@ -59,29 +59,31 @@ async def delete_bundle(bundle_id: str):
     original_pool_len = len(pool)
     pool = [b for b in pool if b.get("id") != bundle_id]
 
-    # 근태 기록(Attendance) 삭제 로직 강화
-    if "ATT-" in bundle_id:
+    # 근태 기록(Attendance) 삭제 로직 - ATT-XXXX 또는 LOG-XXXX 형식 모두 처리
+    if "ATT-" in bundle_id or "LOG-" in bundle_id:
         try:
             conn = get_db_conn()
             if conn:
                 cur = conn.cursor()
-                # 모든 "ATT-" 접두어를 제거하여 순수 log_id 확보
-                real_log_id = re.sub(r'^(ATT-)+', '', bundle_id)
-                search_id = f"ATT-{real_log_id}"
-                cur.execute("DELETE FROM table_attendance_logs WHERE log_id = %s OR log_id = %s", (search_id, real_log_id))
+                # bundle_id 자체가 log_id 일 수도 있고 ATT-{log_id} 형식일 수도 있음
+                # 두 형태 모두 시도
+                bare_id = re.sub(r'^(ATT-)+', '', bundle_id)  # ATT-ATT-XXX → XXX
+                cur.execute(
+                    "DELETE FROM table_attendance_logs WHERE log_id = %s OR log_id = %s OR log_id = %s",
+                    (bundle_id, f"ATT-{bare_id}", bare_id)
+                )
+                deleted = cur.rowcount
                 conn.commit()
                 cur.close()
                 conn.close()
-                print(f"🗑️ Attendance log {search_id} deleted from DB.")
+                print(f"🗑️ Attendance log deleted (bundle_id={bundle_id}, rows={deleted})")
         except Exception as e:
             print(f"Error deleting attendance from DB: {e}")
 
-    if len(pool) < original_pool_len or "ATT-" in bundle_id:
-        if save_pool(pool):
-            await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "bundle_id": bundle_id})
-            return {"status": "success"}
+    if len(pool) < original_pool_len or "ATT-" in bundle_id or "LOG-" in bundle_id:
+        save_pool(pool)
 
-    await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "bundle_id": bundle_id})
+    await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "bundle_id": bundle_id, "deleted": True})
     return {"status": "success"}
 
 

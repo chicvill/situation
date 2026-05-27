@@ -201,7 +201,7 @@ def get_all_attendance_as_bundles(store_id: Optional[str] = None):
             timestamp = log['check_out_time'] or log['check_in_time'] or ''
 
             bundles.append({
-                "id": f"ATT-{log['log_id']}",
+                "id": log['log_id'],
                 "type": "Attendance",
                 "title": title,
                 "store_id": log['store_id'],
