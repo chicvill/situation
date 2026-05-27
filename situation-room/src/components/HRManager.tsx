@@ -59,8 +59,14 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         6: { active: false, start: '09:00', end: '18:00' },
     });
 
-    // 현재 매장의 직원 및 근태 정보만 필터링
-    const employees: Bundle[] = bundles.filter(b => b.type === 'Employee' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
+    // 현재 매장의 직원 필터링 (퇴사 제외 + 전화번호 형식 ID만 표시)
+    const employees: Bundle[] = bundles.filter(b => {
+        if (b.type !== 'Employee') return false;
+        if (b.status === 'resigned') return false;
+        if (storeId !== 'Total' && b.store_id !== storeId && b.store_id) return false;
+        const empId: string = b.items?.find((i: any) => i.name === '아이디')?.value || b.id.replace(/^EMP-/, '');
+        return /^01[0-9]{8,9}$/.test(empId); // 전화번호 형식 ID만 유효 직원으로 인정
+    });
     const attendance: Bundle[] = bundles.filter(b => b.type === 'Attendance' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
 
     const employeeAttendance = selectedEmployee ? attendance.filter(a => {

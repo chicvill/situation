@@ -119,7 +119,13 @@
       "Bash(npx vite *)",
       "Bash(git commit -m 'Deploy: rebuild frontend dist with HR payroll improvements *)",
       "Bash(python3 -c ' *)",
-      "PowerShell(Get-Content \"C:\\\\Users\\\\USER\\\\Desktop\\\\Workstation\\\\situation\\\\situation-room\\\\src\\\\components\\\\OwnerOnboardingChat.tsx\" | Select-Object -Index \\(1063..1072\\) | ForEach-Object { [System.Text.Encoding]::UTF8.GetBytes\\($_\\) | ForEach-Object { $_.ToString\\(\"X2\"\\) } | Join-String -Separator \" \" })"
+      "PowerShell(Get-Content \"C:\\\\Users\\\\USER\\\\Desktop\\\\Workstation\\\\situation\\\\situation-room\\\\src\\\\components\\\\OwnerOnboardingChat.tsx\" | Select-Object -Index \\(1063..1072\\) | ForEach-Object { [System.Text.Encoding]::UTF8.GetBytes\\($_\\) | ForEach-Object { $_.ToString\\(\"X2\"\\) } | Join-String -Separator \" \" })",
+      "PowerShell($response = Invoke-WebRequest -Uri \"https://situation.chicvill.store/api/pool\" -Method GET -UseBasicParsing; $data = $response.Content | ConvertFrom-Json; Write-Output \"총 번들 수: $\\($data.Count\\)\"; Write-Output \"--- PersonalInfos ---\"; $data | Where-Object { $_.type -eq 'PersonalInfos' } | ForEach-Object { $id_val = \\($_.items | Where-Object { $_.name -eq '아이디' }\\).value; $role_val = \\($_.items | Where-Object { $_.name -eq '권한' }\\).value; $name_val = \\($_.items | Where-Object { $_.name -eq '이름' }\\).value; Write-Output \"BundleID=$\\($_.id\\) | 이름=$name_val | 아이디=$id_val | 권한=$role_val | store_id=$\\($_.store_id\\)\" })",
+      "PowerShell($response = Invoke-WebRequest -Uri \"https://situation.chicvill.store/api/pool\" -Method GET -UseBasicParsing; $data = $response.Content | ConvertFrom-Json; $types = $data | Group-Object -Property type | Select-Object Name, Count | Sort-Object Count -Descending; $types | ForEach-Object { Write-Output \"$\\($_.Name\\): $\\($_.Count\\)\" })",
+      "PowerShell($r = Invoke-WebRequest -Uri \"https://situation.chicvill.store/openapi.json\" -Method GET -UseBasicParsing; $api = $r.Content | ConvertFrom-Json; $paths = $api.paths.PSObject.Properties.Name; $paths | Sort-Object | ForEach-Object { Write-Output $_ })",
+      "PowerShell($r = Invoke-WebRequest -Uri \"https://situation.chicvill.store/api/debug/state-data\" -Method GET -UseBasicParsing; $data = $r.Content | ConvertFrom-Json; Write-Output \"Keys: $\\($data.PSObject.Properties.Name -join ', '\\)\")",
+      "PowerShell($r = Invoke-WebRequest -Uri \"https://situation.chicvill.store/api/debug/state\" -Method GET -UseBasicParsing; Write-Output $r.Content.Substring\\(0, [Math]::Min\\(500, $r.Content.Length\\)\\))",
+      "Bash(bash *)"
     ]
   }
 }

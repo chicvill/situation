@@ -35,7 +35,6 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
 }) => {
   const [isEditingAll, setIsEditingAll] = useState(false);
   const [editName, setEditName] = useState('');
-  const [editPhone, setEditPhone] = useState('');
   const [editRole, setEditRole] = useState('staff');
   const [editWage, setEditWage] = useState('10500');
   const [editGender, setEditGender] = useState('미지정');
@@ -53,7 +52,6 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
 
   useEffect(() => {
     setEditName(employee.name || '');
-    setEditPhone(employee.id || '');
     setEditRole(employee.role === '점장' ? 'manager' : 'staff');
     setEditWage(employee.wage || '10500');
     setEditGender(employee.contract?.gender || '미지정');

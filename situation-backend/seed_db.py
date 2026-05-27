@@ -12,6 +12,8 @@ import uuid
 from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(__file__))
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
 
 from session.db.connection import get_db_conn, init_db_v2
 
@@ -47,6 +49,14 @@ STORES = [
         "payment_status": "정상",
     },
     {
+        "id": "store-Mbh",
+        "name": "일산국밥",
+        "ceo_name": "민병훈",
+        "signature_owner": "owner-Mbh",
+        "monthly_fee": 50000,
+        "payment_status": "정상",
+    },
+    {
         "id": "store-chicvill",
         "name": "시크빌",
         "ceo_name": "김종심",
@@ -72,7 +82,7 @@ MENUS = [
             {"name": "김치찌개",    "value": 9000,  "icon": "🌶️", "category": "찌개류",  "description": "묵은지와 돼지고기로 깊은 맛을 낸 김치찌개"},
             {"name": "제육볶음",    "value": 11000, "icon": "🥘", "category": "볶음류",  "description": "양념 돼지고기를 파·양파와 함께 볶은 매콤한 제육볶음"},
             {"name": "불고기 정식", "value": 15000, "icon": "🥩", "category": "정식류",  "description": "국내산 소불고기에 밥·국·반찬이 함께 나오는 정식"},
-            {"name": "비빔밥",      "value": 10000, "icon": "🍚", "category": "밥류",    "description": "계절 나물과 고추장을 넣어 비벼 먹는 건강 비빔밥"},
+            {"name": "비빔밥",      "value": 10000, "icon": "🍚", "category": "밥류",    "description": "계절 나물 and 고추장을 넣어 비벼 먹는 건강 비빔밥"},
             {"name": "돌솥비빔밥",  "value": 12000, "icon": "🫕", "category": "밥류",    "description": "달궈진 돌솥에 누룽지까지 즐기는 프리미엄 비빔밥"},
             {"name": "막걸리",      "value": 5000,  "icon": "🍶", "category": "주류/음료", "description": "국산 쌀로 빚은 생막걸리 (750ml)"},
             {"name": "보리차",      "value": 0,     "icon": "☕", "category": "주류/음료", "description": "무료 제공 보리차"},
@@ -117,6 +127,22 @@ MENUS = [
         ],
     },
     {
+        "id": "MENUS_store-Mbh",
+        "type": "Menus",
+        "title": "메뉴 정보",
+        "store_id": "store-Mbh",
+        "store": "일산국밥",
+        "timestamp": NOW,
+        "items": [
+            {"name": "순대국밥",      "value": 9000,  "icon": "🍲", "category": "식사류",  "description": "직접 만든 토종순대와 부드러운 머리고기가 가득한 국밥"},
+            {"name": "돼지국밥",      "value": 9000,  "icon": "🍲", "category": "식사류",  "description": "진하게 우려낸 사골 육수에 담백한 돼지고기를 듬뿍 넣은 국밥"},
+            {"name": "모듬순대",      "value": 15000, "icon": "🍥", "category": "안주류",  "description": "토종순대, 야채순대와 머리고기 수육 모듬 (소)"},
+            {"name": "소주",          "value": 5000,  "icon": "🍶", "category": "주류/음료", "description": "참이슬 / 처음처럼 / 진로"},
+            {"name": "맥주",          "value": 6000,  "icon": "🍺", "category": "주류/음료", "description": "카스 / 테라 / 켈리"},
+            {"name": "보리차",        "value": 0,     "icon": "☕", "category": "주류/음료", "description": "구수한 보리차 (무료제공)"},
+        ],
+    },
+    {
         "id": "MENUS_store-chicvill",
         "type": "Menus",
         "title": "메뉴 정보",
@@ -141,31 +167,61 @@ MENUS = [
 ]
 
 # ─────────────────────────────────────────────────────────────────
-# 스태프 정의 (매장당 3~4명)
+# 스태프 정의 (데모 시나리오 기준 동기화)
 # ─────────────────────────────────────────────────────────────────
 STAFF = {
     "store-1": [
-        {"name": "박정호", "role": "매니저",  "hourly_wage": 15000},
-        {"name": "최유진", "role": "홀서빙",  "hourly_wage": 11000},
-        {"name": "이민준", "role": "주방보조", "hourly_wage": 11000},
+        {
+            "name": "이민준", "role": "manager", "hourly_wage": 13000, "phone": "01011000001",
+            "contract": {"start": "2025-01-15", "end": "2026-12-31", "employment_type": "정규직", "gender": "남성", "birth_date": "1995-03-12"}
+        },
+        {
+            "name": "김수아", "role": "staff", "hourly_wage": 11500, "phone": "01022000001",
+            "contract": {"start": "2025-09-01", "end": "2026-08-31", "employment_type": "알바", "gender": "여성", "birth_date": "2003-07-22"}
+        },
     ],
     "store-2": [
-        {"name": "한소희", "role": "바리스타", "hourly_wage": 12000},
-        {"name": "정우성", "role": "매니저",   "hourly_wage": 14000},
-        {"name": "강지원", "role": "홀서빙",   "hourly_wage": 11000},
+        {
+            "name": "박지호", "role": "manager", "hourly_wage": 13000, "phone": "01011000002",
+            "contract": {"start": "2025-03-01", "end": "2027-02-28", "employment_type": "정규직", "gender": "남성", "birth_date": "1992-11-05"}
+        },
+        {
+            "name": "최은지", "role": "staff", "hourly_wage": 11500, "phone": "01022000002",
+            "contract": {"start": "2026-02-01", "end": "2027-01-31", "employment_type": "알바", "gender": "여성", "birth_date": "2004-01-14"}
+        },
     ],
     "store-3": [
-        {"name": "윤세준", "role": "셰프",    "hourly_wage": 18000},
-        {"name": "임지현", "role": "홀서빙",  "hourly_wage": 11000},
-        {"name": "송민재", "role": "주방보조","hourly_wage": 11000},
+        {
+            "name": "정현우", "role": "manager", "hourly_wage": 13000, "phone": "01011000003",
+            "contract": {"start": "2025-06-01", "end": "2027-05-31", "employment_type": "정규직", "gender": "남성", "birth_date": "1990-08-30"}
+        },
+        {
+            "name": "강민서", "role": "staff", "hourly_wage": 11000, "phone": "01022000003",
+            "contract": {"start": "2026-01-15", "end": "2026-12-31", "employment_type": "알바", "gender": "여성", "birth_date": "2002-05-18"}
+        },
+    ],
+    "store-Mbh": [
+        {
+            "name": "한소희", "role": "manager", "hourly_wage": 13000, "phone": "01011000004",
+            "contract": {"start": "2025-04-01", "end": "2027-03-31", "employment_type": "정규직", "gender": "여성", "birth_date": "1994-02-09"}
+        },
+        {
+            "name": "오준혁", "role": "staff", "hourly_wage": 11000, "phone": "01022000004",
+            "contract": {"start": "2026-03-01", "end": "2026-11-30", "employment_type": "알바", "gender": "남성", "birth_date": "2001-09-25"}
+        },
     ],
     "store-chicvill": [
-        {"name": "김주호", "role": "매니저",  "hourly_wage": 15000},
-        {"name": "이지은", "role": "홀서빙",  "hourly_wage": 11000},
-        {"name": "박민수", "role": "셰프",    "hourly_wage": 18000},
-        {"name": "최동현", "role": "홀서빙",  "hourly_wage": 11000},
+        {
+            "name": "서채원", "role": "manager", "hourly_wage": 14000, "phone": "01011000005",
+            "contract": {"start": "2025-02-01", "end": "2027-01-31", "employment_type": "정규직", "gender": "여성", "birth_date": "1993-12-01"}
+        },
+        {
+            "name": "임지수", "role": "staff", "hourly_wage": 12000, "phone": "01022000005",
+            "contract": {"start": "2025-11-01", "end": "2026-10-31", "employment_type": "알바", "gender": "여성", "birth_date": "2000-04-07"}
+        },
     ],
 }
+
 
 # 스케줄: 월~금 11:00–22:00, 토~일 10:00–23:00
 SCHEDULES = [
@@ -245,13 +301,13 @@ def seed_staff(conn):
     for store_id, members in STAFF.items():
         store_staff_ids = []
         for m in members:
-            sid = _uid("STAFF-")
+            sid = m["phone"]  # 데모의 표준 전화번호를 staff_id로 직접 사용!
             cur.execute("""
                 INSERT INTO table_staff_accounts
                     (staff_id, store_id, name, role, hourly_wage, status, contract_period)
                 VALUES (%s, %s, %s, %s, %s, 'active', %s)
             """, (sid, store_id, m["name"], m["role"], m["hourly_wage"],
-                  json.dumps({"start": "2026-01-01", "end": "2026-12-31"})))
+                  json.dumps(m["contract"], ensure_ascii=False)))
 
             for day, start, end in SCHEDULES:
                 cur.execute("""
@@ -268,15 +324,98 @@ def seed_staff(conn):
     return staff_ids
 
 
+def seed_users(conn):
+    from werkzeug.security import generate_password_hash
+    cur = conn.cursor()
+    
+    # users 테이블 비우기 (외래키 제약조건 방지 CASCADE)
+    try:
+        cur.execute("TRUNCATE users CASCADE")
+    except Exception:
+        conn.rollback()
+        cur.execute("DELETE FROM users")
+    
+    users_to_seed = []
+    
+    # 1. 최고 관리자 (Admin)
+    users_to_seed.append(("admin", "1212", "admin", None, "어드민01", True))
+    
+    # 2. 5개 매장의 점주 (Owners)
+    stores_info = [
+        ("store-1", "미소 한식당", "01000000001", "김미소"),
+        ("store-2", "블루버드 카페", "01000000002", "이하늘"),
+        ("store-3", "나폴리 피자", "01000000003", "박나폴"),
+        ("store-Mbh", "일산국밥", "01000000004", "민병훈"),
+        ("store-chicvill", "시크빌", "01000000005", "김종심"),
+    ]
+    for store_id, store_name, phone, ceo_name in stores_info:
+        users_to_seed.append((phone, "1212", "owner", store_id, f"{ceo_name} 사장", True))
+        
+    # 3. 5개 매장의 점장(manager) 및 점원(staff) (STAFF 딕셔너리 기반)
+    for store_id, members in STAFF.items():
+        for m in members:
+            phone = m["phone"]
+            role = m["role"]
+            name = m["name"]
+            users_to_seed.append((phone, "1212", role, store_id, name, True))
+            
+    # users 테이블에 해시 암호화 주입
+    print("\n[STEP 3-2] 사용자 계정(users) 시딩")
+    for username, password, role, store_id, full_name, is_approved in users_to_seed:
+        pw_hash = generate_password_hash(password)
+        cur.execute("""
+            INSERT INTO users (username, password, role, store_id, full_name, is_approved, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, NOW())
+            ON CONFLICT (username) DO NOTHING
+        """, (username, pw_hash, role, store_id, full_name, is_approved))
+        print(f"  사용자 계정 생성: {username} ({role}) -> {store_id}")
+        
+    conn.commit()
+    cur.close()
+
+
+
 # ─────────────────────────────────────────────────────────────────
 # STEP 4 — 메뉴 (knowledge_pool.json 교체)
 # ─────────────────────────────────────────────────────────────────
 def seed_menus():
+    pool_data = []
+    # 1. 메뉴 번들 추가
+    pool_data.extend(MENUS)
+    
+    # 2. 데모용 점장/점원 가입 정보(PersonalInfos) 번들 추가 (비밀번호: SHA-256 해싱 "1212")
+    import hashlib
+    pw_sha = hashlib.sha256(b"1212").hexdigest()
+    
+    store_names = {s["id"]: s["name"] for s in STORES}
+    
+    for store_id, members in STAFF.items():
+        store_name = store_names.get(store_id, "")
+        for m in members:
+            phone = m["phone"]
+            name = m["name"]
+            role = m["role"]
+            
+            pid = f"USER-{phone}"
+            pool_data.append({
+                "id": pid,
+                "type": "PersonalInfos",
+                "title": f"{name}님 계정 ({'점장' if role == 'manager' else '점원'})",
+                "items": [
+                    {"name": "이름", "value": name},
+                    {"name": "아이디", "value": phone},
+                    {"name": "비밀번호", "value": pw_sha},
+                    {"name": "권한", "value": role}
+                ],
+                "status": "approved",
+                "timestamp": NOW,
+                "store": store_name,
+                "store_id": store_id
+            })
+            
     with open(POOL_FILE, "w", encoding="utf-8") as f:
-        json.dump(MENUS, f, ensure_ascii=False, indent=2)
-    for m in MENUS:
-        print(f"  메뉴 작성: {m['store']} ({len(m['items'])}개 항목)")
-    print(f"✅ knowledge_pool.json 저장 완료")
+        json.dump(pool_data, f, ensure_ascii=False, indent=2)
+    print(f"✅ knowledge_pool.json 저장 완료 (Menus: {len(MENUS)}개, PersonalInfos: {len(pool_data) - len(MENUS)}개)")
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -345,7 +484,8 @@ def seed_archive_data(conn):
         {"id": "store-1", "name": "미소 한식당", "menus": MENUS[0]["items"]},
         {"id": "store-2", "name": "블루버드 카페", "menus": MENUS[1]["items"]},
         {"id": "store-3", "name": "나폴리 피자", "menus": MENUS[2]["items"]},
-        {"id": "store-chicvill", "name": "시크빌", "menus": MENUS[3]["items"]}
+        {"id": "store-Mbh", "name": "일산국밥", "menus": MENUS[3]["items"]},
+        {"id": "store-chicvill", "name": "시크빌", "menus": MENUS[4]["items"]}
     ]
     
     total_sessions_count = 0
@@ -878,6 +1018,10 @@ def main():
 
     print("\n[5/5] 스태프 시딩")
     staff_ids = seed_staff(conn)
+
+    # 사용자 계정 동시 생성 및 해싱
+    print("\n[5-2/5] 사용자 마스터(users) 시딩")
+    seed_users(conn)
 
     print("\n[6/6] 테스트 세션 + 주문 시딩")
     seed_sessions(conn)

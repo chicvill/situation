@@ -123,6 +123,19 @@ def init_db_v2():
     try:
         cur = conn.cursor()
 
+        # 0. 사용자 마스터 테이블 (users)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                username TEXT PRIMARY KEY,
+                password TEXT NOT NULL,
+                role TEXT NOT NULL,
+                store_id TEXT,
+                full_name TEXT,
+                is_approved BOOLEAN DEFAULT TRUE,
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """)
+
         # 1. 세션 대장 테이블 (orders/calls/parking/point/splits 임베딩 v2)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS table_sessions (

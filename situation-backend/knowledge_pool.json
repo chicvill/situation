@@ -5,7 +5,7 @@
     "title": "메뉴 정보",
     "store_id": "store-1",
     "store": "미소 한식당",
-    "timestamp": "2026-05-26 12:39:38",
+    "timestamp": "2026-05-28 08:25:21",
     "items": [
       {
         "name": "된장찌개",
@@ -40,7 +40,7 @@
         "value": 10000,
         "icon": "🍚",
         "category": "밥류",
-        "description": "계절 나물과 고추장을 넣어 비벼 먹는 건강 비빔밥"
+        "description": "계절 나물 and 고추장을 넣어 비벼 먹는 건강 비빔밥"
       },
       {
         "name": "돌솥비빔밥",
@@ -71,7 +71,7 @@
     "title": "메뉴 정보",
     "store_id": "store-2",
     "store": "블루버드 카페",
-    "timestamp": "2026-05-26 12:39:38",
+    "timestamp": "2026-05-28 08:25:21",
     "items": [
       {
         "name": "아메리카노",
@@ -144,7 +144,7 @@
     "title": "메뉴 정보",
     "store_id": "store-3",
     "store": "나폴리 피자",
-    "timestamp": "2026-05-26 12:39:38",
+    "timestamp": "2026-05-28 08:25:21",
     "items": [
       {
         "name": "마르게리타",
@@ -212,12 +212,64 @@
     ]
   },
   {
+    "id": "MENUS_store-Mbh",
+    "type": "Menus",
+    "title": "메뉴 정보",
+    "store_id": "store-Mbh",
+    "store": "일산국밥",
+    "timestamp": "2026-05-28 08:25:21",
+    "items": [
+      {
+        "name": "순대국밥",
+        "value": 9000,
+        "icon": "🍲",
+        "category": "식사류",
+        "description": "직접 만든 토종순대와 부드러운 머리고기가 가득한 국밥"
+      },
+      {
+        "name": "돼지국밥",
+        "value": 9000,
+        "icon": "🍲",
+        "category": "식사류",
+        "description": "진하게 우려낸 사골 육수에 담백한 돼지고기를 듬뿍 넣은 국밥"
+      },
+      {
+        "name": "모듬순대",
+        "value": 15000,
+        "icon": "🍥",
+        "category": "안주류",
+        "description": "토종순대, 야채순대와 머리고기 수육 모듬 (소)"
+      },
+      {
+        "name": "소주",
+        "value": 5000,
+        "icon": "🍶",
+        "category": "주류/음료",
+        "description": "참이슬 / 처음처럼 / 진로"
+      },
+      {
+        "name": "맥주",
+        "value": 6000,
+        "icon": "🍺",
+        "category": "주류/음료",
+        "description": "카스 / 테라 / 켈리"
+      },
+      {
+        "name": "보리차",
+        "value": 0,
+        "icon": "☕",
+        "category": "주류/음료",
+        "description": "구수한 보리차 (무료제공)"
+      }
+    ]
+  },
+  {
     "id": "MENUS_store-chicvill",
     "type": "Menus",
     "title": "메뉴 정보",
     "store_id": "store-chicvill",
     "store": "시크빌",
-    "timestamp": "2026-05-26 12:39:38",
+    "timestamp": "2026-05-28 08:25:21",
     "items": [
       {
         "name": "명품 한우 갈비살",
@@ -304,5 +356,275 @@
         "description": "정성으로 끓여낸 구수한 옥수수 보리차 (무료제공)"
       }
     ]
+  },
+  {
+    "id": "USER-01011000001",
+    "type": "PersonalInfos",
+    "title": "이민준님 계정 (점장)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "이민준"
+      },
+      {
+        "name": "아이디",
+        "value": "01011000001"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "manager"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-28 08:25:21",
+    "store": "미소 한식당",
+    "store_id": "store-1"
+  },
+  {
+    "id": "USER-01022000001",
+    "type": "PersonalInfos",
+    "title": "김수아님 계정 (점원)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "김수아"
+      },
+      {
+        "name": "아이디",
+        "value": "01022000001"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "staff"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-28 08:25:21",
+    "store": "미소 한식당",
+    "store_id": "store-1"
+  },
+  {
+    "id": "USER-01011000002",
+    "type": "PersonalInfos",
+    "title": "박지호님 계정 (점장)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "박지호"
+      },
+      {
+        "name": "아이디",
+        "value": "01011000002"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "manager"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-28 08:25:21",
+    "store": "블루버드 카페",
+    "store_id": "store-2"
+  },
+  {
+    "id": "USER-01022000002",
+    "type": "PersonalInfos",
+    "title": "최은지님 계정 (점원)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "최은지"
+      },
+      {
+        "name": "아이디",
+        "value": "01022000002"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "staff"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-28 08:25:21",
+    "store": "블루버드 카페",
+    "store_id": "store-2"
+  },
+  {
+    "id": "USER-01011000003",
+    "type": "PersonalInfos",
+    "title": "정현우님 계정 (점장)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "정현우"
+      },
+      {
+        "name": "아이디",
+        "value": "01011000003"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "manager"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-28 08:25:21",
+    "store": "나폴리 피자",
+    "store_id": "store-3"
+  },
+  {
+    "id": "USER-01022000003",
+    "type": "PersonalInfos",
+    "title": "강민서님 계정 (점원)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "강민서"
+      },
+      {
+        "name": "아이디",
+        "value": "01022000003"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "staff"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-28 08:25:21",
+    "store": "나폴리 피자",
+    "store_id": "store-3"
+  },
+  {
+    "id": "USER-01011000004",
+    "type": "PersonalInfos",
+    "title": "한소희님 계정 (점장)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "한소희"
+      },
+      {
+        "name": "아이디",
+        "value": "01011000004"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "manager"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-28 08:25:21",
+    "store": "일산국밥",
+    "store_id": "store-Mbh"
+  },
+  {
+    "id": "USER-01022000004",
+    "type": "PersonalInfos",
+    "title": "오준혁님 계정 (점원)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "오준혁"
+      },
+      {
+        "name": "아이디",
+        "value": "01022000004"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "staff"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-28 08:25:21",
+    "store": "일산국밥",
+    "store_id": "store-Mbh"
+  },
+  {
+    "id": "USER-01011000005",
+    "type": "PersonalInfos",
+    "title": "서채원님 계정 (점장)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "서채원"
+      },
+      {
+        "name": "아이디",
+        "value": "01011000005"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "manager"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-28 08:25:21",
+    "store": "시크빌",
+    "store_id": "store-chicvill"
+  },
+  {
+    "id": "USER-01022000005",
+    "type": "PersonalInfos",
+    "title": "임지수님 계정 (점원)",
+    "items": [
+      {
+        "name": "이름",
+        "value": "임지수"
+      },
+      {
+        "name": "아이디",
+        "value": "01022000005"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "staff"
+      }
+    ],
+    "status": "approved",
+    "timestamp": "2026-05-28 08:25:21",
+    "store": "시크빌",
+    "store_id": "store-chicvill"
   }
 ]
