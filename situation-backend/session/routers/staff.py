@@ -20,11 +20,14 @@ async def direct_register_staff(data: Dict):
     hourly_wage = int(data.get("hourly_wage") or 10500)
     temporary_password = data.get("temporary_password") or "1212"
     schedules = data.get("schedules") or []  # List of {day_of_week: int, start_time: str, end_time: str}
+    gender = data.get("gender") or "미지정"
+    birth_date = data.get("birth_date") or "1995-01-01"
 
     if not name or not phone:
         raise HTTPException(status_code=400, detail="이름과 휴대폰 번호(ID)는 필수 항목입니다.")
 
     # 1. PersonalInfos 번들 생성/업데이트 (로그인 정보용)
+    import hashlib
     hashed_pw = hashlib.sha256(temporary_password.encode()).hexdigest()
 
     signup_bundle = {
@@ -67,7 +70,11 @@ async def direct_register_staff(data: Dict):
         "status": "approved",  # Pre-approved!
         "contract_period": {
             "start": datetime.now().strftime("%Y-%m-%d"),
-            "end": "2029-12-31"
+            "end": "2029-12-31",
+            "gender": gender,
+            "birth_date": birth_date,
+            "employment_type": "알바",
+            "severance_eligible": "미대상"
         }
     }
 
@@ -528,4 +535,114 @@ async def update_staff_schedule_endpoint(data: Dict):
 
     await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "bundle_id": f"EMP-{staff_id}"})
     return {"status": "success", "message": "Schedule updated successfully"}
+
+
+@router.post("/api/staff/update-all")
+async def update_staff_all_endpoint(data: Dict):
+    import json
+    staff_id = data.get("staff_id")
+    new_staff_id = data.get("new_staff_id") or staff_id
+    name = data.get("name")
+    role = data.get("role") or "staff"
+    hourly_wage = int(data.get("hourly_wage") or 10500)
+    status = data.get("status") or "approved"
+    store_id = data.get("store_id") or "default_store"
+    
+    # Contract details to bundle inside contract_period dict
+    contract_period = {
+        "start": data.get("contract_start") or "2026-05-01",
+        "end": data.get("contract_end") or "2029-12-31",
+        "gender": data.get("gender") or "미지정",
+        "birth_date": data.get("birth_date") or "1995-01-01",
+        "employment_type": data.get("employment_type") or "알바",
+        "severance_eligible": data.get("severance_eligible") or "미대상"
+    }
+    
+    schedules = data.get("schedules") or []
+
+    if not staff_id or not name:
+        raise HTTPException(status_code=400, detail="staff_id and name are required")
+
+    from ..database import get_db_conn, save_schedule
+    conn = get_db_conn()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+
+    try:
+        cur = conn.cursor()
+        
+        # If staff_id changed, update references
+        if staff_id != new_staff_id:
+            cur.execute("SELECT 1 FROM table_staff_accounts WHERE staff_id = %s", (new_staff_id,))
+            if cur.fetchone():
+                raise HTTPException(status_code=400, detail="이미 등록된 전화번호(ID)입니다.")
+            
+            cur.execute("UPDATE table_staff_schedules SET staff_id = %s WHERE staff_id = %s", (new_staff_id, staff_id))
+            cur.execute("UPDATE table_staff_attendance SET staff_id = %s WHERE staff_id = %s", (new_staff_id, staff_id))
+            cur.execute("UPDATE table_staff_accounts SET staff_id = %s WHERE staff_id = %s", (new_staff_id, staff_id))
+            
+            # Update PersonalInfos bundle ID in JSON pool
+            pool = load_pool()
+            old_user_id = f"USER-{staff_id}"
+            new_user_id = f"USER-{new_staff_id}"
+            for i, b in enumerate(pool):
+                if b.get("id") == old_user_id:
+                    b["id"] = new_user_id
+                    for item in b.get("items", []):
+                        if item.get("name") == "아이디":
+                            item["value"] = new_staff_id
+                    pool[i] = b
+                    break
+            save_pool(pool)
+            
+            staff_id = new_staff_id
+            
+        # Update staff account
+        cur.execute("""
+            UPDATE table_staff_accounts 
+            SET name = %s, role = %s, hourly_wage = %s, status = %s, contract_period = %s
+            WHERE staff_id = %s
+        """, (name, role, hourly_wage, status, json.dumps(contract_period), staff_id))
+        
+        # Clear schedules
+        cur.execute("DELETE FROM table_staff_schedules WHERE staff_id = %s AND store_id = %s", (staff_id, store_id))
+        
+        # Update PersonalInfos name/role in pool
+        pool = load_pool()
+        user_id = f"USER-{staff_id}"
+        for i, b in enumerate(pool):
+            if b.get("id") == user_id:
+                for item in b.get("items", []):
+                    if item.get("name") == "이름":
+                        item["value"] = name
+                    if item.get("name") == "권한":
+                        item["value"] = role
+                pool[i] = b
+                break
+        save_pool(pool)
+
+        conn.commit()
+        cur.close()
+        conn.close()
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(f"Failed to update staff: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+    # Save new schedules
+    for s in schedules:
+        sched_id = f"SCHED-{uuid.uuid4().hex[:6].upper()}"
+        sched_data = {
+            "schedule_id": sched_id,
+            "staff_id": staff_id,
+            "store_id": store_id,
+            "day_of_week": int(s["day_of_week"]),
+            "start_time": s["start_time"],
+            "end_time": s["end_time"]
+        }
+        save_schedule(sched_data)
+
+    await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "bundle_id": f"EMP-{staff_id}"})
+    return {"status": "success", "message": "Staff updated successfully"}
 

@@ -29,7 +29,14 @@ export interface EmployeeDetail {
   cumulativeWage: string;
   paidWage: string;
   unpaidWage: string;
-  contract: { start?: string; end?: string };
+  contract: {
+    start?: string;
+    end?: string;
+    gender?: string;
+    birth_date?: string;
+    employment_type?: string;
+    severance_eligible?: string;
+  };
   schedule: ScheduleEntry[];
   rawBundle: Bundle;
 }
