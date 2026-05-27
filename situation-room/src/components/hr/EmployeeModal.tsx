@@ -110,7 +110,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
         method: 'POST',
         body: JSON.stringify({
           staff_id: employee.id,
-          new_staff_id: editPhone.trim(),
+          new_staff_id: employee.id, // ID는 변경 불가 — 항상 원본 유지
           name: editName.trim(),
           role: editRole,
           hourly_wage: parseInt(editWage.replace(/[^0-9]/g, '') || '10500'),
@@ -238,8 +238,20 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   <input type="text" value={editName} onChange={(ev) => setEditName(ev.target.value)} style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }} required />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>연락처 (ID 겸용)</label>
-                  <input type="text" value={editPhone} onChange={(ev) => setEditPhone(ev.target.value)} style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }} required />
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>
+                    연락처 (ID) <span style={{ fontWeight: 400, color: '#94a3b8' }}>— 수정 불가</span>
+                  </label>
+                  <div style={{
+                    padding: '10px 12px', borderRadius: '8px', fontSize: '0.88rem',
+                    background: '#f1f5f9', border: '1px solid #e2e8f0',
+                    color: '#64748b', fontWeight: 600, letterSpacing: '0.3px',
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                  }}>
+                    🔒 {employee.id}
+                  </div>
+                  <span style={{ fontSize: '0.71rem', color: '#94a3b8', lineHeight: '1.5' }}>
+                    ID는 출퇴근·급여 정산의 기준 키입니다. 변경이 필요하면 퇴사 처리 후 신규 등록하세요.
+                  </span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>성별</label>
