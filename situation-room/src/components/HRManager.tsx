@@ -8,7 +8,7 @@ import { PayrollModal } from './hr/PayrollModal';
 import { EmployeeCard } from './hr/EmployeeCard';
 import { EmployeeModal } from './hr/EmployeeModal';
 
-export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any }> = ({ bundles, user, storeDetails }) => {
+export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any, onRefresh?: () => void }> = ({ bundles, user, storeDetails, onRefresh }) => {
     const { storeId, storeName } = useStoreFilter();
     const params = new URLSearchParams(window.location.search);
     const isCheckinMode = params.get('mode') === 'hr' && params.get('action') === 'checkin';
@@ -81,6 +81,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         kioskPhone,
         setKioskPhone,
         setIsProcessing,
+        onRefresh,
     });
 
 
@@ -96,10 +97,12 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
             if (!response.ok) {
                 alert('삭제 중 오류가 발생했습니다.');
             } else {
-                alert('✅ 근태 기록이 삭제되었습니다. 누적 근무시간 및 임금이 다시 계산됩니다.');
+                // 즉시 데이터 새로고침
+                if (onRefresh) onRefresh();
             }
         } catch (err) {
             console.error(err);
+            alert('삭제 중 서버 오류가 발생했습니다.');
         }
     };
 

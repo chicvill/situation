@@ -39,7 +39,7 @@ type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 
 
 function App() {
   const { storeId, storeName: initialStoreName, updateStore } = useStoreFilter();
-  const { bundles, handleSendMessage } = useSituation(storeId, initialStoreName);
+  const { bundles, handleSendMessage, fetchInitialData } = useSituation(storeId, initialStoreName);
   const { flashingTabs, callCount, waitingCount, parkingCount, reservationCount, callFlashing, waitingFlashing, parkingFlashing, resetFlash, decrementCall, decrementWaiting, decrementParking } = useStoreSync(storeId);
 
   const [user, setUser] = useState<any>(null);
@@ -464,7 +464,7 @@ function App() {
       case 'call': return <CallManager storeId={storeId} bundles={bundles} onComplete={decrementCall} />;
       case 'inventory': return <LogicInventory />;
       case 'manual': return <StoreManualEditor storeId={storeId} user={user} />;
-      case 'hr': return <HRManager bundles={bundles} user={user} storeDetails={storeDetails} />;
+      case 'hr': return <HRManager bundles={bundles} user={user} storeDetails={storeDetails} onRefresh={fetchInitialData} />;
       case 'waiting': return <WaitingManager bundles={bundles} onSendMessage={(txt, sId, sName) => handleSendMessage(txt, undefined, 'waiting', sId, sName)} onComplete={decrementWaiting} />;
       case 'reserve': return <ReservationManager userRole={user?.role} bundles={bundles} />;
       case 'parking': return <ParkingManager storeId={storeId} onComplete={decrementParking} />;

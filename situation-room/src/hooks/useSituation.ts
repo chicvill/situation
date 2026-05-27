@@ -226,6 +226,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
         isLoading,
         handleSendMessage,
         setMessages,
-        setBundles
+        setBundles,
+        fetchInitialData
     };
 };

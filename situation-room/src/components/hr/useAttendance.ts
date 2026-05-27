@@ -9,6 +9,7 @@ interface UseAttendanceOptions {
   kioskPhone: string;
   setKioskPhone: (v: string) => void;
   setIsProcessing: (v: boolean) => void;
+  onRefresh?: () => void;
 }
 
 export const useAttendance = ({
@@ -18,6 +19,7 @@ export const useAttendance = ({
   kioskPhone,
   setKioskPhone,
   setIsProcessing,
+  onRefresh,
 }: UseAttendanceOptions) => {
   const deviceId = useMemo(() => {
     let id = localStorage.getItem('mqnet_kiosk_device_id');
@@ -56,11 +58,11 @@ export const useAttendance = ({
       if (!response.ok) {
         alert(`🚨 강제 기록 에러!\n\n${result.detail}`);
       } else {
-        if (actionType === 'check-in') {
-          alert(`🏃 예외 출근 완료!\n\n${empName}님, 점주 승인으로 강제 출근 기록되었습니다.`);
-        } else {
-          alert(`🏠 예외 퇴근 완료!\n\n${empName}님, 점주 승인으로 강제 퇴근 기록되었습니다.`);
-        }
+        const msg = actionType === 'check-in'
+          ? `🏃 예외 출근 완료!\n\n${empName}님, 점주 승인으로 강제 출근 기록되었습니다.`
+          : `🏠 예외 퇴근 완료!\n\n${empName}님, 점주 승인으로 강제 퇴근 기록되었습니다.`;
+        alert(msg);
+        if (onRefresh) onRefresh();
       }
     } catch (err: any) {
       alert(`❌ 서버 연동 에러: ${err.message}`);
