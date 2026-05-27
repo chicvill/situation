@@ -236,8 +236,6 @@ async def staff_check_in(data: Dict):
     if not staff:
         raise HTTPException(status_code=404, detail="Staff account not found")
 
-    if staff['status'] != 'approved':
-        raise HTTPException(status_code=400, detail="승인된 직원만 출퇴근이 가능합니다. 점주의 승인을 받으세요.")
 
     # 계약 기간 확인
     today_str = datetime.now().strftime("%Y-%m-%d")
@@ -490,3 +488,44 @@ async def pay_staff_endpoint(staff_id: str):
         return {"status": "success", "message": f"Successfully paid all logs for staff {staff_id}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/api/staff/update-schedule")
+async def update_staff_schedule_endpoint(data: Dict):
+    staff_id = data.get("staff_id")
+    store_id = data.get("store_id") or "default_store"
+    schedules = data.get("schedules") or []
+
+    if not staff_id:
+        raise HTTPException(status_code=400, detail="staff_id is required")
+
+    from ..database import get_db_conn, save_schedule
+    conn = get_db_conn()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM table_staff_schedules WHERE staff_id = %s AND store_id = %s", (staff_id, store_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"Failed to clear old schedules: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to clear old schedules: {e}")
+
+    for s in schedules:
+        sched_id = f"SCHED-{uuid.uuid4().hex[:6].upper()}"
+        sched_data = {
+            "schedule_id": sched_id,
+            "staff_id": staff_id,
+            "store_id": store_id,
+            "day_of_week": int(s["day_of_week"]),
+            "start_time": s["start_time"],
+            "end_time": s["end_time"]
+        }
+        save_schedule(sched_data)
+
+    await manager.broadcast_to_kitchen({"type": "POOL_UPDATED", "bundle_id": f"EMP-{staff_id}"})
+    return {"status": "success", "message": "Schedule updated successfully"}
+

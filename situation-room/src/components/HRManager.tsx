@@ -22,6 +22,8 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
     const [selectedEmployee, setSelectedEmployee] = useState<EmployeeDetail | null>(null);
     const [payrollModal, setPayrollModal] = useState<PayrollInfo | null>(null);
     const [isScanningQr, setIsScanningQr] = useState(false);
+    const [isEditingSchedule, setIsEditingSchedule] = useState(false);
+    const [editSchedules, setEditSchedules] = useState<{ [key: number]: { active: boolean, start: string, end: string } }>({});
 
     // 신규 사원 직접 등록 폼 활성화 및 입력 상태들
     const [showRegisterForm, setShowRegisterForm] = useState(false);
@@ -121,6 +123,9 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
             });
             if (!response.ok) {
                 alert('삭제 중 오류가 발생했습니다.');
+            } else {
+                alert('✅ 근태 기록이 삭제되었습니다. 누적 근무시간 및 임금이 다시 계산됩니다.');
+                window.location.reload();
             }
         } catch (err) {
             console.error(err);
@@ -161,11 +166,70 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
             if (response.ok) {
                 alert(`✨ ${name} 사원의 급여 지급 및 정산이 완료되었습니다! 미지급 잔액이 0원으로 조정됩니다.`);
                 setPayrollModal(null);
+                window.location.reload();
             } else {
                 throw new Error('급여 지급 처리에 실패했습니다.');
             }
         } catch (err: any) {
             alert(`❌ 에러: ${err.message}`);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleStartEditSchedule = () => {
+        if (!selectedEmployee) return;
+        const initialSchedules: { [key: number]: { active: boolean, start: string, end: string } } = {
+            0: { active: false, start: '09:00', end: '18:00' },
+            1: { active: false, start: '09:00', end: '18:00' },
+            2: { active: false, start: '09:00', end: '18:00' },
+            3: { active: false, start: '09:00', end: '18:00' },
+            4: { active: false, start: '09:00', end: '18:00' },
+            5: { active: false, start: '09:00', end: '18:00' },
+            6: { active: false, start: '09:00', end: '18:00' },
+        };
+        selectedEmployee.schedule?.forEach((s: any) => {
+            initialSchedules[s.day_of_week] = {
+                active: true,
+                start: s.start_time || '09:00',
+                end: s.end_time || '18:00'
+            };
+        });
+        setEditSchedules(initialSchedules);
+        setIsEditingSchedule(true);
+    };
+
+    const handleSaveSchedule = async () => {
+        if (!selectedEmployee) return;
+        setIsProcessing(true);
+        try {
+            const schedulesList = Object.entries(editSchedules)
+                .filter(([_key, val]) => val.active)
+                .map(([day, val]) => ({
+                    day_of_week: parseInt(day),
+                    start_time: val.start,
+                    end_time: val.end
+                }));
+
+            const response = await apiFetch(`/api/staff/update-schedule`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    staff_id: selectedEmployee.id,
+                    store_id: storeId === 'Total' ? 'store-korean' : storeId,
+                    schedules: schedulesList
+                })
+            });
+
+            if (response.ok) {
+                alert('✅ 스케줄이 성공적으로 업데이트되었습니다.');
+                setIsEditingSchedule(false);
+                window.location.reload();
+            } else {
+                const errResult = await response.json();
+                alert(`❌ 저장 실패: ${errResult.detail || '오류 발생'}`);
+            }
+        } catch (err: any) {
+            alert(`❌ 서버 연동 에러: ${err.message}`);
         } finally {
             setIsProcessing(false);
         }
@@ -483,38 +547,98 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                             </div>
 
                             <div style={{ background: 'rgba(0,0,0,0.15)', padding: '20px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.04)' }}>
-                                <h5 style={{ margin: '0 0 14px 0', fontSize: '0.95rem', fontWeight: 800 }}>📅 주간 요일별 출퇴근 스케줄</h5>
-                                <div style={{ overflowX: 'auto' }}>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
-                                        <thead>
-                                            <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                                                <th style={{ padding: '8px' }}>근무 요일</th>
-                                                <th style={{ padding: '8px' }}>출근 시각</th>
-                                                <th style={{ padding: '8px' }}>퇴근 시각</th>
-                                                <th style={{ padding: '8px' }}>출퇴근 가드레일</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {["월", "화", "수", "목", "금", "토", "일"].map((day, idx) => {
-                                                const sched = selectedEmployee.schedule?.find((s) => s.day_of_week === idx);
-                                                return (
-                                                    <tr key={day} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                                                        <td style={{ padding: '8px', fontWeight: 'bold' }}>{day}요일</td>
-                                                        <td style={{ padding: '8px', color: sched ? 'var(--text-main)' : 'rgba(255,255,255,0.2)' }}>
-                                                            {sched ? sched.start_time : '휴무'}
-                                                        </td>
-                                                        <td style={{ padding: '8px', color: sched ? 'var(--text-main)' : 'rgba(255,255,255,0.2)' }}>
-                                                            {sched ? sched.end_time : '휴무'}
-                                                        </td>
-                                                        <td style={{ padding: '8px', color: 'var(--accent-orange)', fontSize: '0.75rem' }}>
-                                                            {sched ? "전후 5분 내 인증 필수" : "-"}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                                    <h5 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800 }}>📅 주간 요일별 출퇴근 스케줄</h5>
+                                    {(user.role === 'owner' || user.role === 'admin') && (
+                                        !isEditingSchedule ? (
+                                            <button
+                                                onClick={handleStartEditSchedule}
+                                                style={{ background: 'rgba(249,115,22,0.1)', color: 'var(--accent-orange)', border: '1px solid var(--accent-orange)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
+                                            >
+                                                ⚙️ 스케줄 수정
+                                            </button>
+                                        ) : (
+                                            <div style={{ display: 'flex', gap: '6px' }}>
+                                                <button
+                                                    onClick={() => setIsEditingSchedule(false)}
+                                                    style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid var(--border)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
+                                                >
+                                                    취소
+                                                </button>
+                                                <button
+                                                    onClick={handleSaveSchedule}
+                                                    disabled={isProcessing}
+                                                    style={{ background: '#10b981', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 'bold', cursor: 'pointer' }}
+                                                >
+                                                    {isProcessing ? '저장 중...' : '저장 완료'}
+                                                </button>
+                                            </div>
+                                        )
+                                    )}
                                 </div>
+
+                                {isEditingSchedule ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                                        {["월", "화", "수", "목", "금", "토", "일"].map((dayName, idx) => {
+                                            const daySched = editSchedules[idx] || { active: false, start: '09:00', end: '18:00' };
+                                            return (
+                                                <div key={dayName} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 10px', background: daySched.active ? 'rgba(16, 185, 129, 0.04)' : 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '80px' }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={daySched.active}
+                                                            onChange={(ev) => setEditSchedules({ ...editSchedules, [idx]: { ...daySched, active: ev.target.checked } })}
+                                                            style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#10b981' }}
+                                                        />
+                                                        <span style={{ fontWeight: 'bold', fontSize: '0.8rem' }}>{dayName}요일</span>
+                                                    </div>
+
+                                                    {daySched.active ? (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            <input type="time" value={daySched.start} onChange={(ev) => setEditSchedules({ ...editSchedules, [idx]: { ...daySched, start: ev.target.value } })} style={{ padding: '4px 6px', fontSize: '0.78rem', borderRadius: '5px', background: '#000', border: '1px solid var(--border)', color: '#fff' }} />
+                                                            <span style={{ opacity: 0.6, fontSize: '0.75rem' }}>~</span>
+                                                            <input type="time" value={daySched.end} onChange={(ev) => setEditSchedules({ ...editSchedules, [idx]: { ...daySched, end: ev.target.value } })} style={{ padding: '4px 6px', fontSize: '0.78rem', borderRadius: '5px', background: '#000', border: '1px solid var(--border)', color: '#fff' }} />
+                                                        </div>
+                                                    ) : (
+                                                        <span style={{ opacity: 0.4, fontSize: '0.75rem' }}>휴무</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'left' }}>
+                                            <thead>
+                                                <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+                                                    <th style={{ padding: '8px' }}>근무 요일</th>
+                                                    <th style={{ padding: '8px' }}>출근 시각</th>
+                                                    <th style={{ padding: '8px' }}>퇴근 시각</th>
+                                                    <th style={{ padding: '8px' }}>출퇴근 가드레일</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {["월", "화", "수", "목", "금", "토", "일"].map((day, idx) => {
+                                                    const sched = selectedEmployee.schedule?.find((s) => s.day_of_week === idx);
+                                                    return (
+                                                        <tr key={day} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                                            <td style={{ padding: '8px', fontWeight: 'bold' }}>{day}요일</td>
+                                                            <td style={{ padding: '8px', color: sched ? 'var(--text-main)' : 'rgba(255,255,255,0.2)' }}>
+                                                                {sched ? sched.start_time : '휴무'}
+                                                            </td>
+                                                            <td style={{ padding: '8px', color: sched ? 'var(--text-main)' : 'rgba(255,255,255,0.2)' }}>
+                                                                {sched ? sched.end_time : '휴무'}
+                                                            </td>
+                                                            <td style={{ padding: '8px', color: 'var(--accent-orange)', fontSize: '0.75rem' }}>
+                                                                {sched ? "전후 5분 내 인증 필수" : "-"}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
