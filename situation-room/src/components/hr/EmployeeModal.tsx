@@ -44,6 +44,11 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
   const [editSeveranceEligible, setEditSeveranceEligible] = useState('미대상');
   const [editSchedules, setEditSchedules] = useState<{ [key: number]: { active: boolean; start: string; end: string } }>({});
 
+  const [expandStats, setExpandStats] = useState(false);
+  const [expandPersonal, setExpandPersonal] = useState(false);
+  const [expandSchedule, setExpandSchedule] = useState(false);
+  const [expandLogs, setExpandLogs] = useState(false);
+
   useEffect(() => {
     setEditName(employee.name || '');
     setEditPhone(employee.id || '');
@@ -172,27 +177,35 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
             </div>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            {(userRole === 'owner' || userRole === 'admin') && !isEditingAll && (
-              <button
-                onClick={() => setIsEditingAll(true)}
-                style={{
-                  background: '#f1f5f9',
-                  color: '#1e293b',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: '8px',
-                  padding: '6px 14px',
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                ⚙️ 정보 수정
+            {isEditingAll ? (
+              <button onClick={() => setIsEditingAll(false)} style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#1e293b', fontSize: '0.85rem', fontWeight: 800, borderRadius: '8px', padding: '6px 14px', cursor: 'pointer' }}>
+                수정 닫기
               </button>
+            ) : (
+              <>
+                {(userRole === 'owner' || userRole === 'admin') && (
+                  <button
+                    onClick={() => setIsEditingAll(true)}
+                    style={{
+                      background: '#f1f5f9',
+                      color: '#1e293b',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      padding: '6px 14px',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    ⚙️ 정보 수정
+                  </button>
+                )}
+                <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#64748b', fontSize: '1.5rem', cursor: 'pointer', padding: '4px' }}>✕</button>
+              </>
             )}
-            <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#64748b', fontSize: '1.5rem', cursor: 'pointer', padding: '4px' }}>✕</button>
           </div>
         </div>
 
@@ -319,7 +332,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   cursor: 'pointer',
                 }}
               >
-                취소
+                수정 닫기
               </button>
               <button
                 onClick={handleSaveAllDetails}
@@ -341,256 +354,255 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
           </div>
         ) : (
           /* ─── [일반 모드] 정보 조회 및 근태 로그 ─── */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {/* 요약 통계 영역 */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
-              <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px', fontWeight: 600 }}>계약 시급</div>
-                <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0f172a' }}>
-                  {parseInt(employee.wage).toLocaleString()}원
-                </div>
-              </div>
-              <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px', fontWeight: 600 }}>누적 근무 시간</div>
-                <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0f172a' }}>
-                  {employee.hours}시간
-                </div>
-              </div>
-              <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px', fontWeight: 600 }}>총 누적 임금</div>
-                <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0f172a' }}>
-                  {parseInt(employee.cumulativeWage).toLocaleString()}원
-                </div>
-              </div>
-              <div style={{ padding: '16px', background: parseInt(employee.unpaidWage) > 0 ? '#fff7ed' : '#f0fdf4', border: `1px solid ${parseInt(employee.unpaidWage) > 0 ? '#ffedd5' : '#bbf7d0'}`, borderRadius: '12px' }}>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px', fontWeight: 600 }}>미지급 잔액</div>
-                <div style={{ fontWeight: 900, fontSize: '1.2rem', color: parseInt(employee.unpaidWage) > 0 ? '#ea580c' : '#16a34a' }}>
-                  {parseInt(employee.unpaidWage).toLocaleString()}원
-                </div>
-              </div>
-            </div>
-
-            {/* 2단 구성 레이아웃 (개인/계약 조건 vs 스케줄) */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
-              {/* 계약 조건 및 필수 개인 정보 통합 카드 */}
-              <div style={{ padding: '20px', borderRadius: '16px', background: '#ffffff', border: '1px solid #e2e8f0' }}>
-                <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', borderLeft: '3px solid #f97316', paddingLeft: '8px' }}>
-                  📋 개인 신상 및 계약 조건
-                </h4>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                  <tbody>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px 0', color: '#64748b', fontWeight: 500 }}>성명 (실명)</td>
-                      <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{employee.name}</td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px 0', color: '#64748b', fontWeight: 500 }}>연락처 (ID)</td>
-                      <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>📞 {employee.id}</td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px 0', color: '#64748b', fontWeight: 500 }}>성별</td>
-                      <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{employee.contract?.gender || '미지정'}</td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px 0', color: '#64748b', fontWeight: 500 }}>생년월일</td>
-                      <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{employee.contract?.birth_date || '1995-01-01'}</td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px 0', color: '#64748b', fontWeight: 500 }}>직책 / 권한</td>
-                      <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>{employee.role}</td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px 0', color: '#64748b', fontWeight: 500 }}>계약 근로 기간</td>
-                      <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 600, color: '#0f172a' }}>
-                        {employee.contract?.start || '2026-05-01'} ~ {employee.contract?.end || '2029-12-31'}
-                      </td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px 0', color: '#64748b', fontWeight: 500 }}>근무 구분</td>
-                      <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
-                        {employee.contract?.employment_type || (employee.contract?.end === '9999-12-31' ? '정규 근로자' : '임시/단기 알바생')}
-                      </td>
-                    </tr>
-                    <tr style={{ borderBottom: 'none' }}>
-                      <td style={{ padding: '8px 0', color: '#64748b', fontWeight: 500 }}>퇴직금 대상 여부</td>
-                      <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
-                        {employee.contract?.severance_eligible || (parseFloat(employee.hours) >= 60 ? '✅ 지급 대상' : '❌ 미대상')}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              {/* 근무 근로 요일별 스케줄 카드 */}
-              <div style={{ padding: '20px', borderRadius: '16px', background: '#ffffff', border: '1px solid #e2e8f0' }}>
-                <h4 style={{ margin: '0 0 16px 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', borderLeft: '3px solid #f97316', paddingLeft: '8px' }}>
-                  📅 요일별 출퇴근 약정 스케줄
-                </h4>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #f1f5f9', color: '#64748b' }}>
-                      <th style={{ padding: '6px 4px', fontWeight: 600 }}>근무 요일</th>
-                      <th style={{ padding: '6px 4px', fontWeight: 600, textAlign: 'right' }}>근무 시간</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {["월", "화", "수", "목", "금", "토", "일"].map((day, idx) => {
-                      const sched = employee.schedule?.find((s) => s.day_of_week === idx);
-                      return (
-                        <tr key={day} style={{ borderBottom: '1px solid #f8fafc' }}>
-                          <td style={{ padding: '8px 4px', fontWeight: 700, color: '#334155' }}>{day}요일</td>
-                          <td style={{ padding: '8px 4px', textAlign: 'right', color: sched ? '#0f172a' : '#cbd5e1', fontWeight: sched ? 600 : 400 }}>
-                            {sched ? `⏰ ${sched.start_time} ~ ${sched.end_time}` : '휴무'}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* 액션 버튼 그룹 */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-              <button
-                onClick={() =>
-                  setPayrollModal({
-                    id: employee.id,
-                    name: employee.name,
-                    role: employee.role,
-                    wage: employee.wage,
-                    hours: employee.hours,
-                    cumulativeWage: employee.cumulativeWage,
-                    paidWage: employee.paidWage,
-                    unpaidWage: employee.unpaidWage,
-                  })
-                }
-                style={{ background: '#f8fafc', color: '#1e293b', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
-              >
-                📄 급여 명세서 확인
-              </button>
-              {(userRole === 'owner' || userRole === 'admin') && (
-                <>
-                  <button
-                    onClick={(ev) => handleForceAttendance(ev, employee.rawBundle, 'check-in')}
-                    style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '8px', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
-                  >
-                    🏃 강제 출근 등록
-                  </button>
-                  <button
-                    onClick={(ev) => handleForceAttendance(ev, employee.rawBundle, 'check-out')}
-                    style={{ background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', borderRadius: '8px', padding: '8px 16px', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}
-                  >
-                    🏠 강제 퇴근 등록
-                  </button>
-                </>
-              )}
-              {userRole === 'owner' && parseInt(employee.unpaidWage) > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            {/* 맨 위에 강제출근/퇴근 버튼 */}
+            {(userRole === 'owner' || userRole === 'admin') && (
+              <div style={{ display: 'flex', gap: '12px' }}>
                 <button
-                  onClick={() => handlePaySalary(employee.id, employee.name)}
-                  style={{ background: '#10b981', color: 'white', border: 'none', fontSize: '0.8rem', padding: '8px 16px', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
+                  onClick={(ev) => handleForceAttendance(ev, employee.rawBundle, 'check-in')}
+                  style={{ flex: 1, background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '12px', padding: '14px', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
                 >
-                  💸 급여 정상 지급
+                  🏃 강제 출근 등록
                 </button>
+                <button
+                  onClick={(ev) => handleForceAttendance(ev, employee.rawBundle, 'check-out')}
+                  style={{ flex: 1, background: '#fff7ed', color: '#ea580c', border: '1px solid #ffedd5', borderRadius: '12px', padding: '14px', fontSize: '0.95rem', fontWeight: 800, cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
+                >
+                  🏠 강제 퇴근 등록
+                </button>
+              </div>
+            )}
+
+            {/* Accordion 1: 급여명세서 확인 */}
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#ffffff' }}>
+              <button onClick={() => setExpandStats(!expandStats)} style={{ width: '100%', padding: '16px', background: expandStats ? '#f8fafc' : '#ffffff', border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 800, color: '#0f172a', fontSize: '0.95rem', cursor: 'pointer' }}>
+                <span>💰 급여명세서 확인 및 요약 통계</span>
+                <span style={{ color: '#94a3b8' }}>{expandStats ? '▲' : '▼'}</span>
+              </button>
+              {expandStats && (
+                <div style={{ padding: '16px', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
+                    <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px', fontWeight: 600 }}>계약 시급</div>
+                      <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0f172a' }}>{parseInt(employee.wage).toLocaleString()}원</div>
+                    </div>
+                    <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px', fontWeight: 600 }}>누적 근무 시간</div>
+                      <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0f172a' }}>{employee.hours}시간</div>
+                    </div>
+                    <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px', fontWeight: 600 }}>총 누적 임금</div>
+                      <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0f172a' }}>{parseInt(employee.cumulativeWage).toLocaleString()}원</div>
+                    </div>
+                    <div style={{ padding: '16px', background: parseInt(employee.unpaidWage) > 0 ? '#fff7ed' : '#f0fdf4', border: `1px solid ${parseInt(employee.unpaidWage) > 0 ? '#ffedd5' : '#bbf7d0'}`, borderRadius: '12px' }}>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px', fontWeight: 600 }}>미지급 잔액</div>
+                      <div style={{ fontWeight: 900, fontSize: '1.2rem', color: parseInt(employee.unpaidWage) > 0 ? '#ea580c' : '#16a34a' }}>{parseInt(employee.unpaidWage).toLocaleString()}원</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => setPayrollModal({
+                        id: employee.id, name: employee.name, role: employee.role, wage: employee.wage, hours: employee.hours,
+                        cumulativeWage: employee.cumulativeWage, paidWage: employee.paidWage, unpaidWage: employee.unpaidWage,
+                      })}
+                      style={{ background: '#f8fafc', color: '#1e293b', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px 16px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', flex: 1 }}
+                    >
+                      📄 급여 명세서 상세 확인
+                    </button>
+                    {userRole === 'owner' && parseInt(employee.unpaidWage) > 0 && (
+                      <button
+                        onClick={() => handlePaySalary(employee.id, employee.name)}
+                        style={{ background: '#10b981', color: 'white', border: 'none', fontSize: '0.85rem', padding: '10px 16px', borderRadius: '8px', fontWeight: 800, cursor: 'pointer', flex: 1 }}
+                      >
+                        💸 급여 정상 지급 처리
+                      </button>
+                    )}
+                  </div>
+                </div>
               )}
-              {userRole === 'owner' && (
+            </div>
+
+            {/* Accordion 2: 개인 신상 및 계약조건 */}
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#ffffff' }}>
+              <button onClick={() => setExpandPersonal(!expandPersonal)} style={{ width: '100%', padding: '16px', background: expandPersonal ? '#f8fafc' : '#ffffff', border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 800, color: '#0f172a', fontSize: '0.95rem', cursor: 'pointer' }}>
+                <span>📋 개인 신상 및 계약조건</span>
+                <span style={{ color: '#94a3b8' }}>{expandPersonal ? '▲' : '▼'}</span>
+              </button>
+              {expandPersonal && (
+                <div style={{ padding: '16px', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f8fafc' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600, flexShrink: 0, marginRight: '16px' }}>성명 (실명)</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a', wordBreak: 'break-all', textAlign: 'right' }}>{employee.name}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f8fafc' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600, flexShrink: 0, marginRight: '16px' }}>연락처 (ID)</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a', wordBreak: 'break-all', textAlign: 'right' }}>📞 {employee.id}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f8fafc' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600, flexShrink: 0, marginRight: '16px' }}>성별</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a', wordBreak: 'break-all', textAlign: 'right' }}>{employee.contract?.gender || '미지정'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f8fafc' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600, flexShrink: 0, marginRight: '16px' }}>생년월일</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a', wordBreak: 'break-all', textAlign: 'right' }}>{employee.contract?.birth_date || '1995-01-01'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f8fafc' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600, flexShrink: 0, marginRight: '16px' }}>직책 / 권한</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a', wordBreak: 'break-all', textAlign: 'right' }}>{employee.role}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f8fafc' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600, flexShrink: 0, marginRight: '16px' }}>계약 근로 기간</span>
+                    <span style={{ fontWeight: 600, color: '#0f172a', wordBreak: 'break-all', textAlign: 'right' }}>{employee.contract?.start || '2026-05-01'} ~ {employee.contract?.end || '2029-12-31'}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f8fafc' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600, flexShrink: 0, marginRight: '16px' }}>근무 구분</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a', wordBreak: 'break-all', textAlign: 'right' }}>{employee.contract?.employment_type || (employee.contract?.end === '9999-12-31' ? '정규 근로자' : '임시/단기 알바생')}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600, flexShrink: 0, marginRight: '16px' }}>퇴직금 대상</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a', wordBreak: 'break-all', textAlign: 'right' }}>{employee.contract?.severance_eligible || (parseFloat(employee.hours) >= 60 ? '✅ 지급 대상' : '❌ 미대상')}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Accordion 3: 요일별 출퇴근 약정 스케줄 */}
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#ffffff' }}>
+              <button onClick={() => setExpandSchedule(!expandSchedule)} style={{ width: '100%', padding: '16px', background: expandSchedule ? '#f8fafc' : '#ffffff', border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 800, color: '#0f172a', fontSize: '0.95rem', cursor: 'pointer' }}>
+                <span>📅 요일별 출퇴근 약정 스케줄</span>
+                <span style={{ color: '#94a3b8' }}>{expandSchedule ? '▲' : '▼'}</span>
+              </button>
+              {expandSchedule && (
+                <div style={{ padding: '16px', borderTop: '1px solid #f1f5f9' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #f1f5f9', color: '#64748b' }}>
+                        <th style={{ padding: '6px 4px', fontWeight: 600 }}>근무 요일</th>
+                        <th style={{ padding: '6px 4px', fontWeight: 600, textAlign: 'right' }}>근무 시간</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {["월", "화", "수", "목", "금", "토", "일"].map((day, idx) => {
+                        const sched = employee.schedule?.find((s) => s.day_of_week === idx);
+                        return (
+                          <tr key={day} style={{ borderBottom: '1px solid #f8fafc' }}>
+                            <td style={{ padding: '8px 4px', fontWeight: 700, color: '#334155' }}>{day}요일</td>
+                            <td style={{ padding: '8px 4px', textAlign: 'right', color: sched ? '#0f172a' : '#cbd5e1', fontWeight: sched ? 600 : 400 }}>
+                              {sched ? `⏰ ${sched.start_time} ~ ${sched.end_time}` : '휴무'}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Accordion 4: 일별 출퇴근 현황 로그 */}
+            <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: '#ffffff' }}>
+              <button onClick={() => setExpandLogs(!expandLogs)} style={{ width: '100%', padding: '16px', background: expandLogs ? '#f8fafc' : '#ffffff', border: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 800, color: '#0f172a', fontSize: '0.95rem', cursor: 'pointer' }}>
+                <span>🕒 일별 출퇴근 현황 로그</span>
+                <span style={{ color: '#94a3b8' }}>{expandLogs ? '▲' : '▼'}</span>
+              </button>
+              {expandLogs && (
+                <div style={{ padding: '16px', borderTop: '1px solid #f1f5f9' }}>
+                  <div style={{ maxHeight: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {employeeAttendance.length > 0 ? (
+                      employeeAttendance.map((a) => {
+                        const checkinRaw = a.items?.find((i: any) => i.name === '출근시간')?.value || '';
+                        const checkoutRaw = a.items?.find((i: any) => i.name === '퇴근시간')?.value || '';
+                        const workMinutes = parseInt(a.items?.find((i: any) => i.name === '근무분수')?.value || '0');
+                        const tardy = a.items?.find((i: any) => i.name === '지각여부')?.value === '지각';
+                        const paid = a.items?.find((i: any) => i.name === '정산상태')?.value === '지급';
+                        const isWorking = a.status === 'working';
+    
+                        const fmtTime = (raw: string) => {
+                          if (!raw) return '-';
+                          try {
+                            return new Date(raw).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+                          } catch {
+                            return raw.slice(11, 16) || '-';
+                          }
+                        };
+                        const fmtDate = (raw: string) => {
+                          if (!raw) return '';
+                          try {
+                            return new Date(raw).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' });
+                          } catch {
+                            return raw.slice(0, 10);
+                          }
+                        };
+                        const workHours = workMinutes > 0 ? `${Math.floor(workMinutes / 60)}시간 ${workMinutes % 60}분` : null;
+    
+                        return (
+                          <div
+                            key={a.id}
+                            style={{
+                              padding: '12px 16px',
+                              background: '#f8fafc',
+                              border: `1px solid ${isWorking ? '#bbf7d0' : '#e2e8f0'}`,
+                              borderRadius: '10px',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              gap: '10px',
+                            }}
+                          >
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>{fmtDate(checkinRaw)}</span>
+                                {isWorking && <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#15803d', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>근무중</span>}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', flexWrap: 'wrap' }}>
+                                <span style={{ color: '#334155' }}>
+                                  🏃 <strong style={{ color: '#16a34a' }}>{fmtTime(checkinRaw)}</strong>
+                                </span>
+                                <span style={{ color: '#cbd5e1' }}>→</span>
+                                <span style={{ color: '#334155' }}>
+                                  🏠 <strong style={{ color: isWorking ? '#94a3b8' : '#ea580c' }}>{isWorking ? '퇴근 전' : fmtTime(checkoutRaw)}</strong>
+                                </span>
+                                {workHours && <span style={{ color: '#475569', fontSize: '0.75rem', fontWeight: 600 }}>({workHours})</span>}
+                              </div>
+                              <div style={{ display: 'flex', gap: '5px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                {tardy && <span style={{ background: '#fee2e2', color: '#b91c1c', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>⚠️ 지각</span>}
+                                <span style={{ background: paid ? '#dcfce7' : '#fef3c7', color: paid ? '#16a34a' : '#d97706', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>
+                                  {paid ? '정산완료' : '미정산'}
+                                </span>
+                              </div>
+                            </div>
+                            {(userRole === 'owner' || userRole === 'admin') && (
+                              <button
+                                onClick={(ev) => handleDeleteLog(ev, a.id)}
+                                style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '4px 8px', borderRadius: '6px', fontSize: '0.68rem', cursor: 'pointer', flexShrink: 0, fontWeight: 700 }}
+                              >
+                                기록 삭제
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '30px', opacity: 0.5, fontSize: '0.8rem', color: '#64748b' }}>기록된 출퇴근 로그가 없습니다.</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 퇴사 처리 버튼 */}
+            {userRole === 'owner' && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
                 <button
                   onClick={() => handleResignEmployee(employee.rawBundle)}
-                  style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', fontSize: '0.8rem', padding: '8px 16px', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
+                  style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', fontSize: '0.85rem', padding: '10px 16px', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
                 >
                   🚫 사원 퇴사 처리
                 </button>
-              )}
-            </div>
-
-            {/* 3. 일별 출퇴근 기록 로그 (그림 1 구현) */}
-            <div style={{ paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
-              <h4 style={{ margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
-                🕒 일별 출퇴근 현황 로그
-              </h4>
-              <p style={{ margin: '0 0 14px 0', fontSize: '0.78rem', color: '#64748b' }}>
-                실시간 근무 기록 — 출퇴근 시각 및 총 근무시간
-              </p>
-              <div style={{ maxHeight: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {employeeAttendance.length > 0 ? (
-                  employeeAttendance.map((a) => {
-                    const checkinRaw = a.items?.find((i: any) => i.name === '출근시간')?.value || '';
-                    const checkoutRaw = a.items?.find((i: any) => i.name === '퇴근시간')?.value || '';
-                    const workMinutes = parseInt(a.items?.find((i: any) => i.name === '근무분수')?.value || '0');
-                    const tardy = a.items?.find((i: any) => i.name === '지각여부')?.value === '지각';
-                    const paid = a.items?.find((i: any) => i.name === '정산상태')?.value === '지급';
-                    const isWorking = a.status === 'working';
-
-                    const fmtTime = (raw: string) => {
-                      if (!raw) return '-';
-                      try {
-                        return new Date(raw).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-                      } catch {
-                        return raw.slice(11, 16) || '-';
-                      }
-                    };
-                    const fmtDate = (raw: string) => {
-                      if (!raw) return '';
-                      try {
-                        return new Date(raw).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' });
-                      } catch {
-                        return raw.slice(0, 10);
-                      }
-                    };
-                    const workHours = workMinutes > 0 ? `${Math.floor(workMinutes / 60)}시간 ${workMinutes % 60}분` : null;
-
-                    return (
-                      <div
-                        key={a.id}
-                        style={{
-                          padding: '12px 16px',
-                          background: '#f8fafc',
-                          border: `1px solid ${isWorking ? '#bbf7d0' : '#e2e8f0'}`,
-                          borderRadius: '10px',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          gap: '10px',
-                        }}
-                      >
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>{fmtDate(checkinRaw)}</span>
-                            {isWorking && <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#15803d', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>근무중</span>}
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', flexWrap: 'wrap' }}>
-                            <span style={{ color: '#334155' }}>
-                              🏃 <strong style={{ color: '#16a34a' }}>{fmtTime(checkinRaw)}</strong>
-                            </span>
-                            <span style={{ color: '#cbd5e1' }}>→</span>
-                            <span style={{ color: '#334155' }}>
-                              🏠 <strong style={{ color: isWorking ? '#94a3b8' : '#ea580c' }}>{isWorking ? '퇴근 전' : fmtTime(checkoutRaw)}</strong>
-                            </span>
-                            {workHours && <span style={{ color: '#475569', fontSize: '0.75rem', fontWeight: 600 }}>({workHours})</span>}
-                          </div>
-                          <div style={{ display: 'flex', gap: '5px', marginTop: '4px', flexWrap: 'wrap' }}>
-                            {tardy && <span style={{ background: '#fee2e2', color: '#b91c1c', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>⚠️ 지각</span>}
-                            <span style={{ background: paid ? '#dcfce7' : '#fef3c7', color: paid ? '#16a34a' : '#d97706', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>
-                              {paid ? '정산완료' : '미정산'}
-                            </span>
-                          </div>
-                        </div>
-                        {(userRole === 'owner' || userRole === 'admin') && (
-                          <button
-                            onClick={(ev) => handleDeleteLog(ev, a.id)}
-                            style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fca5a5', padding: '4px 8px', borderRadius: '6px', fontSize: '0.68rem', cursor: 'pointer', flexShrink: 0, fontWeight: 700 }}
-                          >
-                            기록 삭제
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div style={{ textAlign: 'center', padding: '30px', opacity: 0.5, fontSize: '0.8rem', color: '#64748b' }}>기록된 출퇴근 로그가 없습니다.</div>
-                )}
               </div>
-            </div>
+            )}
+            
           </div>
         )}
       </div>
