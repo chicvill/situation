@@ -44,6 +44,11 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
     const employees: Bundle[] = bundles.filter(b => b.type === 'Employee' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
     const attendance: Bundle[] = bundles.filter(b => b.type === 'Attendance' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
 
+    const employeeAttendance = selectedEmployee ? attendance.filter(a => {
+        const staffId = a.items?.find((i: any) => i.name === '아이디')?.value;
+        return staffId === selectedEmployee.id;
+    }) : [];
+
     // 승인 대기 계정 필터링 (계층적 승인 + 매장 격리)
     // admin → 점주 승인, owner → 점장·점원 승인, manager → 점원(자기 매장만) 승인
     const pendingAccounts: Bundle[] = bundles.filter(b => {
@@ -510,6 +515,79 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+                        </div>
+
+                        {/* 이 직원의 출퇴근 기록 추가 */}
+                        <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                            <h5 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: 800, color: 'var(--accent-orange)' }}>
+                                🕒 {selectedEmployee.name} 사원의 출퇴근 내역 (총 {employeeAttendance.length}건)
+                            </h5>
+                            <div style={{ maxHeight: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {employeeAttendance.length > 0 ? employeeAttendance.map(a => {
+                                    const checkinRaw = a.items?.find((i: any) => i.name === '출근시간')?.value || '';
+                                    const checkoutRaw = a.items?.find((i: any) => i.name === '퇴근시간')?.value || '';
+                                    const workMinutes = parseInt(a.items?.find((i: any) => i.name === '근무분수')?.value || '0');
+                                    const tardy = a.items?.find((i: any) => i.name === '지각여부')?.value === '지각';
+                                    const paid = a.items?.find((i: any) => i.name === '정산상태')?.value === '지급';
+                                    const isWorking = a.status === 'working';
+
+                                    const fmtTime = (raw: string) => {
+                                        if (!raw) return '-';
+                                        try { return new Date(raw).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }); }
+                                        catch { return raw.slice(11, 16) || '-'; }
+                                    };
+                                    const fmtDate = (raw: string) => {
+                                        if (!raw) return '';
+                                        try { return new Date(raw).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric', weekday: 'short' }); }
+                                        catch { return raw.slice(0, 10); }
+                                    };
+                                    const workHours = workMinutes > 0
+                                        ? `${Math.floor(workMinutes / 60)}시간 ${workMinutes % 60}분`
+                                        : null;
+
+                                    return (
+                                        <div key={a.id} style={{
+                                            padding: '10px 14px',
+                                            background: 'rgba(255,255,255,0.02)',
+                                            border: `1px solid ${isWorking ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                                            borderRadius: '10px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            gap: '10px',
+                                        }}>
+                                            <div style={{ minWidth: 0, flex: 1 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px', flexWrap: 'wrap' }}>
+                                                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>{fmtDate(checkinRaw)}</span>
+                                                    {isWorking && <span style={{ fontSize: '0.65rem', background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>근무중</span>}
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', flexWrap: 'wrap' }}>
+                                                    <span>🏃 <strong style={{ color: '#10b981' }}>{fmtTime(checkinRaw)}</strong></span>
+                                                    <span style={{ color: 'var(--text-muted)' }}>→</span>
+                                                    <span>🏠 <strong style={{ color: isWorking ? 'var(--text-muted)' : 'var(--accent-orange)' }}>{isWorking ? '퇴근 전' : fmtTime(checkoutRaw)}</strong></span>
+                                                    {workHours && <span style={{ color: '#a0aec0', fontSize: '0.72rem' }}>({workHours})</span>}
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '5px', marginTop: '3px', flexWrap: 'wrap' }}>
+                                                    {tardy && <span style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>⚠️ 지각</span>}
+                                                    <span style={{ background: paid ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)', color: paid ? '#10b981' : '#f59e0b', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '3px', fontWeight: 700 }}>
+                                                        {paid ? '정산완료' : '미정산'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            {(user.role === 'owner' || user.role === 'admin') && (
+                                                <button
+                                                    onClick={(ev) => handleDeleteLog(ev, a.id)}
+                                                    style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', padding: '4px 8px', borderRadius: '5px', fontSize: '0.68rem', cursor: 'pointer', flexShrink: 0 }}
+                                                >
+                                                    삭제
+                                                </button>
+                                            )}
+                                        </div>
+                                    );
+                                }) : (
+                                    <div style={{ textAlign: 'center', padding: '30px', opacity: 0.5, fontSize: '0.8rem' }}>기록된 출퇴근 로그가 없습니다.</div>
+                                )}
                             </div>
                         </div>
                     </div>
