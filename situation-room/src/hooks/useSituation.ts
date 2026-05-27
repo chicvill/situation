@@ -59,7 +59,7 @@ export const useSituation = (storeId: string = "", storeName: string = "") => {
             'PAYMENT_CONFIRMED', 'PARTIAL_SETTLEMENT',
         ];
         // 화면 데이터 갱신이 필요한 이벤트 (딩동 여부와 무관)
-        const REFRESH_EVENTS = [...DING_EVENTS, 'WAITING_REGISTERED', 'WAITING_UPDATED'];
+        const REFRESH_EVENTS = [...DING_EVENTS, 'WAITING_REGISTERED', 'WAITING_UPDATED', 'POOL_UPDATED', 'STAFF_ATTENDANCE_UPDATE'];
 
         const messageHandler = (data: any) => {
             console.log(`[CHECKPOINT - 수신] MQTT 메시지 도착 (type: ${data.type}):`, data);
