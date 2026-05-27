@@ -310,6 +310,12 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
             return;
         }
 
+        // 비밀번호 강도 검증: 영문 + 숫자 + 특수문자 포함, 8자 이상
+        if (ownerPw.length < 8 || !/[a-zA-Z]/.test(ownerPw) || !/[0-9]/.test(ownerPw) || !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]/.test(ownerPw)) {
+            alert("⚠️ 비밀번호 조건 미충족\n\n영문 + 숫자 + 특수문자(!@#$ 등)를 모두 포함한 8자 이상으로 설정해 주세요.\n예: Hello@1234");
+            return;
+        }
+
         const userMsg: Message = {
             id: `user-auth-${Date.now()}`,
             sender: 'user',
@@ -1080,12 +1086,12 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                                                             </div>
                                                         </div>
                                                         <div className="form-row">
-                                                            <label>보안 비밀번호</label>
+                                                            <label>보안 비밀번호 <span style={{ fontWeight: 400, fontSize: "0.75rem", opacity: 0.7 }}>영문+숫자+특수문자 8자 이상</span></label>
                                                             <input 
                                                                 type="password" 
                                                                 value={ownerPw} 
                                                                 onChange={(e) => setOwnerPw(e.target.value)} 
-                                                                placeholder="비밀번호 설정" 
+                                                                placeholder="예: Hello@1234" 
                                                             />
                                                         </div>
                                                         <button className="form-action-btn" onClick={handleAuthSubmit} disabled={!isIdChecked || !ownerPw}>

@@ -213,6 +213,24 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
             return;
         }
 
+        // 비밀번호 강도 검증: 영문 + 숫자 + 특수문자 포함, 8자 이상
+        if (pw.length < 8) {
+            setError('비밀번호는 8자 이상이어야 합니다.');
+            return;
+        }
+        if (!/[a-zA-Z]/.test(pw)) {
+            setError('비밀번호에 영문자를 포함해야 합니다.');
+            return;
+        }
+        if (!/[0-9]/.test(pw)) {
+            setError('비밀번호에 숫자를 포함해야 합니다.');
+            return;
+        }
+        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]/.test(pw)) {
+            setError('비밀번호에 특수문자(!@#$% 등)를 포함해야 합니다.');
+            return;
+        }
+
         if (role === 'owner' && !isVerified) {
             setError('점주 가입을 위해 먼저 사업자 진위 확인을 완료해 주세요.');
             return;
@@ -333,14 +351,38 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                         />
                     </div>
                     <div className="input-group">
-                        <label>비밀번호</label>
-                        <input 
-                            type="password" 
-                            value={pw} 
-                            onChange={(e) => setPw(e.target.value)} 
-                            placeholder="••••••••"
-                            required 
+                        <label>비밀번호{isSignup && <span style={{ fontWeight: 400, fontSize: '0.78rem', color: 'var(--text-muted)', marginLeft: '6px' }}>영문+숫자+특수문자 8자 이상</span>}</label>
+                        <input
+                            type="password"
+                            value={pw}
+                            onChange={(e) => setPw(e.target.value)}
+                            placeholder={isSignup ? '예: Hello@1234' : '••••••••'}
+                            required
                         />
+                        {isSignup && pw.length > 0 && (() => {
+                            const checks = [
+                                { label: '8자 이상', ok: pw.length >= 8 },
+                                { label: '영문 포함', ok: /[a-zA-Z]/.test(pw) },
+                                { label: '숫자 포함', ok: /[0-9]/.test(pw) },
+                                { label: '특수문자 포함', ok: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]/.test(pw) },
+                            ];
+                            const allOk = checks.every(c => c.ok);
+                            return (
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                                    {checks.map(({ label, ok }) => (
+                                        <span key={label} style={{
+                                            fontSize: '0.72rem', fontWeight: 600, padding: '2px 7px',
+                                            borderRadius: '4px',
+                                            background: ok ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.1)',
+                                            color: ok ? '#10b981' : '#ef4444',
+                                        }}>
+                                            {ok ? '✓' : '✗'} {label}
+                                        </span>
+                                    ))}
+                                    {allOk && <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700 }}>✅ 안전한 비밀번호</span>}
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     {isSignup && (
