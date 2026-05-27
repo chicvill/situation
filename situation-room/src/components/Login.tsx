@@ -206,6 +206,13 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
 
+        // 전화번호 형식 검증 (10~11자리 숫자, 010/011/016/017/018/019 시작)
+        const phoneClean = id.replace(/[^0-9]/g, '');
+        if (!/^01[0-9]{8,9}$/.test(phoneClean)) {
+            setError('아이디는 휴대폰 번호 형식이어야 합니다. (예: 01012345678)');
+            return;
+        }
+
         if (role === 'owner' && !isVerified) {
             setError('점주 가입을 위해 먼저 사업자 진위 확인을 완료해 주세요.');
             return;
@@ -311,13 +318,18 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                     )}
 
                     <div className="input-group">
-                        <label>아이디</label>
-                        <input 
-                            type="text" 
-                            value={id} 
-                            onChange={(e) => setId(e.target.value)} 
-                            placeholder="ID를 입력하세요"
-                            required 
+                        <label>아이디 (휴대폰 번호)</label>
+                        <input
+                            type="tel"
+                            value={id}
+                            onChange={(e) => {
+                                // 가입 시에는 숫자만 허용, 로그인 시에는 그대로
+                                const val = isSignup ? e.target.value.replace(/[^0-9]/g, '') : e.target.value;
+                                setId(val);
+                            }}
+                            placeholder={isSignup ? '예: 01012345678' : '휴대폰 번호 입력'}
+                            maxLength={11}
+                            required
                         />
                     </div>
                     <div className="input-group">

@@ -1061,13 +1061,13 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                                                     <>
                                                         <h4>🔐 로그인 보안 설정</h4>
                                                         <div className="form-row">
-                                                            <label>로그인용 고유 ID</label>
+                                                            <label>로그인용 아이디 (휴대폰 번호)</label>
                                                             <div style={{ display: 'flex', gap: '8px' }}>
                                                                 <input 
-                                                                    type="text" 
+                                                                    type="tel"
                                                                     value={ownerId} 
-                                                                    onChange={(e) => { setOwnerId(e.target.value); setIsIdChecked(false); }} 
-                                                                    placeholder="아이디 입력" 
+                                                                    onChange={(e) => { setOwnerId(e.target.value.replace(/[^0-9]/g, '')); setIsIdChecked(false); }} 
+                                                                    placeholder="예: 01012345678" maxLength={11} 
                                                                 />
                                                                 <button 
                                                                     className="form-action-btn" 
