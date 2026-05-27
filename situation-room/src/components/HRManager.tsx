@@ -8,6 +8,9 @@ import { PayrollModal } from './hr/PayrollModal';
 import { EmployeeCard } from './hr/EmployeeCard';
 import { EmployeeModal } from './hr/EmployeeModal';
 
+/** 2025년 법정 최저임금 (원/시간) */
+const MINIMUM_WAGE_2025 = 10030;
+
 export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any, onRefresh?: () => void }> = ({ bundles, user, storeDetails, onRefresh }) => {
     const { storeId, storeName } = useStoreFilter();
     const params = new URLSearchParams(window.location.search);
@@ -173,6 +176,13 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
 
         setIsProcessing(true);
         try {
+            const enteredWage = parseInt(regWage.replace(/[^0-9]/g, '') || '10500');
+            if (enteredWage < MINIMUM_WAGE_2025) {
+                if (!window.confirm(
+                    `⚠️ 입력한 시급(${enteredWage.toLocaleString()}원)이 2025년 법정 최저임금(${MINIMUM_WAGE_2025.toLocaleString()}원)보다 낮습니다.\n최저임금 위반은 법적 제재 대상입니다.\n\n그래도 계속하시겠습니까?`
+                )) return;
+            }
+
             const schedulesList = Object.entries(regSchedules)
                 .filter(([_key, val]) => val.active)
                 .map(([day, val]) => ({
@@ -189,7 +199,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                     name: regName.trim(),
                     phone: cleanPhone,
                     role: regRole,
-                    hourly_wage: parseInt(regWage.replace(/[^0-9]/g, '') || '10500'),
+                    hourly_wage: enteredWage,
                     temporary_password: regTempPw.trim(),
                     schedules: schedulesList
                 })
@@ -327,7 +337,23 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                             </div>
                             <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>계약 시급 (원)</label>
-                                <input type="text" value={regWage} onChange={(ev) => setRegWage(ev.target.value.replace(/[^0-9]/g, ''))} placeholder="시급 입력 (예: 10500)" style={{ padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white', fontWeight: 'bold' }} required />
+                                <input
+                                    type="text"
+                                    value={regWage}
+                                    onChange={(ev) => setRegWage(ev.target.value.replace(/[^0-9]/g, ''))}
+                                    placeholder={`최저 ${MINIMUM_WAGE_2025.toLocaleString()}원 이상`}
+                                    style={{
+                                        padding: '12px', borderRadius: '10px', fontWeight: 'bold',
+                                        background: 'rgba(0,0,0,0.3)', color: 'white',
+                                        border: `1px solid ${parseInt(regWage) < MINIMUM_WAGE_2025 ? '#f87171' : 'var(--border)'}`,
+                                    }}
+                                    required
+                                />
+                                {parseInt(regWage) > 0 && parseInt(regWage) < MINIMUM_WAGE_2025 && (
+                                    <span style={{ fontSize: '0.75rem', color: '#f87171', fontWeight: 600 }}>
+                                        ⚠️ 2025년 최저임금({MINIMUM_WAGE_2025.toLocaleString()}원) 미만
+                                    </span>
+                                )}
                             </div>
                         </div>
 

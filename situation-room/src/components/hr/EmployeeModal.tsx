@@ -61,7 +61,18 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
     setEditContractStart(employee.contract?.start || '2026-05-01');
     setEditContractEnd(employee.contract?.end || '2029-12-31');
     setEditEmploymentType(employee.contract?.employment_type || (employee.contract?.end === '9999-12-31' ? '정규직' : '알바'));
-    setEditSeveranceEligible(employee.contract?.severance_eligible || (parseFloat(employee.hours) >= 60 ? '대상' : '미대상'));
+    // 퇴직금 대상 자동 판단: 계속근로 1년 이상 AND 주 소정근로 15시간 이상
+    const weeklyScheduledHrs = employee.schedule?.reduce((sum, s) => {
+      const [sh, sm] = s.start_time.split(':').map(Number);
+      const [eh, em] = s.end_time.split(':').map(Number);
+      return sum + Math.max(0, (eh * 60 + em - sh * 60 - sm) / 60);
+    }, 0) || 0;
+    const contractStartDate = employee.contract?.start ? new Date(employee.contract.start) : null;
+    const hasOneYearPlus = contractStartDate
+      ? (Date.now() - contractStartDate.getTime()) >= 365 * 24 * 60 * 60 * 1000
+      : false;
+    const autoSeverance = (hasOneYearPlus && weeklyScheduledHrs >= 15) ? '대상' : '미대상';
+    setEditSeveranceEligible(employee.contract?.severance_eligible || autoSeverance);
 
     // Initialize schedules
     const initialSchedules: { [key: number]: { active: boolean; start: string; end: string } } = {
@@ -260,7 +271,21 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>계약 시급 (원)</label>
-                  <input type="text" value={editWage} onChange={(ev) => setEditWage(ev.target.value.replace(/[^0-9]/g, ''))} style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', fontWeight: 'bold' }} required />
+                  <input
+                    type="text"
+                    value={editWage}
+                    onChange={(ev) => setEditWage(ev.target.value.replace(/[^0-9]/g, ''))}
+                    style={{
+                      padding: '10px 12px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: 'bold',
+                      border: `1px solid ${parseInt(editWage) < 10030 ? '#f87171' : '#cbd5e1'}`,
+                    }}
+                    required
+                  />
+                  {parseInt(editWage) < 10030 && (
+                    <span style={{ fontSize: '0.72rem', color: '#dc2626', fontWeight: 600 }}>
+                      ⚠️ 2025년 최저임금(10,030원) 미만입니다
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>근무 구분</label>
@@ -396,7 +421,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                       <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0f172a' }}>{employee.hours}시간</div>
                     </div>
                     <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px', fontWeight: 600 }}>총 누적 임금</div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px', fontWeight: 600 }}>총 누적 임금 (기본급)</div>
                       <div style={{ fontWeight: 800, fontSize: '1.2rem', color: '#0f172a' }}>{parseInt(employee.cumulativeWage).toLocaleString()}원</div>
                     </div>
                     <div style={{ padding: '16px', background: parseInt(employee.unpaidWage) > 0 ? '#fff7ed' : '#f0fdf4', border: `1px solid ${parseInt(employee.unpaidWage) > 0 ? '#ffedd5' : '#bbf7d0'}`, borderRadius: '12px' }}>
@@ -404,11 +429,35 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                       <div style={{ fontWeight: 900, fontSize: '1.2rem', color: parseInt(employee.unpaidWage) > 0 ? '#ea580c' : '#16a34a' }}>{parseInt(employee.unpaidWage).toLocaleString()}원</div>
                     </div>
                   </div>
+                  {/* 주휴수당 안내 배너 */}
+                  {(() => {
+                    const wkHrs = employee.schedule?.reduce((sum, s) => {
+                      const [sh, sm] = s.start_time.split(':').map(Number);
+                      const [eh, em] = s.end_time.split(':').map(Number);
+                      return sum + Math.max(0, (eh * 60 + em - sh * 60 - sm) / 60);
+                    }, 0) || 0;
+                    if (wkHrs < 15) return null;
+                    const wkHolPay = Math.floor((wkHrs / 40) * 8 * parseInt(employee.wage));
+                    return (
+                      <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '10px', padding: '12px 16px', fontSize: '0.8rem', lineHeight: '1.6', color: '#92400e' }}>
+                        <strong>⚠️ 주휴수당 미포함 안내</strong><br />
+                        주 {wkHrs.toFixed(1)}시간 근무 → 주휴수당 발생 조건 충족 (주 15시간 이상)<br />
+                        주당 지급액: <strong>{wkHolPay.toLocaleString()}원</strong>
+                        <span style={{ fontSize: '0.72rem', display: 'block', marginTop: '4px', color: '#a16207' }}>
+                          주휴수당 = 주간 소정근로시간({wkHrs.toFixed(1)}h) ÷ 40 × 8 × 시급({parseInt(employee.wage).toLocaleString()}원)<br />
+                          ※ 위 기본급에 미포함 — 급여 명세서에서 확인 가능
+                        </span>
+                      </div>
+                    );
+                  })()}
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <button
                       onClick={() => setPayrollModal({
                         id: employee.id, name: employee.name, role: employee.role, wage: employee.wage, hours: employee.hours,
                         cumulativeWage: employee.cumulativeWage, paidWage: employee.paidWage, unpaidWage: employee.unpaidWage,
+                        employmentType: employee.contract?.employment_type,
+                        schedule: employee.schedule,
+                        contractStart: employee.contract?.start,
                       })}
                       style={{ background: '#f8fafc', color: '#1e293b', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '10px 16px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', flex: 1 }}
                     >
