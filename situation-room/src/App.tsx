@@ -566,7 +566,7 @@ function App() {
       )}
 
       {/* ── Side Drawer (includes overlay) ── */}
-      {!isCustomerMode && user && (
+      {!isCustomerMode && user && user.role !== 'staff' && (
         <SideDrawer
           isOpen={isMenuOpen}
           storeName={storeName}

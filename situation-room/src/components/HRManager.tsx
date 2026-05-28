@@ -283,6 +283,8 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                 isScanningQr={isScanningQr}
                 onPhoneChange={setKioskPhone}
                 onSubmit={handleKioskSubmit}
+                bundles={bundles}
+                onRefresh={onRefresh}
             />
         );
     }

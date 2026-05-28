@@ -28,7 +28,7 @@ export const TopBar: React.FC<TopBarProps> = ({
     }}>
       {/* Left: hamburger + store name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
-        {!isCustomerMode && user && (
+        {!isCustomerMode && user && user.role !== 'staff' && (
           <button
             onClick={onMenuOpen}
             style={{

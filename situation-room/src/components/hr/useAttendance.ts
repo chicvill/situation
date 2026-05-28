@@ -71,8 +71,8 @@ export const useAttendance = ({
     }
   };
 
-  const handleKioskSubmit = async (actionType: 'check-in' | 'check-out') => {
-    const cleanPhone = kioskPhone.replace(/[^0-9]/g, '');
+  const handleKioskSubmit = async (actionType: 'check-in' | 'check-out', customPhone?: string) => {
+    const cleanPhone = (customPhone || kioskPhone).replace(/[^0-9]/g, '');
     if (!cleanPhone) return alert('전화번호를 정확히 입력해 주세요.');
 
     const emp = employees.find(e => {
@@ -109,6 +109,7 @@ export const useAttendance = ({
           alert(`🏠 퇴근 완료!\n\n${empName}님, 정상 퇴근 처리되었습니다.\n기록 시각: ${new Date(result.check_out_time).toLocaleTimeString()}`);
         }
         setKioskPhone('');
+        if (onRefresh) onRefresh();
       }
     } catch (err: any) {
       alert(`❌ 서버 연동 에러: ${err.message}`);
