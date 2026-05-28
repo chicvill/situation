@@ -653,35 +653,33 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                 </div>
                             )}
 
-
-
                             {/* ── 합계 + 세션 액션 바 ── */}
                             {selectedSession && (
-                                <div style={{ background: 'var(--surface)', borderRadius: '10px', border: '1px solid var(--border)', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ background: 'var(--surface)', borderRadius: '10px', border: '1px solid var(--border)', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: '6px', justifyContent: 'space-between' }}>
                                     {/* 결제 요약 */}
-                                    <div style={{ flex: 1, display: 'flex', gap: '16px' }}>
-                                        <div>
-                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: '600' }}>결제 완료</div>
-                                            <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#10b981' }}>{paidTotal.toLocaleString()}원</div>
+                                    <div style={{ flex: 1, display: 'flex', gap: '8px', minWidth: 0 }}>
+                                        <div style={{ whiteSpace: 'nowrap' }}>
+                                            <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>결제완료</div>
+                                            <div style={{ fontSize: '0.88rem', fontWeight: '900', color: '#10b981', whiteSpace: 'nowrap' }}>{paidTotal.toLocaleString()}원</div>
                                         </div>
-                                        <div>
-                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: '600' }}>미결제</div>
-                                            <div style={{ fontSize: '0.95rem', fontWeight: '800', color: unpaidTotal > 0 ? '#ef4444' : '#10b981' }}>
+                                        <div style={{ whiteSpace: 'nowrap' }}>
+                                            <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>미결제</div>
+                                            <div style={{ fontSize: '0.88rem', fontWeight: '900', color: unpaidTotal > 0 ? '#ef4444' : '#10b981', whiteSpace: 'nowrap' }}>
                                                 {unpaidTotal > 0 ? `${unpaidTotal.toLocaleString()}원` : activeOrders.length === 0 ? '없음' : '완료'}
                                             </div>
                                         </div>
-                                        <div>
-                                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: '600' }}>합계</div>
-                                            <div style={{ fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-main)' }}>{sessionTotal.toLocaleString()}원</div>
+                                        <div style={{ whiteSpace: 'nowrap' }}>
+                                            <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>합계</div>
+                                            <div style={{ fontSize: '0.88rem', fontWeight: '900', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>{sessionTotal.toLocaleString()}원</div>
                                         </div>
                                     </div>
 
                                     {/* 액션 버튼 */}
                                     {isPending ? (
-                                        <button onClick={() => handleOpenSession(selectedSession.table_id)} style={{ background: '#f97316', border: 'none', color: 'white', padding: '8px 16px', borderRadius: '8px', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>개시 승인</button>
+                                        <button onClick={() => handleOpenSession(selectedSession.table_id)} style={{ background: '#f97316', border: 'none', color: 'white', padding: '6px 10px', borderRadius: '6px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>개시 승인</button>
                                     ) : (
-                                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                                            <button onClick={() => handleResetSession(selectedSession.session_id)} style={{ background: 'transparent', border: '1px solid #fca5a5', color: '#ef4444', padding: '7px 12px', borderRadius: '7px', fontWeight: '500', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>초기화</button>
+                                        <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                                            <button onClick={() => handleResetSession(selectedSession.session_id)} style={{ background: 'transparent', border: '1px solid #fca5a5', color: '#ef4444', padding: '6px 8px', borderRadius: '6px', fontWeight: '600', fontSize: '0.75rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>초기화</button>
                                             {unpaidTotal === 0 ? (
                                                 <button 
                                                     disabled={hasCookingOrder}
@@ -699,10 +697,10 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                         background: hasCookingOrder ? '#cbd5e1' : 'var(--accent)', 
                                                         border: 'none', 
                                                         color: hasCookingOrder ? '#64748b' : 'white', 
-                                                        padding: '7px 16px', 
-                                                        borderRadius: '7px', 
+                                                        padding: '6px 10px', 
+                                                        borderRadius: '6px', 
                                                         fontWeight: '700', 
-                                                        fontSize: '0.85rem', 
+                                                        fontSize: '0.78rem', 
                                                         cursor: hasCookingOrder ? 'not-allowed' : 'pointer', 
                                                         whiteSpace: 'nowrap',
                                                         opacity: hasCookingOrder ? 0.65 : 1
