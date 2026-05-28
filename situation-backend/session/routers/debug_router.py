@@ -155,3 +155,19 @@ async def reset_test_tables():
             manager.remove_seat_request(s["table_id"])
             cleaned.append(s["table_id"])
     return {"cleaned": cleaned}
+
+
+from fastapi.responses import HTMLResponse
+import os
+
+@router.get("/api/doc/checklist", response_class=HTMLResponse)
+async def get_checklist_html():
+    """MQnet 최종 체크리스트 HTML 반환"""
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))) # situation/
+    checklist_path = os.path.join(base_dir, "doc", "situation_최종_체크리스트.html")
+    if os.path.exists(checklist_path):
+        with open(checklist_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return HTMLResponse(content=content)
+    return HTMLResponse(content=f"<h1>Checklist file not found</h1><p>Tried path: {checklist_path}</p>", status_code=404)
+

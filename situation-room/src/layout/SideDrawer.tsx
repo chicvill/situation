@@ -1,4 +1,5 @@
 import React from 'react';
+import { API_BASE } from '../config';
 
 interface SideDrawerProps {
   isOpen: boolean;
@@ -101,7 +102,38 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
               🔄 매장 선택 홈 (관리자)
             </button>
           )}
+          <button 
+            onClick={() => window.open(`${API_BASE}/api/doc/checklist`, '_blank')}
+            style={{
+              width: '100%',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              border: '1.5px solid rgba(59,130,246,0.3)',
+              background: 'rgba(59,130,246,0.08)',
+              color: '#60a5fa',
+              fontWeight: '700',
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: '10px',
+              transition: 'all 0.2s',
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = '#3b82f6';
+              e.currentTarget.style.color = 'white';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(59,130,246,0.08)';
+              e.currentTarget.style.color = '#60a5fa';
+            }}
+          >
+            📋 최종 점검 리포트
+          </button>
           <button onClick={onLogout} style={{ color: '#f87171' }}>🔓 로그아웃</button>
+
         </nav>
       </div>
     </>
