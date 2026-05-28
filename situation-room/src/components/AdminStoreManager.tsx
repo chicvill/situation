@@ -235,34 +235,34 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
   };
 
   return (
-    <div className="admin-stores-container animate-fade-in" style={{ padding: '40px 20px', background: 'var(--bg-main)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: '"Pretendard", -apple-system, sans-serif' }}>
+    <div className="admin-stores-container animate-fade-in" style={{ padding: '16px 12px', background: 'var(--bg-main)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: '"Pretendard", -apple-system, sans-serif' }}>
       <div style={{ width: '100%', maxWidth: '1200px' }}>
         
         {/* Top Glow Accent Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '35px', flexWrap: 'wrap', gap: '20px', background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', padding: '30px 40px', borderRadius: '24px', boxShadow: '0 15px 30px rgba(15, 23, 42, 0.15)', border: '1px solid rgba(255,255,255,0.05)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '12px', background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', padding: '12px 18px', borderRadius: '14px', boxShadow: '0 8px 16px rgba(15, 23, 42, 0.1)', border: '1px solid rgba(255,255,255,0.05)' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))' }}>⚡</span>
-              <h1 style={{ fontSize: '2.2rem', fontWeight: 900, color: '#f8fafc', margin: 0, letterSpacing: '-1px', textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                프랜차이즈 가맹점 본사 관리 시스템
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '1.8rem', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>⚡</span>
+              <h1 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#f8fafc', margin: 0, letterSpacing: '-0.5px' }}>
+                가맹점 본사 통합 관리
               </h1>
             </div>
-            <p style={{ color: '#94a3b8', fontSize: '0.98rem', margin: '8px 0 0 50px', fontWeight: 500 }}>
-              가맹점 정산 ID 및 월 납부금 상태를 통제하고 매장 개별 상황판으로 즉시 원격 진입합니다.
+            <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: '4px 0 0 36px', fontWeight: 500 }}>
+              정산/임대료 관리 및 매장 상황판 원격 제어
             </p>
           </div>
           
           <button 
             onClick={onLogout}
             style={{
-              padding: '12px 24px',
-              borderRadius: '14px',
+              padding: '10px 20px',
+              borderRadius: '10px',
               background: 'rgba(239, 68, 68, 0.15)',
               border: '1.5px solid rgba(239, 68, 68, 0.25)',
               color: '#fca5a5',
               fontWeight: 800,
               cursor: 'pointer',
-              fontSize: '0.95rem',
+              fontSize: '0.9rem',
               transition: 'all 0.2s',
               boxShadow: '0 4px 12px rgba(239, 68, 68, 0.1)'
             }}
@@ -275,54 +275,54 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
               e.currentTarget.style.color = '#fca5a5';
             }}
           >
-            🔓 시스템 로그아웃
+            🔓 로그아웃
           </button>
         </div>
 
         {/* Stats Summary Widget Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '35px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
           
           {/* Card 1: Total */}
-          <div style={{ background: '#ffffff', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+          <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '14px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', width: '44px', height: '44px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>
               🏢
             </div>
             <div>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', display: 'block' }}>전체 관리 가맹점</span>
-              <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0f172a' }}>{stats.total}개소</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#475569', display: 'block' }}>전체 가맹점</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f172a' }}>{stats.total}개소</span>
             </div>
           </div>
 
           {/* Card 2: Paid */}
-          <div style={{ background: '#ffffff', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+          <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '14px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', width: '44px', height: '44px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>
               🟢
             </div>
             <div>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', display: 'block' }}>정상 납부 매장</span>
-              <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#10b981' }}>{stats.paid}개소</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#475569', display: 'block' }}>정상 납부</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#10b981' }}>{stats.paid}개소</span>
             </div>
           </div>
 
           {/* Card 3: Unpaid & Overdue */}
-          <div style={{ background: '#ffffff', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+          <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '14px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', width: '44px', height: '44px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>
               🚨
             </div>
             <div>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', display: 'block' }}>미납 / 연체 관리</span>
-              <span style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ef4444' }}>{stats.unpaid + stats.overdue}개소</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#475569', display: 'block' }}>미납 / 연체</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#ef4444' }}>{stats.unpaid + stats.overdue}개소</span>
             </div>
           </div>
 
           {/* Card 4: Expected Revenue */}
-          <div style={{ background: '#ffffff', padding: '24px', borderRadius: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem' }}>
+          <div style={{ background: '#ffffff', padding: '12px 16px', borderRadius: '14px', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', width: '44px', height: '44px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>
               🪙
             </div>
             <div>
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#64748b', display: 'block' }}>당월 회수 가맹금</span>
-              <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#8b5cf6' }}>₩{stats.totalRevenue.toLocaleString()}</span>
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#475569', display: 'block' }}>당월 회수금</span>
+              <span style={{ fontSize: '1.35rem', fontWeight: 900, color: '#8b5cf6' }}>₩{stats.totalRevenue.toLocaleString()}</span>
             </div>
           </div>
 
@@ -333,24 +333,24 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
           <div className="glass-panel" style={{
             background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(249, 115, 22, 0.03) 100%)',
             border: '1.5px solid rgba(249, 115, 22, 0.25)',
-            borderRadius: '24px',
-            padding: '28px 32px',
-            marginBottom: '35px',
-            boxShadow: '0 12px 30px rgba(249, 115, 22, 0.05)',
+            borderRadius: '16px',
+            padding: '16px 20px',
+            marginBottom: '16px',
+            boxShadow: '0 8px 24px rgba(249, 115, 22, 0.04)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <span style={{ fontSize: '1.8rem' }}>🏢</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+              <span style={{ fontSize: '1.5rem' }}>🏢</span>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-orange)' }}>
-                  신규 점주 가입 신청 승인 대기 ({pendingOwners.length}건)
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--accent-orange)' }}>
+                  신규 점주 가입 대기 ({pendingOwners.length}건)
                 </h3>
-                <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: '#64748b', fontWeight: 500 }}>
-                  승인 시 계정이 활성화되며 즉시 신규 매장(가맹점) 등록 절차로 자동 연결됩니다.
+                <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>
+                  승인 시 계정이 활성화되며 가맹점 등록 절차로 자동 연결됩니다.
                 </p>
               </div>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
               {pendingOwners.map(b => {
                 const name = b.items?.find((i: any) => i.name === '이름')?.value || '-';
                 const id = b.items?.find((i: any) => i.name === '아이디')?.value || '-';
@@ -361,34 +361,34 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
                 return (
                   <div key={b.id} style={{ 
                     background: '#ffffff', 
-                    padding: '20px', 
-                    borderRadius: '18px', 
-                    boxShadow: '0 4px 15px rgba(0,0,0,0.02)', 
+                    padding: '14px', 
+                    borderRadius: '12px', 
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.01)', 
                     border: '1px solid rgba(249, 115, 22, 0.12)',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
-                    gap: '15px'
+                    gap: '12px'
                   }}>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <span style={{ background: 'rgba(249, 115, 22, 0.1)', color: 'var(--accent-orange)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 800 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ background: 'rgba(249, 115, 22, 0.1)', color: 'var(--accent-orange)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 800 }}>
                           신청 매장: {storeName}
                         </span>
                         <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600 }}>{b.timestamp || '방금 전'}</span>
                       </div>
                       
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <div style={{ fontSize: '0.92rem', color: '#334155', fontWeight: 500 }}>
-                          <span style={{ color: '#94a3b8', width: '90px', display: 'inline-block' }}>👤 대표자명</span>
-                          <strong style={{ color: '#0f172a', fontSize: '1rem' }}>{name}</strong> <span style={{ color: '#64748b', fontSize: '0.85rem' }}>({id})</span>
-                        </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <div style={{ fontSize: '0.9rem', color: '#334155', fontWeight: 500 }}>
-                          <span style={{ color: '#94a3b8', width: '90px', display: 'inline-block' }}>🔢 사업자번호</span>
-                          <code style={{ color: '#0f172a', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '0.82rem', fontWeight: 'bold' }}>{bizNo}</code>
+                          <span style={{ color: '#94a3b8', width: '80px', display: 'inline-block' }}>👤 대표자</span>
+                          <strong style={{ color: '#0f172a', fontSize: '0.95rem' }}>{name}</strong> <span style={{ color: '#64748b', fontSize: '0.8rem' }}>({id})</span>
                         </div>
-                        <div style={{ fontSize: '0.9rem', color: '#334155', fontWeight: 500 }}>
-                          <span style={{ color: '#94a3b8', width: '90px', display: 'inline-block' }}>📅 개업일자</span>
+                        <div style={{ fontSize: '0.88rem', color: '#334155', fontWeight: 500 }}>
+                          <span style={{ color: '#94a3b8', width: '80px', display: 'inline-block' }}>🔢 사업자번호</span>
+                          <code style={{ color: '#0f172a', background: '#f1f5f9', padding: '2px 5px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>{bizNo}</code>
+                        </div>
+                        <div style={{ fontSize: '0.88rem', color: '#334155', fontWeight: 500 }}>
+                          <span style={{ color: '#94a3b8', width: '80px', display: 'inline-block' }}>📅 개업일자</span>
                           <span style={{ color: '#334155' }}>{openDate}</span>
                         </div>
                       </div>
@@ -398,31 +398,29 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
                       onClick={() => handleApproveAndRegister(b)}
                       style={{ 
                         width: '100%',
-                        padding: '12px',
+                        padding: '10px',
                         background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
                         color: '#ffffff',
                         border: 'none',
-                        borderRadius: '12px',
-                        fontSize: '0.9rem',
+                        borderRadius: '8px',
+                        fontSize: '0.88rem',
                         fontWeight: 800,
                         cursor: 'pointer',
                         transition: 'all 0.2s',
-                        boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)',
+                        boxShadow: '0 4px 12px rgba(249, 115, 22, 0.15)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '6px'
+                        gap: '4px'
                       }}
                       onMouseOver={(e) => {
                         e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.boxShadow = '0 6px 15px rgba(249, 115, 22, 0.3)';
                       }}
                       onMouseOut={(e) => {
                         e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.2)';
                       }}
                     >
-                      ✨ 가입 승인 및 매장 등록 시작
+                      ✨ 가입 승인 및 매장 등록
                     </button>
                   </div>
                 );
@@ -432,22 +430,22 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
         )}
 
         {/* Search & Actions Bar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '15px' }}>
-          <div style={{ position: 'relative', width: '400px', maxWidth: '100%' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ position: 'relative', width: '360px', maxWidth: '100%' }}>
             <input
               type="text"
-              placeholder="🔍 매장명, 점주명, ID로 신속 검색..."
+              placeholder="🔍 매장명, 점주명, ID 신속 검색..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
-                padding: '16px 20px 16px 48px',
-                borderRadius: '16px',
+                padding: '10px 14px 10px 38px',
+                borderRadius: '10px',
                 border: '1.5px solid #cbd5e1',
                 background: '#ffffff',
                 color: '#1e293b',
                 width: '100%',
-                fontSize: '1rem',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                fontSize: '1.05rem',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.01)',
                 outline: 'none',
                 transition: 'all 0.2s',
                 fontWeight: 500
@@ -455,7 +453,7 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
               onFocus={(e) => e.currentTarget.style.borderColor = '#3b82f6'}
               onBlur={(e) => e.currentTarget.style.borderColor = '#cbd5e1'}
             />
-            <span style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.2rem', pointerEvents: 'none' }}></span>
+            <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', pointerEvents: 'none' }}></span>
           </div>
 
           <button
@@ -464,47 +462,45 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
               setShowOnboarding(true);
             }}
             style={{
-              padding: '16px 28px',
-              borderRadius: '16px',
+              padding: '10px 18px',
+              borderRadius: '10px',
               background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
               color: 'white',
               fontWeight: 800,
               border: 'none',
               cursor: 'pointer',
-              boxShadow: '0 10px 20px rgba(37, 99, 235, 0.2)',
-              transition: 'transform 0.2s, boxShadow 0.2s',
-              fontSize: '1rem',
+              boxShadow: '0 6px 12px rgba(37, 99, 235, 0.15)',
+              transition: 'all 0.2s',
+              fontSize: '1.05rem',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '6px'
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 12px 24px rgba(37, 99, 235, 0.3)';
+              e.currentTarget.style.transform = 'translateY(-1px)';
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 10px 20px rgba(37, 99, 235, 0.2)';
             }}
           >
-            <span>➕</span> 신규 가맹점 등록
+            <span>➕</span> 신규 가맹점
           </button>
         </div>
 
         {/* Premium Card Grid View */}
         {isLoading ? (
-          <div style={{ textAlign: 'center', padding: '100px 0' }}>
-            <div className="spinner" style={{ margin: '0 auto 20px' }}></div>
-            <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>가맹점 DB 및 정산 데이터를 실시간으로 조회하고 있습니다...</p>
+          <div style={{ textAlign: 'center', padding: '80px 0' }}>
+            <div className="spinner" style={{ margin: '0 auto 15px' }}></div>
+            <p style={{ color: 'var(--text-muted)', fontWeight: 600 }}>가맹점 DB 및 정산 데이터를 조회 중입니다...</p>
           </div>
         ) : filteredStores.length === 0 ? (
-          <div style={{ padding: '80px 20px', textAlign: 'center', borderRadius: '24px', border: '1px solid #e2e8f0', background: '#ffffff', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}>
-            <span style={{ fontSize: '4rem', display: 'block', marginBottom: '15px' }}>🔍</span>
-            <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#1e293b', fontWeight: 800 }}>매칭되는 가맹점 정보가 없습니다.</h3>
-            <p style={{ color: '#64748b', fontSize: '0.95rem', marginTop: '8px' }}>검색어를 변경하시거나 신규 매장을 생성해 주세요.</p>
+          <div style={{ padding: '60px 20px', textAlign: 'center', borderRadius: '16px', border: '1px solid #e2e8f0', background: '#ffffff', boxShadow: '0 2px 10px rgba(0,0,0,0.01)' }}>
+            <span style={{ fontSize: '3rem', display: 'block', marginBottom: '10px' }}>🔍</span>
+            <h3 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b', fontWeight: 800 }}>일치하는 가맹점 정보가 없습니다.</h3>
+            <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '6px' }}>검색어를 변경하시거나 신규 매장을 등록해 주세요.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '28px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
             {filteredStores.map(store => {
               const isPaid = store.payment_status === '정상';
               const isUnpaid = store.payment_status === '미납';
@@ -536,25 +532,25 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
                   key={store.store_id} 
                   style={{ 
                     background: '#ffffff', 
-                    borderRadius: '24px', 
+                    borderRadius: '16px', 
                     border: '1px solid #e2e8f0', 
-                    padding: '28px', 
-                    boxShadow: '0 8px 30px rgba(0,0,0,0.02)', 
+                    padding: '16px 20px', 
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.01)', 
                     display: 'flex', 
                     flexDirection: 'column', 
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transition: 'all 0.25s ease-in-out',
                     position: 'relative',
                     overflow: 'hidden'
                   }}
                   className="store-dashboard-card"
                   onMouseOver={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-6px)';
-                    e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.06)';
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                    e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.04)';
                     e.currentTarget.style.borderColor = '#cbd5e1';
                   }}
                   onMouseOut={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.02)';
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.01)';
                     e.currentTarget.style.borderColor = '#e2e8f0';
                   }}
                 >
@@ -563,15 +559,15 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
                   <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '5px', background: statusColors.text }} />
 
                   {/* Header: Logo, Name & ID */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                      <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', border: '1px solid #e2e8f0' }}>
                         {getStoreLogo(store.store_id, store.store_name)}
                       </div>
                       <div>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>{store.store_name}</h2>
-                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600, display: 'block', marginTop: '2px' }}>
-                          ID: <code style={{ color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>{store.store_id}</code>
+                        <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.5px' }}>{store.store_name}</h2>
+                        <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600, display: 'block', marginTop: '1px' }}>
+                          ID: <code style={{ color: '#64748b', background: '#f1f5f9', padding: '2px 4px', borderRadius: '4px', fontSize: '0.85rem' }}>{store.store_id}</code>
                         </span>
                       </div>
                     </div>
@@ -579,49 +575,49 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
                     <span style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '5px',
-                      padding: '6px 14px',
+                      gap: '4px',
+                      padding: '4px 10px',
                       borderRadius: '50px',
                       background: statusColors.bg,
                       color: statusColors.text,
                       border: `1px solid ${statusColors.border}`,
                       fontWeight: 800,
-                      fontSize: '0.82rem',
+                      fontSize: '0.9rem',
                     }}>
-                      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: statusColors.glow, display: 'inline-block' }} />
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColors.glow, display: 'inline-block' }} />
                       {store.payment_status}
                     </span>
                   </div>
 
                   {/* Divider */}
-                  <div style={{ height: '1px', background: '#f1f5f9', width: '100%', marginBottom: '18px' }} />
+                  <div style={{ height: '1px', background: '#f1f5f9', width: '100%', marginBottom: '10px' }} />
 
                   {/* Metadata Body */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '22px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
-                      <span style={{ color: '#64748b', fontWeight: 500 }}>대표 점주</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem' }}>
+                      <span style={{ color: '#64748b', fontWeight: 500 }}>점주</span>
                       <span style={{ color: '#334155', fontWeight: 700 }}>
-                        {store.owner_name} <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 400 }}>({store.owner_id})</span>
+                        {store.owner_name} <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 400 }}>({store.owner_id})</span>
                       </span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
-                      <span style={{ color: '#64748b', fontWeight: 500 }}>월 정산 임대료</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem' }}>
+                      <span style={{ color: '#64748b', fontWeight: 500 }}>월 임대료</span>
                       <span style={{ color: '#0f172a', fontWeight: 900 }}>₩{store.monthly_fee.toLocaleString()}</span>
                     </div>
                   </div>
 
                   {/* Monthly Payment History Sub-Panel */}
-                  <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '16px', border: '1px solid #f1f5f9', marginBottom: '24px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#64748b', display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '12px' }}>
-                      📅 월별 수납 및 정산 이력 카드
+                  <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '10px 14px', border: '1px solid #f1f5f9', marginBottom: '14px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '10px' }}>
+                      📅 정산/수납 이력
                     </span>
                     
                     {historyList.length === 0 ? (
-                      <div style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', padding: '15px 0', fontStyle: 'italic' }}>
-                        정산 수납 데이터 이력이 아직 없습니다.
+                      <div style={{ color: '#94a3b8', fontSize: '0.9rem', textAlign: 'center', padding: '10px 0', fontStyle: 'italic' }}>
+                        기록된 이력이 없습니다.
                       </div>
                     ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '130px', overflowY: 'auto', paddingRight: '4px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '130px', overflowY: 'auto', paddingRight: '4px' }}>
                         {historyList.map((hist, idx) => {
                           const hPaid = hist.status === '완료';
                           const hUnpaid = hist.status === '미납';
@@ -633,24 +629,24 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
                                 display: 'flex', 
                                 justifyContent: 'space-between', 
                                 alignItems: 'center', 
-                                padding: '8px 12px', 
+                                padding: '6px 10px', 
                                 background: '#ffffff', 
-                                borderRadius: '10px', 
+                                borderRadius: '8px', 
                                 border: '1px solid #e2e8f0', 
-                                fontSize: '0.85rem' 
+                                fontSize: '0.95rem' 
                               }}
                             >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <span style={{ fontWeight: 700, color: '#475569' }}>{hist.date.slice(0, 7)}</span>
-                                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>₩{hist.amount.toLocaleString()}</span>
+                                <span style={{ fontSize: '0.9rem', color: '#94a3b8' }}>₩{hist.amount.toLocaleString()}</span>
                               </div>
                               <span style={{ 
                                 fontWeight: 800, 
-                                fontSize: '0.78rem',
+                                fontSize: '0.85rem',
                                 color: hPaid ? '#10b981' : (hUnpaid ? '#f59e0b' : '#ef4444'),
                                 background: hPaid ? 'rgba(16, 185, 129, 0.05)' : (hUnpaid ? 'rgba(245, 158, 11, 0.05)' : 'rgba(239, 68, 68, 0.05)'),
-                                padding: '2px 8px',
-                                borderRadius: '6px'
+                                padding: '2px 6px',
+                                borderRadius: '4px'
                               }}>
                                 {hist.status === '완료' ? '완납' : (hist.status === '미납' ? '미납' : '연체')}
                               </span>
@@ -662,53 +658,51 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
                   </div>
 
                   {/* Primary Core Selection Button & Admin Tools Row */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: 'auto' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: 'auto' }}>
                     
                     {/* 매장 선택 버튼 - 가장 강조된 프리미엄 액션 버튼 */}
                     <button
                       onClick={() => onSelectStore(store.store_id, store.store_name)}
                       style={{
                         width: '100%',
-                        padding: '14px',
-                        borderRadius: '14px',
+                        padding: '11px',
+                        borderRadius: '10px',
                         background: isPaid ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : (isUnpaid ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'),
                         color: 'white',
                         fontWeight: 900,
                         border: 'none',
                         cursor: 'pointer',
-                        fontSize: '0.95rem',
-                        boxShadow: '0 6px 15px rgba(37, 99, 235, 0.15)',
+                        fontSize: '1.05rem',
+                        boxShadow: '0 4px 10px rgba(37, 99, 235, 0.12)',
                         transition: 'all 0.2s',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '6px'
+                        gap: '4px'
                       }}
                       onMouseOver={(e) => {
                         e.currentTarget.style.filter = 'brightness(1.08)';
-                        e.currentTarget.style.transform = 'translateY(-2px)';
                       }}
                       onMouseOut={(e) => {
                         e.currentTarget.style.filter = 'none';
-                        e.currentTarget.style.transform = 'translateY(0)';
                       }}
                     >
-                      <span>💻</span> {store.store_name} 선택 (상황판 진입)
+                      <span>💻</span> {store.store_name} 상황판 진입
                     </button>
 
                     {/* Secondary Tools Header row */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                       <button
                         onClick={() => openEditModal(store)}
                         style={{
-                          padding: '10px',
-                          borderRadius: '12px',
+                          padding: '8px',
+                          borderRadius: '8px',
                           background: '#ffffff',
                           border: '1.5px solid #cbd5e1',
                           color: '#475569',
                           fontWeight: 700,
                           cursor: 'pointer',
-                          fontSize: '0.85rem',
+                          fontSize: '0.95rem',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -724,19 +718,19 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
                           e.currentTarget.style.borderColor = '#cbd5e1';
                         }}
                       >
-                        ✏️ 정보 편집
+                        ✏️ 편집
                       </button>
                       <button
                         onClick={() => handleDelete(store.store_id, store.store_name)}
                         style={{
-                          padding: '10px',
-                          borderRadius: '12px',
+                          padding: '8px',
+                          borderRadius: '8px',
                           background: 'rgba(239, 68, 68, 0.02)',
                           border: '1.5px solid rgba(239, 68, 68, 0.15)',
                           color: '#ef4444',
                           fontWeight: 700,
                           cursor: 'pointer',
-                          fontSize: '0.85rem',
+                          fontSize: '0.95rem',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -752,7 +746,7 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
                           e.currentTarget.style.color = '#ef4444';
                         }}
                       >
-                        🗑️ 매장 삭제
+                        🗑️ 삭제
                       </button>
                     </div>
 

@@ -61,11 +61,11 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
           <button onClick={() => onNavigate('manual')}>📜 매장 운영 매뉴얼</button>
           <button onClick={() => onNavigate('settings')}>⚙️ 매장 설정</button>
           <button onClick={() => onNavigate('menu')}>📔 메뉴 설정</button>
-          <button onClick={() => onNavigate('hr')}>👥 직원 · 근태 · 급여 관리</button>
+          <button onClick={() => onNavigate('hr')}>👥 직원 및 근태 관리</button>
           <button onClick={() => onNavigate('tech')}>🛠 기술 정보</button>
           {user?.role === 'admin' && (
             <>
-              <button onClick={() => onNavigate('admin')}>🏢 매장관리 (관리자 전용)</button>
+              <button onClick={() => onNavigate('admin')}>🏢 플랫폼 가맹점 관리</button>
               <button onClick={() => onNavigate('paper')}>📄 AI 논문 보기</button>
             </>
           )}
@@ -130,7 +130,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
               e.currentTarget.style.color = '#60a5fa';
             }}
           >
-            📋 최종 점검 리포트
+            📋 점검 리포트
           </button>
           <button onClick={onLogout} style={{ color: '#f87171' }}>🔓 로그아웃</button>
 

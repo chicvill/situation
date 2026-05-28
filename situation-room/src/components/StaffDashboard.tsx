@@ -169,13 +169,13 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
   const roleBg    = user.role === 'manager' ? 'rgba(245,158,11,0.12)' : 'rgba(129,140,248,0.12)';
 
   return (
-    <div className="admin-page animate-fade-in" style={{ paddingBottom: '80px', maxWidth: '560px', margin: '0 auto' }}>
+    <div className="admin-page animate-fade-in" style={{ paddingBottom: '60px', paddingLeft: '12px', paddingRight: '12px', maxWidth: '480px', margin: '0 auto' }}>
 
       {/* ── 헤더 ──────────────────────────── */}
-      <div style={{ textAlign: 'center', padding: '24px 0 20px', marginBottom: '20px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontSize: '3.2rem', marginBottom: '10px' }}>👤</div>
-        <h2 style={{ margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 900, color: 'var(--text-main)' }}>
-          안녕하세요, {user.name}님
+      <div style={{ textAlign: 'center', padding: '14px 0 10px', marginBottom: '12px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: '6px' }}>👤</div>
+        <h2 style={{ margin: '0 0 6px', fontSize: '1.4rem', fontWeight: 900, color: 'var(--text-main)' }}>
+          반갑습니다, {user.name}님!
         </h2>
         <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.8rem', background: 'rgba(255,255,255,0.06)', padding: '4px 12px', borderRadius: '20px', color: 'var(--text-muted)' }}>
@@ -195,27 +195,27 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
       </div>
 
       {/* ── 출퇴근 버튼 ───────────────────── */}
-      <div style={{ background: 'var(--surface)', borderRadius: '20px', padding: '22px', marginBottom: '14px', border: '1px solid var(--border)' }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-          ⏱ 출퇴근
+      <div style={{ background: 'var(--surface)', borderRadius: '14px', padding: '12px 14px', marginBottom: '10px', border: '1px solid var(--border)' }}>
+        <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+          ⏱ 출근/퇴근
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           {/* 출근 */}
           <button
             onClick={() => callAttendance('check-in')}
             disabled={isProcessing || isWorking}
             style={{
-              padding: '20px 12px', borderRadius: '16px', border: 'none',
+              padding: '14px 10px', borderRadius: '10px', border: 'none',
               background: isWorking ? 'rgba(255,255,255,0.03)' : '#059669',
               color: isWorking ? 'var(--text-muted)' : '#fff',
               fontWeight: 800, fontSize: '1.05rem',
               cursor: isWorking ? 'not-allowed' : 'pointer',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-              boxShadow: isWorking ? 'none' : '0 6px 16px rgba(5,150,105,0.35)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+              boxShadow: isWorking ? 'none' : '0 4px 12px rgba(5,150,105,0.25)',
               transition: 'all 0.2s', opacity: isWorking ? 0.4 : 1,
             }}
           >
-            <span style={{ fontSize: '1.8rem' }}>🏃</span>
+            <span style={{ fontSize: '1.4rem' }}>🏃</span>
             출 근
           </button>
           {/* 퇴근 */}
@@ -223,17 +223,17 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
             onClick={() => callAttendance('check-out')}
             disabled={isProcessing || !isWorking}
             style={{
-              padding: '20px 12px', borderRadius: '16px', border: 'none',
+              padding: '14px 10px', borderRadius: '10px', border: 'none',
               background: !isWorking ? 'rgba(255,255,255,0.03)' : '#ea580c',
               color: !isWorking ? 'var(--text-muted)' : '#fff',
               fontWeight: 800, fontSize: '1.05rem',
               cursor: !isWorking ? 'not-allowed' : 'pointer',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px',
-              boxShadow: !isWorking ? 'none' : '0 6px 16px rgba(234,88,12,0.35)',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+              boxShadow: !isWorking ? 'none' : '0 4px 12px rgba(234,88,12,0.25)',
               transition: 'all 0.2s', opacity: !isWorking ? 0.4 : 1,
             }}
           >
-            <span style={{ fontSize: '1.8rem' }}>🏠</span>
+            <span style={{ fontSize: '1.4rem' }}>🏠</span>
             퇴 근
           </button>
         </div>
@@ -249,28 +249,28 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
 
       {/* ── 급여 요약 ──────────────────────── */}
       {employeeBundle && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '14px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '10px' }}>
           {[
             { label: '계약 시급', value: wage > 0 ? `${wage.toLocaleString()}원` : '-' },
             { label: '누적 근무', value: `${parseFloat(cumHours).toFixed(1)}시간` },
             { label: '미지급 잔액', value: `${unpaid.toLocaleString()}원`, alert: unpaid > 0 },
           ].map(({ label, value, alert: isAlert }) => (
             <div key={label} style={{
-              background: 'var(--surface)', borderRadius: '14px', padding: '14px 10px',
+              background: 'var(--surface)', borderRadius: '10px', padding: '10px 8px',
               border: `1px solid ${isAlert ? 'rgba(249,115,22,0.3)' : 'var(--border)'}`,
               textAlign: 'center',
             }}>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: '5px', fontWeight: 600 }}>{label}</div>
-              <div style={{ fontWeight: 800, fontSize: '0.9rem', color: isAlert ? '#f97316' : 'var(--text-main)' }}>{value}</div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '3px', fontWeight: 600 }}>{label}</div>
+              <div style={{ fontWeight: 800, fontSize: '1.0rem', color: isAlert ? '#f97316' : 'var(--text-main)' }}>{value}</div>
             </div>
           ))}
         </div>
       )}
 
       {/* ── 근태 로그 ──────────────────────── */}
-      <div style={{ background: 'var(--surface)', borderRadius: '20px', padding: '20px', marginBottom: '14px', border: '1px solid var(--border)' }}>
-        <h3 style={{ margin: '0 0 14px', fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-          🕒 최근 출퇴근 기록
+      <div style={{ background: 'var(--surface)', borderRadius: '14px', padding: '12px 14px', marginBottom: '10px', border: '1px solid var(--border)' }}>
+        <h3 style={{ margin: '0 0 10px', fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+          🕒 출퇴근 기록
         </h3>
         {myAttendance.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>출퇴근 기록이 없습니다.</div>
@@ -313,26 +313,26 @@ export const StaffDashboard: React.FC<StaffDashboardProps> = ({
       </div>
 
       {/* ── 개인정보 수정 / 로그아웃 ─────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
         <button
           onClick={openEditModal}
           style={{
-            padding: '15px', borderRadius: '14px',
+            padding: '10px', borderRadius: '10px',
             border: '1.5px solid var(--border)', background: 'var(--surface)',
-            color: 'var(--text-main)', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+            color: 'var(--text-main)', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
           }}
         >
-          ✏️ 개인정보 수정
+          ✏️ 정보 수정
         </button>
         <button
           onClick={onLogout}
           style={{
-            padding: '15px', borderRadius: '14px', border: 'none',
+            padding: '10px', borderRadius: '10px', border: 'none',
             background: 'rgba(239,68,68,0.08)', color: '#ef4444',
-            fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+            fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
           }}
         >
-          🚪 로그아웃
+          🔓 로그아웃
         </button>
       </div>
 

@@ -418,15 +418,15 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
     ((user?.role === 'owner' && pendingStaffList.length > 0) || (user?.role === 'admin' && pendingOwnerList.length > 0));
 
   return (
-    <div className="welcome-hub-container animate-fade-in" style={{ padding: '25px', maxWidth: '800px', margin: '0 auto' }}>
+    <div className="welcome-hub-container animate-fade-in" style={{ padding: '12px 14px', maxWidth: '560px', margin: '0 auto' }}>
 
       {/* 1. Header with Edit Button */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
         <div>
-          <h2 style={{ fontSize: '1.8rem', fontWeight: '900', margin: 0, background: 'linear-gradient(135deg, var(--text-main), var(--accent-orange))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            MQnet Welcome Hub
+          <h2 style={{ fontSize: '1.5rem', fontWeight: '900', margin: 0, background: 'linear-gradient(135deg, var(--text-main), var(--accent-orange))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Welcome Hub
           </h2>
-          <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>스마트 매장 통합 상황실에 오신 것을 환영합니다</p>
+          <p style={{ margin: '2px 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>스마트 매장 통합 상황실</p>
         </div>
         <button
           onClick={() => setShowEditModal(true)}
@@ -434,27 +434,27 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
             background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(249, 115, 22, 0.05))',
             border: '1.5px solid var(--accent-orange)',
             color: 'var(--accent-orange)',
-            padding: '8px 16px',
-            borderRadius: '12px',
+            padding: '6px 12px',
+            borderRadius: '8px',
             fontSize: '0.85rem',
             fontWeight: '800',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
-            boxShadow: '0 4px 15px rgba(249, 115, 22, 0.05)',
-            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
+            gap: '4px',
+            boxShadow: '0 2px 8px rgba(249, 115, 22, 0.03)',
+            transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
           }}
           onMouseOver={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(249, 115, 22, 0.25), rgba(249, 115, 22, 0.1))';
+            e.currentTarget.style.transform = 'translateY(-1px)';
+            e.currentTarget.style.background = 'linear-gradient(135deg, rgba(249, 115, 22, 0.22), rgba(249, 115, 22, 0.08))';
           }}
           onMouseOut={(e) => {
             e.currentTarget.style.transform = 'translateY(0)';
             e.currentTarget.style.background = 'linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(249, 115, 22, 0.05))';
           }}
         >
-          👤 개인정보 편집
+          👤 정보 수정
         </button>
       </div>
 
@@ -463,26 +463,26 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
         className="glass-panel"
         style={{
           background: 'linear-gradient(135deg, #fff9f5, #fff)',
-          borderRadius: '24px',
-          padding: '30px',
+          borderRadius: '16px',
+          padding: '16px 20px',
           border: '1px solid rgba(249,115,22,0.15)',
-          boxShadow: '0 8px 32px rgba(249,115,22,0.06)',
+          boxShadow: '0 4px 16px rgba(249,115,22,0.03)',
           position: 'relative',
           overflow: 'hidden',
-          marginBottom: '28px',
+          marginBottom: '14px',
           textAlign: 'center'
         }}
       >
-        <div style={{ fontSize: '3rem', marginBottom: '15px' }}>🍀</div>
-        <h3 style={{ fontSize: '1.5rem', fontWeight: '900', margin: '0 0 10px 0', color: 'var(--text-main)' }}>
+        <div style={{ fontSize: '2.2rem', marginBottom: '8px' }}>🍀</div>
+        <h3 style={{ fontSize: '1.4rem', fontWeight: '900', margin: '0 0 6px 0', color: 'var(--text-main)' }}>
           반갑습니다, <span style={{ color: 'var(--accent-orange)' }}>{user?.name || '직원'}</span>님!
         </h3>
-        <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', margin: '0 0 20px 0', lineHeight: '1.5' }}>
+        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: '0 0 14px 0', lineHeight: '1.4' }}>
           {getGreetingMessage()}<br />
           {isNewOwnerBuildingStore ? (
-            <span>현재 접속 계정 권한은 <strong style={{ color: 'var(--text-main)' }}>[{getRoleBadge(user?.role)}]</strong> 이며, <strong style={{ color: 'var(--accent-orange)' }}>아직 대표님의 매장(집)이 개설 및 등록되지 않았습니다. 아래 개설 신청서를 작성하여 본인만의 매장을 정식으로 완공하세요!</strong></span>
+            <span>권한: <strong style={{ color: 'var(--text-main)' }}>[{getRoleBadge(user?.role)}]</strong> / <strong style={{ color: 'var(--accent-orange)' }}>대표님 매장 미등록. 아래 개설 신청서를 작성하여 매장을 완공하세요!</strong></span>
           ) : (
-            <span>현재 접속 계정 권한은 <strong style={{ color: 'var(--text-main)' }}>[{getRoleBadge(user?.role)}]</strong> 이며, <strong style={{ color: 'var(--text-main)' }}>{storeName || '미지정'}</strong> 매장에 연결되어 있습니다.</span>
+            <span>권한: <strong style={{ color: 'var(--text-main)' }}>[{getRoleBadge(user?.role)}]</strong> / <strong style={{ color: 'var(--text-main)' }}>{storeName || '미지정'}</strong> 매장 연결됨</span>
           )}
         </p>
 
@@ -491,17 +491,17 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
             <button
               onClick={() => onNavigate('guide')}
               className="confirm-btn success-green"
-              style={{ padding: '10px 24px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '800' }}
+              style={{ padding: '8px 18px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '800' }}
             >
-              🎙️ AI 비서와 대화하기
+              🎙️ AI 대화
             </button>
           )}
           <button
             onClick={onLogout}
             className="del-btn"
             style={{
-              padding: '10px 20px',
-              borderRadius: '12px',
+              padding: '8px 16px',
+              borderRadius: '8px',
               fontSize: '0.9rem',
               fontWeight: '800',
               background: 'rgba(239, 68, 68, 0.08)',

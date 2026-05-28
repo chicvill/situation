@@ -28,36 +28,36 @@ export const OnboardingRoadmap: React.FC<OnboardingRoadmapProps> = ({
       className="glass-panel animate-fade-in"
       style={{
         background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01))',
-        borderRadius: '24px',
-        padding: '28px',
+        borderRadius: '16px',
+        padding: '16px 18px',
         border: '1px solid var(--border)',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.06)',
-        marginBottom: '35px',
+        boxShadow: '0 12px 28px rgba(0,0,0,0.04)',
+        marginBottom: '18px',
         textAlign: 'left'
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ fontSize: '1.6rem' }}>🚀</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '1.5rem' }}>🚀</span>
           <div>
-            <h4 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 900, color: 'var(--text-main)' }}>
-              스마트 가맹점 개설 및 운영 개시 로드맵 (Checklist)
+            <h4 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)' }}>
+              가맹점 개설 및 운영 로드맵 (체크리스트)
             </h4>
-            <p style={{ margin: '3px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              아래 4가지 기초 필수 세팅을 단계별로 가이드에 따라 완공하여 스마트 매장 자율 운영을 무결하게 시작하세요!
+            <p style={{ margin: '2px 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+              기초 세팅을 완료하여 스마트 매장 운영을 바로 시작하세요!
             </p>
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <span style={{ fontSize: '1.4rem', fontWeight: 900, color: progressPercent === 100 ? '#10b981' : 'var(--accent-orange)' }}>
+          <span style={{ fontSize: '1.3rem', fontWeight: 900, color: progressPercent === 100 ? '#10b981' : 'var(--accent-orange)' }}>
             {progressPercent}%
           </span>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>({completedCount}/4 완료)</div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>({completedCount}/4 완료)</div>
         </div>
       </div>
 
       {/* Progress Bar */}
-      <div style={{ width: '100%', height: '8px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden', marginBottom: '25px', border: '1px solid var(--border)' }}>
+      <div style={{ width: '100%', height: '6px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden', marginBottom: '16px', border: '1px solid var(--border)' }}>
         <div
           style={{
             width: `${progressPercent}%`,
@@ -72,25 +72,25 @@ export const OnboardingRoadmap: React.FC<OnboardingRoadmapProps> = ({
       </div>
 
       {/* 4 Steps Checklist Grid */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
         {/* Step 1 */}
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start', background: isStep1Done ? 'rgba(16, 185, 129, 0.04)' : 'rgba(249, 115, 22, 0.04)', padding: '16px', borderRadius: '16px', border: isStep1Done ? '1px solid rgba(16, 185, 129, 0.15)' : '1px dashed rgba(249, 115, 22, 0.25)' }}>
-          <div style={{ fontSize: '1.5rem', marginTop: '2px' }}>{isStep1Done ? '✅' : '🏠'}</div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: isStep1Done ? 'rgba(16, 185, 129, 0.04)' : 'rgba(249, 115, 22, 0.04)', padding: '10px 14px', borderRadius: '12px', border: isStep1Done ? '1px solid rgba(16, 185, 129, 0.15)' : '1px dashed rgba(249, 115, 22, 0.25)' }}>
+          <div style={{ fontSize: '1.3rem', marginTop: '1px' }}>{isStep1Done ? '✅' : '🏠'}</div>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong style={{ fontSize: '0.95rem', color: isStep1Done ? 'var(--text-main)' : 'var(--accent-orange)' }}>
-                1단계: 내 매장 개설 (내 집 짓기 완공)
+              <strong style={{ fontSize: '1.0rem', fontWeight: 800, color: isStep1Done ? 'var(--text-main)' : 'var(--accent-orange)' }}>
+                1단계: 매장 개설 (집짓기 완공)
               </strong>
-              <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '50px', fontWeight: 800, background: isStep1Done ? 'rgba(16, 185, 129, 0.12)' : 'rgba(249, 115, 22, 0.12)', color: isStep1Done ? '#10b981' : 'var(--accent-orange)' }}>
-                {isStep1Done ? '완료됨' : '진행 중'}
+              <span style={{ fontSize: '0.78rem', padding: '1px 6px', borderRadius: '50px', fontWeight: 800, background: isStep1Done ? 'rgba(16, 185, 129, 0.12)' : 'rgba(249, 115, 22, 0.12)', color: isStep1Done ? '#10b981' : 'var(--accent-orange)' }}>
+                {isStep1Done ? '완료' : '진행중'}
               </span>
             </div>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-              상호명, 개업일자 및 각 테이블 번호별 인석 정보(인쇄 테이블 정보) 등 매장 고유 뼈대를 정식 등록합니다.
+            <p style={{ margin: '2px 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.3' }}>
+              상호명, 개업일 및 테이블별 좌석 수 등 매장 기본 정보를 등록합니다.
             </p>
             {!isStep1Done && (
-              <div style={{ marginTop: '10px', fontSize: '0.8rem', color: 'var(--accent-orange)', fontWeight: 700 }}>
+              <div style={{ marginTop: '6px', fontSize: '0.8rem', color: 'var(--accent-orange)', fontWeight: 700 }}>
                 👇 아래 '내 매장 개설 및 등록' 신청서를 채워 완공해 주세요.
               </div>
             )}
@@ -98,25 +98,25 @@ export const OnboardingRoadmap: React.FC<OnboardingRoadmapProps> = ({
         </div>
 
         {/* Step 2 */}
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start', background: isStep2Done ? 'rgba(16, 185, 129, 0.04)' : 'rgba(255, 255, 255, 0.02)', padding: '16px', borderRadius: '16px', border: isStep2Done ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid var(--border)', opacity: isStep1Done ? 1 : 0.5 }}>
-          <div style={{ fontSize: '1.5rem', marginTop: '2px' }}>{isStep2Done ? '✅' : '📋'}</div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: isStep2Done ? 'rgba(16, 185, 129, 0.04)' : 'rgba(255, 255, 255, 0.02)', padding: '10px 14px', borderRadius: '12px', border: isStep2Done ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid var(--border)', opacity: isStep1Done ? 1 : 0.5 }}>
+          <div style={{ fontSize: '1.3rem', marginTop: '1px' }}>{isStep2Done ? '✅' : '📋'}</div>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong style={{ fontSize: '0.95rem', color: isStep2Done ? 'var(--text-main)' : 'var(--text-muted)' }}>
-                2단계: 디지털 메뉴 구성 (메뉴판 스캔 완료)
+              <strong style={{ fontSize: '1.0rem', fontWeight: 800, color: isStep2Done ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                2단계: 디지털 메뉴 (메뉴 스캔 완료)
               </strong>
-              <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '50px', fontWeight: 800, background: isStep2Done ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-secondary)', color: isStep2Done ? '#10b981' : 'var(--text-muted)' }}>
-                {isStep2Done ? '완료됨' : (isStep1Done ? '활성화' : '대기 중')}
+              <span style={{ fontSize: '0.78rem', padding: '1px 6px', borderRadius: '50px', fontWeight: 800, background: isStep2Done ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-secondary)', color: isStep2Done ? '#10b981' : 'var(--text-muted)' }}>
+                {isStep2Done ? '완료' : (isStep1Done ? '활성화' : '대기')}
               </span>
             </div>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-              가맹점의 대표 메뉴판, 빌지, 영수증 실물 이미지를 AI 스캔하여 3초 만에 디지털 메뉴 구성을 완공합니다.
+            <p style={{ margin: '2px 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.3' }}>
+              실물 메뉴판이나 영수증을 AI 스캔하여 디지털 메뉴 구성을 완료합니다.
             </p>
             {isStep1Done && !isStep2Done && (
               <button
                 onClick={() => onNavigate('menu')}
                 className="confirm-btn"
-                style={{ marginTop: '10px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800', background: 'linear-gradient(135deg, var(--accent-orange), #ea580c)', border: 'none', color: 'white', cursor: 'pointer' }}
+                style={{ marginTop: '8px', padding: '5px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '800', background: 'linear-gradient(135deg, var(--accent-orange), #ea580c)', border: 'none', color: 'white', cursor: 'pointer' }}
               >
                 📸 이미지/메뉴판 AI 스캔 등록 ➔
               </button>
@@ -125,19 +125,19 @@ export const OnboardingRoadmap: React.FC<OnboardingRoadmapProps> = ({
         </div>
 
         {/* Step 3 */}
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start', background: isStep3Done ? 'rgba(16, 185, 129, 0.04)' : 'rgba(255, 255, 255, 0.02)', padding: '16px', borderRadius: '16px', border: isStep3Done ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid var(--border)', opacity: isStep2Done ? 1 : 0.5 }}>
-          <div style={{ fontSize: '1.5rem', marginTop: '2px' }}>{isStep3Done ? '✅' : '🖨️'}</div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: isStep3Done ? 'rgba(16, 185, 129, 0.04)' : 'rgba(255, 255, 255, 0.02)', padding: '10px 14px', borderRadius: '12px', border: isStep3Done ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid var(--border)', opacity: isStep2Done ? 1 : 0.5 }}>
+          <div style={{ fontSize: '1.3rem', marginTop: '1px' }}>{isStep3Done ? '✅' : '🖨️'}</div>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong style={{ fontSize: '0.95rem', color: isStep3Done ? 'var(--text-main)' : 'var(--text-muted)' }}>
-                3단계: 스마트 주문용 테이블 QR 코드 인쇄 및 부착
+              <strong style={{ fontSize: '1.0rem', fontWeight: 800, color: isStep3Done ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                3단계: 테이블 QR 인쇄 및 부착
               </strong>
-              <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '50px', fontWeight: 800, background: isStep3Done ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-secondary)', color: isStep3Done ? '#10b981' : 'var(--text-muted)' }}>
-                {isStep3Done ? '완료됨' : (isStep2Done ? '활성화' : '대기 중')}
+              <span style={{ fontSize: '0.78rem', padding: '1px 6px', borderRadius: '50px', fontWeight: 800, background: isStep3Done ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-secondary)', color: isStep3Done ? '#10b981' : 'var(--text-muted)' }}>
+                {isStep3Done ? '완료' : (isStep2Done ? '활성화' : '대기')}
               </span>
             </div>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-              설정한 좌석 규모에 맞게 자리세팅 QR 코드가 마스터 인쇄지로 가변 출력됩니다. 각 손님 자리에 예쁘게 오려 부착해 주세요!
+            <p style={{ margin: '2px 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.3' }}>
+              좌석에 맞는 스마트 주문용 가변 QR 코드를 출력하여 자리에 부착합니다.
             </p>
             {isStep2Done && !isStep3Done && (
               <button
@@ -146,36 +146,36 @@ export const OnboardingRoadmap: React.FC<OnboardingRoadmapProps> = ({
                   onNavigate('qr');
                 }}
                 className="confirm-btn"
-                style={{ marginTop: '10px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800', background: 'linear-gradient(135deg, var(--accent-orange), #ea580c)', border: 'none', color: 'white', cursor: 'pointer' }}
+                style={{ marginTop: '8px', padding: '5px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '800', background: 'linear-gradient(135deg, var(--accent-orange), #ea580c)', border: 'none', color: 'white', cursor: 'pointer' }}
               >
-                🖨️ 인쇄 센터에서 QR 마스터 인쇄하기 ➔
+                🖨️ QR 인쇄하러 가기 ➔
               </button>
             )}
           </div>
         </div>
 
         {/* Step 4 */}
-        <div style={{ display: 'flex', gap: '15px', alignItems: 'flex-start', background: isStep4Done ? 'rgba(16, 185, 129, 0.04)' : 'rgba(255, 255, 255, 0.02)', padding: '16px', borderRadius: '16px', border: isStep4Done ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid var(--border)', opacity: isStep1Done ? 1 : 0.5 }}>
-          <div style={{ fontSize: '1.5rem', marginTop: '2px' }}>{isStep4Done ? '✅' : '👥'}</div>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', background: isStep4Done ? 'rgba(16, 185, 129, 0.04)' : 'rgba(255, 255, 255, 0.02)', padding: '10px 14px', borderRadius: '12px', border: isStep4Done ? '1px solid rgba(16, 185, 129, 0.15)' : '1px solid var(--border)', opacity: isStep1Done ? 1 : 0.5 }}>
+          <div style={{ fontSize: '1.3rem', marginTop: '1px' }}>{isStep4Done ? '✅' : '👥'}</div>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <strong style={{ fontSize: '0.95rem', color: isStep4Done ? 'var(--text-main)' : 'var(--text-muted)' }}>
-                4단계: 근무 직원(점원/매니저) 가입 및 최종 권한 승인
+              <strong style={{ fontSize: '1.0rem', fontWeight: 800, color: isStep4Done ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                4단계: 직원 가입 및 권한 승인
               </strong>
-              <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '50px', fontWeight: 800, background: isStep4Done ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-secondary)', color: isStep4Done ? '#10b981' : 'var(--text-muted)' }}>
-                {isStep4Done ? '완료됨' : (isStep1Done ? '활성화' : '대기 중')}
+              <span style={{ fontSize: '0.78rem', padding: '1px 6px', borderRadius: '50px', fontWeight: 800, background: isStep4Done ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-secondary)', color: isStep4Done ? '#10b981' : 'var(--text-muted)' }}>
+                {isStep4Done ? '완료' : (isStep1Done ? '활성화' : '대기')}
               </span>
             </div>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-              함께 일할 첫 직원을 가맹 매장 소속으로 연결하고 권한(시급, 출근 조건)을 세팅합니다.
+            <p style={{ margin: '2px 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.3' }}>
+              함께 일할 사원을 매장과 연결하고 권한 및 출퇴근 규칙을 세팅합니다.
             </p>
             {isStep1Done && !isStep4Done && (
               <button
                 onClick={() => onNavigate('hr')}
                 className="confirm-btn"
-                style={{ marginTop: '10px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800', background: 'linear-gradient(135deg, var(--accent-orange), #ea580c)', border: 'none', color: 'white', cursor: 'pointer' }}
+                style={{ marginTop: '8px', padding: '5px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '800', background: 'linear-gradient(135deg, var(--accent-orange), #ea580c)', border: 'none', color: 'white', cursor: 'pointer' }}
               >
-                👥 직원 관리 및 권한 세팅하러 가기 ➔
+                👥 직원 관리 & 권한 세팅 ➔
               </button>
             )}
           </div>
@@ -187,21 +187,21 @@ export const OnboardingRoadmap: React.FC<OnboardingRoadmapProps> = ({
       {progressPercent === 100 && (
         <div
           style={{
-            marginTop: '25px',
-            padding: '20px',
-            borderRadius: '16px',
+            marginTop: '16px',
+            padding: '14px',
+            borderRadius: '12px',
             background: 'rgba(16, 185, 129, 0.08)',
             border: '2px solid #10b981',
             textAlign: 'center',
-            boxShadow: '0 8px 24px rgba(16, 185, 129, 0.15)',
+            boxShadow: '0 6px 18px rgba(16, 185, 129, 0.12)',
           }}
         >
-          <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>🎉🚀🎊</div>
-          <h5 style={{ margin: '0 0 5px 0', fontSize: '1.15rem', fontWeight: 900, color: '#34d399' }}>
-            스마트 가맹점 최종 세팅 완료 및 정상 운영 개시!
+          <div style={{ fontSize: '2.0rem', marginBottom: '6px' }}>🎉🚀🎊</div>
+          <h5 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', fontWeight: 900, color: '#34d399' }}>
+            가맹점 최종 세팅 완료! 정상 운영 개시
           </h5>
-          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
-            축하합니다 대표님! 기초 세팅이 완벽히 수립되었습니다. 이제 손님들은 테이블 QR 코드로 자유롭게 AI 비서와 대화 주문이 가능하며, 주방 상황판과 POS 패드를 통해 자동 주문 관리가 시작됩니다.
+          <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-main)', lineHeight: '1.4' }}>
+            축하합니다! 기초 세팅이 성공적으로 수립되었습니다. 손님들은 테이블 QR 코드로 AI 대화 주문이 가능하며, 주방 및 POS에서 자동 관리가 개시됩니다.
           </p>
         </div>
       )}
