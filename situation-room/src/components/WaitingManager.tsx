@@ -287,10 +287,10 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
                             <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '10px' }}>대기 접수 완료!</h2>
                             <p style={{ color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: 700 }}>{regName || '손님'}님, 잠시만 기다려주세요.</p>
                             <div style={{ margin: '30px 0', padding: '20px', background: 'rgba(249, 115, 22, 0.1)', borderRadius: '15px' }}>
-                                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--premium-orange)', fontWeight: 800 }}>📢 중요 안내</p>
+                                <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--premium-orange)', fontWeight: 800 }}>📢 대기 접수 안내</p>
                                 <p style={{ margin: '10px 0 0', fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: 1.6 }}>
-                                    현재 브라우저 창을 닫지 마세요!<br />
-                                    입장 순서가 되면 소리와 함께 알림이 뜹니다.
+                                    입장 순서가 되면 실시간 알림음이 울립니다.<br />
+                                    <span style={{ color: '#60a5fa', fontWeight: 'bold', display: 'block', marginTop: '6px' }}>💡 화면이 닫혀도 QR 코드를 다시 스캔하시면<br />대기 정보와 현황판이 그대로 복구됩니다.</span>
                                 </p>
                             </div>
                             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>대기 번호: {waitingId}</p>
