@@ -28,9 +28,9 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
     const [regPhone, setRegPhone] = React.useState('');
     const [regCount, setRegCount] = React.useState('2');
     const [isSubmitting, setIsSubmitting] = React.useState(false);
-    // sessionStorage로 복구: 새로고침해도 대기 ID 유지
+    // localStorage로 복구: 창을 닫거나 새로고침해도 대기 ID 유지
     const [waitingId, setWaitingId] = React.useState<string | null>(
-        () => sessionStorage.getItem('waiting_id')
+        () => localStorage.getItem('waiting_id')
     );
     const [hasCalled, setHasCalled] = React.useState(false);
     const [waitingList, setWaitingList] = React.useState<WaitingEntry[]>([]);
@@ -77,7 +77,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
             });
             if (res.ok) {
                 const data = await res.json();
-                sessionStorage.setItem('waiting_id', data.waiting_id);
+                localStorage.setItem('waiting_id', data.waiting_id);
                 setWaitingId(data.waiting_id);
             } else {
                 alert('등록에 실패했습니다. 다시 시도해주세요.');
@@ -96,7 +96,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
         const triggerEntry = () => {
             setHasCalled(true);
             playDingDong();
-            sessionStorage.removeItem('waiting_id');
+            localStorage.removeItem('waiting_id');
         };
 
         // MQTT: 실시간 수신
@@ -304,7 +304,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
                             </p>
                             <button
                                 onClick={() => {
-                                    sessionStorage.removeItem('waiting_id');
+                                    localStorage.removeItem('waiting_id');
                                     try { window.close(); } catch (_) {}
                                     // 브라우저 닫기 실패 시 최종 안내 화면으로 전환하기 위해 상태 변경 (임시 변수 대신 window.location이나 HTML 변경 고려)
                                     // 여기서는 컴포넌트 최상단 렌더링에 isFinished 관련 뷰를 추가하기 어려우므로, 바로 내용물을 교체합니다.
