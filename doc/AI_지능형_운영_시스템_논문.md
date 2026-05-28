@@ -38,6 +38,18 @@
 * **투명한 데이터베이스 동기화 엔진 (Transparent DB Sync Engine)**:
   번들 쓰기 통신(`PUT /api/bundle/{bundle_id}`) 시 백엔드 동기화 모듈이 데이터의 `type`을 자동 식별하여 관계형 테이블(`table_staff_accounts`, `table_attendance_logs`, `users`)에 pbkdf2 해시 등 안전한 데이터 정합 매핑 처리를 실행한다. 이를 통해 **개발자는 API 컨트롤러나 ORM 매핑 코드를 단 한 글자도 작성하지 않으면서**, 스키마리스의 극한 유연성과 RDBMS의 강력한 트랜잭션 무결성(ACID) 및 정밀한 통계 쿼리 성능을 동시에 확보한다.
 
+### 3.6 시스템 운영 및 관리적 관점에서의 종합적 특장점 (System Operational & Administrative Advantages)
+본 코드리스 지능형 아키텍처는 개발 상의 효율성을 넘어, 실제 매장의 중장기 운영 및 관리적 측면에서 다음과 같은 다차원적 종합 장점을 제공한다.
+
+* **결함 허용성 기반의 무중단 엣지 가용성 (Edge Fault-Tolerance & High Availability)**:
+  매장 현장에서 원격 클라우드 데이터베이스 서버와의 일시적인 인터넷 네트워크 장애가 발생하더라도, 로컬 파일 시스템(`knowledge_pool.json`)에 상주하는 초경량 캐시 지식창고가 즉시 폴백(Fallback) 작동한다. 이를 통해 인터넷 차단 상태에서도 점원 출퇴근 및 테이블 패드 주문 등 핵심 Kiosk 서비스가 **단 1초의 무중단(Zero Downtime) 없이 가동되는 극도의 현장 가용성**을 제공한다.
+* **상태 기반 아카이빙을 통한 비즈니스 인텔리전스(BI) 무손실 안전망 (Zero Data-Loss BI Archive)**:
+  데이터를 임의로 물리 삭제하지 않고 상태 기반의 수명 주기(`Archived`)를 통해 영구 보존하는 정책을 통해, 결제 및 마감 시 발생 가능한 데이터 유실 리스크를 차단한다. 축적된 세션 통계(`session_archive` 등)는 점주의 매장 매출 추이 예측, 요일별/메뉴별 선호도 정밀 실시간 분석 등의 **차세대 비즈니스 분석(Business Intelligence)을 위한 무결성 원천 데이터로 상시 환원**된다.
+* **실시간 근태-급여 정산 자동화 파이프라인 (Automated Attendance-Payroll Pipeline)**:
+  직원의 실시간 태블릿 QR 체크인이 완료되는 즉시, RDBMS 내 `table_attendance_logs` 테이블을 통해 정밀 근무 분수 산출, 지각(Tardy) 유무 판정, 계약 시급별 당일 기본급 산출이 연동되어 자동 계산된다. 점주는 수작업 장부 수기 기입이나 엑셀 수식 작성에 들어가는 **수십 시간의 행정 관리 노동력을 완전히 제거(Code-less & Effort-less Administration)** 받는다.
+* **관계형 제약조건을 통한 완벽한 비즈니스 무결성 (Referential Integrity and Transactional Safety)**:
+  PostgreSQL RDBMS 단의 정교한 외래키(Foreign Key) 제약조건 및 다중 매장 분리 인덱스를 통해, 미등록 사원의 출근 기록 적재나 미등록 매장의 주문 생성과 같은 논리적 무결성 오류를 원천 차단한다. 이는 지능형 AI 비서와 분산 엣지 단말들이 동시다발적으로 자원을 수정할 때 발생 가능한 **데이터 충돌이나 고아 레코드(Orphan record) 발생 리스크를 RDBMS 트랜잭션 수준에서 완벽하게 예방**한다.
+
 ---
 
 ## 4. 개발 실무 경험 및 사례 분석 (Case Study)
