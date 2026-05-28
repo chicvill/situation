@@ -361,8 +361,11 @@ def seed_users(conn):
             
     # users 테이블에 해시 암호화 주입
     print("\n[STEP 3-2] 사용자 계정(users) 시딩")
+    import hashlib
     for username, password, role, store_id, full_name, is_approved in users_to_seed:
-        pw_hash = generate_password_hash(password)
+        # 프론트엔드가 SHA-256으로 해싱해서 보내므로, DB에는 SHA-256 해시의 Werkzeug 해시를 저장해야 일치합니다.
+        pw_sha = hashlib.sha256(password.encode()).hexdigest()
+        pw_hash = generate_password_hash(pw_sha)
         cur.execute("""
             INSERT INTO users (username, password, role, store_id, full_name, is_approved, created_at)
             VALUES (%s, %s, %s, %s, %s, %s, NOW())
