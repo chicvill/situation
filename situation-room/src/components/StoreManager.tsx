@@ -100,6 +100,13 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
 
   const handleSave = async (dataToSave?: any) => {
     const activeData = dataToSave || storeData;
+    
+    // 사업자등록확인 진위 여부 검증 (국세청 확인 필수 강제 사항)
+    if (!activeData.isVerified) {
+      alert("⚠️ 사업자등록 정보의 진위 확인이 완료되지 않았습니다.\n\n반드시 '사업자 진위 확인' 버튼을 클릭하여 정상 검증을 마친 후 저장해 주세요.");
+      return;
+    }
+
     const items = [
       { name: '상호명',     value: activeData.brand },
       { name: '사업자번호', value: activeData.regNo },
@@ -260,7 +267,14 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
   });
 
   const handleChange = (field: string, value: string) => {
-    setStoreData((prev: any) => ({ ...prev, [field]: value }));
+    setStoreData((prev: any) => {
+      const updated = { ...prev, [field]: value };
+      // 사업자 검증과 연관된 핵심 정보가 변경될 경우 진위 확인 상태를 false로 재설정
+      if (['brand', 'regNo', 'owner', 'openDate'].includes(field)) {
+        updated.isVerified = false;
+      }
+      return updated;
+    });
   };
 
   // --- Android Back Button Support ---
