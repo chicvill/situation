@@ -626,5 +626,159 @@
     "timestamp": "2026-05-28 08:59:52",
     "store": "시크빌",
     "store_id": "store-chicvill"
+  },
+  {
+    "items": [
+      {
+        "name": "상호명",
+        "value": "그레이스 하이테크 커피"
+      },
+      {
+        "name": "사업자번호",
+        "value": "111221111"
+      },
+      {
+        "name": "주소",
+        "value": "인천 서구 석남동 507-34"
+      },
+      {
+        "name": "대표자",
+        "value": "관리자"
+      },
+      {
+        "name": "개업일자",
+        "value": "202001010"
+      },
+      {
+        "name": "은행명",
+        "value": "농협"
+      },
+      {
+        "name": "계좌번호",
+        "value": "13002752081538"
+      },
+      {
+        "name": "예금주",
+        "value": "한그레이스"
+      }
+    ],
+    "type": "StoreConfig",
+    "title": "매장 정보",
+    "store": "그레이스 하이테크 커피",
+    "store_id": "store-grace",
+    "status": "pending",
+    "id": "store-config-store-grace"
+  },
+  {
+    "id": "MENUS_store-grace",
+    "type": "Menus",
+    "store_id": "store-grace",
+    "store": "그레이스 하이테크 커피",
+    "title": "메뉴 정보",
+    "timestamp": "2026-06-01 00:00:00",
+    "items": [
+      {
+        "name": "아메리카노",
+        "value": 4500,
+        "icon": "☕",
+        "category": "음료",
+        "description": "원두(Arabica) 에스프레소에 뜨거운 물을 더해 깊고 풍부한 맛의 기본 커피"
+      },
+      {
+        "name": "카페라떼",
+        "value": 5000,
+        "icon": "☕",
+        "category": "음료",
+        "description": "에스프레소에 고소하고 신선한 스팀 우유를 더해 부드러운 맛의 커피"
+      },
+      {
+        "name": "크루아상",
+        "value": 4000,
+        "icon": "🥐",
+        "category": "디저트",
+        "description": "프랑스산 고메 버터향이 풍부한 겉바속촉 크루아상"
+      }
+    ]
+  },
+  {
+    "id": "USER-01000000006",
+    "type": "PersonalInfos",
+    "store_id": "store-grace",
+    "store": "그레이스 하이테크 커피",
+    "title": "한그레이스님 계정 (점주)",
+    "status": "approved",
+    "timestamp": "2026-06-01 00:00:00",
+    "items": [
+      {
+        "name": "이름",
+        "value": "한그레이스"
+      },
+      {
+        "name": "아이디",
+        "value": "01000000006"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "owner"
+      }
+    ]
+  },
+  {
+    "id": "USER-01011000006",
+    "type": "PersonalInfos",
+    "store_id": "store-grace",
+    "store": "그레이스 하이테크 커피",
+    "title": "이지원님 계정 (점장)",
+    "status": "approved",
+    "timestamp": "2026-06-01 00:00:00",
+    "items": [
+      {
+        "name": "이름",
+        "value": "이지원"
+      },
+      {
+        "name": "아이디",
+        "value": "01011000006"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "manager"
+      }
+    ]
+  },
+  {
+    "id": "USER-01022000006",
+    "type": "PersonalInfos",
+    "store_id": "store-grace",
+    "store": "그레이스 하이테크 커피",
+    "title": "최다솜님 계정 (점원)",
+    "status": "approved",
+    "timestamp": "2026-06-01 00:00:00",
+    "items": [
+      {
+        "name": "이름",
+        "value": "최다솜"
+      },
+      {
+        "name": "아이디",
+        "value": "01022000006"
+      },
+      {
+        "name": "비밀번호",
+        "value": "cbfad02f9ed2a8d1e08d8f74f5303e9eb93637d47f82ab6f1c15871cf8dd0481"
+      },
+      {
+        "name": "권한",
+        "value": "staff"
+      }
+    ]
   }
 ]
