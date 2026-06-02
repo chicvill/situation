@@ -15,7 +15,7 @@ from .db.session_db import init_archive_table
 from .state import manager, load_pool, save_pool, POOL_FILE  # noqa: F401 — re-exported for legacy imports
 from .models import OrderItem, OrderRequest, StatusUpdate, StoreCreateRequest, StoreUpdateRequest  # noqa: F401
 
-from .routers import store, pool, session_routes, payment, order, operations, staff, chat, manual, notify, stats
+from .routers import store, pool, session_routes, payment, order, operations, staff, chat, manual, notify, stats, dutch
 from .routers import auth_router
 from .routers import debug_router
 from .mqtt_handler import run_mqtt_client
@@ -39,7 +39,7 @@ async def keep_alive_task():
                 print(f"[{datetime.now().strftime('%H:%M:%S')}] DB Keep-alive pulse sent.")
 
             # 2. 셀프 핑 (HTTP 요청이 있어야 Render가 잠들지 않음)
-            render_url = os.getenv("RENDER_EXTERNAL_URL") or "http://localhost:8000"
+            render_url = os.getenv("RENDER_EXTERNAL_URL") or "http://localhost:8080"
             async with httpx.AsyncClient() as client:
                 await client.get(render_url)
                 print(f"[{datetime.now().strftime('%H:%M:%S')}] Self-ping sent to {render_url}")
@@ -84,6 +84,14 @@ def init_config_db():
     """)
     # 주방 사용 여부 컬럼 추가 (기존 배포 환경 호환)
     cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_kitchen BOOLEAN DEFAULT TRUE")
+    cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_call BOOLEAN DEFAULT TRUE")
+    cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_waiting BOOLEAN DEFAULT TRUE")
+    cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_parking BOOLEAN DEFAULT TRUE")
+    cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_points BOOLEAN DEFAULT TRUE")
+    cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_reservation BOOLEAN DEFAULT TRUE")
+    cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_display BOOLEAN DEFAULT TRUE")
+    cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_staff BOOLEAN DEFAULT TRUE")
+    cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_dutch BOOLEAN DEFAULT TRUE")
     conn.commit()
     cur.close()
     conn.close()
@@ -122,4 +130,5 @@ app.include_router(manual.router)
 app.include_router(notify.router)
 app.include_router(debug_router.router)
 app.include_router(stats.router)
+app.include_router(dutch.router)
 # app.include_router(websocket.router)  # Removed as part of MQTT migration

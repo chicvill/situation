@@ -19,7 +19,7 @@ async def confirm_payment(data: Dict):
     amount = data.get("amount")
     payment_key = data.get("paymentKey")
 
-    print(f"💰 [Payment Confirm] Order: {order_id}, Amount: {amount}, Key: {payment_key[:8] + '...' if payment_key else 'None'}")
+    print(f"[Payment Confirm] Order: {order_id}, Amount: {amount}, Key: {payment_key[:8] + '...' if payment_key else 'None'}")
 
     if not order_id or not isinstance(order_id, str):
         raise HTTPException(status_code=400, detail="orderId is required and must be a string")
@@ -28,18 +28,133 @@ async def confirm_payment(data: Dict):
     if amount is None:
         raise HTTPException(status_code=400, detail="amount is required")
 
+    # Dutch Pay Split Payment 처리
+    if order_id.startswith("dutch_"):
+        parts = order_id.split("_")
+        if len(parts) < 2:
+            raise HTTPException(status_code=400, detail="Invalid dutch payment order ID format")
+        session_id = parts[1]
+        
+        from ..database import get_session_by_id, add_dutch_payment, get_orders_by_session
+        session = get_session_by_id(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="세션을 찾을 수 없습니다")
+            
+        splits = session.get("splits")
+        if isinstance(splits, str):
+            import json
+            splits = json.loads(splits)
+            
+        if not isinstance(splits, dict):
+            raise HTTPException(status_code=400, detail="더치페이가 초기화되지 않은 세션입니다")
+            
+        total_price = splits.get("total_price", 0)
+        paid_items = splits.get("paid_items", [])
+        total_paid = sum(x.get("amount", 0) for x in paid_items)
+        remaining = total_price - total_paid
+        
+        if int(amount) > remaining:
+            raise HTTPException(status_code=400, detail=f"결제 금액이 잔액({remaining}원)을 초과합니다")
+            
+        # Toss Payments 서버 승인
+        toss_secret_key = os.getenv("TOSS_SECRET_KEY") or os.getenv("VITE_TOSS_SECRET_KEY", "")
+        if toss_secret_key and not payment_key.startswith("test-"):
+            import base64
+            auth = base64.b64encode(f"{toss_secret_key}:".encode()).decode()
+            try:
+                async with httpx.AsyncClient() as client:
+                    res = await client.post(
+                        "https://api.tosspayments.com/v1/payments/confirm",
+                        headers={"Authorization": f"Basic {auth}", "Content-Type": "application/json"},
+                        json={"paymentKey": payment_key, "orderId": order_id, "amount": int(amount)},
+                    )
+                if res.status_code != 200:
+                    error_data = res.json()
+                    print(f"❌ [Toss Confirm Failed] {error_data}")
+                    raise HTTPException(status_code=400, detail=f"Toss 결제 승인 실패: {error_data.get('message', '알 수 없는 오류')}")
+                print(f"✅ [Toss Confirm OK] Dutch Order: {order_id}")
+            except httpx.RequestError as e:
+                raise HTTPException(status_code=503, detail=f"Toss API 연결 실패: {e}")
+        else:
+            print(f"⚠️ [Payment Confirm] TOSS_SECRET_KEY 미설정 — Toss 서버 승인 생략 (개발 모드)")
+
+        # splits 테이블 결제 내역 추가
+        is_completed, updated_splits = add_dutch_payment(session_id, int(amount), "web", payment_key)
+        
+        store_id = session.get("store_id", "default_store")
+        table_id = session.get("table_id")
+        
+        # MQTT 브로드캐스트
+        payload = {
+            "type": "DUTCH_PAYMENT_UPDATE",
+            "session_id": session_id,
+            "store_id": store_id,
+            "table_id": table_id,
+            "splits": updated_splits,
+            "is_completed": is_completed
+        }
+        
+        if table_id:
+            await manager.send_to_table(table_id, payload)
+        await manager.broadcast_to_kitchen(payload)
+        
+        if is_completed:
+            print(f"🎉 [Dutch Completed via Confirm] Session: {session_id} - Elevating unpaid orders to paid")
+            orders = get_orders_by_session(session_id)
+            use_kitchen = get_store_use_kitchen(store_id)
+            post_payment_status = "cooking" if use_kitchen else "ready"
+            
+            for order in orders:
+                oid = order.get("order_id")
+                if order.get("payment_status") != "paid" and order.get("status") != "cancelled":
+                    update_order_payment_status(oid, "paid")
+                    update_order_status(oid, post_payment_status)
+                    update_order_payment_key(oid, payment_key)
+                    
+                    msg_confirmed = {"type": "PAYMENT_CONFIRMED", "order_id": oid, "status": "paid", "store_id": store_id}
+                    await manager.broadcast_to_kitchen(msg_confirmed)
+                    
+                    msg_update = {
+                        "type": "STATUS_UPDATE",
+                        "order_id": oid,
+                        "status": post_payment_status,
+                        "payment_status": "paid",
+                        "store_id": store_id
+                    }
+                    await manager.broadcast_to_kitchen(msg_update)
+                    
+                    updated_order = get_order_by_id(oid)
+                    if updated_order:
+                        await manager.broadcast_to_kitchen({
+                            "type": "NEW_ORDER",
+                            "order": updated_order,
+                            "store_id": store_id
+                        })
+            
+            completion_payload = {
+                "type": "DUTCH_COMPLETED",
+                "session_id": session_id,
+                "store_id": store_id,
+                "table_id": table_id
+            }
+            if table_id:
+                await manager.send_to_table(table_id, completion_payload)
+            await manager.broadcast_to_kitchen(completion_payload)
+            
+        return {"status": "success", "order_id": order_id, "dutch": True}
+
     # 1. DB의 실제 주문 금액과 클라이언트가 보낸 금액 비교 (금액 위조 방지)
     order = get_order_by_id(order_id)
     if not order:
         raise HTTPException(status_code=404, detail="주문을 찾을 수 없습니다")
     expected_amount = order.get("total_price", 0)
     if int(amount) != int(expected_amount):
-        print(f"🚨 [Payment Tamper] Order: {order_id}, Expected: {expected_amount}, Got: {amount}")
+        print(f"[Payment Tamper] Order: {order_id}, Expected: {expected_amount}, Got: {amount}")
         raise HTTPException(status_code=400, detail=f"결제 금액 불일치 (예상: {expected_amount}원)")
 
     # 2. Toss Payments 서버 측 결제 승인 API 호출 (실제 결제 확정)
     toss_secret_key = os.getenv("TOSS_SECRET_KEY") or os.getenv("VITE_TOSS_SECRET_KEY", "")
-    if toss_secret_key:
+    if toss_secret_key and not payment_key.startswith("test-"):
         auth = base64.b64encode(f"{toss_secret_key}:".encode()).decode()
         try:
             async with httpx.AsyncClient() as client:

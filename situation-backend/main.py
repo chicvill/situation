@@ -9,4 +9,4 @@ from session.main import app  # Render 배포를 위해 app 객체를 외부로 
 
 if __name__ == "__main__":
     print("🚀 Starting Situation Pro Session Server...")
-    uvicorn.run("session.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("session.main:app", host="0.0.0.0", port=8080, reload=True)

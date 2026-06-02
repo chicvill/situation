@@ -887,6 +887,111 @@ def get_point(session_id: str) -> Optional[dict]:
 # 6. 더치페이 분할 (splits[])
 # ──────────────────────────────────────────────
 
+def init_dutch_splits(session_id: str, total_price: int, split_count: int) -> bool:
+    """더치페이 세션의 splits JSONB 필드를 초기화합니다."""
+    import math
+    split_amount = math.ceil(total_price / split_count) if split_count > 0 else total_price
+    splits_data = {
+        "total_price": total_price,
+        "split_count": split_count,
+        "split_amount": split_amount,
+        "paid_items": []
+    }
+    conn = get_db_conn()
+    if not conn:
+        return False
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            UPDATE table_sessions
+            SET splits = %(s)s::jsonb,
+                version = version + 1
+            WHERE session_id = %(sid)s
+        """, {'s': _dumps(splits_data), 'sid': session_id})
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"[init_dutch_splits] ERROR: {e}")
+        return False
+    finally:
+        cur.close(); conn.close()
+
+
+def add_dutch_payment(session_id: str, amount: int, device_id: str, payment_key: str) -> tuple[bool, dict]:
+    """
+    splits JSONB의 paid_items에 결제 건을 추가합니다.
+    트랜잭션 내에서 SELECT FOR UPDATE를 사용하여 레이스 컨디션을 방지합니다.
+    반환: (is_completed, updated_splits)
+    """
+    conn = get_db_conn()
+    if not conn:
+        return False, {}
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        # 1. 락 획득 및 조회
+        cur.execute("""
+            SELECT splits FROM table_sessions 
+            WHERE session_id = %(sid)s 
+            FOR UPDATE
+        """, {'sid': session_id})
+        row = cur.fetchone()
+        if not row:
+            return False, {}
+        
+        splits = row.get('splits')
+        if isinstance(splits, str):
+            splits = json.loads(splits)
+            
+        if not isinstance(splits, dict):
+            # 만약 빈 배열 등으로 초기화되어 있다면 에러 방지용 기본구조 생성
+            splits = {
+                "total_price": 0,
+                "split_count": 1,
+                "split_amount": 0,
+                "paid_items": []
+            }
+            
+        paid_items = splits.get("paid_items", [])
+        
+        # 이미 이 payment_key로 결제된 건이 있는지 확인 (중복 처리 방지)
+        for item in paid_items:
+            if item.get("payment_key") == payment_key:
+                total_paid = sum(x.get("amount", 0) for x in paid_items)
+                is_completed = total_paid >= splits.get("total_price", 0)
+                return is_completed, splits
+
+        # 새 결제 추가
+        new_payment = {
+            "amount": amount,
+            "device_id": device_id,
+            "payment_key": payment_key,
+            "paid_at": datetime.now().isoformat()
+        }
+        paid_items.append(new_payment)
+        splits["paid_items"] = paid_items
+        
+        # 누적 금액 계산
+        total_paid = sum(x.get("amount", 0) for x in paid_items)
+        is_completed = total_paid >= splits.get("total_price", 0)
+        
+        # 2. 업데이트
+        cur.execute("""
+            UPDATE table_sessions
+            SET splits = %(s)s::jsonb,
+                version = version + 1
+            WHERE session_id = %(sid)s
+        """, {'s': json.dumps(splits, ensure_ascii=False), 'sid': session_id})
+        
+        conn.commit()
+        return is_completed, splits
+    except Exception as e:
+        conn.rollback()
+        print(f"[add_dutch_payment] ERROR: {e}")
+        return False, {}
+    finally:
+        cur.close(); conn.close()
+
+
 def append_split(session_id: str, split_data: dict) -> bool:
     conn = get_db_conn()
     if not conn:
@@ -938,7 +1043,12 @@ def update_split_status(session_id: str, split_id: str, status: str) -> bool:
 
 def get_splits(session_id: str) -> list:
     sess = get_session(session_id)
+    # splits가 dict일 수도 있으므로, dict이면 key 목록이나 적절한 구조 리턴 또는 dict 자체를 반환
+    # 단, 이전 호환을 위해 check
+    if sess and isinstance(sess.get('splits'), dict):
+        return [sess.get('splits')]
     return (sess.get('splits') or []) if sess else []
+
 
 
 # ──────────────────────────────────────────────

@@ -65,6 +65,15 @@ def get_stores_db():
                 COALESCE(monthly_fee, 0) AS monthly_fee,
                 COALESCE(payment_status, '정상') AS payment_status,
                 payment_history,
+                COALESCE(use_kitchen, TRUE) AS use_kitchen,
+                COALESCE(use_call, TRUE) AS use_call,
+                COALESCE(use_waiting, TRUE) AS use_waiting,
+                COALESCE(use_parking, TRUE) AS use_parking,
+                COALESCE(use_points, TRUE) AS use_points,
+                COALESCE(use_reservation, TRUE) AS use_reservation,
+                COALESCE(use_display, TRUE) AS use_display,
+                COALESCE(use_staff, TRUE) AS use_staff,
+                COALESCE(use_dutch, TRUE) AS use_dutch,
                 COALESCE(created_at::text, NOW()::text) AS timestamp
             FROM stores
             ORDER BY created_at DESC
@@ -126,12 +135,14 @@ def delete_store_db(store_id: str):
         print(f"Delete Store DB Error: {e}")
         return False
 
-def get_store_use_kitchen(store_id: str) -> bool:
+def _get_store_bool_setting(store_id: str, column_name: str) -> bool:
     conn = get_db_conn()
     if not conn: return True
     try:
         cur = conn.cursor()
-        cur.execute("SELECT use_kitchen FROM stores WHERE id = %s", (store_id,))
+        if column_name not in ["use_kitchen", "use_call", "use_waiting", "use_parking", "use_points", "use_reservation", "use_display", "use_staff", "use_dutch"]:
+            raise ValueError(f"Invalid column name: {column_name}")
+        cur.execute(f"SELECT {column_name} FROM stores WHERE id = %s", (store_id,))
         row = cur.fetchone()
         cur.close()
         conn.close()
@@ -139,22 +150,78 @@ def get_store_use_kitchen(store_id: str) -> bool:
             return True
         return bool(row[0])
     except Exception as e:
-        print(f"Get Store use_kitchen Error: {e}")
+        print(f"Get Store {column_name} Error: {e}")
         return True
 
-def update_store_use_kitchen(store_id: str, use_kitchen: bool) -> bool:
+def _update_store_bool_setting(store_id: str, column_name: str, value: bool) -> bool:
     conn = get_db_conn()
     if not conn: return False
     try:
         cur = conn.cursor()
-        cur.execute("UPDATE stores SET use_kitchen = %s WHERE id = %s", (use_kitchen, store_id))
+        if column_name not in ["use_kitchen", "use_call", "use_waiting", "use_parking", "use_points", "use_reservation", "use_display", "use_staff", "use_dutch"]:
+            raise ValueError(f"Invalid column name: {column_name}")
+        cur.execute(f"UPDATE stores SET {column_name} = %s WHERE id = %s", (value, store_id))
         conn.commit()
         cur.close()
         conn.close()
         return True
     except Exception as e:
-        print(f"Update Store use_kitchen Error: {e}")
+        print(f"Update Store {column_name} Error: {e}")
         return False
+
+def get_store_use_kitchen(store_id: str) -> bool:
+    return _get_store_bool_setting(store_id, "use_kitchen")
+
+def update_store_use_kitchen(store_id: str, use_kitchen: bool) -> bool:
+    return _update_store_bool_setting(store_id, "use_kitchen", use_kitchen)
+
+def get_store_use_call(store_id: str) -> bool:
+    return _get_store_bool_setting(store_id, "use_call")
+
+def update_store_use_call(store_id: str, use_call: bool) -> bool:
+    return _update_store_bool_setting(store_id, "use_call", use_call)
+
+def get_store_use_waiting(store_id: str) -> bool:
+    return _get_store_bool_setting(store_id, "use_waiting")
+
+def update_store_use_waiting(store_id: str, use_waiting: bool) -> bool:
+    return _update_store_bool_setting(store_id, "use_waiting", use_waiting)
+
+def get_store_use_parking(store_id: str) -> bool:
+    return _get_store_bool_setting(store_id, "use_parking")
+
+def update_store_use_parking(store_id: str, use_parking: bool) -> bool:
+    return _update_store_bool_setting(store_id, "use_parking", use_parking)
+
+def get_store_use_points(store_id: str) -> bool:
+    return _get_store_bool_setting(store_id, "use_points")
+
+def update_store_use_points(store_id: str, use_points: bool) -> bool:
+    return _update_store_bool_setting(store_id, "use_points", use_points)
+
+def get_store_use_reservation(store_id: str) -> bool:
+    return _get_store_bool_setting(store_id, "use_reservation")
+
+def update_store_use_reservation(store_id: str, use_reservation: bool) -> bool:
+    return _update_store_bool_setting(store_id, "use_reservation", use_reservation)
+
+def get_store_use_display(store_id: str) -> bool:
+    return _get_store_bool_setting(store_id, "use_display")
+
+def update_store_use_display(store_id: str, use_display: bool) -> bool:
+    return _update_store_bool_setting(store_id, "use_display", use_display)
+
+def get_store_use_staff(store_id: str) -> bool:
+    return _get_store_bool_setting(store_id, "use_staff")
+
+def update_store_use_staff(store_id: str, use_staff: bool) -> bool:
+    return _update_store_bool_setting(store_id, "use_staff", use_staff)
+
+def get_store_use_dutch(store_id: str) -> bool:
+    return _get_store_bool_setting(store_id, "use_dutch")
+
+def update_store_use_dutch(store_id: str, use_dutch: bool) -> bool:
+    return _update_store_bool_setting(store_id, "use_dutch", use_dutch)
 
 def get_reservation_settings(store_id: str) -> dict:
     conn = get_db_conn()

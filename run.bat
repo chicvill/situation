@@ -23,7 +23,7 @@ echo.
 
 echo [1/2] Starting Backend Server (venv Python)...
 set PYTHONUTF8=1
-wt -w 0 new-tab --title "SITUATION-BACKEND" -- cmd /k "cd /d "%BASE_DIR%situation-backend" && "%BASE_DIR%venv\Scripts\python.exe" -m uvicorn session.main:app --reload --host 0.0.0.0 --port 8000"
+wt -w 0 new-tab --title "SITUATION-BACKEND" -- cmd /k "cd /d "%BASE_DIR%situation-backend" && "%BASE_DIR%venv\Scripts\python.exe" -m uvicorn session.main:app --reload --host 0.0.0.0 --port 8080"
 timeout /t 5 /nobreak >nul
 echo.
 
@@ -33,7 +33,7 @@ wt -w 0 new-tab --title "SITUATION-FRONTEND" -- cmd /k "cd /d "%BASE_DIR%situati
 echo.
 echo ------------------------------------------------------
 echo  MQTT Broker  : HiveMQ Cloud (TLS 8883 / WSS 8884)
-echo  Backend API  : http://localhost:8000
+echo  Backend API  : http://localhost:8080
 echo  Frontend Dev : http://localhost:5173
 echo  Frontend Prod: situation-room/dist  (npm run build)
 echo ------------------------------------------------------

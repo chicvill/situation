@@ -12,8 +12,8 @@ interface CounterPadProps {
 const getApiUrl = () => {
     const host = window.location.hostname;
     const isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.');
-    if (isLocal) return `http://${host}:8000`;
-    return import.meta.env.VITE_API_URL || `http://${host}:8000`;
+    if (isLocal) return `http://${host}:8080`;
+    return import.meta.env.VITE_API_URL || `http://${host}:8080`;
 };
 
 // 단계 순서 (progress bar용)

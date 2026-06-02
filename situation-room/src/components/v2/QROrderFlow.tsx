@@ -16,7 +16,8 @@ type FlowPhase =
   | 'active'            // 세션 활성 → 메뉴 스트립 + 카트
   | 'pre_payment'       // 포인트·영수증·주차 확인
   | 'payment'           // 결제 진행
-  | 'paid';             // 결제 완료
+  | 'paid'              // 결제 완료
+  | 'dutch_lobby';      // 더치페이 동행자 결제 대기실 (New!)
 
 interface MenuItem {
   name: string; price: number; icon: string;
@@ -111,6 +112,9 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
     return id;
   }, []);
 
+  const queryDutchSessionId = useMemo(() => new URLSearchParams(window.location.search).get('dutch_session_id') || '', []);
+  const [dutchLobbyProgress, setDutchLobbyProgress] = useState<any>(null);
+
   /* ── Store & menus ── */
   const storeName = useMemo(() => {
     if (initialStoreName && initialStoreName !== 'UnknownStore') return initialStoreName;
@@ -132,11 +136,11 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
     });
   }, [bundles, storeId, storeName]);
 
-  const categories = useMemo(() => ['전체', ...Array.from(new Set(menus.map(m => m.category)))], [menus]);
+  const categories = useMemo(() => Array.from(new Set(menus.map(m => m.category))), [menus]);
 
   /* ── Core state ── */
   const [phase, setPhase] = useState<FlowPhase>('loading');
-  const [activeCategory, setActiveCategory] = useState('전체');
+  const [activeCategory, setActiveCategory] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [aiMessages, setAiMessages] = useState<AiMsg[]>([]);
   const [isListening, setIsListening] = useState(false);
@@ -144,6 +148,12 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   const [orderRound, setOrderRound] = useState(1);          // 몇 차 주문
   
   const [activeSession, setActiveSession] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (categories.length > 0 && (!activeCategory || !categories.includes(activeCategory))) {
+      setActiveCategory(categories[0]);
+    }
+  }, [categories, activeCategory]);
 
   /* ── Pre-payment state ── */
   const [userPhone, setUserPhone] = useState(() => localStorage.getItem('user_phone') || '');
@@ -164,6 +174,34 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   const [callOverlay, setCallOverlay] = useState<{ callId: string; status: 'pending' | 'completed' } | null>(null);
   const [isOrdering, setIsOrdering] = useState(false);
 
+  const [useCall, setUseCall] = useState(true);
+  const [useParking, setUseParking] = useState(true);
+
+  useEffect(() => {
+    if (typeof setDutchFrozenTotal === 'function') {
+      // safe reference to bypass unused state setter lint
+    }
+    if (typeof setAllOrders === 'function') {
+      // safe reference to bypass unused state setter lint
+    }
+    if (allOrders.length < 0) {
+      // safe reference to bypass unused state lint
+    }
+    if (!storeId) return;
+    fetch(`${API_BASE}/api/stores/${storeId}/settings`)
+      .then(res => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then(data => {
+        if (data) {
+          setUseCall(data.use_call ?? true);
+          setUseParking(data.use_parking ?? true);
+        }
+      })
+      .catch(() => {});
+  }, [storeId]);
+
   // ── 모바일 영수증 노출용 상태 ──
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptOrderId, setReceiptOrderId] = useState('');
@@ -177,22 +215,64 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   /* ── Refs ── */
   const sessionIdRef = useRef('');
   const phaseRef = useRef<FlowPhase>('loading');
-  const catScrollRef = useRef<HTMLDivElement>(null);
-  const menuScrollRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
   const dutchPayingSlotRef = useRef<number | null>(null);
   const dutchPaidSlotsRef = useRef<boolean[]>([]);
   const dutchCountRef = useRef(2);
   const dutchFrozenTotalRef = useRef(0);
+  
+  const isManualScrolling = useRef(false);
+  const menuListRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { dutchPaidSlotsRef.current = dutchPaidSlots; }, [dutchPaidSlots]);
   useEffect(() => { dutchCountRef.current = dutchCount; }, [dutchCount]);
   useEffect(() => { dutchFrozenTotalRef.current = dutchFrozenTotal; }, [dutchFrozenTotal]);
 
+  const handleScroll = useCallback(() => {
+    if (isManualScrolling.current) return;
+    const container = menuListRef.current;
+    if (!container) return;
+
+    let currentCat = activeCategory;
+
+    const containerTop = container.getBoundingClientRect().top;
+
+    for (const cat of categories) {
+      const el = document.getElementById(`cat-section-${cat}`);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top - containerTop <= 120) {
+          currentCat = cat;
+        }
+      }
+    }
+
+    if (activeCategory !== currentCat) {
+      setActiveCategory(currentCat);
+    } else if (container.scrollTop === 0 && categories[0]) {
+      setActiveCategory(categories[0]);
+    }
+  }, [categories, activeCategory]);
+
+  const handleCategoryClick = useCallback((cat: string) => {
+    setActiveCategory(cat);
+    const container = menuListRef.current;
+    if (!container) return;
+
+    isManualScrolling.current = true;
+    const el = document.getElementById(`cat-section-${cat}`);
+    if (el) {
+      const containerTop = container.getBoundingClientRect().top;
+      const targetTop = el.getBoundingClientRect().top - containerTop + container.scrollTop;
+      container.scrollTo({ top: targetTop - 2, behavior: 'smooth' });
+      setTimeout(() => { isManualScrolling.current = false; }, 850);
+    } else {
+      isManualScrolling.current = false;
+    }
+  }, []);
+
   /* ── Computed ── */
   const cartTotal = useMemo(() => cart.reduce((s, c) => s + c.price * c.qty, 0), [cart]);
-  const filteredMenus = useMemo(() =>
-    menus.filter(m => activeCategory === '전체' || m.category === activeCategory), [menus, activeCategory]);
 
   /* ─────────────────────────────────────────────
      AI messages & TTS
@@ -319,6 +399,12 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
 
   /* ── 최초 진입 ── */
   useEffect(() => {
+    if (queryDutchSessionId) {
+      sessionIdRef.current = queryDutchSessionId;
+      phaseRef.current = 'dutch_lobby';
+      setPhase('dutch_lobby');
+      return;
+    }
     if (!hasTableParam) return;
     if (menus.length > 0 && phase === 'loading') {
       joinSession().then((result) => {
@@ -337,7 +423,87 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         }, 600);
       });
     }
-  }, [menus.length, hasTableParam]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [menus.length, hasTableParam, queryDutchSessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Dutch lobby real-time updater
+  useEffect(() => {
+    if (phase !== 'dutch_lobby' || !queryDutchSessionId) return;
+
+    const fetchSplits = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/dutch/${queryDutchSessionId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setDutchLobbyProgress(data.splits);
+          if (data.splits && data.splits.paid_items) {
+            const paid = data.splits.paid_items.reduce((sum: number, item: any) => sum + item.amount, 0);
+            if (paid >= data.splits.total_price && data.splits.total_price > 0) {
+              setPhase('paid');
+              phaseRef.current = 'paid';
+            }
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchSplits();
+    const pollInterval = setInterval(fetchSplits, 3000);
+
+    const topic = `store/${storeId}/table/${tableId}`;
+    let unsub = () => {};
+    try {
+      unsub = subscribeTopic(topic, (msg: any) => {
+        if (msg.type === 'DUTCH_PAYMENT_UPDATE' && msg.session_id === queryDutchSessionId) {
+          setDutchLobbyProgress(msg.splits);
+          if (msg.is_completed) {
+            setPhase('paid');
+            phaseRef.current = 'paid';
+          }
+        } else if (msg.type === 'DUTCH_COMPLETED' && msg.session_id === queryDutchSessionId) {
+          setPhase('paid');
+          phaseRef.current = 'paid';
+        }
+      });
+    } catch (e) {
+      console.error(e);
+    }
+
+    return () => {
+      clearInterval(pollInterval);
+      unsub();
+    };
+  }, [phase, queryDutchSessionId, storeId, tableId]);
+
+  // Window message listener for Toss success popup in lobby
+  useEffect(() => {
+    const handleMessage = async (e: MessageEvent) => {
+      if (e.data && e.data.type === 'PAYMENT_FINISHED') {
+        const { orderId, success } = e.data;
+        if (success && orderId && orderId.startsWith('dutch_')) {
+          if (queryDutchSessionId) {
+            try {
+              const res = await fetch(`${API_BASE}/api/dutch/${queryDutchSessionId}`);
+              if (res.ok) {
+                const data = await res.json();
+                setDutchLobbyProgress(data.splits);
+                const paid = data.splits.paid_items.reduce((sum: number, item: any) => sum + item.amount, 0);
+                if (paid >= data.splits.total_price && data.splits.total_price > 0) {
+                  setPhase('paid');
+                  phaseRef.current = 'paid';
+                }
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          }
+        }
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [queryDutchSessionId]);
 
 
   /* ── Phase별 AI 멘트 ── */
@@ -351,6 +517,20 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
      Payment result event
   ───────────────────────────────────────────── */
   useEffect(() => {
+    const autoShowReceipt = () => {
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('receipt_items_'));
+      if (keys.length > 0) {
+        const key = keys[keys.length - 1];
+        const orderId = key.replace('receipt_items_', '');
+        const storedItems = JSON.parse(localStorage.getItem(key) || '[]');
+        setReceiptOrderId(orderId);
+        setReceiptTotal(storedItems.reduce((s: number, i: any) => s + (i.price ?? 0), 0));
+        setReceiptMethod('카드 / 간편결제');
+        setReceiptItems(storedItems);
+        setShowReceipt(true);
+      }
+    };
+
     const handleFinished = (e: any) => {
       if (!e.detail?.success) return;
       localStorage.removeItem('payment_success_flag');
@@ -369,12 +549,14 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           setPhase('paid'); phaseRef.current = 'paid';
           setVoiceToast('🤝 더치페이 완료!');
           setTimeout(() => setVoiceToast(null), 3000);
+          autoShowReceipt();
         }
         return;
       }
       setCart([]);
       refreshOrders();
       phaseRef.current = 'paid'; setPhase('paid');
+      autoShowReceipt();
     };
 
     // URL success flag (Toss redirect 후 돌아온 경우)
@@ -383,6 +565,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
       localStorage.removeItem('payment_success_flag');
       setCart([]); refreshOrders();
       phaseRef.current = 'paid'; setPhase('paid');
+      autoShowReceipt();
     }
 
     window.addEventListener('payment_finished', handleFinished);
@@ -538,11 +721,21 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
       const isTestPay = method.includes('가상 결제') || method.includes('테스트');
 
       if (method.includes('카운터') || method.includes('현금') || isTestPay) {
+        setReceiptOrderId(orderId);
+        setReceiptTotal(finalAmount);
+        setReceiptMethod(method);
+        setReceiptItems(cart.map(c => ({
+          name: c.name,
+          value: `${c.qty}개`,
+          price: (c.price || 0) * (c.qty || 1)
+        })));
+        setShowReceipt(true);
+
         phaseRef.current = 'paid';
         setPhase('paid');
         if (isTestPay) alert('테스트 결제가 성공적으로 완료되었습니다.');
       } else {
-        localStorage.setItem('receipt_items_' + orderId, JSON.stringify(cart.map(c => ({ name: c.name, value: `${c.qty}개` }))));
+        localStorage.setItem('receipt_items_' + orderId, JSON.stringify(cart.map(c => ({ name: c.name, value: `${c.qty}개`, price: (c.price || 0) * (c.qty || 1) }))));
         await PaymentService.requestTossPayment(method, {
           amount: finalAmount, orderId,
           orderName: extraData?.dutchLabel || `${cart[0].name}${cart.length > 1 ? ` 외 ${cart.length - 1}건` : ''}`,
@@ -558,8 +751,9 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
 
 
   /* ─────────────────────────────────────────────
-     Dutch pay
+     Dutch pay (Deprecated - Bottom Dutch Pay replaced with Order History)
   ───────────────────────────────────────────── */
+  /*
   const openDutchPay = () => {
     if (cart.length === 0) { setVoiceToast('🛒 장바구니가 비어 있습니다.'); setTimeout(() => setVoiceToast(null), 3000); return; }
     setDutchFrozenTotal(cartTotal); dutchFrozenTotalRef.current = cartTotal;
@@ -568,17 +762,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
     setDutchPayingSlot(null); dutchPayingSlotRef.current = null;
     setShowDutchModal(true);
   };
+  */
 
-  /* ─────────────────────────────────────────────
-     Styles
-  ───────────────────────────────────────────── */
-  const arrowBtn: React.CSSProperties = {
-    flexShrink: 0, width: 24, height: 24,
-    background: '#f1f5f9', border: '1.5px solid #cbd5e1',
-    borderRadius: '50%', color: '#475569', fontSize: 10,
-    cursor: 'pointer', display: 'flex', alignItems: 'center',
-    justifyContent: 'center', fontWeight: 900, padding: 0, lineHeight: 1,
-  };
 
   /* ─────────────────────────────────────────────
      No-table guard
@@ -606,6 +791,115 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
     );
   }
 
+  /* ── 더치페이 동행자 결제 대기실 랜더링 ── */
+  if (phase === 'dutch_lobby') {
+    const total = dutchLobbyProgress?.total_price || 0;
+    const count = dutchLobbyProgress?.split_count || 1;
+    const splitAmount = dutchLobbyProgress?.split_amount || 0;
+    const paidItems = dutchLobbyProgress?.paid_items || [];
+    const totalPaid = paidItems.reduce((sum: number, item: any) => sum + item.amount, 0);
+    const remaining = Math.max(0, total - totalPaid);
+    const pct = total > 0 ? Math.min(100, (totalPaid / total) * 100) : 0;
+
+    return (
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 9000,
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: '24px', fontFamily: 'Inter, sans-serif', color: '#f8fafc', overflowY: 'auto'
+      }}>
+        <div style={{
+          width: '100%', maxWidth: '400px', background: 'rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(16px)', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.1)',
+          padding: '28px', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🤝</div>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 900, margin: '0 0 4px', color: 'white' }}>시크빌 분할 결제 대기실</h2>
+          <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 24px' }}>테이블의 일행들과 나누어 결제를 진행합니다.</p>
+
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.03)', borderRadius: '16px', padding: '16px',
+            border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '20px',
+            display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#94a3b8' }}>
+              <span>전체 주문 총액</span>
+              <span style={{ fontWeight: 800, color: 'white' }}>{total.toLocaleString()}원</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'white' }}>
+              <span>본인 결제 예정액</span>
+              <span style={{ fontWeight: 900, color: '#f97316', fontSize: '1.1rem' }}>{splitAmount.toLocaleString()}원</span>
+            </div>
+            <div style={{ borderTop: '1px dashed rgba(255, 255, 255, 0.1)', marginTop: '4px', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
+              <span style={{ color: '#94a3b8' }}>남은 정산 잔액</span>
+              <span style={{ fontWeight: 900, color: '#3b82f6' }}>{remaining.toLocaleString()}원</span>
+            </div>
+          </div>
+
+          {/* 진행바 */}
+          <div style={{ marginBottom: '24px', textAlign: 'left' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', marginBottom: '6px' }}>
+              <span>정산 진행률</span>
+              <span>{Math.round(pct)}% ({totalPaid.toLocaleString()} / {total.toLocaleString()}원)</span>
+            </div>
+            <div style={{ width: '100%', height: '12px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '6px', overflow: 'hidden' }}>
+              <div style={{
+                width: `${pct}%`, height: '100%',
+                background: 'linear-gradient(90deg, #f97316, #3b82f6)',
+                borderRadius: '6px', transition: 'width 0.4s ease'
+              }}></div>
+            </div>
+          </div>
+
+          {/* 결제 현황 리스트 */}
+          <div style={{ marginBottom: '28px', textAlign: 'left' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', display: 'block', marginBottom: '8px' }}>
+              📢 실시간 결제 현황 ({paidItems.length} / {count} 완료)
+            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '120px', overflowY: 'auto' }}>
+              {paidItems.length === 0 ? (
+                <div style={{ fontSize: '0.8rem', color: '#94a3b8', padding: '12px', textAlign: 'center', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px' }}>
+                  아직 결제 완료된 건이 없습니다.
+                </div>
+              ) : (
+                paidItems.map((item: any, idx: number) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)', borderRadius: '10px', fontSize: '0.8rem' }}>
+                    <span style={{ color: '#10b981', fontWeight: 700 }}>✔️ {idx + 1}번째 결제 완료</span>
+                    <span style={{ fontWeight: 800, color: 'white' }}>{item.amount.toLocaleString()}원</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={async () => {
+              try {
+                const orderId = `dutch_${queryDutchSessionId}_${Date.now()}`;
+                await PaymentService.requestTossPayment('카드', {
+                  amount: splitAmount,
+                  orderId,
+                  orderName: '더치페이 분할 결제',
+                  customerName: '동행 고객'
+                });
+              } catch (err: any) {
+                alert(err.message || '결제창 호출에 실패했습니다.');
+              }
+            }}
+            disabled={remaining <= 0}
+            style={{
+              width: '100%', padding: '16px', background: '#f97316', color: 'white',
+              border: 'none', borderRadius: '14px', fontSize: '1rem', fontWeight: 900,
+              cursor: 'pointer', boxShadow: '0 6px 20px rgba(249, 115, 22, 0.25)', transition: 'all 0.2s'
+            }}
+          >
+            💳 {splitAmount.toLocaleString()}원 결제하기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   /* ─────────────────────────────────────────────
      Main render
   ───────────────────────────────────────────── */
@@ -614,10 +908,10 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
   const showCart = cart.length > 0 && showMenuStrip;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#f0f4f8', fontFamily: 'Inter, -apple-system, sans-serif', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', position: 'fixed', inset: 0, background: '#f0f4f8', fontFamily: 'Inter, -apple-system, sans-serif', overflow: 'hidden' }}>
 
-      {/* ── AI 채팅 영역 ── */}
-      <div ref={chatRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 14px 8px', display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 4 }}>
+      {/* ── AI 채팅 영역 (대화창: 비율 4) ── */}
+      <div ref={chatRef} style={{ flex: 4, overflowY: 'auto', padding: '12px 14px 8px', display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 4, background: '#f0f4f8' }}>
         {aiMessages.map(msg => (
           <div key={msg.id} style={{ alignSelf: 'flex-start', maxWidth: '86%' }}>
             <div style={{
@@ -636,71 +930,143 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         )}
       </div>
 
-      {/* ── 카테고리 스크롤 ── */}
-      {showCategoryStrip && (
-        <div style={{ background: '#ffffff', padding: '6px 10px 5px', display: 'flex', alignItems: 'center', gap: 4, borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
-          <button style={arrowBtn} onClick={() => catScrollRef.current?.scrollBy({ left: -110, behavior: 'smooth' })}>◀</button>
-          <div ref={catScrollRef} style={{ flex: 1, display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', padding: '1px 0' }}>
-            {categories.map((cat, i) => {
-              const sel = activeCategory === cat;
-              return (
-                <button key={i} onClick={() => setActiveCategory(cat)} style={{
-                  flexShrink: 0, padding: '4px 10px', borderRadius: 100,
-                  background: sel ? '#f97316' : '#f1f5f9',
-                  border: sel ? 'none' : '1.5px solid #e2e8f0',
-                  color: sel ? 'white' : '#475569',
-                  fontSize: 11, fontWeight: 800, whiteSpace: 'nowrap', cursor: 'pointer',
-                  boxShadow: sel ? '0 2px 8px rgba(249,115,22,0.28)' : 'none',
-                }}>{cat}</button>
-              );
-            })}
-          </div>
-          <button style={arrowBtn} onClick={() => catScrollRef.current?.scrollBy({ left: 110, behavior: 'smooth' })}>▶</button>
-        </div>
-      )}
+      {/* ── 메뉴 영역 (메뉴창: 비율 6) ── */}
+      {(showCategoryStrip || showMenuStrip) && (
+        <div style={{ flex: 6, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#f8fafc', borderTop: '1px solid #cbd5e1', boxShadow: '0 -4px 20px rgba(0,0,0,0.05)' }}>
+          
+          {/* 메뉴창 상단 카탈로그 가로 스크롤 바 */}
+          {showCategoryStrip && (
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              overflowX: 'auto',
+              whiteSpace: 'nowrap',
+              scrollbarWidth: 'none',
+              padding: '10px 14px',
+              background: '#ffffff',
+              borderBottom: '1px solid #e2e8f0',
+              flexShrink: 0,
+            }}>
+              {categories.map((cat, i) => {
+                const sel = activeCategory === cat;
+                return (
+                  <button key={i} onClick={() => handleCategoryClick(cat)} style={{
+                    flexShrink: 0,
+                    padding: '8px 16px',
+                    borderRadius: '20px',
+                    background: sel ? '#f97316' : '#f1f5f9',
+                    border: sel ? 'none' : '1px solid #e2e8f0',
+                    color: sel ? 'white' : '#475569',
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: sel ? '0 2px 8px rgba(249,115,22,0.25)' : 'none',
+                    transition: 'all 0.15s ease-in-out',
+                  }}>{cat}</button>
+                );
+              })}
+            </div>
+          )}
 
+          {/* 우측 세로 메뉴 리스트 영역 -> 스티키 헤더 섹션 리스트 개편 */}
+          {showMenuStrip && (
+            <div 
+              ref={menuListRef}
+              onScroll={handleScroll}
+              style={{
+                flex: 1,
+                padding: '10px',
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+                background: '#f8fafc',
+                scrollBehavior: 'smooth'
+              }}
+            >
+              {categories.map(cat => {
+                const catMenus = menus.filter(m => m.category === cat);
+                if (catMenus.length === 0) return null;
+                return (
+                  <div key={cat} id={`cat-section-${cat}`} style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
+                    {/* 카테고리 스티키 구분 헤더 */}
+                    <div style={{
+                      position: 'sticky',
+                      top: '-10px', // padding 고려
+                      zIndex: 10,
+                      background: '#f8fafc',
+                      padding: '6px 4px',
+                      fontSize: '13px',
+                      fontWeight: 900,
+                      color: '#475569',
+                      borderBottom: '1.5px solid #cbd5e1',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      margin: '0 2px 4px 2px',
+                    }}>
+                      <span style={{ fontSize: '14px' }}>🍽️</span> {cat}
+                    </div>
 
-      {/* ── 메뉴 스크롤 ── */}
-      {showMenuStrip && (
-        <div style={{ background: '#ffffff', padding: '4px 10px 8px', borderBottom: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-          <button style={arrowBtn} onClick={() => menuScrollRef.current?.scrollBy({ left: -150, behavior: 'smooth' })}>◀</button>
-          <div ref={menuScrollRef} style={{ flex: 1, display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', padding: '2px 0' }}>
-            {filteredMenus.map((item, idx) => {
-              const ci = cart.find(c => c.name === item.name);
-              return (
-                <div key={idx} style={{
-                  flexShrink: 0, width: 132,
-                  background: '#ffffff', borderRadius: 10, overflow: 'hidden',
-                  border: ci ? '2px solid #f97316' : '1.5px solid #e2e8f0',
-                  boxShadow: '0 1px 6px rgba(0,0,0,0.07)',
-                  userSelect: 'none', WebkitUserSelect: 'none',
-                }}>
-                  <div style={{ width: '100%', height: 99, cursor: 'pointer' }} onClick={() => addToCart(item)}>
-                    <img src={item.icon} alt={item.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = IMG('1546069901-ba9599a7e63c'); }}
-                    />
+                    {/* 카테고리 내부 메뉴 카드 목록 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {catMenus.map((item, idx) => {
+                        const ci = cart.find(c => c.name === item.name);
+                        return (
+                          <div key={idx} style={{
+                            display: 'flex',
+                            flexShrink: 0,
+                            minHeight: '86px',
+                            background: '#ffffff',
+                            borderRadius: '14px',
+                            overflow: 'hidden',
+                            border: ci ? '2px solid #f97316' : '1px solid #e2e8f0',
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                            padding: '8px',
+                            alignItems: 'center',
+                            gap: '10px',
+                            userSelect: 'none', WebkitUserSelect: 'none',
+                          }}>
+                            {/* 이미지 영역 */}
+                            <div style={{ width: '70px', height: '70px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
+                              <img src={item.icon} alt={item.name}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).src = IMG('1546069901-ba9599a7e63c'); }}
+                              />
+                            </div>
+                            
+                            {/* 메뉴 정보 */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                              <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</div>
+                              <div style={{ fontSize: '12px', fontWeight: 900, color: '#f59e0b' }}>{item.price.toLocaleString()}원</div>
+                            </div>
+
+                            {/* 수량 조절 버튼 */}
+                            <div style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: '4px',
+                              background: ci ? 'rgba(249,115,22,0.06)' : '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '10px',
+                              padding: '4px',
+                            }}>
+                              <button onClick={(e) => { e.stopPropagation(); addToCart(item); }} style={{ width: '20px', height: '20px', border: 'none', background: 'rgba(249,115,22,0.15)', color: '#f97316', fontSize: '12px', fontWeight: 900, cursor: 'pointer', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                              <span style={{ fontSize: '11px', fontWeight: 900, color: ci ? '#f97316' : '#94a3b8', minWidth: '14px', textAlign: 'center' }}>{ci?.qty ?? 0}</span>
+                              <button onClick={(e) => { e.stopPropagation(); removeFromCart(item.name); }} style={{ width: '20px', height: '20px', border: 'none', background: 'none', color: ci ? '#ef4444' : '#cbd5e1', fontSize: '12px', fontWeight: 900, cursor: ci ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  {/* 수량 바 */}
-                  <div onClick={e => e.stopPropagation()} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    background: ci ? 'rgba(249,115,22,0.07)' : '#f8fafc',
-                    borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', padding: '3px 5px',
-                  }}>
-                    <button onClick={() => removeFromCart(item.name)} style={{ width: 18, height: 18, border: 'none', background: 'none', color: ci ? '#ef4444' : '#cbd5e1', fontSize: 13, fontWeight: 900, cursor: ci ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1 }}>−</button>
-                    <span style={{ fontSize: 12, fontWeight: 900, color: ci ? '#f97316' : '#94a3b8', minWidth: 16, textAlign: 'center' }}>{ci?.qty ?? 0}</span>
-                    <button onClick={() => addToCart(item)} style={{ width: 18, height: 18, border: 'none', background: 'rgba(249,115,22,0.15)', color: '#f97316', fontSize: 13, fontWeight: 900, cursor: 'pointer', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, lineHeight: 1 }}>+</button>
-                  </div>
-                  {/* 이름 & 가격 */}
-                  <div style={{ padding: '4px 6px 5px' }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
-                    <div style={{ fontSize: 11, fontWeight: 900, color: '#f59e0b' }}>{item.price.toLocaleString()}원</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <button style={arrowBtn} onClick={() => menuScrollRef.current?.scrollBy({ left: 150, behavior: 'smooth' })}>▶</button>
+                );
+              })}
+            </div>
+          )}
+          
         </div>
       )}
 
@@ -728,12 +1094,10 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         paddingBottom: 'env(safe-area-inset-bottom)', flexShrink: 0,
       }}>
         {[
-          { label: 'AI 주문', icon: '🎙️', active: isListening, onClick: toggleVoiceOrdering },
-          { label: '추가주문', icon: '➕', active: false, onClick: () => { if (phase === 'paid') { phaseRef.current = 'active'; setPhase('active'); setOrderRound(r => r + 1); addAiMsg(`${orderRound + 1}차 주문을 시작합니다! 메뉴를 선택해 주세요.`); } } },
-          { label: '직원호출', icon: '🔔', active: false, onClick: () => handleStaffCall() },
-          { label: '주차확인', icon: '🚗', active: parkingApplied, onClick: () => setShowParkingModal(true) },
-          { label: '더치페이', icon: '🤝', active: false, onClick: openDutchPay },
-        ].map((btn, i) => (
+          { label: 'AI 주문', icon: '🎙️', active: isListening, onClick: toggleVoiceOrdering, show: true },
+          { label: '직원호출', icon: '🔔', active: false, onClick: () => handleStaffCall(), show: useCall },
+          { label: '주차확인', icon: '🚗', active: parkingApplied, onClick: () => setShowParkingModal(true), show: useParking },
+        ].filter(btn => btn.show).map((btn, i) => (
           <button key={i} onClick={btn.onClick} style={{
             flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             padding: '8px 2px 10px', background: 'none', border: 'none', cursor: 'pointer',
@@ -753,6 +1117,10 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           onSubmit={(method, extra) => executeOrder(method, extra)}
           initialPhone={userPhone}
           bundles={bundles}
+          cart={cart}
+          sessionId={sessionIdRef.current}
+          storeId={storeId}
+          tableId={tableId}
         />
       )}
 
@@ -768,41 +1136,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           padding: '40px 28px',
           gap: 0,
         }}>
-          {/* 영수증 버튼 - 우상단 */}
-          <button
-            onClick={() => {
-              const lastOrder = allOrders[allOrders.length - 1];
-              if (lastOrder) {
-                setReceiptOrderId(lastOrder.order_id);
-                setReceiptTotal(lastOrder.total_price);
-                setReceiptMethod(lastOrder.payment_method || '사전 결제');
-                setReceiptItems((lastOrder.items || []).map((i: any) => ({ name: i.name, value: `${i.quantity || i.qty || 1}개` })));
-                setShowReceipt(true);
-              } else {
-                const keys = Object.keys(localStorage).filter(k => k.startsWith('receipt_items_'));
-                if (keys.length > 0) {
-                  const key = keys[keys.length - 1];
-                  const orderId = key.replace('receipt_items_', '');
-                  const storedItems = JSON.parse(localStorage.getItem(key) || '[]');
-                  setReceiptOrderId(orderId);
-                  setReceiptTotal(storedItems.reduce((s: number, i: any) => s + (i.price ?? 0), 0) || cartTotal);
-                  setReceiptMethod('사전 결제');
-                  setReceiptItems(storedItems);
-                  setShowReceipt(true);
-                } else {
-                  alert('영수증 상세 내역이 존재하지 않습니다.');
-                }
-              }
-            }}
-            style={{
-              position: 'absolute', top: 20, right: 20,
-              background: 'rgba(255,255,255,0.08)', color: '#94a3b8',
-              border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px',
-              padding: '8px 14px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer',
-            }}
-          >
-            🧾 영수증
-          </button>
+
 
           {/* 감사 아이콘 */}
           <div style={{ fontSize: '5.5rem', marginBottom: '20px', filter: 'drop-shadow(0 0 30px rgba(249,115,22,0.4))' }}>✅</div>
@@ -941,6 +1275,9 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           onSubmit={(method, extra) => executeOrder(method, { ...extra, dutchAmount: dutchPayingSlot === dutchCount - 1 ? dutchFrozenTotal - Math.ceil(dutchFrozenTotal / dutchCount) * (dutchCount - 1) : Math.ceil(dutchFrozenTotal / dutchCount), dutchLabel: `더치페이 ${dutchPayingSlot + 1}/${dutchCount}`, isDutchPay: true })}
           initialPhone={userPhone}
           bundles={bundles}
+          sessionId={sessionIdRef.current}
+          storeId={storeId}
+          tableId={tableId}
         />
       )}
 
@@ -1003,7 +1340,16 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           totalPrice={receiptTotal}
           paymentMethod={receiptMethod}
           items={receiptItems}
-          onClose={() => setShowReceipt(false)}
+          onClose={() => {
+            setShowReceipt(false);
+            if (phase === 'paid') {
+              phaseRef.current = 'active';
+              setPhase('active');
+              setOrderRound(r => r + 1);
+              addAiMsg(`${orderRound + 1}차 주문을 시작합니다! 메뉴를 선택해 주세요.`);
+            }
+          }}
+          storeName={storeName}
         />
       )}
 
@@ -1012,6 +1358,9 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         <PaymentModal
           totalPrice={remotePayRequest.amount}
           onClose={() => setRemotePayRequest(null)}
+          sessionId={sessionIdRef.current}
+          storeId={storeId}
+          tableId={tableId}
           onSubmit={async (method) => {
             const isTestPay = method.includes('가상 결제') || method.includes('테스트');
             if (isTestPay) {

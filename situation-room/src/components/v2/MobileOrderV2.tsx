@@ -5,6 +5,7 @@ import { API_BASE } from '../../config';
 import { subscribeTopic } from '../../services/mqttClient';
 import { sendNotify, subscribeToStore } from '../../services/notifications';
 import { PaymentModal } from '../PaymentModal';
+import { ReceiptModal } from '../ReceiptModal';
 import { PaymentService } from '../../services/paymentService';
 import { ConversationalUI } from '../ConversationalUI';
 
@@ -96,11 +97,14 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   // --- States ---
   const [cart, setCart] = useState<MenuItem[]>([]);
   const [myOrders, setMyOrders] = useState<Order[]>([]);
-  const [activeCategory, setActiveCategory] = useState('전체');
+  const [activeCategory, setActiveCategory] = useState('');
   const [isOrdering, setIsOrdering] = useState(false);
   const [showProgress, setShowProgress] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceToast, setVoiceToast] = useState<string | null>(null);
+  
+  const [useCall, setUseCall] = useState(true);
+  const [useParking, setUseParking] = useState(true);
   const [sessionPhase, setSessionPhase] = useState<SessionPhase>('loading');
   const [sessionId, setSessionId] = useState('');
   const [showPayModal, setShowPayModal] = useState(false);
@@ -122,10 +126,24 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const [dutchPayingSlot, setDutchPayingSlot] = useState<number | null>(null);
   const [showDutchPersonPayModal, setShowDutchPersonPayModal] = useState(false);
 
-  // Lint bypass for onNavigate
+  // Receipt states
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [receiptOrderId, setReceiptOrderId] = useState('');
+  const [receiptTotal, setReceiptTotal] = useState(0);
+  const [receiptMethod, setReceiptMethod] = useState('');
+  const [receiptItems, setReceiptItems] = useState<{ name: string; value: string }[]>([]);
+  const [orderRound, setOrderRound] = useState(1);
+
+  // Lint bypass for onNavigate & unused Dutch state setters
   useEffect(() => {
     if (onNavigate) {
       // safe reference to bypass unused parameter lint
+    }
+    if (typeof setDutchFrozenTotal === 'function') {
+      // safe reference to bypass unused state setter lint
+    }
+    if (typeof handleOpenReceipt === 'function') {
+      // safe reference to bypass unused function lint
     }
   }, [onNavigate]);
 
@@ -263,8 +281,14 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     });
   }, [bundles, storeId, storeName]);
 
-  const categories = useMemo(() => ['전체', ...new Set((menus || []).map(m => m.category))], [menus]);
+  const categories = useMemo(() => Array.from(new Set((menus || []).map(m => m.category))), [menus]);
   const totalPrice = useMemo(() => cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0), [cart]);
+
+  useEffect(() => {
+    if (categories.length > 0 && (!activeCategory || !categories.includes(activeCategory))) {
+      setActiveCategory(categories[0]);
+    }
+  }, [categories, activeCategory]);
 
   // --- Session State Machine ---
   const sessionIdRef = React.useRef('');
@@ -273,6 +297,22 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const storeNameRef = React.useRef(storeName);
   useEffect(() => { storeNameRef.current = storeName; }, [storeName]);
 
+  useEffect(() => {
+    if (!storeId) return;
+    fetch(`${API_BASE}/api/stores/${storeId}/settings`)
+      .then(res => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then(data => {
+        if (data) {
+          setUseCall(data.use_call ?? true);
+          setUseParking(data.use_parking ?? true);
+        }
+      })
+      .catch(() => {});
+  }, [storeId]);
+
   // Dutch pay refs (for access in event handlers / async closures)
   const dutchPayingSlotRef = React.useRef<number | null>(null);
   const dutchPaidSlotsRef = React.useRef<boolean[]>([]);
@@ -280,9 +320,54 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const dutchFrozenTotalRef = React.useRef(0);
   const catScrollRef = React.useRef<HTMLDivElement>(null);
   const menuScrollRef = React.useRef<HTMLDivElement>(null);
+  const isManualScrolling = React.useRef(false);
+
   useEffect(() => { dutchPaidSlotsRef.current = dutchPaidSlots; }, [dutchPaidSlots]);
   useEffect(() => { dutchCountRef.current = dutchCount; }, [dutchCount]);
   useEffect(() => { dutchFrozenTotalRef.current = dutchFrozenTotal; }, [dutchFrozenTotal]);
+
+  const handleScroll = useCallback(() => {
+    if (isManualScrolling.current) return;
+    const container = menuScrollRef.current;
+    if (!container) return;
+
+    let currentCat = activeCategory;
+
+    const containerTop = container.getBoundingClientRect().top;
+
+    for (const cat of categories) {
+      const el = document.getElementById(`v2-cat-section-${cat}`);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        if (rect.top - containerTop <= 120) {
+          currentCat = cat;
+        }
+      }
+    }
+
+    if (activeCategory !== currentCat) {
+      setActiveCategory(currentCat);
+    } else if (container.scrollTop === 0 && categories[0]) {
+      setActiveCategory(categories[0]);
+    }
+  }, [categories, activeCategory]);
+
+  const handleCategoryClick = useCallback((cat: string) => {
+    setActiveCategory(cat);
+    const container = menuScrollRef.current;
+    if (!container) return;
+
+    isManualScrolling.current = true;
+    const el = document.getElementById(`v2-cat-section-${cat}`);
+    if (el) {
+      const containerTop = container.getBoundingClientRect().top;
+      const targetTop = el.getBoundingClientRect().top - containerTop + container.scrollTop;
+      container.scrollTo({ top: targetTop - 2, behavior: 'smooth' });
+      setTimeout(() => { isManualScrolling.current = false; }, 850);
+    } else {
+      isManualScrolling.current = false;
+    }
+  }, []);
 
   const refreshOrders = useCallback(async () => {
     if (!sessionIdRef.current) return;
@@ -447,6 +532,20 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
   // --- Payment Result Handling (Event driven from App.tsx) ---
   useEffect(() => {
+    const autoShowReceipt = () => {
+      const keys = Object.keys(localStorage).filter(k => k.startsWith('receipt_items_'));
+      if (keys.length > 0) {
+        const key = keys[keys.length - 1];
+        const orderId = key.replace('receipt_items_', '');
+        const storedItems = JSON.parse(localStorage.getItem(key) || '[]');
+        setReceiptOrderId(orderId);
+        setReceiptTotal(storedItems.reduce((s: number, i: any) => s + (i.price ?? 0), 0));
+        setReceiptMethod('카드 / 간편결제');
+        setReceiptItems(storedItems);
+        setShowReceiptModal(true);
+      }
+    };
+
     const handleFinished = (e: any) => {
       const { success } = e.detail;
       if (success) {
@@ -470,6 +569,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
             setShowProgress(true);
             setVoiceToast('🤝 더치페이 완료! 모두 결제되었습니다.');
             setTimeout(() => setVoiceToast(null), 4000);
+            autoShowReceipt();
           }
           return;
         }
@@ -477,6 +577,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
         setCart([]);
         refreshOrders();
         setShowProgress(true);
+        autoShowReceipt();
       }
     };
 
@@ -487,6 +588,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       setCart([]);
       refreshOrders();
       setShowProgress(true);
+      autoShowReceipt();
     }
 
     window.addEventListener('payment_finished', handleFinished);
@@ -819,7 +921,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           total_price: finalAmount,
           payment_status: (method.includes('카운터') || method.includes('현금') || method.includes('cash')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
           payment_method: method,
-          metadata: extraData
+          metadata: { ...(extraData || {}), round: orderRound }
         })
       });
 
@@ -851,13 +953,22 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           // Dutch pay cash: fire payment_finished for unified Dutch tracking
           setTimeout(() => window.dispatchEvent(new CustomEvent('payment_finished', { detail: { success: true } })), 0);
         } else {
+          setReceiptOrderId(orderId);
+          setReceiptTotal(finalAmount);
+          setReceiptMethod(method);
+          setReceiptItems(currentCart.map(c => ({
+            name: c.name,
+            value: String(c.qty || 1) + '개',
+            price: (c.price || 0) * (c.qty || 1)
+          })));
+          setShowReceiptModal(true);
           setShowProgress(true);
         }
       } else {
         // [CP-03] 토스 결제 호출 (Service 모듈로 위임)
         PaymentService.log("CP-02", "Electronic Payment Flow - Handoff to PaymentService");
         localStorage.setItem('receipt_items_' + orderId, JSON.stringify(
-          currentCart.map(c => ({ name: c.name, value: String(c.qty || 1) + '개' }))
+          currentCart.map(c => ({ name: c.name, value: String(c.qty || 1) + '개', price: (c.price || 0) * (c.qty || 1) }))
         ));
         await PaymentService.requestTossPayment(method, {
           amount: finalAmount,
@@ -902,6 +1013,66 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       setShowPayModal(true);
     }, 1200);
   }, [menus]);
+
+  const handleOpenReceipt = useCallback(() => {
+    if (myOrders.length === 0 && cart.length === 0) {
+      setVoiceToast('📋 현재 주문 내역이나 장바구니가 비어 있습니다.');
+      setTimeout(() => setVoiceToast(null), 3000);
+      return;
+    }
+
+    const aggregatedItems: { name: string; value: string; price?: number }[] = [];
+    let calculatedTotal = 0;
+
+    myOrders.forEach((order) => {
+      order.items.forEach((item) => {
+        const qty = item.qty || item.quantity || 1;
+        const price = item.price || 0;
+        calculatedTotal += price * qty;
+        
+        const existing = aggregatedItems.find(i => i.name === item.name);
+        if (existing) {
+          const prevQty = parseInt(existing.value.replace(/개/g, '')) || 0;
+          existing.value = `${prevQty + qty}개`;
+          if (existing.price !== undefined) {
+            existing.price += price * qty;
+          }
+        } else {
+          aggregatedItems.push({
+            name: item.name,
+            value: `${qty}개`,
+            price: price * qty
+          });
+        }
+      });
+    });
+
+    if (aggregatedItems.length === 0 && cart.length > 0) {
+      cart.forEach((item) => {
+        const qty = item.qty || 1;
+        calculatedTotal += (item.price || 0) * qty;
+        aggregatedItems.push({
+          name: item.name,
+          value: `${qty}개 (장바구니)`,
+          price: (item.price || 0) * qty
+        });
+      });
+    }
+
+    const displayOrderId = myOrders.length > 0 
+      ? myOrders[myOrders.length - 1].order_id 
+      : `TEMP-${Date.now().toString().slice(-6)}`;
+
+    const displayMethod = myOrders.length > 0
+      ? myOrders[myOrders.length - 1].payment_status === 'paid' ? '선결제 완료' : '주방 접수 (후결제)'
+      : '결제 대기 중';
+
+    setReceiptOrderId(displayOrderId);
+    setReceiptTotal(calculatedTotal);
+    setReceiptMethod(displayMethod);
+    setReceiptItems(aggregatedItems);
+    setShowReceiptModal(true);
+  }, [myOrders, cart]);
 
   // --- Render Functions ---
 
@@ -1168,91 +1339,140 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const renderContent = () => {
     if (showProgress) return renderProgressScreen();
 
-    const filteredMenus = (menus || []).filter(m => activeCategory === '전체' || m.category === activeCategory);
-
-    const arrowBtnStyle: React.CSSProperties = {
-      flexShrink: 0, width: '28px', height: '28px',
-      background: '#f1f5f9', border: '1.5px solid #cbd5e1',
-      borderRadius: '50%', color: '#475569', fontSize: '11px',
-      cursor: 'pointer', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', fontWeight: 900, padding: 0, lineHeight: 1,
-    };
-
-    const qtyBtnS: React.CSSProperties = {
-      width: '20px', height: '20px', border: 'none',
-      background: 'transparent', borderRadius: '50%',
-      fontSize: '14px', fontWeight: 900, cursor: 'pointer',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 0, lineHeight: 1,
-    };
-
     return (
-      <>
-        {/* ── 카탈로그 스크롤바 (카테고리 ◀▶) ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 0 10px' }}>
-          <button style={arrowBtnStyle} onClick={() => catScrollRef.current?.scrollBy({ left: -120, behavior: 'smooth' })}>◀</button>
-          <div ref={catScrollRef} style={{ flex: 1, display: 'flex', gap: '7px', overflowX: 'auto', scrollbarWidth: 'none', padding: '2px 0' }}>
-            {categories.map((cat, i) => {
-              const isSel = activeCategory === cat;
-              return (
-                <button key={i} onClick={() => setActiveCategory(cat)} style={{
-                  flexShrink: 0,
-                  background: isSel ? '#f97316' : '#f1f5f9',
-                  border: isSel ? 'none' : '1.5px solid #e2e8f0',
-                  color: isSel ? 'white' : '#475569',
-                  padding: '6px 14px', borderRadius: '100px',
-                  fontSize: '12.5px', fontWeight: 800, whiteSpace: 'nowrap', cursor: 'pointer',
-                  boxShadow: isSel ? '0 4px 10px rgba(249,115,22,0.25)' : 'none',
-                  transition: 'all 0.2s',
-                }}>{cat}</button>
-              );
-            })}
-          </div>
-          <button style={arrowBtnStyle} onClick={() => catScrollRef.current?.scrollBy({ left: 120, behavior: 'smooth' })}>▶</button>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', background: '#f8fafc', margin: '0 -15px -100px', height: 'calc(100vh - 170px)' }}>
+        
+        {/* 메뉴창 상단 카탈로그 가로 스크롤 바 */}
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          overflowX: 'auto',
+          whiteSpace: 'nowrap',
+          scrollbarWidth: 'none',
+          padding: '10px 14px',
+          background: '#ffffff',
+          borderBottom: '1px solid #e2e8f0',
+          flexShrink: 0,
+        }}>
+          {categories.map((cat, i) => {
+            const isSel = activeCategory === cat;
+            return (
+              <button key={i} onClick={() => handleCategoryClick(cat)} style={{
+                flexShrink: 0,
+                padding: '8px 16px',
+                borderRadius: '20px',
+                background: isSel ? '#f97316' : '#f1f5f9',
+                border: isSel ? 'none' : '1px solid #e2e8f0',
+                color: isSel ? 'white' : '#475569',
+                fontSize: '12px',
+                fontWeight: 800,
+                cursor: 'pointer',
+                boxShadow: isSel ? '0 2px 8px rgba(249,115,22,0.25)' : 'none',
+                transition: 'all 0.15s ease-in-out',
+              }}>{cat}</button>
+            );
+          })}
         </div>
 
-        {/* ── 원래 세로 카드 리스트 (전체 목록이 보이는 판형) ── */}
-        <div className="menu-grid-v2">
-          {filteredMenus.map((item, idx) => {
-            const cartItem = cart.find(c => c.name === item.name);
+        {/* 메뉴 카드 세로 스크롤 리스트 -> 스티키 헤더 섹션 리스트 개편 */}
+        <div 
+          ref={menuScrollRef}
+          onScroll={handleScroll}
+          style={{
+            flex: 1,
+            padding: '12px 14px',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            background: '#f8fafc',
+            scrollBehavior: 'smooth'
+          }}
+        >
+          {categories.map(cat => {
+            const catMenus = (menus || []).filter(m => m.category === cat);
+            if (catMenus.length === 0) return null;
             return (
-              <div key={idx} className="menu-card-v2" style={{ cursor: 'pointer' }}
-                onClick={() => addToCart(item)}>
-                {/* 사진 + 사진 아래 수량 바 */}
-                <div style={{ display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-                  <div style={{ position: 'relative', width: '100px', height: '85px' }}>
-                    <img src={item.icon} alt={item.name}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px 10px 0 0', display: 'block' }}
-                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=400&h=400'; }}
-                    />
-                    <span className="menu-category-tag">{item.category}</span>
-                  </div>
-                  {/* 수량 바 (사진 아래) */}
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    background: cartItem ? 'rgba(249,115,22,0.08)' : '#f1f5f9',
-                    border: '1px solid #e2e8f0', borderTop: 'none',
-                    borderRadius: '0 0 10px 10px',
-                    padding: '4px 6px', width: '100px', boxSizing: 'border-box',
-                  }}>
-                    <button onClick={(e) => { e.stopPropagation(); removeFromCart(item.name); }} style={{ ...qtyBtnS, color: cartItem ? '#ef4444' : '#cbd5e1' }}>−</button>
-                    <span style={{ fontSize: '12px', fontWeight: 900, color: cartItem ? '#f97316' : '#94a3b8', minWidth: '18px', textAlign: 'center' }}>
-                      {cartItem?.qty ?? 0}
-                    </span>
-                    <button onClick={(e) => { e.stopPropagation(); addToCart(item); }} style={{ ...qtyBtnS, color: '#f97316' }}>+</button>
-                  </div>
+              <div key={cat} id={`v2-cat-section-${cat}`} style={{ display: 'flex', flexDirection: 'column', gap: '8px', flexShrink: 0 }}>
+                {/* 카테고리 스티키 구분 헤더 */}
+                <div style={{
+                  position: 'sticky',
+                  top: '-12px', // padding 고려
+                  zIndex: 10,
+                  background: '#f8fafc',
+                  padding: '6px 4px',
+                  fontSize: '13px',
+                  fontWeight: 900,
+                  color: '#475569',
+                  borderBottom: '1.5px solid #cbd5e1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  margin: '0 2px 4px 2px',
+                }}>
+                  <span style={{ fontSize: '14px' }}>🍽️</span> {cat}
                 </div>
-                {/* 메뉴 정보 */}
-                <div className="menu-info">
-                  <div className="menu-name">{item.name}</div>
-                  <div className="menu-desc">{item.description}</div>
-                  <div className="menu-price">{item.price.toLocaleString()}원</div>
+
+                {/* 카테고리 내부 메뉴 카드 목록 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {catMenus.map((item, idx) => {
+                    const cartItem = cart.find(c => c.name === item.name);
+                    return (
+                      <div key={idx} style={{
+                        display: 'flex',
+                        flexShrink: 0,
+                        minHeight: '86px',
+                        background: '#ffffff',
+                        borderRadius: '14px',
+                        overflow: 'hidden',
+                        border: cartItem ? '2px solid #f97316' : '1px solid #e2e8f0',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+                        padding: '8px',
+                        alignItems: 'center',
+                        gap: '10px',
+                        cursor: 'pointer',
+                        userSelect: 'none', WebkitUserSelect: 'none',
+                      }} onClick={() => addToCart(item)}>
+                        {/* 이미지 영역 */}
+                        <div style={{ width: '70px', height: '70px', borderRadius: '8px', overflow: 'hidden', flexShrink: 0 }}>
+                          <img src={item.icon} alt={item.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&q=80&w=400&h=400'; }}
+                          />
+                        </div>
+                        
+                        {/* 메뉴 정보 */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                          <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</div>
+                          <div style={{ fontSize: '12px', fontWeight: 900, color: '#f59e0b' }}>{item.price.toLocaleString()}원</div>
+                        </div>
+
+                        {/* 수량 조절 버튼 */}
+                        <div style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '4px',
+                          background: cartItem ? 'rgba(249,115,22,0.06)' : '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '10px',
+                          padding: '4px',
+                        }} onClick={e => e.stopPropagation()}>
+                          <button onClick={(e) => { e.stopPropagation(); addToCart(item); }} style={{ width: '20px', height: '20px', border: 'none', background: 'rgba(249,115,22,0.15)', color: '#f97316', fontSize: '12px', fontWeight: 900, cursor: 'pointer', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                          <span style={{ fontSize: '11px', fontWeight: 900, color: cartItem ? '#f97316' : '#94a3b8', minWidth: '14px', textAlign: 'center' }}>{cartItem?.qty ?? 0}</span>
+                          <button onClick={(e) => { e.stopPropagation(); removeFromCart(item.name); }} style={{ width: '20px', height: '20px', border: 'none', background: 'none', color: cartItem ? '#ef4444' : '#cbd5e1', fontSize: '12px', fontWeight: 900, cursor: 'pointer', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
         </div>
-      </>
+        
+      </div>
     );
   };
 
@@ -1307,7 +1527,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
   // AI 비서 모드: 가로 스크롤 메뉴 스트립 + ConversationalUI
   if (viewMode === 'ai') {
-    const filteredMenusAi = (menus || []).filter(m => activeCategory === '전체' || m.category === activeCategory);
+    const filteredMenusAi = (menus || []).filter(m => !activeCategory || m.category === activeCategory);
 
     const arrowLight: React.CSSProperties = {
       flexShrink: 0, width: '24px', height: '24px',
@@ -1410,7 +1630,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   }
 
   return (
-    <div className="mobile-v2-container">
+    <div className="mobile-v2-container" style={{ position: 'fixed', inset: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <header className="mobile-v2-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1453,22 +1673,26 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       {/* Bottom Nav */}
       <nav className="customer-bottom-nav">
         {/* 1. 직원호출 */}
-        <button
-          onClick={() => requestStaffCall('직원호출')}
-        >
-          <span className="nav-icon">🔔</span>
-          <span className="nav-label">직원호출</span>
-        </button>
+        {useCall && (
+          <button
+            onClick={() => requestStaffCall('직원호출')}
+          >
+            <span className="nav-icon">🔔</span>
+            <span className="nav-label">직원호출</span>
+          </button>
+        )}
 
         {/* 2. 주차확인 */}
-        <button
-          onClick={() => setShowParkingModal(true)}
-          className={parkingApplied ? 'active' : ''}
-        >
-          <span className="nav-icon">🚗</span>
-          <span className="nav-label">주차확인</span>
-          {parkingApplied && <span className="nav-badge">✓</span>}
-        </button>
+        {useParking && (
+          <button
+            onClick={() => setShowParkingModal(true)}
+            className={parkingApplied ? 'active' : ''}
+          >
+            <span className="nav-icon">🚗</span>
+            <span className="nav-label">주차확인</span>
+            {parkingApplied && <span className="nav-badge">✓</span>}
+          </button>
+        )}
 
         {/* 3. 음성주문 (중앙 마이크) */}
         <button
@@ -1481,34 +1705,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           <span className="nav-label">음성주문</span>
         </button>
 
-        {/* 4. 더치페이 */}
-        <button
-          onClick={() => {
-            if (!sessionIdRef.current) {
-              setVoiceToast('⚠️ 활성 세션이 없습니다. 먼저 주문해 주세요.');
-              setTimeout(() => setVoiceToast(null), 3000);
-              return;
-            }
-            if (cart.length === 0) {
-              setVoiceToast('🛒 장바구니가 비어 있습니다. 메뉴를 먼저 담아 주세요!');
-              setTimeout(() => setVoiceToast(null), 3000);
-              return;
-            }
-            setDutchFrozenTotal(totalPrice);
-            dutchFrozenTotalRef.current = totalPrice;
-            setDutchStep('select');
-            setDutchCount(2);
-            dutchCountRef.current = 2;
-            setDutchPaidSlots([]);
-            dutchPaidSlotsRef.current = [];
-            setDutchPayingSlot(null);
-            dutchPayingSlotRef.current = null;
-            setShowDutchModal(true);
-          }}
-        >
-          <span className="nav-icon">🤝</span>
-          <span className="nav-label">더치페이</span>
-        </button>
+
 
         {/* 5. 바로결제 */}
         <button
@@ -1536,6 +1733,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           onSubmit={executeOrderWithPayment}
           initialPhone={userPhone}
           bundles={bundles}
+          cart={cart}
         />
       )}
 
@@ -1648,6 +1846,25 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           }}
           initialPhone={userPhone}
           bundles={bundles}
+          cart={cart}
+        />
+      )}
+
+      {/* ── 모바일 영수증 모달 ── */}
+      {showReceiptModal && (
+        <ReceiptModal
+          orderId={receiptOrderId}
+          totalPrice={receiptTotal}
+          paymentMethod={receiptMethod}
+          items={receiptItems}
+          onClose={() => {
+            setShowReceiptModal(false);
+            if (showProgress) {
+              setShowProgress(false);
+              setOrderRound(r => r + 1);
+            }
+          }}
+          storeName={storeName}
         />
       )}
 

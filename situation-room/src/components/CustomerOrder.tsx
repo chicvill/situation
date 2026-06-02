@@ -46,6 +46,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
   
   const tableId = useMemo(() => `T${tableNo.padStart(2, '0')}`, [tableNo]);
   const [hasSession, setHasSession] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
 
 
   const deviceId = useMemo(() => {
@@ -70,6 +71,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
           setIsWaitingForPartyApproval(false);
         }
         setHasSession(true);
+        setSessionId(data.session.session_id);
       } else {
         setHasSession(false);
       }
@@ -131,6 +133,9 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
       })
       .then(res => res.json())
       .then(data => {
+        if (data.session && data.session.session_id) {
+          setSessionId(data.session.session_id);
+        }
         if (data.status === 'waiting_party_approval') {
           setIsWaitingForPartyApproval(true);
         } else if (data.is_joined) {
@@ -558,9 +563,10 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
           bundles={bundles}
           initialPhone={userPhone}
           onPhoneChange={setUserPhone}
+          sessionId={sessionId}
+          storeId={storeId}
+          tableId={tableId}
         />
-
-
       )}
 
       <button 

@@ -49,7 +49,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
     // 현재 접속 중인 브라우저의 주소(로컬 Vite 포트 또는 운영 도메인)를 그대로 사용하여 QR 생성
     let baseUrl = window.location.origin;
     if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
-        baseUrl = baseUrl.replace('localhost', '192.168.219.152').replace('127.0.0.1', '192.168.219.152');
+        baseUrl = baseUrl.replace('localhost', '92.168.219.170').replace('127.0.0.1', '92.168.219.170');
     }
 
     const qrItems = [

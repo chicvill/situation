@@ -1,32 +1,63 @@
 import React from 'react';
 
+interface ReceiptItem {
+  name: string;
+  value: string;
+  price?: number;
+}
+
 interface ReceiptModalProps {
   orderId: string;
   totalPrice: number;
   paymentMethod: string;
-  items: { name: string; value: string }[];
+  items: ReceiptItem[];
   onClose: () => void;
   receiptUrl?: string;
+  storeName?: string;
 }
 
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({ 
-  orderId, totalPrice, paymentMethod, items, onClose, receiptUrl 
+  orderId, totalPrice, paymentMethod, items, onClose, receiptUrl, storeName
 }) => {
   const today = new Date().toLocaleString();
+  const displayStoreName = storeName || '그레이스 하이테크 커피';
+
+  // 정밀 한글/영문 텍스트 바이트 정렬 헬퍼
+  const getByteLength = (str: string) => {
+    let len = 0;
+    for (let i = 0; i < str.length; i++) {
+      if (str.charCodeAt(i) > 127) len += 2; // 한글 전각 문자 2바이트
+      else len += 1;
+    }
+    return len;
+  };
+
+  const padText = (str: string, targetLength: number, padChar = ' ', padLeft = false) => {
+    const currentLen = getByteLength(str);
+    if (currentLen >= targetLength) return str;
+    const padding = padChar.repeat(targetLength - currentLen);
+    return padLeft ? padding + str : str + padding;
+  };
 
   const handleSaveAsFile = () => {
     const receiptText = `
 ========================================
              영 수 증 (RECEIPT)
 ========================================
-매장명   : 시크앤프레시 (Chic & Fresh)
+매장명   : ${displayStoreName}
 발행일시 : ${today}
 주문번호 : ${orderId}
 결제수단 : ${paymentMethod}
 ----------------------------------------
-상품명                      수량    금액
+상품명                  수량        금액
 ----------------------------------------
-${items.map(item => `${item.name.padEnd(20)} ${item.value.padStart(15)}`).join('\n')}
+${items.map(item => {
+  const nameCol = padText(item.name, 22);
+  const qtyCol = padText(item.value, 8, ' ', true);
+  const priceVal = item.price !== undefined ? `${item.price.toLocaleString()}원` : '-';
+  const priceCol = padText(priceVal, 10, ' ', true);
+  return `${nameCol}${qtyCol}${priceCol}`;
+}).join('\n')}
 ----------------------------------------
 총 결제 금액: ₩ ${totalPrice.toLocaleString()}원
 ========================================
@@ -47,7 +78,7 @@ ${items.map(item => `${item.name.padEnd(20)} ${item.value.padStart(15)}`).join('
 
   return (
     <div className="receipt-modal-overlay animate-fade-in" style={{ 
-      zIndex: 5000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
+      zIndex: 15000, position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
       background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', 
       alignItems: 'flex-start', justifyContent: 'center',
       overflowY: 'auto',
@@ -61,40 +92,44 @@ ${items.map(item => `${item.name.padEnd(20)} ${item.value.padStart(15)}`).join('
         {/* Receipt Decorative Top */}
         <div style={{ textAlign: 'center', borderBottom: '2px dashed #ddd', paddingBottom: '20px', marginBottom: '20px' }}>
           <h2 style={{ margin: '0 0 5px 0', fontSize: '1.5rem', fontWeight: 'bold' }}>RECEIPT</h2>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#666' }}>시크앤프레시 (Chic & Fresh)</p>
-          <p style={{ margin: '5px 0 0 0', fontSize: '0.8rem', color: '#888' }}>{today}</p>
+          <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold', color: '#111' }}>{displayStoreName}</p>
+          <p style={{ margin: '5px 0 0 0', fontSize: '0.8rem', color: '#666' }}>{today}</p>
         </div>
 
         {/* Order Details */}
-        <div style={{ marginBottom: '20px' }}>
+        <div style={{ marginBottom: '20px', fontSize: '0.85rem' }}>
           <p style={{ display: 'flex', justifyContent: 'space-between', margin: '5px 0' }}>
-            <span>Order No.</span>
-            <span>{orderId}</span>
+            <span style={{ color: '#666' }}>주문번호</span>
+            <span style={{ fontWeight: 'bold' }}>{orderId}</span>
           </p>
           <p style={{ display: 'flex', justifyContent: 'space-between', margin: '5px 0' }}>
-            <span>Payment</span>
-            <span>{paymentMethod}</span>
+            <span style={{ color: '#666' }}>결제수단</span>
+            <span style={{ fontWeight: 'bold' }}>{paymentMethod}</span>
           </p>
         </div>
 
         {/* Items Grid */}
         <div style={{ borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '15px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '10px', fontSize: '0.9rem' }}>
-            <span>Item</span>
-            <span>Qty</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '10px', fontSize: '0.85rem', color: '#555' }}>
+            <span style={{ flex: 2 }}>상품명</span>
+            <span style={{ flex: 1, textAlign: 'center' }}>수량</span>
+            <span style={{ flex: 1, textAlign: 'right' }}>금액</span>
           </div>
           {items.map((item, idx) => (
-            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', margin: '4px 0', fontSize: '0.9rem' }}>
-              <span style={{ flex: 1 }}>{item.name}</span>
-              <span>{item.value}</span>
+            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', margin: '6px 0', fontSize: '0.85rem' }}>
+              <span style={{ flex: 2, fontWeight: 500 }}>{item.name}</span>
+              <span style={{ flex: 1, textAlign: 'center', color: '#666' }}>{item.value}</span>
+              <span style={{ flex: 1, textAlign: 'right', fontWeight: 600 }}>
+                {item.price !== undefined ? `${item.price.toLocaleString()}원` : '-'}
+              </span>
             </div>
           ))}
         </div>
 
         {/* Total Price */}
         <div style={{ textAlign: 'right', marginBottom: '30px' }}>
-          <p style={{ fontSize: '0.9rem', margin: '0 0 5px 0' }}>Total Amount</p>
-          <h3 style={{ fontSize: '1.8rem', margin: 0, fontWeight: '900' }}>₩ {totalPrice.toLocaleString()}</h3>
+          <p style={{ fontSize: '0.9rem', margin: '0 0 5px 0', color: '#666' }}>최종 합계</p>
+          <h3 style={{ fontSize: '1.8rem', margin: 0, fontWeight: '900' }}>₩ {totalPrice.toLocaleString()}원</h3>
         </div>
 
         {/* Footer Actions */}

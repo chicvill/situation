@@ -380,7 +380,7 @@ async def get_session_info(table_id: str, store_id: str = "default_store"):
         alt_store_id = "default_store" if store_id != "default_store" else "Total"
         session = get_active_session(alt_store_id, table_id)
         if session:
-            print(f"🔗 [Session Linked] Found active session via fallback: {alt_store_id}")
+            print(f"[Session Linked] Found active session via fallback: {alt_store_id}")
 
     if not session:
         return {"session": None, "orders": []}

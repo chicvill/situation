@@ -15,6 +15,7 @@ export const AdminDashboard = ({
 }) => {
     const { storeId } = useStoreFilter();
     const [showBanner, setShowBanner] = useState(true);
+    const [showTimeline, setShowTimeline] = useState(false);
     
     // Statistics States
     const [period, setPeriod] = useState<string>("daily");
@@ -371,21 +372,37 @@ export const AdminDashboard = ({
                     </div>
 
                     <div className="list-section" style={{ background: 'var(--surface)', padding: '30px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)' }}>
-                        <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span>🔔</span> 시스템 타임라인
-                        </h3>
-                        <div className="bundle-list-mini">
-                            {bundles.slice(0, 7).map(b => (
-                                <div key={b.id} style={{ padding: '15px 0', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', width: '70px', fontWeight: '500' }}>{b.timestamp?.split('T')[1]?.split('.')[0] || b.timestamp || 'Recently'}</span>
-                                    <span style={{ 
-                                        fontSize: '0.65rem', fontWeight: '800', padding: '2px 8px', borderRadius: '4px', 
-                                        background: 'var(--primary)', color: 'white', letterSpacing: '0.5px'
-                                    }}>{b.type.toUpperCase()}</span>
-                                    <span style={{ color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: '600', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.title}</span>
-                                </div>
-                            ))}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', cursor: 'pointer' }} onClick={() => setShowTimeline(!showTimeline)}>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: '700', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span>🔔</span> 시스템 타임라인
+                            </h3>
+                            <button style={{
+                                background: 'transparent', border: '1px solid var(--border)', borderRadius: '6px',
+                                padding: '4px 10px', fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)',
+                                cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.2s'
+                            }}>
+                                {showTimeline ? '접기 ▴' : '확인하기 ▾'}
+                            </button>
                         </div>
+                        {showTimeline && (
+                            <div className="bundle-list-mini animate-fade-in">
+                                {bundles.slice(0, 7).map(b => (
+                                    <div key={b.id} style={{ padding: '15px 0', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                        <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', width: '70px', fontWeight: '500' }}>{b.timestamp?.split('T')[1]?.split('.')[0] || b.timestamp || 'Recently'}</span>
+                                        <span style={{ 
+                                            fontSize: '0.65rem', fontWeight: '800', padding: '2px 8px', borderRadius: '4px', 
+                                            background: 'var(--primary)', color: 'white', letterSpacing: '0.5px'
+                                        }}>{b.type.toUpperCase()}</span>
+                                        <span style={{ color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: '600', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.title}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {!showTimeline && (
+                            <div style={{ padding: '15px 0', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)', background: 'var(--bg-main)', borderRadius: '8px', cursor: 'pointer' }} onClick={() => setShowTimeline(true)}>
+                                💡 타임라인 이력을 보려면 클릭하거나 우측 [확인하기] 버튼을 누르세요.
+                            </div>
+                        )}
                     </div>
                 </section>
             </div>

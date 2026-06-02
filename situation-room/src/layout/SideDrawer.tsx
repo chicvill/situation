@@ -5,6 +5,7 @@ interface SideDrawerProps {
   isOpen: boolean;
   storeName: string;
   user: any;
+  storeDetails?: any;
   onClose: () => void;
   onNavigate: (tab: string) => void;
   onLogout: () => void;
@@ -15,6 +16,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
   isOpen,
   storeName,
   user,
+  storeDetails,
   onClose,
   onNavigate,
   onLogout,
@@ -48,9 +50,13 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
         <nav className="drawer-nav">
           <div className="drawer-section-label">운영 화면</div>
           <button onClick={() => onNavigate('home')}>🏠 홈</button>
-          <button onClick={() => onNavigate('kitchen')}>👨‍🍳 주방 모니터</button>
+          {storeDetails?.use_kitchen !== false && (
+            <button onClick={() => onNavigate('kitchen')}>👨‍🍳 주방 모니터</button>
+          )}
           <button onClick={() => onNavigate('counter')}>💰 카운터</button>
-          <button onClick={() => onNavigate('display')}>📢 전광판</button>
+          {storeDetails?.use_display !== false && (
+            <button onClick={() => onNavigate('display')}>📢 전광판</button>
+          )}
           <button onClick={() => onNavigate('qr')}>🖨️ QR 인쇄</button>
           <button onClick={() => onNavigate('wifi')}>📶 WiFi QR 인쇄</button>
           {(user?.role === 'admin' || user?.role === 'owner') && (
@@ -61,7 +67,9 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
           <button onClick={() => onNavigate('manual')}>📜 매장 운영 매뉴얼</button>
           <button onClick={() => onNavigate('settings')}>⚙️ 매장 설정</button>
           <button onClick={() => onNavigate('menu')}>📔 메뉴 설정</button>
-          <button onClick={() => onNavigate('hr')}>👥 직원 및 근태 관리</button>
+          {storeDetails?.use_staff !== false && (
+            <button onClick={() => onNavigate('hr')}>👥 직원 및 근태 관리</button>
+          )}
           <button onClick={() => onNavigate('tech')}>🛠 기술 정보</button>
           {user?.role === 'admin' && (
             <>

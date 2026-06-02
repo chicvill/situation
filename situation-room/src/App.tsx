@@ -364,13 +364,13 @@ function App() {
   };
 
   const navItems = [
-    { label: '호출', icon: '🔔', tab: 'call', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '대기', icon: '🛎️', tab: 'waiting', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '비서', icon: '🎤', tab: 'guide', roles: ['admin', 'owner', 'manager', 'staff'], special: true },
-    { label: '주차', icon: '🚗', tab: 'parking', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '포인트', icon: '🪙', tab: 'points', roles: ['admin', 'owner', 'manager', 'staff'] },
-    { label: '예약', icon: '📅', tab: 'reserve', roles: ['admin', 'owner', 'manager', 'staff'] },
-  ].filter(item => item.roles.includes(user?.role));
+    { label: '호출', icon: '🔔', tab: 'call', roles: ['admin', 'owner', 'manager', 'staff'], enabled: storeDetails?.use_call !== false },
+    { label: '대기', icon: '🛎️', tab: 'waiting', roles: ['admin', 'owner', 'manager', 'staff'], enabled: storeDetails?.use_waiting !== false },
+    { label: '비서', icon: '🎤', tab: 'guide', roles: ['admin', 'owner', 'manager', 'staff'], special: true, enabled: true },
+    { label: '주차', icon: '🚗', tab: 'parking', roles: ['admin', 'owner', 'manager', 'staff'], enabled: storeDetails?.use_parking !== false },
+    { label: '포인트', icon: '🪙', tab: 'points', roles: ['admin', 'owner', 'manager', 'staff'], enabled: storeDetails?.use_points !== false },
+    { label: '예약', icon: '📅', tab: 'reserve', roles: ['admin', 'owner', 'manager', 'staff'], enabled: storeDetails?.use_reservation !== false },
+  ].filter(item => item.roles.includes(user?.role) && item.enabled);
 
   const startVoiceRecognition = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -439,7 +439,7 @@ function App() {
       case 'counter': return <CounterPad storeId={storeId} bundles={bundles} />;
       case 'display': return <DisplayBoard bundles={bundles} />;
       case 'menu': return <MenuManager bundles={bundles} onNavigate={navigateTo as any} />;
-      case 'settings': return <StoreManager bundles={bundles} user={user} onNavigate={navigateTo as any} />;
+      case 'settings': return <StoreManager bundles={bundles} user={user} onNavigate={navigateTo as any} onRefreshStoreDetails={fetchStoreDetails} />;
       case 'qr': return <QRManager bundles={bundles} storeId={storeId} storeName={storeName} />;
       case 'wifi': return <WifiQRManager />;
       case 'tech': return <TechInfo />;
@@ -571,6 +571,7 @@ function App() {
           isOpen={isMenuOpen}
           storeName={storeName}
           user={user}
+          storeDetails={storeDetails}
           onClose={() => setIsMenuOpen(false)}
           onNavigate={(tab) => navigateTo(tab as MainTab)}
           onLogout={handleLogout}

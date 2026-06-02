@@ -780,5 +780,39 @@
         "value": "staff"
       }
     ]
+  },
+  {
+    "items": [
+      {
+        "name": "상호명",
+        "value": "시크빌"
+      },
+      {
+        "name": "사업자번호",
+        "value": "5871301146"
+      },
+      {
+        "name": "주소",
+        "value": "인천 서구 석남동 507-34"
+      },
+      {
+        "name": "대표자",
+        "value": "김종심"
+      },
+      {
+        "name": "개업일자",
+        "value": "20191216"
+      },
+      {
+        "name": "계좌번호",
+        "value": "5871301146"
+      }
+    ],
+    "type": "StoreConfig",
+    "title": "매장 정보",
+    "store": "시크빌",
+    "store_id": "store-chicvill",
+    "status": "approved",
+    "id": "store-config-store-chicvill"
   }
 ]

@@ -9,9 +9,10 @@ interface StoreManagerProps {
   bundles: BundleData[];
   user?: any;
   onNavigate: (mode: any, tab?: any) => void;
+  onRefreshStoreDetails?: () => void;
 }
 
-export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNavigate }) => {
+export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNavigate, onRefreshStoreDetails }) => {
   const { storeId, storeName } = useStoreFilter();
   const [storeData, setStoreData] = useState<any>({
     brand: '', regNo: '', address: '', owner: '', bankName: '', accountNo: '', accountHolder: '',
@@ -19,21 +20,44 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
   });
   const [isVerifying, setIsVerifying] = useState(false);
   const [useKitchen, setUseKitchen] = useState(true);
+  const [useCall, setUseCall] = useState(true);
+  const [useWaiting, setUseWaiting] = useState(true);
+  const [useParking, setUseParking] = useState(true);
+  const [usePoints, setUsePoints] = useState(true);
+  const [useReservation, setUseReservation] = useState(true);
+  const [useDisplay, setUseDisplay] = useState(true);
+  const [useStaff, setUseStaff] = useState(true);
+  const [useDutch, setUseDutch] = useState(true);
 
   useEffect(() => {
     if (!storeId || storeId === 'Total') return;
     apiFetch(`/api/stores/${storeId}/settings`)
       .then(r => r.json())
-      .then(d => setUseKitchen(d.use_kitchen ?? true))
+      .then(d => {
+        setUseKitchen(d.use_kitchen ?? true);
+        setUseCall(d.use_call ?? true);
+        setUseWaiting(d.use_waiting ?? true);
+        setUseParking(d.use_parking ?? true);
+        setUsePoints(d.use_points ?? true);
+        setUseReservation(d.use_reservation ?? true);
+        setUseDisplay(d.use_display ?? true);
+        setUseStaff(d.use_staff ?? true);
+        setUseDutch(d.use_dutch ?? true);
+      })
       .catch(() => {});
   }, [storeId]);
 
-  const handleKitchenToggle = async (value: boolean) => {
-    setUseKitchen(value);
-    await apiFetch(`/api/stores/${storeId}/settings`, {
-      method: 'PUT',
-      body: JSON.stringify({ use_kitchen: value }),
-    }).catch(() => {});
+  const handleSettingToggle = async (key: string, value: boolean, setter: (v: boolean) => void) => {
+    setter(value);
+    try {
+      await apiFetch(`/api/stores/${storeId}/settings`, {
+        method: 'PUT',
+        body: JSON.stringify({ [key]: value }),
+      });
+      if (onRefreshStoreDetails) {
+        onRefreshStoreDetails();
+      }
+    } catch {}
   };
 
   useEffect(() => {
@@ -424,8 +448,10 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
             </div>
           </div>
 
-          <div style={{ marginTop: '20px', padding: '24px', background: 'var(--surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-            <h3 style={{ color: 'var(--text-main)', margin: '0 0 16px', fontSize: '1rem', fontWeight: '700' }}>운영 설정</h3>
+          <div style={{ marginTop: '20px', padding: '24px', background: 'var(--surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <h3 style={{ color: 'var(--text-main)', margin: '0 0 8px', fontSize: '1rem', fontWeight: '700' }}>운영 설정</h3>
+            
+            {/* 1. 주방 디스플레이 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
                 <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>주방 디스플레이 사용</p>
@@ -434,7 +460,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
                 </p>
               </div>
               <button
-                onClick={() => handleKitchenToggle(!useKitchen)}
+                onClick={() => handleSettingToggle('use_kitchen', !useKitchen, setUseKitchen)}
                 style={{
                   position: 'relative', width: '52px', height: '28px', borderRadius: '14px', border: 'none', cursor: 'pointer',
                   background: useKitchen ? 'var(--primary)' : 'var(--border)', transition: 'background 0.2s', flexShrink: 0
@@ -443,6 +469,206 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
                 <span style={{
                   position: 'absolute', top: '3px', width: '22px', height: '22px', borderRadius: '50%',
                   background: 'white', transition: 'left 0.2s', left: useKitchen ? '27px' : '3px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }} />
+              </button>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
+
+            {/* 2. 전광판 알림 화면 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>전광판 알림 화면 사용</p>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  {useDisplay ? '대기실이나 홀의 전광판에 메뉴 수령 알림이 렌더링됩니다.' : '전광판 서비스가 비활성화됩니다.'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleSettingToggle('use_display', !useDisplay, setUseDisplay)}
+                style={{
+                  position: 'relative', width: '52px', height: '28px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                  background: useDisplay ? 'var(--primary)' : 'var(--border)', transition: 'background 0.2s', flexShrink: 0
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: '3px', width: '22px', height: '22px', borderRadius: '50%',
+                  background: 'white', transition: 'left 0.2s', left: useDisplay ? '27px' : '3px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }} />
+              </button>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
+
+            {/* 3. 직원 호출 벨 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>직원 호출 벨 사용</p>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  {useCall ? '고객이 테이블이나 QR 주문 화면에서 직원을 호출할 수 있습니다.' : '직원 호출 기능이 비활성화됩니다.'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleSettingToggle('use_call', !useCall, setUseCall)}
+                style={{
+                  position: 'relative', width: '52px', height: '28px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                  background: useCall ? 'var(--primary)' : 'var(--border)', transition: 'background 0.2s', flexShrink: 0
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: '3px', width: '22px', height: '22px', borderRadius: '50%',
+                  background: 'white', transition: 'left 0.2s', left: useCall ? '27px' : '3px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }} />
+              </button>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
+
+            {/* 4. 스마트 고객 대기 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>스마트 고객 대기 사용</p>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  {useWaiting ? '입구 태블릿을 통해 현장 대기 등록 및 순번 관리가 가능합니다.' : '현장 대기 기능이 비활성화됩니다.'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleSettingToggle('use_waiting', !useWaiting, setUseWaiting)}
+                style={{
+                  position: 'relative', width: '52px', height: '28px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                  background: useWaiting ? 'var(--primary)' : 'var(--border)', transition: 'background 0.2s', flexShrink: 0
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: '3px', width: '22px', height: '22px', borderRadius: '50%',
+                  background: 'white', transition: 'left 0.2s', left: useWaiting ? '27px' : '3px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }} />
+              </button>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
+
+            {/* 5. 원클릭 셀프 주차 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>원클릭 셀프 주차 사용</p>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  {useParking ? '고객이 모바일 주문 완료 후 직접 차량 번호로 무료 주차를 적용합니다.' : '셀프 주차 등록 기능이 비활성화됩니다.'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleSettingToggle('use_parking', !useParking, setUseParking)}
+                style={{
+                  position: 'relative', width: '52px', height: '28px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                  background: useParking ? 'var(--primary)' : 'var(--border)', transition: 'background 0.2s', flexShrink: 0
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: '3px', width: '22px', height: '22px', borderRadius: '50%',
+                  background: 'white', transition: 'left 0.2s', left: useParking ? '27px' : '3px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }} />
+              </button>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
+
+            {/* 6. 멤버십 포인트 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>멤버십 포인트 사용</p>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  {usePoints ? '결제 시 전화번호를 조회하여 포인트를 적립하고 사용합니다.' : '포인트 멤버십 기능이 비활성화됩니다.'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleSettingToggle('use_points', !usePoints, setUsePoints)}
+                style={{
+                  position: 'relative', width: '52px', height: '28px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                  background: usePoints ? 'var(--primary)' : 'var(--border)', transition: 'background 0.2s', flexShrink: 0
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: '3px', width: '22px', height: '22px', borderRadius: '50%',
+                  background: 'white', transition: 'left 0.2s', left: usePoints ? '27px' : '3px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }} />
+              </button>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
+
+            {/* 7. 실시간 사전 예약 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>실시간 사전 예약 사용</p>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  {useReservation ? '날짜/시간별 예약 접수, 인원 관리 및 테이블 지정을 활성화합니다.' : '사전 예약 접수 기능이 비활성화됩니다.'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleSettingToggle('use_reservation', !useReservation, setUseReservation)}
+                style={{
+                  position: 'relative', width: '52px', height: '28px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                  background: useReservation ? 'var(--primary)' : 'var(--border)', transition: 'background 0.2s', flexShrink: 0
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: '3px', width: '22px', height: '22px', borderRadius: '50%',
+                  background: 'white', transition: 'left 0.2s', left: useReservation ? '27px' : '3px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }} />
+              </button>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
+
+            {/* 8. 스마트 직원 관리 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>스마트 직원 관리 사용</p>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  {useStaff ? '대시보드와 서랍 메뉴에서 직원 등록, 시급 세팅 및 출퇴근 관리가 활성화됩니다.' : '직원 및 근태 관리 기능이 비활성화됩니다.'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleSettingToggle('use_staff', !useStaff, setUseStaff)}
+                style={{
+                  position: 'relative', width: '52px', height: '28px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                  background: useStaff ? 'var(--primary)' : 'var(--border)', transition: 'background 0.2s', flexShrink: 0
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: '3px', width: '22px', height: '22px', borderRadius: '50%',
+                  background: 'white', transition: 'left 0.2s', left: useStaff ? '27px' : '3px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }} />
+              </button>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
+
+            {/* 9. N분의 1 더치페이 결제 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>N분의 1 더치페이 결제 사용</p>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  {useDutch ? '고객이 주문 시 일행과 나누어 결제하는 더치페이 및 QR 분할 결제를 지원합니다.' : '더치페이(N분의 1) 분할 결제 기능이 비활성화됩니다.'}
+                </p>
+              </div>
+              <button
+                onClick={() => handleSettingToggle('use_dutch', !useDutch, setUseDutch)}
+                style={{
+                  position: 'relative', width: '52px', height: '28px', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                  background: useDutch ? 'var(--primary)' : 'var(--border)', transition: 'background 0.2s', flexShrink: 0
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: '3px', width: '22px', height: '22px', borderRadius: '50%',
+                  background: 'white', transition: 'left 0.2s', left: useDutch ? '27px' : '3px',
                   boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
                 }} />
               </button>

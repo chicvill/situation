@@ -120,18 +120,75 @@ async def delete_store(store_id: str):
 
 @router.get("/api/stores/{store_id}/settings")
 async def get_store_settings(store_id: str):
-    from ..database import get_store_use_kitchen, get_reservation_settings
+    from ..database import (
+        get_store_use_kitchen,
+        get_store_use_call,
+        get_store_use_waiting,
+        get_store_use_parking,
+        get_store_use_points,
+        get_store_use_reservation,
+        get_store_use_display,
+        get_store_use_staff,
+        get_store_use_dutch,
+        get_reservation_settings
+    )
     use_kitchen = get_store_use_kitchen(store_id)
+    use_call = get_store_use_call(store_id)
+    use_waiting = get_store_use_waiting(store_id)
+    use_parking = get_store_use_parking(store_id)
+    use_points = get_store_use_points(store_id)
+    use_reservation = get_store_use_reservation(store_id)
+    use_display = get_store_use_display(store_id)
+    use_staff = get_store_use_staff(store_id)
+    use_dutch = get_store_use_dutch(store_id)
     reservation_settings = get_reservation_settings(store_id)
-    return {"store_id": store_id, "use_kitchen": use_kitchen, "reservation_settings": reservation_settings}
+    return {
+        "store_id": store_id,
+        "use_kitchen": use_kitchen,
+        "use_call": use_call,
+        "use_waiting": use_waiting,
+        "use_parking": use_parking,
+        "use_points": use_points,
+        "use_reservation": use_reservation,
+        "use_display": use_display,
+        "use_staff": use_staff,
+        "use_dutch": use_dutch,
+        "reservation_settings": reservation_settings
+    }
 
 
 @router.put("/api/stores/{store_id}/settings")
 async def update_store_settings(store_id: str, data: Dict[str, Any]):
-    from ..database import update_store_use_kitchen, update_reservation_settings
+    from ..database import (
+        update_store_use_kitchen,
+        update_store_use_call,
+        update_store_use_waiting,
+        update_store_use_parking,
+        update_store_use_points,
+        update_store_use_reservation,
+        update_store_use_display,
+        update_store_use_staff,
+        update_store_use_dutch,
+        update_reservation_settings
+    )
     if "use_kitchen" in data:
-        use_kitchen = data.get("use_kitchen", True)
-        update_store_use_kitchen(store_id, bool(use_kitchen))
+        update_store_use_kitchen(store_id, bool(data.get("use_kitchen", True)))
+    if "use_call" in data:
+        update_store_use_call(store_id, bool(data.get("use_call", True)))
+    if "use_waiting" in data:
+        update_store_use_waiting(store_id, bool(data.get("use_waiting", True)))
+    if "use_parking" in data:
+        update_store_use_parking(store_id, bool(data.get("use_parking", True)))
+    if "use_points" in data:
+        update_store_use_points(store_id, bool(data.get("use_points", True)))
+    if "use_reservation" in data:
+        update_store_use_reservation(store_id, bool(data.get("use_reservation", True)))
+    if "use_display" in data:
+        update_store_use_display(store_id, bool(data.get("use_display", True)))
+    if "use_staff" in data:
+        update_store_use_staff(store_id, bool(data.get("use_staff", True)))
+    if "use_dutch" in data:
+        update_store_use_dutch(store_id, bool(data.get("use_dutch", True)))
     if "reservation_settings" in data:
         update_reservation_settings(store_id, data["reservation_settings"])
     return {"status": "success"}

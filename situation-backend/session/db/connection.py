@@ -343,6 +343,15 @@ def init_db_v2():
                 monthly_fee INTEGER DEFAULT 0,
                 payment_status TEXT DEFAULT '정상',
                 payment_history JSONB DEFAULT '[]',
+                use_kitchen BOOLEAN DEFAULT TRUE,
+                use_call BOOLEAN DEFAULT TRUE,
+                use_waiting BOOLEAN DEFAULT TRUE,
+                use_parking BOOLEAN DEFAULT TRUE,
+                use_points BOOLEAN DEFAULT TRUE,
+                use_reservation BOOLEAN DEFAULT TRUE,
+                use_display BOOLEAN DEFAULT TRUE,
+                use_staff BOOLEAN DEFAULT TRUE,
+                use_dutch BOOLEAN DEFAULT TRUE,
                 created_at TIMESTAMP DEFAULT NOW()
             )
         """)
@@ -365,6 +374,17 @@ def init_db_v2():
             cur.execute("ALTER TABLE table_orders ADD COLUMN IF NOT EXISTS payment_status TEXT DEFAULT 'unpaid'")
             cur.execute("ALTER TABLE table_orders ADD COLUMN IF NOT EXISTS payment_method TEXT")
             cur.execute("ALTER TABLE table_orders ADD COLUMN IF NOT EXISTS payment_key TEXT")
+            
+            # stores 테이블 누락 컬럼 보완 (마이그레이션)
+            cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_kitchen BOOLEAN DEFAULT TRUE")
+            cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_call BOOLEAN DEFAULT TRUE")
+            cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_waiting BOOLEAN DEFAULT TRUE")
+            cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_parking BOOLEAN DEFAULT TRUE")
+            cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_points BOOLEAN DEFAULT TRUE")
+            cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_reservation BOOLEAN DEFAULT TRUE")
+            cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_display BOOLEAN DEFAULT TRUE")
+            cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_staff BOOLEAN DEFAULT TRUE")
+            cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_dutch BOOLEAN DEFAULT TRUE")
         except Exception as e:
             print(f"⚠️ DB Migration Warning: {e}")
 

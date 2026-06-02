@@ -375,7 +375,9 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
 
     if (user.role === 'owner' || user.role === 'admin') {
       links.push({ label: '💰 카운터 POS 패드', tab: 'counter', desc: '테이블 결제 완료 및 세션 관리', icon: '💵' });
-      links.push({ label: '👥 인적 자원 관리', tab: 'hr', desc: '사원 등록, 시급 세팅 및 출퇴근 확인', icon: '👥' });
+      if (storeDetails?.use_staff !== false) {
+        links.push({ label: '👥 인적 자원 관리', tab: 'hr', desc: '사원 등록, 시급 세팅 및 출퇴근 확인', icon: '👥' });
+      }
       links.push({ label: '🖨️ QR 간편 인쇄', tab: 'qr', desc: '테이블 주문용 QR 코드 자동 생성', icon: '🔳' });
       links.push({ label: '🚗 셀프 주차 관리', tab: 'parking', desc: '무료 주차 등록 및 차량 조회', icon: '🅿️' });
     }
