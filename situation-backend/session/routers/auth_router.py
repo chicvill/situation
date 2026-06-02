@@ -47,15 +47,25 @@ async def login(data: dict):
 
     db_username, db_password, db_role, db_store_id, db_name, db_approved = row
 
-    # HTTP 환경에서 평문으로 전달될 수 있으므로 평문과 해시 모두 시도
-    pw_to_check = password
-    if len(password) == 64:
-        # 클라이언트가 SHA-256으로 보낸 경우 — werkzeug로 직접 검증 불가, 평문 재시도 처리 불가
-        # 서버에서 해시 검증만 진행 (werkzeug 포맷은 check_password_hash로)
-        pass
-
+    # 패스워드 검증: DB 저장 포맷에 따라 자동 분기
+    # - werkzeug 포맷 (pbkdf2:sha256:... 또는 scrypt:...): check_password_hash 사용
+    # - SHA-256 hex (64자, 프론트 직접 가입 경로): 직접 비교
+    # - 그 외 평문: 직접 비교 (레거시 호환)
+    pw_valid = False
     try:
-        pw_valid = check_password_hash(db_password, pw_to_check)
+        if db_password.startswith(("pbkdf2:", "scrypt:")):
+            # werkzeug generate_password_hash로 저장된 계정 (seed/관리자 생성)
+            pw_valid = check_password_hash(db_password, password)
+        elif len(db_password) == 64 and all(c in "0123456789abcdef" for c in db_password):
+            # 클라이언트에서 SHA-256으로 해시 후 저장된 계정 (handleSignup 경로)
+            # 클라이언트도 SHA-256 전송하므로 hex 직접 비교
+            pw_valid = (db_password == password)
+        else:
+            # 레거시 평문 또는 기타 포맷: werkzeug 시도 후 직접 비교 폴백
+            try:
+                pw_valid = check_password_hash(db_password, password)
+            except Exception:
+                pw_valid = (db_password == password)
     except Exception:
         pw_valid = False
 
