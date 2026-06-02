@@ -20,6 +20,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     const initialAmount = params.get('amount') || '12,000';
 
     const [messages, setMessages] = useState<any[]>([]);
+    const [isCollapsed, setIsCollapsed] = useState(false);
     const [cart, setCart] = useState<any[]>([]);
     const [orderStep, setOrderStep] = useState<string>('welcome'); // welcome, menu_selection, point_guide, cash_invoice_guide, payment_method_selection, paying, paid
     const [isPaying, setIsPaying] = useState<boolean>(false);
@@ -462,9 +463,34 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
 
 
     return (
-        <div className="conversational-ui-container full-width-mode">
-            {/* Chat Messages Log */}
-            <div className="chat-content" ref={scrollRef} style={{ background: '#eef1f5', padding: '16px 14px 16px' }}>
+        <div className="conversational-ui-container full-width-mode" style={{ borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}>
+            {/* ── AI 비서 헤더 (아코디언 토글) ── */}
+            <div 
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '12px 16px', background: 'linear-gradient(135deg, #1e293b, #0f172a)',
+                    color: '#ffffff', cursor: 'pointer', borderBottom: isCollapsed ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                    userSelect: 'none', WebkitUserSelect: 'none',
+                    transition: 'all 0.2s'
+                }}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '1.1rem' }}>🤖</span>
+                    <span style={{ fontWeight: 800, fontSize: '0.9rem', letterSpacing: '-0.3px' }}>{storeName} AI 음성 주문 비서</span>
+                    {isListening && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 800, padding: '2px 6px', background: 'rgba(239,68,68,0.15)', borderRadius: '4px', border: '1px solid rgba(239,68,68,0.2)' }}>듣고 있는 중...</span>}
+                </div>
+                <button style={{
+                    background: 'transparent', border: 'none', color: '#94a3b8',
+                    fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px'
+                }}>
+                    {isCollapsed ? '대화창 열기 ▾' : '대화창 접기 ▴'}
+                </button>
+            </div>
+
+            <div style={{ display: isCollapsed ? 'none' : 'block' }}>
+                {/* Chat Messages Log */}
+                <div className="chat-content" ref={scrollRef} style={{ background: '#eef1f5', padding: '16px 14px 16px' }}>
                 {messages.map((msg, index) => (
                     <div key={msg.id || index} className={`message-bubble ${msg.sender}`} style={{
                         alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
@@ -772,6 +798,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 {isListening && (
                     <span style={{ marginLeft: '10px', fontSize: '12px', color: '#ef4444', fontWeight: 600 }}>말씀해 주세요...</span>
                 )}
+            </div>
             </div>
 
         </div>
