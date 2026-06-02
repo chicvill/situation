@@ -449,12 +449,18 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
           </div>
 
           <div style={{ marginTop: '20px', padding: '24px', background: 'var(--surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <h3 style={{ color: 'var(--text-main)', margin: '0 0 8px', fontSize: '1rem', fontWeight: '700' }}>운영 설정</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <h3 style={{ color: 'var(--text-main)', margin: 0, fontSize: '1rem', fontWeight: '700' }}>운영 설정</h3>
+              <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600 }}>선택 옵션당 월 1,000원 추가 (기본 솔루션 무료)</span>
+            </div>
             
             {/* 1. 주방 디스플레이 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>주방 디스플레이 사용</p>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                  주방 디스플레이 사용
+                  <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, marginLeft: '8px' }}>(월 1,000원)</span>
+                </p>
                 <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
                   {useKitchen ? '주방에서 조리완료 버튼을 눌러야 주문이 완료됩니다.' : '주방 확인 없이 주문이 바로 완료 처리됩니다.'}
                 </p>
@@ -479,7 +485,10 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
             {/* 2. 전광판 알림 화면 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>전광판 알림 화면 사용</p>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                  전광판 알림 화면 사용
+                  <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, marginLeft: '8px' }}>(월 1,000원)</span>
+                </p>
                 <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
                   {useDisplay ? '대기실이나 홀의 전광판에 메뉴 수령 알림이 렌더링됩니다.' : '전광판 서비스가 비활성화됩니다.'}
                 </p>
@@ -504,7 +513,10 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
             {/* 3. 직원 호출 벨 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>직원 호출 벨 사용</p>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                  직원 호출 벨 사용
+                  <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, marginLeft: '8px' }}>(월 1,000원)</span>
+                </p>
                 <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
                   {useCall ? '고객이 테이블이나 QR 주문 화면에서 직원을 호출할 수 있습니다.' : '직원 호출 기능이 비활성화됩니다.'}
                 </p>
@@ -529,7 +541,10 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
             {/* 4. 스마트 고객 대기 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>스마트 고객 대기 사용</p>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                  스마트 고객 대기 사용
+                  <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, marginLeft: '8px' }}>(월 1,000원)</span>
+                </p>
                 <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
                   {useWaiting ? '입구 태블릿을 통해 현장 대기 등록 및 순번 관리가 가능합니다.' : '현장 대기 기능이 비활성화됩니다.'}
                 </p>
@@ -554,7 +569,10 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
             {/* 5. 원클릭 셀프 주차 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>원클릭 셀프 주차 사용</p>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                  원클릭 셀프 주차 사용
+                  <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, marginLeft: '8px' }}>(월 1,000원)</span>
+                </p>
                 <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
                   {useParking ? '고객이 모바일 주문 완료 후 직접 차량 번호로 무료 주차를 적용합니다.' : '셀프 주차 등록 기능이 비활성화됩니다.'}
                 </p>
@@ -579,7 +597,10 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
             {/* 6. 멤버십 포인트 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>멤버십 포인트 사용</p>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                  멤버십 포인트 사용
+                  <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, marginLeft: '8px' }}>(월 1,000원)</span>
+                </p>
                 <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
                   {usePoints ? '결제 시 전화번호를 조회하여 포인트를 적립하고 사용합니다.' : '포인트 멤버십 기능이 비활성화됩니다.'}
                 </p>
@@ -604,7 +625,10 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
             {/* 7. 실시간 사전 예약 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>실시간 사전 예약 사용</p>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                  실시간 사전 예약 사용
+                  <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, marginLeft: '8px' }}>(월 1,000원)</span>
+                </p>
                 <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
                   {useReservation ? '날짜/시간별 예약 접수, 인원 관리 및 테이블 지정을 활성화합니다.' : '사전 예약 접수 기능이 비활성화됩니다.'}
                 </p>
@@ -629,7 +653,10 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
             {/* 8. 스마트 직원 관리 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>스마트 직원 관리 사용</p>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                  스마트 직원 관리 사용
+                  <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, marginLeft: '8px' }}>(월 1,000원)</span>
+                </p>
                 <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
                   {useStaff ? '대시보드와 서랍 메뉴에서 직원 등록, 시급 세팅 및 출퇴근 관리가 활성화됩니다.' : '직원 및 근태 관리 기능이 비활성화됩니다.'}
                 </p>
@@ -654,7 +681,10 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
             {/* 9. N분의 1 더치페이 결제 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>N분의 1 더치페이 결제 사용</p>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                  N분의 1 더치페이 결제 사용
+                  <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 700, marginLeft: '8px' }}>(월 1,000원)</span>
+                </p>
                 <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
                   {useDutch ? '고객이 주문 시 일행과 나누어 결제하는 더치페이 및 QR 분할 결제를 지원합니다.' : '더치페이(N분의 1) 분할 결제 기능이 비활성화됩니다.'}
                 </p>
@@ -672,6 +702,25 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
                   boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
                 }} />
               </button>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
+
+            {/* 실시간 가맹비 산출 요약 패널 */}
+            <div style={{
+              marginTop: '10px', padding: '16px 20px', borderRadius: 'var(--radius-sm)',
+              background: 'var(--primary-soft)', border: '1.5px solid var(--primary)',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+            }}>
+              <div>
+                <strong style={{ color: 'var(--primary)', fontSize: '1rem', display: 'block' }}>실시간 월 가맹비</strong>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  기본 기능 무료 제공 + 추가 선택 옵션 {[useKitchen, useDisplay, useCall, useWaiting, useParking, usePoints, useReservation, useStaff, useDutch].filter(Boolean).length}개
+                </span>
+              </div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--primary)' }}>
+                {([useKitchen, useDisplay, useCall, useWaiting, useParking, usePoints, useReservation, useStaff, useDutch].filter(Boolean).length * 1000).toLocaleString()}원 / 월
+              </div>
             </div>
           </div>
 

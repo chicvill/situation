@@ -161,6 +161,28 @@ def _update_store_bool_setting(store_id: str, column_name: str, value: bool) -> 
         if column_name not in ["use_kitchen", "use_call", "use_waiting", "use_parking", "use_points", "use_reservation", "use_display", "use_staff", "use_dutch"]:
             raise ValueError(f"Invalid column name: {column_name}")
         cur.execute(f"UPDATE stores SET {column_name} = %s WHERE id = %s", (value, store_id))
+        
+        # Recalculate monthly fee: 1,000 KRW per active option
+        cur.execute("""
+            SELECT 
+                COALESCE(use_kitchen, TRUE), 
+                COALESCE(use_call, TRUE), 
+                COALESCE(use_waiting, TRUE), 
+                COALESCE(use_parking, TRUE), 
+                COALESCE(use_points, TRUE), 
+                COALESCE(use_reservation, TRUE), 
+                COALESCE(use_display, TRUE), 
+                COALESCE(use_staff, TRUE), 
+                COALESCE(use_dutch, TRUE) 
+            FROM stores 
+            WHERE id = %s
+        """, (store_id,))
+        row = cur.fetchone()
+        if row:
+            active_count = sum(1 for val in row if val)
+            fee = active_count * 1000
+            cur.execute("UPDATE stores SET monthly_fee = %s WHERE id = %s", (fee, store_id))
+            
         conn.commit()
         cur.close()
         conn.close()

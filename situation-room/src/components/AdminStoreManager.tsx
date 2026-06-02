@@ -11,6 +11,15 @@ interface Store {
   payment_status: string;
   payment_history: any[] | string;
   timestamp: string;
+  use_kitchen?: boolean;
+  use_call?: boolean;
+  use_waiting?: boolean;
+  use_parking?: boolean;
+  use_points?: boolean;
+  use_reservation?: boolean;
+  use_display?: boolean;
+  use_staff?: boolean;
+  use_dutch?: boolean;
 }
 
 interface AdminStoreManagerProps {
@@ -37,6 +46,29 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
   const [formMonthlyFee, setFormMonthlyFee] = useState(50000);
   const [formPaymentStatus, setFormPaymentStatus] = useState('정상');
   const [formMessage, setFormMessage] = useState('');
+
+  // Form fields for Options
+  const [formUseKitchen, setFormUseKitchen] = useState(true);
+  const [formUseDisplay, setFormUseDisplay] = useState(true);
+  const [formUseCall, setFormUseCall] = useState(true);
+  const [formUseWaiting, setFormUseWaiting] = useState(true);
+  const [formUseParking, setFormUseParking] = useState(true);
+  const [formUsePoints, setFormUsePoints] = useState(true);
+  const [formUseReservation, setFormUseReservation] = useState(true);
+  const [formUseStaff, setFormUseStaff] = useState(true);
+  const [formUseDutch, setFormUseDutch] = useState(true);
+
+  // Auto-calculate monthly fee based on selected options (1,000 KRW/month each)
+  useEffect(() => {
+    const activeCount = [
+      formUseKitchen, formUseDisplay, formUseCall, formUseWaiting,
+      formUseParking, formUsePoints, formUseReservation, formUseStaff, formUseDutch
+    ].filter(Boolean).length;
+    setFormMonthlyFee(activeCount * 1000);
+  }, [
+    formUseKitchen, formUseDisplay, formUseCall, formUseWaiting,
+    formUseParking, formUsePoints, formUseReservation, formUseStaff, formUseDutch
+  ]);
 
   // 가입 대기 점주 목록 필터링
   const pendingOwners = useMemo(() => {
@@ -97,12 +129,39 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
 
   const openEditModal = (store: Store) => {
     setEditingStore(store);
-    setFormStoreId(store.store_id);
-    setFormStoreName(store.store_name);
-    setFormOwnerName(store.owner_name);
-    setFormOwnerId(store.owner_id);
-    setFormMonthlyFee(store.monthly_fee);
-    setFormPaymentStatus(store.payment_status);
+    if (store) {
+      setFormStoreId(store.store_id);
+      setFormStoreName(store.store_name);
+      setFormOwnerName(store.owner_name);
+      setFormOwnerId(store.owner_id);
+      setFormMonthlyFee(store.monthly_fee);
+      setFormPaymentStatus(store.payment_status);
+      setFormUseKitchen(store.use_kitchen !== false);
+      setFormUseDisplay(store.use_display !== false);
+      setFormUseCall(store.use_call !== false);
+      setFormUseWaiting(store.use_waiting !== false);
+      setFormUseParking(store.use_parking !== false);
+      setFormUsePoints(store.use_points !== false);
+      setFormUseReservation(store.use_reservation !== false);
+      setFormUseStaff(store.use_staff !== false);
+      setFormUseDutch(store.use_dutch !== false);
+    } else {
+      setFormStoreId('');
+      setFormStoreName('');
+      setFormOwnerName('');
+      setFormOwnerId('');
+      setFormMonthlyFee(9000);
+      setFormPaymentStatus('정상');
+      setFormUseKitchen(true);
+      setFormUseDisplay(true);
+      setFormUseCall(true);
+      setFormUseWaiting(true);
+      setFormUseParking(true);
+      setFormUsePoints(true);
+      setFormUseReservation(true);
+      setFormUseStaff(true);
+      setFormUseDutch(true);
+    }
     setFormMessage('');
     setIsModalOpen(true);
   };
@@ -173,6 +232,25 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
       });
 
       if (res.ok) {
+        // Save store settings (use_kitchen, etc.)
+        try {
+          await apiFetch(`/api/stores/${formStoreId}/settings`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              use_kitchen: formUseKitchen,
+              use_display: formUseDisplay,
+              use_call: formUseCall,
+              use_waiting: formUseWaiting,
+              use_parking: formUseParking,
+              use_points: formUsePoints,
+              use_reservation: formUseReservation,
+              use_staff: formUseStaff,
+              use_dutch: formUseDutch
+            })
+          });
+        } catch (settingsErr) {
+          console.error("Failed to save store settings:", settingsErr);
+        }
         setIsModalOpen(false);
         fetchStores();
       } else {
@@ -600,11 +678,41 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
                         {store.owner_name} <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 400 }}>({store.owner_id})</span>
                       </span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem' }}>
-                      <span style={{ color: '#64748b', fontWeight: 500 }}>월 임대료</span>
-                      <span style={{ color: '#0f172a', fontWeight: 900 }}>₩{store.monthly_fee.toLocaleString()}</span>
-                    </div>
-                  </div>
+                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.05rem' }}>
+                       <span style={{ color: '#64748b', fontWeight: 500 }}>월 가맹비</span>
+                       <span style={{ color: '#0f172a', fontWeight: 900 }}>₩{store.monthly_fee.toLocaleString()}</span>
+                     </div>
+                     {(() => {
+                       const opts = [];
+                       if (store.use_kitchen !== false) opts.push('주방');
+                       if (store.use_display !== false) opts.push('전광판');
+                       if (store.use_call !== false) opts.push('호출');
+                       if (store.use_waiting !== false) opts.push('대기');
+                       if (store.use_parking !== false) opts.push('주차');
+                       if (store.use_points !== false) opts.push('포인트');
+                       if (store.use_reservation !== false) opts.push('예약');
+                       if (store.use_staff !== false) opts.push('직원');
+                       if (store.use_dutch !== false) opts.push('더치페이');
+                       return (
+                         <div style={{ marginTop: '8px', borderTop: '1px dashed #e2e8f0', paddingTop: '8px' }}>
+                           <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
+                             ⚙️ 사용 옵션 ({opts.length}개)
+                           </span>
+                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                             {opts.length === 0 ? (
+                               <span style={{ fontSize: '0.72rem', color: '#94a3b8', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>없음 (기본 무료)</span>
+                             ) : (
+                               opts.map((opt, i) => (
+                                 <span key={i} style={{ fontSize: '0.72rem', color: '#3b82f6', background: 'rgba(59, 130, 246, 0.06)', border: '1px solid rgba(59, 130, 246, 0.12)', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>
+                                   {opt}
+                                 </span>
+                               ))
+                             )}
+                           </div>
+                         </div>
+                       );
+                     })()}
+                   </div>
 
                   {/* Monthly Payment History Sub-Panel */}
                   <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '10px 14px', border: '1px solid #f1f5f9', marginBottom: '14px', flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
@@ -855,15 +963,16 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '12px' }}>
                   <div>
-                    <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748b', display: 'block', marginBottom: '6px' }}>월 사용 가맹금 (₩)</label>
+                    <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748b', display: 'block', marginBottom: '6px' }}>월 가맹비 (₩ - 자동 산출)</label>
                     <input
                       type="number"
                       value={formMonthlyFee}
-                      onChange={(e) => setFormMonthlyFee(Number(e.target.value))}
+                      readOnly={true}
                       style={{
                         width: '100%', padding: '14px', borderRadius: '12px',
-                        border: '1.5px solid #cbd5e1', background: '#ffffff',
-                        color: '#1e293b', outline: 'none', fontSize: '0.95rem', fontWeight: 700
+                        border: '1.5px solid #cbd5e1', background: '#f1f5f9',
+                        color: '#64748b', outline: 'none', fontSize: '0.95rem', fontWeight: 700,
+                        cursor: 'not-allowed'
                       }}
                     />
                   </div>
@@ -882,6 +991,58 @@ export const AdminStoreManager = ({ onSelectStore, onLogout, bundles = [] }: Adm
                       <option value="미납">미납 (Unpaid)</option>
                       <option value="연체">연체 (Overdue)</option>
                     </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.82rem', fontWeight: 800, color: '#64748b', display: 'block', marginBottom: '8px' }}>
+                    ⚙️ 옵션 활성화 설정 (각 1,000원/월)
+                  </label>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, 1fr)',
+                    gap: '10px',
+                    padding: '14px',
+                    borderRadius: '12px',
+                    border: '1.5px solid #cbd5e1',
+                    background: '#f8fafc'
+                  }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={formUseKitchen} onChange={(e) => setFormUseKitchen(e.target.checked)} />
+                      주방
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={formUseDisplay} onChange={(e) => setFormUseDisplay(e.target.checked)} />
+                      전광판
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={formUseCall} onChange={(e) => setFormUseCall(e.target.checked)} />
+                      호출
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={formUseWaiting} onChange={(e) => setFormUseWaiting(e.target.checked)} />
+                      대기
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={formUseParking} onChange={(e) => setFormUseParking(e.target.checked)} />
+                      주차
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={formUsePoints} onChange={(e) => setFormUsePoints(e.target.checked)} />
+                      포인트
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={formUseReservation} onChange={(e) => setFormUseReservation(e.target.checked)} />
+                      예약
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={formUseStaff} onChange={(e) => setFormUseStaff(e.target.checked)} />
+                      직원
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={formUseDutch} onChange={(e) => setFormUseDutch(e.target.checked)} />
+                      더치페이
+                    </label>
                   </div>
                 </div>
 
