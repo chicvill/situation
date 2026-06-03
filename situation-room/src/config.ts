@@ -7,11 +7,16 @@ const getApiBase = () => {
     const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
     const isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.');
     if (isLocal) return `${protocol}://${host}:8080`;
+    
+    // Production (same origin): no port needed. This allows accessing from both custom domain and onrender.com.
+    if (host !== 'localhost' && !host.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+        return `${protocol}://${host}`;
+    }
+    
     if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
-    // Production (same origin): no port needed
-    if (!host.match(/^\d+\.\d+\.\d+\.\d+$/)) return `${protocol}://${host}`;
     return `${protocol}://${host}:8080`;
 };
+
 
 const getWsBase = () => {
     const host = window.location.hostname;
