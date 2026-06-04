@@ -64,7 +64,7 @@ ${items.map(item => {
 이용해 주셔서 감사합니다!
 `;
     
-    const blob = new Blob([receiptText], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob(['\ufeff' + receiptText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
