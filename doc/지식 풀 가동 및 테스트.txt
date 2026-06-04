@@ -15,7 +15,7 @@ pip install fastapi uvicorn google-generativeai pydantic python-dotenv
 
 🚀 다음 운영을 위한 팁
 
-스마트폰 접속 주소: http://192.168.219.152:3000
+스마트폰 접속 주소: http://92.168.219.170:3000
 
 << 서버 운영 명령어 >>
 

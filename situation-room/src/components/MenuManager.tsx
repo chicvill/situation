@@ -148,7 +148,7 @@ export const MenuManager: React.FC<MenuManagerProps> = ({ bundles, onUpdate, onN
                 title="메뉴판 분석"
                 docType="menu"
             />
-            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileChange} />
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" capture="environment" onChange={handleFileChange} />
             
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                 <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-main)' }}>메뉴 정보 관리</h2>

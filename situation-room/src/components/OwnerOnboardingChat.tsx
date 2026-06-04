@@ -832,7 +832,7 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                 title="메뉴판 사진 분석"
                 docType="menu"
             />
-            <input type="file" ref={menuScanFileRef} style={{ display: 'none' }} accept="image/*" onChange={handleMenuScanFile} />
+            <input type="file" ref={menuScanFileRef} style={{ display: 'none' }} accept="image/*" capture="environment" onChange={handleMenuScanFile} />
 
             {/* Step 10: QR Center — rendered fullscreen outside chat so window.print() works correctly */}
             {currentStep === 10 && (

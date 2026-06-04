@@ -340,7 +340,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
             >
                 시스템 초기화
             </button>
-            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={handleFileChange} />
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" capture="environment" onChange={handleFileChange} />
             <button 
                 style={{ 
                     padding: '10px 20px', borderRadius: 'var(--radius-sm)', border: 'none',

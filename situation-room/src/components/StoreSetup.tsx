@@ -124,7 +124,7 @@ export const StoreSetup: React.FC<{ storeName: string }> = ({ storeName }) => {
                         <h3>사업자 정보 정밀 교정</h3>
                     </div>
                     <div className="upload-area">
-                        <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" onChange={(e) => e.target.files?.[0] && requestRealAIAnalysis('reg', e.target.files[0])} />
+                        <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" capture="environment" onChange={(e) => e.target.files?.[0] && requestRealAIAnalysis('reg', e.target.files[0])} />
                         {storeData ? (
                             <div className="ocr-result edit-mode animate-fade-in">
                                 <div className="result-field highlight">
@@ -153,7 +153,7 @@ export const StoreSetup: React.FC<{ storeName: string }> = ({ storeName }) => {
                                 ) : (
                                     <div className="up-msg">
                                         <div className="up-icon">📂</div>
-                                        <p>사업자등록증 사진 선택</p>
+                                        <p>사업자등록증 촬영 또는 파일 선택</p>
                                     </div>
                                 )}
                             </div>
@@ -168,7 +168,7 @@ export const StoreSetup: React.FC<{ storeName: string }> = ({ storeName }) => {
                         <h3>메뉴 및 가격 교정</h3>
                     </div>
                     <div className="upload-area">
-                        <input type="file" ref={menuInputRef} style={{ display: 'none' }} accept="image/*" onChange={(e) => e.target.files?.[0] && requestRealAIAnalysis('menu', e.target.files[0])} />
+                        <input type="file" ref={menuInputRef} style={{ display: 'none' }} accept="image/*" capture="environment" onChange={(e) => e.target.files?.[0] && requestRealAIAnalysis('menu', e.target.files[0])} />
                         {menuData.length > 0 ? (
                             <div className="ocr-result edit-mode animate-fade-in">
                                 <div className="menu-edit-container">
@@ -192,7 +192,7 @@ export const StoreSetup: React.FC<{ storeName: string }> = ({ storeName }) => {
                                 ) : (
                                     <div className="up-msg">
                                         <div className="up-icon">📸</div>
-                                        <p>메뉴판 사진 선택</p>
+                                        <p>메뉴판 촬영 또는 파일 선택</p>
                                     </div>
                                 )}
                             </div>
