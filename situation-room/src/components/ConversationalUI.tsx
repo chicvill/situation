@@ -197,12 +197,14 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                 body: JSON.stringify({ 
                     query: text, 
                     history: bundles,
-                    store: storeName 
+                    store: storeName,
+                    store_id: storeId
                 })
             });
             const data = await response.json();
-            if (data.answer) {
-                addAiMessage(data.answer);
+            const reply = data.response || data.answer;
+            if (reply) {
+                addAiMessage(reply);
             }
         } catch (error) {
             console.error("AI Chat error:", error);
