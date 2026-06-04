@@ -387,17 +387,36 @@ function App() {
         setRecognizedText(text);
         
         // 특정 키워드 인식 시 즉시 이동
-        if (text.includes("주문")) {
-            navigateTo("counter");
-            recognition.stop();
-        } else if (text.includes("카운터")) {
-            navigateTo("counter");
+        const t = text.trim();
+        let matchedTab: MainTab | null = null;
+        if (t.includes("주문") || t.includes("카운터") || t.includes("포스")) {
+            matchedTab = "counter";
+        } else if (t.includes("홈") || t.includes("대시보드")) {
+            matchedTab = "home";
+        } else if (t.includes("주방")) {
+            matchedTab = "kitchen";
+        } else if (t.includes("QR") || t.includes("큐알") || t.includes("인쇄")) {
+            matchedTab = "qr";
+        } else if (t.includes("통계") || t.includes("분석") || t.includes("매출")) {
+            matchedTab = "stats";
+        }
+
+        if (matchedTab) {
+            navigateTo(matchedTab);
             recognition.stop();
         }
     };
     recognition.onend = () => {
         setIsListening(false);
-        if (recognizedText && !recognizedText.includes("주문") && !recognizedText.includes("카운터")) {
+        const t = recognizedText.trim();
+        const isNavCommand = 
+            t.includes("주문") || t.includes("카운터") || t.includes("포스") ||
+            t.includes("홈") || t.includes("대시보드") ||
+            t.includes("주방") ||
+            t.includes("QR") || t.includes("큐알") || t.includes("인쇄") ||
+            t.includes("통계") || t.includes("분석") || t.includes("매출");
+
+        if (recognizedText && !isNavCommand) {
             handleSendMessage(recognizedText, undefined, activeTab, storeId, storeName);
         }
     };
