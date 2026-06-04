@@ -114,7 +114,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         }
         
         // bundles에서 Menus 찾기
-        const menuBundle = bundles?.find((b: any) => b.type === 'Menus');
+        const menuBundle = bundles?.find((b: any) => b.type === 'Menus' && (storeId === 'Total' || !storeId || b.store_id === storeId));
         const menuItems = menuBundle?.items ?? [];
         const menu = menuItems.find((m: any) => m.name === selectedMenuName);
         if (!menu) return;
@@ -550,7 +550,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                         style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: '700', outline: 'none' }}
                                                     >
                                                         <option value="">-- 메뉴를 선택해 주세요 --</option>
-                                                        {(bundles?.find((b: any) => b.type === 'Menus')?.items ?? []).map((m: any) => {
+                                                        {(bundles?.find((b: any) => b.type === 'Menus' && (storeId === 'Total' || !storeId || b.store_id === storeId))?.items ?? []).map((m: any) => {
                                                             const val = typeof m.value === 'number' ? m.value : parseInt(String(m.value).replace(/[^0-9]/g, '')) || 0;
                                                             return (
                                                                 <option key={m.name} value={m.name}>{m.name} ({val.toLocaleString()}원)</option>
