@@ -13,4 +13,5 @@ aiofiles==23.2.1
 httpx==0.28.1
 PyJWT==2.10.1
 werkzeug
+google-generativeai>=0.8.0
 # Trigger Build: 2026-05-20 (Mosquitto plain TCP, remove TLS)
