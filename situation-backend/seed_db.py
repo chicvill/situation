@@ -422,49 +422,12 @@ def seed_menus():
 
 
 # ─────────────────────────────────────────────────────────────────
-# STEP 5 — 테스트 세션 (매장당 2테이블, 주문 포함)
+# STEP 5 — 테스트 세션 (매장당 2테이블, 주문 포함) - 삭제 (실제 사용 시 혼선 방지)
 # ─────────────────────────────────────────────────────────────────
 def seed_sessions(conn):
-    cur = conn.cursor()
-
-    # 매장별 대표 메뉴 2개씩 미리 추출
-    store_items = {m["store_id"]: m["items"][:2] for m in MENUS}
-
-    for s in STORES:
-        for t_num in range(1, 3):  # T01, T02
-            table_id = f"T{t_num:02d}"
-            sess_id = _uid("SESS-")
-            checkin = datetime.now().isoformat()
-
-            # 주문 객체 2건
-            orders = []
-            for seq, item in enumerate(store_items[s["id"]], start=1):
-                qty = seq  # 1개, 2개
-                orders.append({
-                    "order_id":       _uid("ORD-"),
-                    "seq":            seq,
-                    "items":          [{"name": item["name"], "price": item["value"], "quantity": qty}],
-                    "total":          item["value"] * qty,
-                    "status":         "cooking",
-                    "payment_status": "unpaid",
-                    "payment_method": None,
-                    "created_at":     checkin,
-                })
-
-            cur.execute("""
-                INSERT INTO table_sessions
-                    (session_id, store_id, table_id, device_id, status,
-                     checkin_time, orders, splits, calls, version)
-                VALUES (%s, %s, %s, %s, 'active', %s,
-                        %s::jsonb, '[]', '[]', 1)
-            """, (
-                sess_id, s["id"], table_id, "DEVICE-TEST",
-                checkin, json.dumps(orders, ensure_ascii=False),
-            ))
-            print(f"  세션 생성: {s['name']} / {table_id} → {sess_id} (주문 {len(orders)}건)")
-
-    conn.commit()
-    cur.close()
+    # 실제 운영 환경이나 테스트 환경에서 의도치 않은 유령 주문이 카운터에 나타나는 것을 
+    # 방지하기 위해, 더 이상 초기화 시 가짜 활성 세션을 만들지 않습니다.
+    pass
 
 
 def seed_archive_data(conn):
