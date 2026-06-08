@@ -55,7 +55,35 @@ async def check_in(data: Dict):
 
     print(f"[check_in] {table_id} 세션={active['session_id']} 주문수={len(orders)} first_device={first_device!r} 요청기기={device_id!r}")
 
-    # ② 주문 없는 테이블 → 무조건 통과 (보호할 주문 없음)
+    # ② 이전 손님이 결제 후 퇴장했으나 카운터에서 세션 종료를 누르지 않은 경우 방지 (Auto-Close)
+    if orders:
+        all_paid = all(o.get('payment_status') == 'paid' or o.get('status') == 'cancelled' for o in orders)
+        no_pending = not any(o.get('status') in ['pending', 'cooking', 'pending_payment'] for o in orders)
+        
+        if all_paid and no_pending:
+            print(f"[check_in] {table_id} 이전 세션({active['session_id']}) 전체 결제/조리완료. 자동 종료 및 새 세션 시작.")
+            from ..database import update_session_status
+            update_session_status(active['session_id'], "closed")
+            
+            import random
+            pin_num = f"{random.randint(1000, 9999)}"
+            new_active = {
+                "session_id": f"SESS-{uuid.uuid4().hex[:8].upper()}",
+                "store_id": store_id,
+                "table_id": table_id,
+                "device_id": device_id,
+                "status": "active",
+                "checkin_time": datetime.now().isoformat(),
+                "metadata": {"pin": pin_num, "pin_verified": True}
+            }
+            try:
+                save_session(new_active)
+            except Exception as e:
+                print(f"Auto Session Save DB Error: {e}")
+                
+            return {"status": "active", "session": new_active, "orders": []}
+
+    # ③ 주문 없는 테이블 → 무조건 통과 (보호할 주문 없음)
     if not orders:
         if device_id and not first_device:
             update_session_device_id(active['session_id'], device_id)
