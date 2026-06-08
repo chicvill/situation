@@ -23,7 +23,9 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
   onLogout,
   onSwitchStore,
 }) => {
-  const { padMode, togglePadMode } = usePadMode();
+  const { padMode: kitchenPad, togglePadMode: toggleKitchenPad } = usePadMode('kitchen');
+  const { padMode: counterPad, togglePadMode: toggleCounterPad } = usePadMode('counter');
+  const { padMode: displayPad, togglePadMode: toggleDisplayPad } = usePadMode('display');
 
   return (
     <>
@@ -53,25 +55,31 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
         <nav className="drawer-nav">
           <div className="drawer-section-label">운영 화면</div>
           <button onClick={() => onNavigate('home')}>🏠 홈</button>
+          
           {storeDetails?.use_kitchen !== false && (
-            <button onClick={() => onNavigate('kitchen')}>👨‍🍳 주방 모니터</button>
-          )}
-          <button onClick={() => onNavigate('counter')}>💰 카운터</button>
-          {storeDetails?.use_display !== false && (
-            <button onClick={() => onNavigate('display')}>📢 전광판</button>
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => onNavigate('kitchen')}>👨‍🍳 주방 모니터</button>
+              <label style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={kitchenPad} onChange={toggleKitchenPad} style={{ margin: 0, accentColor: 'var(--accent)' }} /> PAD
+              </label>
+            </div>
           )}
 
-          <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', margin: '4px 10px 12px 10px' }}>
-            <label style={{ color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input 
-                type="checkbox" 
-                checked={padMode} 
-                onChange={togglePadMode} 
-                style={{ width: '18px', height: '18px', accentColor: 'var(--accent)' }} 
-              />
-              큰 화면 (PAD 모드) 사용
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => onNavigate('counter')}>💰 카운터</button>
+            <label style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={counterPad} onChange={toggleCounterPad} style={{ margin: 0, accentColor: 'var(--accent)' }} /> PAD
             </label>
           </div>
+
+          {storeDetails?.use_display !== false && (
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => onNavigate('display')}>📢 전광판</button>
+              <label style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={displayPad} onChange={toggleDisplayPad} style={{ margin: 0, accentColor: 'var(--accent)' }} /> PAD
+              </label>
+            </div>
+          )}
 
           <button onClick={() => onNavigate('qr')}>🖨️ QR 인쇄</button>
           <button onClick={() => onNavigate('wifi')}>📶 WiFi QR 인쇄</button>

@@ -23,7 +23,7 @@ function getElapsedMinutes(date: Date, nowTime: number): number {
 export const DisplayBoard: React.FC<DisplayBoardProps> = ({ bundles }) => {
     const { storeId } = useStoreFilter();
     const [now, setNow] = useState(Date.now());
-    const { padMode } = usePadMode();
+    const { padMode } = usePadMode('display');
 
     // 1분마다 경과시간 갱신
     useEffect(() => {

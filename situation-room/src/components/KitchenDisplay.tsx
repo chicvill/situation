@@ -36,7 +36,7 @@ export const KitchenDisplay: React.FC = () => {
     const [now, setNow]         = useState(Date.now());
     const prevCountRef          = useRef(0);
     const [seatRequests, setSeatRequests] = useState<{ table_id: string; store_id: string; timestamp: string }[]>([]);
-    const { padMode } = usePadMode();
+    const { padMode } = usePadMode('kitchen');
 
     // 1분마다 경과시간·버튼색 갱신
     useEffect(() => {

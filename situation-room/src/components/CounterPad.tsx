@@ -51,7 +51,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const [isSubmittingManualOrder, setIsSubmittingManualOrder] = useState(false);
 
     const [lastTapInfo, setLastTapInfo] = useState<{ id: string; time: number } | null>(null);
-    const { padMode } = usePadMode();
+    const { padMode } = usePadMode('counter');
 
     // playDingDong: utils/audio.ts 상단 import에서 가져옴
 
