@@ -44,7 +44,11 @@ interface Props {
 function speak(text: string) {
   if (!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
+  
+  // TTS가 눈웃음, 쇼핑카트 등 이모지를 읽지 않도록 한글, 영문, 숫자, 기본 기호만 남기고 필터링
+  const cleanText = text.replace(/[^\x00-\x7F\uAC00-\uD7A3\u3131-\u318E]/g, '');
+  
+  const u = new SpeechSynthesisUtterance(cleanText);
   u.lang = 'ko-KR'; u.rate = 1.05;
   window.speechSynthesis.speak(u);
 }
