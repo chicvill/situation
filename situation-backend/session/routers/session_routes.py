@@ -57,13 +57,13 @@ async def check_in(data: Dict):
 
     # ② 이전 손님이 결제 후 퇴장했으나 카운터에서 세션 종료를 누르지 않은 경우 방지 (Auto-Close)
     # 1) 모든 주문이 결제/조리완료 상태이거나
-    # 2) 세션이 8시간 이상 방치된 경우 (후불제 매장 등에서 카운터 종료 누락 시)
+    # 2) 세션이 2시간 이상 방치된 경우 (후불제 매장 등에서 카운터 종료 누락 시)
     is_stale = False
     if active.get('checkin_time'):
         try:
             ci_str = active['checkin_time'].replace("Z", "+00:00") if "Z" in active['checkin_time'] else active['checkin_time']
             ci = datetime.fromisoformat(ci_str).replace(tzinfo=None)
-            if (datetime.now() - ci).total_seconds() > 8 * 3600:
+            if (datetime.now() - ci).total_seconds() > 2 * 3600:
                 is_stale = True
         except Exception as e:
             print(f"Stale check time parse error: {e}")
