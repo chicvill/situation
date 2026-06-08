@@ -56,12 +56,24 @@ async def check_in(data: Dict):
     print(f"[check_in] {table_id} 세션={active['session_id']} 주문수={len(orders)} first_device={first_device!r} 요청기기={device_id!r}")
 
     # ② 이전 손님이 결제 후 퇴장했으나 카운터에서 세션 종료를 누르지 않은 경우 방지 (Auto-Close)
-    if orders:
+    # 1) 모든 주문이 결제/조리완료 상태이거나
+    # 2) 세션이 8시간 이상 방치된 경우 (후불제 매장 등에서 카운터 종료 누락 시)
+    is_stale = False
+    if active.get('checkin_time'):
+        try:
+            ci_str = active['checkin_time'].replace("Z", "+00:00") if "Z" in active['checkin_time'] else active['checkin_time']
+            ci = datetime.fromisoformat(ci_str).replace(tzinfo=None)
+            if (datetime.now() - ci).total_seconds() > 8 * 3600:
+                is_stale = True
+        except Exception as e:
+            print(f"Stale check time parse error: {e}")
+
+    if orders or is_stale:
         all_paid = all(o.get('payment_status') == 'paid' or o.get('status') == 'cancelled' for o in orders)
         no_pending = not any(o.get('status') in ['pending', 'cooking', 'pending_payment'] for o in orders)
         
-        if all_paid and no_pending:
-            print(f"[check_in] {table_id} 이전 세션({active['session_id']}) 전체 결제/조리완료. 자동 종료 및 새 세션 시작.")
+        if (all_paid and no_pending) or is_stale:
+            print(f"[check_in] {table_id} 이전 세션({active['session_id']}) 자동 종료 (is_stale={is_stale}). 새 세션 시작.")
             from ..database import update_session_status
             update_session_status(active['session_id'], "closed")
             
