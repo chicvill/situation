@@ -35,6 +35,15 @@ export const KitchenDisplay: React.FC = () => {
     const [now, setNow]         = useState(Date.now());
     const prevCountRef          = useRef(0);
     const [seatRequests, setSeatRequests] = useState<{ table_id: string; store_id: string; timestamp: string }[]>([]);
+    const [padMode, setPadMode] = useState(() => localStorage.getItem('kitchenPadMode') === 'true');
+
+    const togglePadMode = () => {
+        setPadMode(prev => {
+            const next = !prev;
+            localStorage.setItem('kitchenPadMode', next.toString());
+            return next;
+        });
+    };
 
     // 1분마다 경과시간·버튼색 갱신
     useEffect(() => {
@@ -156,7 +165,7 @@ export const KitchenDisplay: React.FC = () => {
     }, [bundles]);
 
     return (
-        <div style={{ padding: '24px 20px', background: 'var(--bg-main)', minHeight: '100vh' }}>
+        <div style={{ padding: '24px 20px', background: 'var(--bg-main)', minHeight: '100vh', zoom: padMode ? 1.35 : 1 } as React.CSSProperties}>
             <style>{`
                 .kd-header-bar {
                     display: flex;
@@ -310,7 +319,12 @@ export const KitchenDisplay: React.FC = () => {
             `}</style>
 
             <div className="kd-header-bar">
-                <h1 className="kd-title">주방 모니터</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <h1 className="kd-title">주방 모니터</h1>
+                    <button onClick={togglePadMode} style={{ background: padMode ? 'var(--accent)' : 'transparent', border: '2px solid var(--accent)', color: padMode ? 'white' : 'var(--accent)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer' }}>
+                        {padMode ? 'PAD 화면' : 'HP 화면'}
+                    </button>
+                </div>
                 <div className="kd-count-badge">
                     대기 중인 주문 <strong>{bundles.length}</strong>
                 </div>

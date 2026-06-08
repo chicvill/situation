@@ -50,6 +50,15 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const [isSubmittingManualOrder, setIsSubmittingManualOrder] = useState(false);
 
     const [lastTapInfo, setLastTapInfo] = useState<{ id: string; time: number } | null>(null);
+    const [padMode, setPadMode] = useState(() => localStorage.getItem('counterPadMode') === 'true');
+
+    const togglePadMode = () => {
+        setPadMode(prev => {
+            const next = !prev;
+            localStorage.setItem('counterPadMode', next.toString());
+            return next;
+        });
+    };
 
     // playDingDong: utils/audio.ts 상단 import에서 가져옴
 
@@ -425,7 +434,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const isSeatReqSelected = seatRequests.some((r: any) => r.table_id === selectedTableId);
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 110px)', overflow: 'hidden', background: 'var(--bg-main)', padding: '4px 4px 0', gap: '4px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 110px)', overflow: 'hidden', background: 'var(--bg-main)', padding: '4px 4px 0', gap: '4px', boxSizing: 'border-box', zoom: padMode ? 1.35 : 1 } as React.CSSProperties}>
 
             {/* ── 좌석 승인 요청 배너 제거 (선결제 도입으로 점주 승인 불필요) ── */}
 
@@ -435,6 +444,9 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                     <span style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>현황: <span style={{ color: 'var(--accent)' }}>{sessions.length}석 활성</span></span>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
+                        <button onClick={togglePadMode} style={{ background: padMode ? 'var(--accent)' : 'transparent', border: '1px solid var(--accent)', color: padMode ? 'white' : 'var(--accent)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.6rem', fontWeight: '800', cursor: 'pointer', marginRight: '4px' }}>
+                            {padMode ? 'PAD 화면' : 'HP 화면'}
+                        </button>
                         {STAGE_PIPELINE.filter(s => s.key !== 'initial').map(s => (
                             <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
                                 <div style={{ width: '5px', height: '5px', borderRadius: '1px', background: s.bg, border: `1px solid ${s.color}66`, flexShrink: 0 }} />
