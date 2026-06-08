@@ -3,6 +3,7 @@ import { PaymentModal } from './PaymentModal';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 import { subscribeTopic } from '../services/mqttClient';
 import { playDingDong } from '../utils/audio';
+import { usePadMode } from '../hooks/usePadMode';
 
 interface CounterPadProps {
     storeId?: string;
@@ -50,15 +51,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const [isSubmittingManualOrder, setIsSubmittingManualOrder] = useState(false);
 
     const [lastTapInfo, setLastTapInfo] = useState<{ id: string; time: number } | null>(null);
-    const [padMode, setPadMode] = useState(() => localStorage.getItem('counterPadMode') === 'true');
-
-    const togglePadMode = () => {
-        setPadMode(prev => {
-            const next = !prev;
-            localStorage.setItem('counterPadMode', next.toString());
-            return next;
-        });
-    };
+    const { padMode } = usePadMode();
 
     // playDingDong: utils/audio.ts 상단 import에서 가져옴
 
@@ -443,9 +436,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             <div style={{ background: 'var(--surface)', borderBottom: '2px solid var(--border)', borderRadius: '12px', padding: '4px 8px 4px', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button onClick={togglePadMode} style={{ background: padMode ? 'var(--accent)' : 'transparent', border: '1px solid var(--accent)', color: padMode ? 'white' : 'var(--accent)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: '800', cursor: 'pointer' }}>
-                            {padMode ? 'PAD' : 'HP'} 화면
-                        </button>
                         <span style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>현황: <span style={{ color: 'var(--accent)' }}>{sessions.length}석 활성</span></span>
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>

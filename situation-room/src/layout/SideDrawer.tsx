@@ -1,5 +1,6 @@
 import React from 'react';
 import { API_BASE } from '../config';
+import { usePadMode } from '../hooks/usePadMode';
 
 interface SideDrawerProps {
   isOpen: boolean;
@@ -22,6 +23,8 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
   onLogout,
   onSwitchStore,
 }) => {
+  const { padMode, togglePadMode } = usePadMode();
+
   return (
     <>
       {/* Overlay */}
@@ -57,6 +60,19 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
           {storeDetails?.use_display !== false && (
             <button onClick={() => onNavigate('display')}>📢 전광판</button>
           )}
+
+          <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', margin: '4px 10px 12px 10px' }}>
+            <label style={{ color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input 
+                type="checkbox" 
+                checked={padMode} 
+                onChange={togglePadMode} 
+                style={{ width: '18px', height: '18px', accentColor: 'var(--accent)' }} 
+              />
+              큰 화면 (PAD 모드) 사용
+            </label>
+          </div>
+
           <button onClick={() => onNavigate('qr')}>🖨️ QR 인쇄</button>
           <button onClick={() => onNavigate('wifi')}>📶 WiFi QR 인쇄</button>
           {(user?.role === 'admin' || user?.role === 'owner') && (

@@ -3,6 +3,7 @@ import type { BundleData } from '../types';
 import { API_BASE } from '../config';
 import { subscribeTopic } from '../services/mqttClient';
 import { useStoreFilter } from '../hooks/useStoreFilter';
+import { usePadMode } from '../hooks/usePadMode';
 import { playDingDong } from '../utils/audio';
 
 // 타임스탬프 파싱: 'Z'/'+' 있으면 UTC, 없으면 로컬 시간으로 처리
@@ -35,15 +36,7 @@ export const KitchenDisplay: React.FC = () => {
     const [now, setNow]         = useState(Date.now());
     const prevCountRef          = useRef(0);
     const [seatRequests, setSeatRequests] = useState<{ table_id: string; store_id: string; timestamp: string }[]>([]);
-    const [padMode, setPadMode] = useState(() => localStorage.getItem('kitchenPadMode') === 'true');
-
-    const togglePadMode = () => {
-        setPadMode(prev => {
-            const next = !prev;
-            localStorage.setItem('kitchenPadMode', next.toString());
-            return next;
-        });
-    };
+    const { padMode } = usePadMode();
 
     // 1분마다 경과시간·버튼색 갱신
     useEffect(() => {
@@ -321,9 +314,6 @@ export const KitchenDisplay: React.FC = () => {
             <div className="kd-header-bar">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <h1 className="kd-title">주방 모니터</h1>
-                    <button onClick={togglePadMode} style={{ background: padMode ? 'var(--accent)' : 'transparent', border: '2px solid var(--accent)', color: padMode ? 'white' : 'var(--accent)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer' }}>
-                        {padMode ? 'PAD 화면' : 'HP 화면'}
-                    </button>
                 </div>
                 <div className="kd-count-badge">
                     대기 중인 주문 <strong>{bundles.length}</strong>

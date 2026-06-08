@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useState } from 'react';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 import type { BundleData } from '../types';
+import { usePadMode } from '../hooks/usePadMode';
 
 interface DisplayBoardProps {
     bundles: BundleData[];
@@ -22,15 +23,7 @@ function getElapsedMinutes(date: Date, nowTime: number): number {
 export const DisplayBoard: React.FC<DisplayBoardProps> = ({ bundles }) => {
     const { storeId } = useStoreFilter();
     const [now, setNow] = useState(Date.now());
-    const [padMode, setPadMode] = useState(() => localStorage.getItem('displayPadMode') === 'true');
-
-    const togglePadMode = () => {
-        setPadMode(prev => {
-            const next = !prev;
-            localStorage.setItem('displayPadMode', next.toString());
-            return next;
-        });
-    };
+    const { padMode } = usePadMode();
 
     // 1분마다 경과시간 갱신
     useEffect(() => {
@@ -367,9 +360,6 @@ export const DisplayBoard: React.FC<DisplayBoardProps> = ({ bundles }) => {
                         <div className="db-header-title">📢 음식이 준비되었습니다</div>
                         <div className="db-header-sub">테이블 번호를 확인 후 가져가 주세요</div>
                     </div>
-                    <button onClick={togglePadMode} style={{ background: padMode ? '#00f2fe' : 'transparent', border: '1px solid #00f2fe', color: padMode ? '#080711' : '#00f2fe', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', marginLeft: '12px' }}>
-                        {padMode ? 'PAD 화면' : 'HP 화면'}
-                    </button>
                 </div>
                 <div className="db-header-count">
                     {readyOrders.length > 0 ? `${readyOrders.length}건 대기` : '대기 없음'}
