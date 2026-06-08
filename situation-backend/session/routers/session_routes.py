@@ -85,12 +85,17 @@ async def check_in(data: Dict):
 
     # ③ 주문 없는 테이블 → 무조건 통과 (보호할 주문 없음)
     if not orders:
+        is_new_device = False
         if device_id and not first_device:
             update_session_device_id(active['session_id'], device_id)
+            is_new_device = True
+        elif device_id and first_device and device_id != first_device:
+            is_new_device = True
         print(f"[check_in] 주문 없음 → active")
-        return {"status": "active", "session": active, "orders": orders}
+        return {"status": "active", "session": active, "orders": orders, "is_new_device": is_new_device}
 
-    # ③ 주문 있는 테이블 → 테이블 활성화 상태면 기기 불문 즉시 통과 및 자동 승인
+    # ④ 주문 있는 테이블 → 테이블 활성화 상태면 기기 불문 즉시 통과 및 자동 승인
+    is_new_device = False
     if device_id:
         try:
             raw_meta = active.get('metadata') or {}
@@ -99,6 +104,7 @@ async def check_in(data: Dict):
             metadata = {}
         approved_devices = metadata.get('approved_devices', [])
         if device_id not in approved_devices:
+            is_new_device = True
             approved_devices.append(device_id)
             metadata['approved_devices'] = approved_devices
             conn = get_db_conn()
@@ -115,8 +121,8 @@ async def check_in(data: Dict):
                 except Exception as e:
                     print(f"Auto-approve join metadata update error: {e}")
 
-    print(f"[check_in] 테이블 세션 활성 → 자동 승인 및 active 반환")
-    return {"status": "active", "session": active, "orders": orders}
+    print(f"[check_in] 테이블 세션 활성 → 자동 승인 및 active 반환 (is_new_device={is_new_device})")
+    return {"status": "active", "session": active, "orders": orders, "is_new_device": is_new_device}
 
 
 @router.post("/api/session/check-in")

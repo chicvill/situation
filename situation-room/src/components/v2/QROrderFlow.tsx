@@ -306,7 +306,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
     setPhase('active');
   }, []);
 
-  const joinSession = useCallback(async (): Promise<'active_new' | 'active_existing' | 'greeting'> => {
+  const joinSession = useCallback(async (): Promise<'active_new' | 'active_existing_new' | 'active_existing_same' | 'greeting'> => {
     try {
       const res = await fetch(`${API_BASE}/api/checkin/request`, {
         method: 'POST',
@@ -319,7 +319,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         activateSession(data.session, existingOrders);
         phaseRef.current = 'active';
         setPhase('active');
-        return existingOrders.length === 0 ? 'active_new' : 'active_existing';
+        if (existingOrders.length === 0) return 'active_new';
+        return data.is_new_device ? 'active_existing_new' : 'active_existing_same';
       } else {
         activateSession(data.session || null, []);
         phaseRef.current = 'active';
@@ -409,8 +410,10 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
     if (menus.length > 0 && phase === 'loading') {
       joinSession().then((result) => {
         setTimeout(() => {
-          if (result === 'active_existing') {
-            addAiMsg(`추가 주문입니까? 합석이 아니면 취소해주세요. 🛒`, true);
+          if (result === 'active_existing_new') {
+            addAiMsg(`이전 주문 내역이 있습니다. 합석(추가 주문)이 아니면 카운터에 문의해주세요. 🛒`, true);
+          } else if (result === 'active_existing_same') {
+            addAiMsg(`기존 주문 내역을 불러왔습니다. 편하게 추가 주문하세요. 🛒`, true);
           } else {
             addAiMsg(
               `안녕하세요! 저는 ${storeName} AI 도우미입니다. 😊 위 카테고리를 눌러 메뉴를 보시고, [+] 버튼이나 🎙️ 음성 버튼으로 편하게 주문하세요!`,
