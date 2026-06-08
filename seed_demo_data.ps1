@@ -26,7 +26,7 @@ $stores = @(
     @{ id="store-2";       name="블루버드 카페";   ownerPhone="01000000002" },
     @{ id="store-3";       name="나폴리 피자";     ownerPhone="01000000003" },
     @{ id="store-Mbh";     name="일산국밥";        ownerPhone="01000000004" },
-    @{ id="store-chicvill";name="시크빌";          ownerPhone="01000000005" }
+    @{ id="store-chicvill";name="시크빌";          ownerPhone="01082817377" }
 )
 
 # ── 점장/점원 명단 ─────────────────────────────────────────────

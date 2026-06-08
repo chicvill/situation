@@ -458,7 +458,11 @@ function App() {
       case 'counter': return <CounterPad storeId={storeId} bundles={bundles} />;
       case 'display': return <DisplayBoard bundles={bundles} />;
       case 'menu': return <MenuManager bundles={bundles} onNavigate={navigateTo as any} />;
-      case 'settings': return <StoreManager bundles={bundles} user={user} onNavigate={navigateTo as any} onRefreshStoreDetails={fetchStoreDetails} />;
+      case 'settings': 
+        if (user?.role !== 'admin' && user?.role !== 'owner') {
+          return <div style={{padding: '50px', textAlign: 'center', color: 'var(--text-secondary)'}}>매장 설정 권한이 없습니다. (점주 전용)</div>;
+        }
+        return <StoreManager bundles={bundles} user={user} onNavigate={navigateTo as any} onRefreshStoreDetails={fetchStoreDetails} />;
       case 'qr': return <QRManager bundles={bundles} storeId={storeId} storeName={storeName} />;
       case 'wifi': return <WifiQRManager />;
       case 'tech': return <TechInfo />;

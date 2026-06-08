@@ -65,7 +65,9 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
           <hr />
           <div className="drawer-section-label">설정</div>
           <button onClick={() => onNavigate('manual')}>📜 매장 운영 매뉴얼</button>
-          <button onClick={() => onNavigate('settings')}>⚙️ 매장 설정</button>
+          {(user?.role === 'admin' || user?.role === 'owner') && (
+            <button onClick={() => onNavigate('settings')}>⚙️ 매장 설정</button>
+          )}
           <button onClick={() => onNavigate('menu')}>📔 메뉴 설정</button>
           {storeDetails?.use_staff !== false && (
             <button onClick={() => onNavigate('hr')}>👥 직원 및 근태 관리</button>

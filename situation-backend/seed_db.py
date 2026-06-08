@@ -346,7 +346,7 @@ def seed_users(conn):
         ("store-2", "블루버드 카페", "01000000002", "이하늘"),
         ("store-3", "나폴리 피자", "01000000003", "박나폴"),
         ("store-Mbh", "일산국밥", "01000000004", "민병훈"),
-        ("store-chicvill", "시크빌", "01000000005", "김종심"),
+        ("store-chicvill", "시크빌", "01082817377", "김종심"),
     ]
     for store_id, store_name, phone, ceo_name in stores_info:
         users_to_seed.append((phone, "1212", "owner", store_id, f"{ceo_name} 사장", True))
