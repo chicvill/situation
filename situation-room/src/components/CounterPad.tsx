@@ -249,12 +249,12 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const handlePartialPayment = async (orderId: string) => {
         setSessions(prev => prev.map(s => ({
             ...s,
-            orders: s.orders?.map((o: any) => o.order_id === orderId ? { ...o, status: 'paid', payment_status: 'paid' } : o)
+            orders: s.orders?.map((o: any) => o.order_id === orderId ? { ...o, payment_status: 'paid' } : o)
         })));
         try {
-            const res = await fetch(`${getApiUrl()}/api/order/status`, {
+            const res = await fetch(`${getApiUrl()}/api/order/payment-status`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ order_id: orderId, status: 'paid' })
+                body: JSON.stringify({ order_id: orderId, payment_status: 'paid' })
             });
             if (res.ok) { setSelectedOrderForPay(null); fetchSessions(); }
             else { const d = await res.json(); throw new Error(d.detail || '결제 실패'); }

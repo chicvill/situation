@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Dict
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from ..state import manager
 from ..models import OrderRequest, StatusUpdate
 from ..database import (
@@ -181,6 +182,31 @@ async def update_status(update: StatusUpdate):
             "type": "STATUS_UPDATE",
             "order_id": update.order_id,
             "status": update.status,
+            "store_id": store_id,
+            "table_id": table_id,
+        }
+        await manager.broadcast_to_kitchen(msg)
+        return {"status": "success"}
+    return {"status": "failed"}
+
+
+class PaymentStatusUpdate(BaseModel):
+    order_id: str
+    payment_status: str
+
+@router.post("/api/order/payment-status")
+async def update_payment_status(update: PaymentStatusUpdate):
+    from ..database import update_order_payment_status, get_order_by_id
+    success = update_order_payment_status(update.order_id, update.payment_status)
+    if success:
+        order = get_order_by_id(update.order_id)
+        store_id = order.get("store_id", "") if order else ""
+        table_id = order.get("table_id", "") if order else ""
+        # You can also broadcast a PAYMENT_CONFIRMED message here so counter/kitchen updates
+        msg = {
+            "type": "PAYMENT_CONFIRMED",
+            "order_id": update.order_id,
+            "payment_status": update.payment_status,
             "store_id": store_id,
             "table_id": table_id,
         }
