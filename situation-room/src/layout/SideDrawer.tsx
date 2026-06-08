@@ -54,34 +54,34 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
         </div>
         <nav className="drawer-nav">
           <div className="drawer-section-label">운영 화면</div>
-          <button onClick={() => onNavigate('home')}>🏠 홈</button>
+          <button style={{ width: '100%' }} onClick={() => onNavigate('home')}>🏠 홈</button>
           
           {storeDetails?.use_kitchen !== false && (
             <div style={{ position: 'relative' }}>
-              <button onClick={() => onNavigate('kitchen')}>👨‍🍳 주방 모니터</button>
-              <label style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                <input type="checkbox" checked={kitchenPad} onChange={toggleKitchenPad} style={{ margin: 0, accentColor: 'var(--accent)' }} /> PAD
+              <button style={{ width: '100%', paddingRight: '70px' }} onClick={() => onNavigate('kitchen')}>👨‍🍳 주방 모니터</button>
+              <label style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', zIndex: 10, fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={kitchenPad} onChange={toggleKitchenPad} style={{ margin: 0, accentColor: 'var(--accent)', width: '16px', height: '16px' }} /> PAD
               </label>
             </div>
           )}
 
           <div style={{ position: 'relative' }}>
-            <button onClick={() => onNavigate('counter')}>💰 카운터</button>
-            <label style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-              <input type="checkbox" checked={counterPad} onChange={toggleCounterPad} style={{ margin: 0, accentColor: 'var(--accent)' }} /> PAD
+            <button style={{ width: '100%', paddingRight: '70px' }} onClick={() => onNavigate('counter')}>💰 카운터</button>
+            <label style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', zIndex: 10, fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={counterPad} onChange={toggleCounterPad} style={{ margin: 0, accentColor: 'var(--accent)', width: '16px', height: '16px' }} /> PAD
             </label>
           </div>
 
           {storeDetails?.use_display !== false && (
             <div style={{ position: 'relative' }}>
-              <button onClick={() => onNavigate('display')}>📢 전광판</button>
-              <label style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
-                <input type="checkbox" checked={displayPad} onChange={toggleDisplayPad} style={{ margin: 0, accentColor: 'var(--accent)' }} /> PAD
+              <button style={{ width: '100%', paddingRight: '70px' }} onClick={() => onNavigate('display')}>📢 전광판</button>
+              <label style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', zIndex: 10, fontSize: '0.75rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={displayPad} onChange={toggleDisplayPad} style={{ margin: 0, accentColor: 'var(--accent)', width: '16px', height: '16px' }} /> PAD
               </label>
             </div>
           )}
 
-          <button onClick={() => onNavigate('qr')}>🖨️ QR 인쇄</button>
+          <button style={{ width: '100%' }} onClick={() => onNavigate('qr')}>🖨️ QR 인쇄</button>
           <button onClick={() => onNavigate('wifi')}>📶 WiFi QR 인쇄</button>
           {(user?.role === 'admin' || user?.role === 'owner') && (
             <button onClick={() => onNavigate('stats')}>📊 통계</button>
