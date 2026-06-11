@@ -267,7 +267,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
         const orderId = orderData.order_id;
 
         // 2. 결제 수단별 분기 처리
-        const isCounterPay = method === '카운터에서 결제' || method === '현금 결제' || method === 'cash';
+        const isCounterPay = method.includes('카운터') || method.includes('현금') || method.includes('cash') || method.includes('직원방문') || method.includes('실물카드');
         const isTestPay = method.includes('가상 결제') || method.includes('테스트');
 
         if (isCounterPay || isTestPay) {

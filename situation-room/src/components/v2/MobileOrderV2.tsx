@@ -942,7 +942,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       generateAiStory(currentCart);
 
       // [CP-02] 결제 수단 분기
-      const isCounterPay = method.includes('카운터') || method.includes('현금') || method.includes('cash');
+      const isCounterPay = method.includes('카운터') || method.includes('현금') || method.includes('cash') || method.includes('직원방문') || method.includes('실물카드');
 
       // 주문서 생성이 완료되었으므로 이제 결제창을 닫습니다.
       setShowPayModal(false);

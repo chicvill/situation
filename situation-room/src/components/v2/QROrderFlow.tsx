@@ -725,9 +725,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
       setCart([]);
       refreshOrders();
 
-      const isTestPay = method.includes('가상 결제') || method.includes('테스트');
-
-      if (method.includes('카운터') || method.includes('현금') || isTestPay) {
+      if (method.includes('카운터') || method.includes('현금') || isTestPay || method.includes('직원방문') || method.includes('실물카드')) {
         setReceiptOrderId(orderId);
         setReceiptTotal(finalAmount);
         setReceiptMethod(method);
@@ -1370,14 +1368,15 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           tableId={tableId}
           onSubmit={async (method) => {
             const isTestPay = method.includes('가상 결제') || method.includes('테스트');
-            if (isTestPay) {
+            const isCounterPay = method.includes('카운터') || method.includes('현금') || method.includes('직원방문') || method.includes('실물카드');
+            if (isTestPay || isCounterPay) {
               try {
                 const endpoint = remotePayRequest.orderId 
                   ? `${API_BASE}/api/order/status` 
                   : `${API_BASE}/api/session/close`;
                 
                 const body = remotePayRequest.orderId
-                  ? { order_id: remotePayRequest.orderId, status: 'paid' }
+                  ? { order_id: remotePayRequest.orderId, status: isTestPay ? 'paid' : 'unpaid' }
                   : { session_id: sessionIdRef.current };
                   
                 const res = await fetch(endpoint, {
