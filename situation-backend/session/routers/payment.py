@@ -643,7 +643,7 @@ async def trigger_cash_receipt_if_requested(order: dict):
         
         # 현금성 결제 방식 체크
         method = order.get("payment_method", "") or ""
-        is_cash_like = any(keyword in method for keyword in ["현금", "계좌이체", "transfer", "cash", "직원방문"])
+        is_cash_like = any(keyword in method for keyword in ["현금", "계좌이체", "transfer", "cash", "직원방문", "직원호출"])
         
         if phone and total_price > 0 and is_cash_like:
             items = order.get("items", [])

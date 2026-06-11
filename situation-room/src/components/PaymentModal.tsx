@@ -26,7 +26,7 @@ const METHODS: Method[] = [
   { id: 'card',          icon: '💳', name: '신용카드 / 페이 결제', desc: '삼성페이, 애플페이, 토스페이 등',   color: '#3b82f6' },
   { id: 'qrpay',         icon: '📱', name: '테이블 QR 결제',       desc: '카카오페이, 네이버페이, 제로페이 스캔', color: '#10b981' },
   { id: 'transfer',      icon: '🏦', name: '간편 계좌이체',         desc: '매장 계좌로 실시간 1초 이체',        color: '#8b5cf6' },
-  { id: 'staff_nfc',     icon: '📲', name: '실물카드 결제 (직원방문)', desc: '직원이 폰 리더기를 들고 테이블로 방문', color: '#ec4899' },
+  { id: 'staff_nfc',     icon: '📲', name: '실물카드 결제 (직원호출)', desc: '직원이 결제 단말기를 들고 테이블로 이동', color: '#ec4899' },
   { id: 'test',          icon: '⚡', name: '가상 결제 (테스트)',     desc: '실결제 없이 즉시 결제 완료 처리',    color: '#f59e0b' },
 ];
 
@@ -527,7 +527,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         )}
       </div>
 
-      {/* 현금영수증 (현금/계좌이체/직원방문) */}
+      {/* 현금영수증 (현금/계좌이체/직원호출) */}
       {(selectedMethod?.id === 'cash' || selectedMethod?.id === 'transfer' || selectedMethod?.id === 'staff_nfc') && (
         <label style={{ 
           display:'flex', alignItems:'center', gap:'12px', marginBottom:'20px', 

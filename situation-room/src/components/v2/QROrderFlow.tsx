@@ -369,7 +369,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           break;
         case 'STAFF_RESPONSE':
           setCallOverlay(prev => prev ? { ...prev, status: 'completed' } : null);
-          addAiMsg('직원이 곧 방문합니다.', false);
+          addAiMsg('직원 호출이 완료되었습니다. 곧 테이블로 방문합니다.', false);
           break;
         case 'PARKING_CONFIRMED':
           addAiMsg('주차 할인이 정상 등록되었습니다. 🚗', false);
@@ -711,7 +711,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           table_id: tableId, device_id: deviceId, store_id: storeId,
           items: cart.map(c => ({ name: c.name, quantity: c.qty, price: c.price, qty: c.qty })),
           total_price: finalAmount,
-          payment_status: (method.includes('카운터') || method.includes('현금') || method.includes('직원방문') || method.includes('실물카드')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
+          payment_status: (method.includes('카운터') || method.includes('현금') || method.includes('직원방문') || method.includes('직원호출') || method.includes('실물카드')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
           payment_method: method,
           is_takeout: extraData?.isTakeout ?? false,
           metadata: { ...extraData, phone: extraData?.phone || userPhone, round: orderRound }
@@ -727,7 +727,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
 
       const isTestPay = method.includes('가상 결제') || method.includes('테스트');
 
-      if (method.includes('카운터') || method.includes('현금') || isTestPay || method.includes('직원방문') || method.includes('실물카드')) {
+      if (method.includes('카운터') || method.includes('현금') || isTestPay || method.includes('직원방문') || method.includes('직원호출') || method.includes('실물카드')) {
         setReceiptOrderId(orderId);
         setReceiptTotal(finalAmount);
         setReceiptMethod(method);
@@ -1327,7 +1327,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
               <>
                 <div style={{ fontSize: '3rem', marginBottom: 12 }}>✅</div>
                 <h2 style={{ fontWeight: 900, color: '#22c55e', marginBottom: 8 }}>처리 완료!</h2>
-                <p style={{ color: '#334155', marginBottom: 20 }}>직원이 곧 방문합니다.</p>
+                <p style={{ color: '#334155', marginBottom: 20 }}>직원 호출이 완료되었습니다.</p>
                 <button onClick={() => setCallOverlay(null)} style={{ padding: '12px 32px', borderRadius: 12, border: 'none', background: '#22c55e', color: 'white', fontWeight: 900, cursor: 'pointer' }}>확인</button>
               </>
             )}
@@ -1372,7 +1372,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           tableId={tableId}
           onSubmit={async (method) => {
             const isTestPay = method.includes('가상 결제') || method.includes('테스트');
-            const isCounterPay = method.includes('카운터') || method.includes('현금') || method.includes('직원방문') || method.includes('실물카드');
+            const isCounterPay = method.includes('카운터') || method.includes('현금') || method.includes('직원방문') || method.includes('직원호출') || method.includes('실물카드');
             if (isTestPay || isCounterPay) {
               try {
                 const endpoint = remotePayRequest.orderId 

@@ -919,7 +919,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           table_id: tableId, device_id: deviceId, store_id: storeId,
           items: cart.map(c => ({ name: c.name, quantity: c.qty || 1, price: c.price, qty: c.qty || 1 })),
           total_price: finalAmount,
-          payment_status: (method.includes('카운터') || method.includes('현금') || method.includes('cash') || method.includes('직원방문') || method.includes('실물카드')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
+          payment_status: (method.includes('카운터') || method.includes('현금') || method.includes('cash') || method.includes('직원방문') || method.includes('직원호출') || method.includes('실물카드')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
           payment_method: method,
           metadata: { ...(extraData || {}), round: orderRound }
         })
@@ -942,7 +942,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
       generateAiStory(currentCart);
 
       // [CP-02] 결제 수단 분기
-      const isCounterPay = method.includes('카운터') || method.includes('현금') || method.includes('cash') || method.includes('직원방문') || method.includes('실물카드');
+      const isCounterPay = method.includes('카운터') || method.includes('현금') || method.includes('cash') || method.includes('직원방문') || method.includes('직원호출') || method.includes('실물카드');
 
       // 주문서 생성이 완료되었으므로 이제 결제창을 닫습니다.
       setShowPayModal(false);
@@ -2020,7 +2020,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
               <>
                 <div style={{ fontSize: '4rem', marginBottom: '16px' }}>✅</div>
                 <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#22c55e', marginBottom: '10px' }}>처리 완료!</h2>
-                <p style={{ color: 'var(--text-main)', marginBottom: '24px' }}>직원이 방문하겠습니다.<br />잠시만 기다려주세요.</p>
+                <p style={{ color: 'var(--text-main)', marginBottom: '24px' }}>직원이 호출되었습니다.<br />잠시만 기다려주세요.</p>
                 <button onClick={() => setCallOverlay(null)} style={{ padding: '14px 32px', borderRadius: '12px', border: 'none', background: '#22c55e', color: '#fff', fontWeight: 900, fontSize: '1rem', cursor: 'pointer' }}>확인</button>
               </>
             )}
