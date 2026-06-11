@@ -725,6 +725,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
       setCart([]);
       refreshOrders();
 
+      const isTestPay = method.includes('가상 결제') || method.includes('테스트');
+
       if (method.includes('카운터') || method.includes('현금') || isTestPay || method.includes('직원방문') || method.includes('실물카드')) {
         setReceiptOrderId(orderId);
         setReceiptTotal(finalAmount);
