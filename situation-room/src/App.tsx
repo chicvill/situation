@@ -648,7 +648,7 @@ function App() {
   );
 }
 
-// --- 토스 결제 및 승인 대행용 슬릭 팝업 핸들러 컴포넌트 ---
+// --- 페이앱/토스 결제 및 승인 대행용 슬릭 팝업 핸들러 컴포넌트 ---
 function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
   if (safeBundles.length < 0) console.log(safeBundles);
   const params = new URLSearchParams(window.location.search);
@@ -668,7 +668,50 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
 
   // 1. 결제 모듈 호출 (Popup Loader)
   useEffect(() => {
-    if (mode === 'pay_popup') {
+    if (mode === 'payapp_popup') {
+      const initiatePayApp = async () => {
+        try {
+          setStatusText('페이앱 안전 결제 화면으로 이동 중입니다...');
+          
+          const apiUrl = API_BASE;
+          const configRes = await fetch(`${apiUrl}/api/payment/config/payapp`);
+          const configData = await configRes.json();
+          const userid = configData.userid;
+
+          const PayAppObj = (window as any).PayApp;
+          if (!PayAppObj) {
+            throw new Error('페이앱 결제 모듈이 로드되지 않았습니다. 잠시만 기다려 주세요.');
+          }
+
+          const redirectUrl = `${window.location.origin}${window.location.pathname}?payment_success=true&is_popup=true&order_id=${orderId}&amount=${amount}`;
+
+          PayAppObj.setParam('userid', userid);
+          PayAppObj.setParam('shopname', '그레이스 하이테크 커피');
+          PayAppObj.setParam('goodname', orderName);
+          PayAppObj.setParam('price', String(amount));
+          PayAppObj.setParam('var1', orderId);
+          PayAppObj.setParam('smsuse', 'n');
+          PayAppObj.setParam('redirectpay', '1');
+          PayAppObj.setParam('feedbackurl', `${apiUrl}/api/payment/payapp/feedback`);
+          PayAppObj.setParam('redirecturl', redirectUrl);
+          PayAppObj.setParam('returnurl', redirectUrl);
+
+          PayAppObj.payrequest();
+        } catch (err: any) {
+          setErrorText(err.message || '결제창 호출 오류가 발생했습니다.');
+        }
+      };
+
+      if (!(window as any).PayApp) {
+        const script = document.createElement('script');
+        script.src = 'https://lite.payapp.kr/public/api/v2/payapp-lite.js';
+        script.onload = () => initiatePayApp();
+        script.onerror = () => setErrorText('페이앱 라이브러리 스크립트 로드에 실패했습니다.');
+        document.head.appendChild(script);
+      } else {
+        initiatePayApp();
+      }
+    } else if (mode === 'pay_popup') {
       const initiateToss = async () => {
         try {
           setStatusText('토스 안전 결제 화면으로 이동 중입니다...');
@@ -720,15 +763,24 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
     if (isSuccess && isPopup && orderId) {
       const confirmPayment = async () => {
         try {
-          setStatusText('결제 승인을 완료하는 중입니다. 안전한 거래를 위해 창을 닫지 마세요...');
+          setStatusText('결제 승인 결과를 확인하는 중입니다. 안전한 거래를 위해 창을 닫지 마세요...');
           const apiUrl = API_BASE;
-          const res = await fetch(`${apiUrl}/api/payment/confirm`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ paymentKey, orderId, amount })
-          });
-          const result = await res.json();
-          if (result.status === 'success') {
+
+          // 페이앱 결제 상태 비동기 노티 대기 폴링 (최대 12초)
+          let success = false;
+          for (let i = 0; i < 12; i++) {
+            const res = await fetch(`${apiUrl}/api/payment/status/${orderId}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.payment_status === 'paid') {
+                success = true;
+                break;
+              }
+            }
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+
+          if (success) {
             setStatusText('🎉 결제가 정상 완료되었습니다! 본 창은 곧 자동으로 닫힙니다.');
             
             // 부모 창에 성공 신호 전달 (포스트메시지 활용하여 대화창 즉각 업데이트!)
@@ -737,7 +789,7 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
                 type: 'PAYMENT_FINISHED',
                 orderId,
                 amount,
-                paymentKey,
+                paymentKey: paymentKey || 'payapp_completed',
                 success: true
               }, '*');
             }
@@ -746,7 +798,31 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
               window.close();
             }, 1200);
           } else {
-            throw new Error(result.message || '결제 검증 처리에 실패했습니다.');
+            // 폴링 실패 시 레거시 Toss confirm 시도 (동시 지원용)
+            setStatusText('결제 재확인 중...');
+            const res = await fetch(`${apiUrl}/api/payment/confirm`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ paymentKey, orderId, amount })
+            });
+            const result = await res.json();
+            if (result.status === 'success') {
+              setStatusText('🎉 결제가 정상 완료되었습니다! 본 창은 곧 자동으로 닫힙니다.');
+              if (window.opener) {
+                window.opener.postMessage({
+                  type: 'PAYMENT_FINISHED',
+                  orderId,
+                  amount,
+                  paymentKey,
+                  success: true
+                }, '*');
+              }
+              setTimeout(() => {
+                window.close();
+              }, 1200);
+            } else {
+              throw new Error(result.message || '결제 검증 처리에 실패했습니다.');
+            }
           }
         } catch (err: any) {
           setErrorText(err.message || '서버 승인 과정에서 에러가 발생했습니다.');

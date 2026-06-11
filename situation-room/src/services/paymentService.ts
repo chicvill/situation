@@ -38,7 +38,7 @@ export const PaymentService = {
   },
 
   /**
-   * [CP-03] Initiate External Payment Gateway (Toss)
+   * [CP-03] Initiate External Payment Gateway (PayApp)
    */
   async requestTossPayment(method: string, options: {
     amount: number;
@@ -46,12 +46,12 @@ export const PaymentService = {
     orderName: string;
     customerName: string;
   }) {
-    this.log("CP-03", "Opening Center Popup for Toss Payment...");
+    this.log("CP-03", "Opening Center Popup for PayApp Payment...");
     
     try {
       this.validateOptions(method, options);
 
-      const tossMethod = method.includes('카드') ? '카드' : '계좌이체';
+      const payappMethod = method.includes('카드') ? 'card' : 'rbank';
       const baseUrl = `${window.location.origin}${window.location.pathname}`;
 
       // Calculate perfect center coordinates for the sleek payment popup
@@ -61,13 +61,13 @@ export const PaymentService = {
       const top = window.top ? (window.top.outerHeight - popupHeight) / 2 + window.top.screenY : (window.screen.height - popupHeight) / 2;
 
       // Construct a special URL to handle the payment flow inside the isolated popup window
-      const popupUrl = `${baseUrl}?mode=pay_popup&orderId=${options.orderId}&amount=${options.amount}&orderName=${encodeURIComponent(options.orderName)}&customerName=${encodeURIComponent(options.customerName)}&method=${encodeURIComponent(tossMethod)}`;
+      const popupUrl = `${baseUrl}?mode=payapp_popup&orderId=${options.orderId}&amount=${options.amount}&orderName=${encodeURIComponent(options.orderName)}&customerName=${encodeURIComponent(options.customerName)}&method=${encodeURIComponent(payappMethod)}`;
 
       this.log("CP-03", "Launching Payment Popup Window...", { popupUrl });
 
       const paymentPopup = window.open(
         popupUrl,
-        'TossPaymentPopup',
+        'PayAppPaymentPopup',
         `width=${popupWidth},height=${popupHeight},top=${top},left=${left},scrollbars=yes,resizable=yes`
       );
 
