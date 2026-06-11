@@ -320,9 +320,13 @@ async def close_session(data: Dict):
         # 모든 음식이 조리/서빙 완료되었거나 강제 종료인 경우: 전체 정산 및 세션 종료
         success = update_session_status(session_id, "closed")
         if success:
+            from ..database import update_order_payment_status
+            from .payment import trigger_cash_receipt_if_requested
             for order in orders:
                 if order['status'] != 'cancelled':
                     update_order_status(order['order_id'], "paid")
+                    update_order_payment_status(order['order_id'], "paid")
+                    await trigger_cash_receipt_if_requested(order)
 
             # 주방 및 해당 테이블 기기에 알림
             await manager.broadcast_to_kitchen({"type": "SESSION_CLOSED", "session_id": session_id})

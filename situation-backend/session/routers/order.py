@@ -102,7 +102,8 @@ async def process_order(order_req: OrderRequest):
         "join_order": order_req.join_order,
         "order_seq": next_seq,
         "display_number": display_number,
-        "timestamp": datetime.utcnow().isoformat() + 'Z'
+        "timestamp": datetime.utcnow().isoformat() + 'Z',
+        "metadata": order_req.metadata
     }
 
     # 4. DB 저장
@@ -197,9 +198,13 @@ class PaymentStatusUpdate(BaseModel):
 @router.post("/api/order/payment-status")
 async def update_payment_status(update: PaymentStatusUpdate):
     from ..database import update_order_payment_status, get_order_by_id
+    order = get_order_by_id(update.order_id)
     success = update_order_payment_status(update.order_id, update.payment_status)
     if success:
-        order = get_order_by_id(update.order_id)
+        if update.payment_status == "paid" and order:
+            from .payment import trigger_cash_receipt_if_requested
+            await trigger_cash_receipt_if_requested(order)
+            
         store_id = order.get("store_id", "") if order else ""
         table_id = order.get("table_id", "") if order else ""
         # You can also broadcast a PAYMENT_CONFIRMED message here so counter/kitchen updates

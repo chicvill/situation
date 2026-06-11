@@ -919,7 +919,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           table_id: tableId, device_id: deviceId, store_id: storeId,
           items: cart.map(c => ({ name: c.name, quantity: c.qty || 1, price: c.price, qty: c.qty || 1 })),
           total_price: finalAmount,
-          payment_status: (method.includes('카운터') || method.includes('현금') || method.includes('cash')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
+          payment_status: (method.includes('카운터') || method.includes('현금') || method.includes('cash') || method.includes('직원방문') || method.includes('실물카드')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
           payment_method: method,
           metadata: { ...(extraData || {}), round: orderRound }
         })
@@ -974,7 +974,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           amount: finalAmount,
           orderId: orderId,
           orderName: extraData?.dutchLabel || `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,
-          customerName: '손님'
+          customerName: '손님',
+          customerPhone: extraData?.phone || userPhone
         });
       }
     } catch (err: any) { 

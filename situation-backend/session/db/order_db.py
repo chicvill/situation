@@ -13,15 +13,16 @@ def save_order(order_data: dict):
         query = """
             INSERT INTO table_orders (
                 order_id, session_id, store_id, table_id, device_id, items,
-                total_price, status, payment_status, payment_method, order_seq, timestamp
+                total_price, status, payment_status, payment_method, order_seq, timestamp, metadata
             )
             VALUES (
                 %(order_id)s, %(session_id)s, %(store_id)s, %(table_id)s, %(device_id)s, %(items)s,
-                %(total_price)s, %(status)s, %(payment_status)s, %(payment_method)s, %(order_seq)s, %(timestamp)s
+                %(total_price)s, %(status)s, %(payment_status)s, %(payment_method)s, %(order_seq)s, %(timestamp)s, %(metadata)s
             )
             ON CONFLICT (order_id) DO UPDATE SET
                 status = EXCLUDED.status,
-                payment_status = EXCLUDED.payment_status
+                payment_status = EXCLUDED.payment_status,
+                metadata = EXCLUDED.metadata
         """
         params = {
             'order_id': order_data['order_id'],
@@ -35,16 +36,17 @@ def save_order(order_data: dict):
             'payment_status': order_data.get('payment_status', 'unpaid'),
             'payment_method': order_data.get('payment_method'),
             'order_seq': order_data['order_seq'],
-            'timestamp': order_data['timestamp']
+            'timestamp': order_data['timestamp'],
+            'metadata': json.dumps(order_data.get('metadata') or {})
         }
         cur.execute(query, params)
         conn.commit()
         cur.close()
         conn.close()
-        print(f"✅ [save_order] Successfully saved order {order_data['order_id']} to DB.")
+        print(f"[save_order] Successfully saved order {order_data['order_id']} to DB.")
         return True
     except Exception as e:
-        print(f"❌ [save_order] ERROR: Failed to save order {order_data.get('order_id')}: {e}")
+        print(f"[save_order] ERROR: Failed to save order {order_data.get('order_id')}: {e}")
         return False
 
 def get_orders_by_session(session_id: str):

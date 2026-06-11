@@ -711,7 +711,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           table_id: tableId, device_id: deviceId, store_id: storeId,
           items: cart.map(c => ({ name: c.name, quantity: c.qty, price: c.price, qty: c.qty })),
           total_price: finalAmount,
-          payment_status: (method.includes('카운터') || method.includes('현금')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
+          payment_status: (method.includes('카운터') || method.includes('현금') || method.includes('직원방문') || method.includes('실물카드')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
           payment_method: method,
           is_takeout: extraData?.isTakeout ?? false,
           metadata: { ...extraData, phone: extraData?.phone || userPhone, round: orderRound }
@@ -746,7 +746,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         await PaymentService.requestTossPayment(method, {
           amount: finalAmount, orderId,
           orderName: extraData?.dutchLabel || `${cart[0].name}${cart.length > 1 ? ` 외 ${cart.length - 1}건` : ''}`,
-          customerName: '손님'
+          customerName: '손님',
+          customerPhone: extraData?.phone || userPhone
         });
       }
     } catch (err: any) {
@@ -887,7 +888,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
                   amount: splitAmount,
                   orderId,
                   orderName: '더치페이 분할 결제',
-                  customerName: '동행 고객'
+                  customerName: '동행 고객',
+                  customerPhone: userPhone || undefined
                 });
               } catch (err: any) {
                 alert(err.message || '결제창 호출에 실패했습니다.');
@@ -1406,7 +1408,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
                 amount: remotePayRequest.amount,
                 orderId: orderId,
                 orderName: remotePayRequest.orderId ? `주문 번호 결제` : `테이블 전체 식사 결제`,
-                customerName: '손님'
+                customerName: '손님',
+                customerPhone: userPhone || undefined
               });
               setRemotePayRequest(null);
             }

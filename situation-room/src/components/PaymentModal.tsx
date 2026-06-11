@@ -527,8 +527,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         )}
       </div>
 
-      {/* 현금영수증 (현금/계좌이체) */}
-      {(selectedMethod?.id === 'cash' || selectedMethod?.id === 'transfer') && (
+      {/* 현금영수증 (현금/계좌이체/직원방문) */}
+      {(selectedMethod?.id === 'cash' || selectedMethod?.id === 'transfer' || selectedMethod?.id === 'staff_nfc') && (
         <label style={{ 
           display:'flex', alignItems:'center', gap:'12px', marginBottom:'20px', 
           cursor:'pointer', padding:'16px', background:'var(--bg-main)', 
@@ -570,7 +570,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         <button
           onClick={async () => {
             try {
-              await onSubmit(selectedMethod?.name || '기타', { phone: phoneForPoints, usePoints, isTakeout });
+              await onSubmit(selectedMethod?.name || '기타', { phone: phoneForPoints, usePoints, isTakeout, requestCashReceipt });
               onClose();
             } catch (err) {
               alert('결제 처리 중 오류가 발생했습니다.');

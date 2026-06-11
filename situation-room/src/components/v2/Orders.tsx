@@ -256,7 +256,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
           items: cart.map(c => ({ name: c.name, quantity: c.qty || 1, price: c.price, qty: c.qty || 1 })),
           total_price: totalPrice,
           // 카운터 결제는 unpaid, 카트는 결제 대기(pending) 상태로 시작
-          payment_status: (method === '카운터에서 결제' || method === '현금 결제' || method === 'cash') ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
+          payment_status: (method.includes('카운터') || method.includes('현금') || method.includes('cash') || method.includes('직원방문') || method.includes('실물카드')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
           payment_method: method,
           metadata: extraData
         })

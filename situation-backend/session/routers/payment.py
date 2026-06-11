@@ -564,3 +564,101 @@ async def payapp_feedback(request: Request):
     # 페이앱 웹노티는 반드시 SUCCESS라는 문자열(PlainText)을 반환해야 처리가 완료됩니다.
     from fastapi.responses import PlainTextResponse
     return PlainTextResponse("SUCCESS")
+
+
+async def register_payapp_cash_receipt(phone: str, total_price: int, order_id: str, good_name: str):
+    """페이앱 API를 호출하여 현금영수증을 자동 발행합니다."""
+    userid = os.getenv("PAYAPP_USERID") or "payapp_test_id"
+    linkkey = os.getenv("PAYAPP_LINKKEY") or "test_linkkey"
+
+    print(f"[PayApp Cash Receipt Request] Phone: {phone}, Price: {total_price}, Order: {order_id}, Good: {good_name}")
+
+    if userid == "payapp_test_id":
+        print(f"[PayApp Cash Receipt Bypass] 테스트 환경 -- 현금영수증 등록 생략 (가상 완료)")
+        return {"status": "success", "message": "현금영수증 발행 완료 (테스트)"}
+
+    # 세부 세금 계산 (VAT 10% 가정)
+    amt_tax = int(round(total_price / 11.0))
+    amt_sup = total_price - amt_tax
+    amt_svc = 0
+
+    payload = {
+        "cmd": "cashStRegist",
+        "userid": userid,
+        "linkkey": linkkey,
+        "good_name": good_name,
+        "buyr_name": "고객",
+        "id_info": phone.replace("-", "").strip(),  # 하이픈 제거한 숫자만
+        "buyr_tel1": phone.strip(),
+        "amt_tot": total_price,
+        "amt_sup": amt_sup,
+        "amt_svc": amt_svc,
+        "amt_tax": amt_tax,
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.post(
+                "https://api.payapp.kr/oapi/apiLoad.html",
+                data=payload,
+                headers={"Content-Type": "application/x-www-form-urlencoded"}
+            )
+        
+        if res.status_code == 200:
+            from urllib.parse import parse_qs
+            res_data = parse_qs(res.text)
+            state = res_data.get("state", ["0"])[0]
+            error_message = res_data.get("errorMessage", [""])[0]
+            errno = res_data.get("errno", [""])[0]
+            
+            if state == "1":
+                print(f"[PayApp Cash Receipt Success] Order: {order_id}, Receipt No: {res_data.get('cash_no', ['None'])[0]}")
+                return {"status": "success", "cash_no": res_data.get("cash_no", [""])[0]}
+            else:
+                print(f"[PayApp Cash Receipt Failed] Order: {order_id}, Error: {error_message} (code: {errno})")
+                return {"status": "failed", "message": error_message, "code": errno}
+        else:
+            print(f"[PayApp Cash Receipt Failed] HTTP error status: {res.status_code}")
+            return {"status": "failed", "message": f"HTTP status {res.status_code}"}
+    except Exception as e:
+        print(f"[PayApp Cash Receipt Error] Request failed: {e}")
+        return {"status": "error", "message": str(e)}
+
+
+async def trigger_cash_receipt_if_requested(order: dict):
+    """주문에 현금영수증 발행이 요청된 경우 페이앱 API를 호출하여 등록합니다."""
+    if not order:
+        return
+
+    raw_meta = order.get("metadata") or {}
+    try:
+        import json
+        metadata = json.loads(raw_meta) if isinstance(raw_meta, str) else dict(raw_meta)
+    except Exception:
+        metadata = {}
+
+    if metadata.get("requestCashReceipt") is True:
+        phone = metadata.get("phone")
+        total_price = order.get("total_price", 0)
+        
+        # 현금성 결제 방식 체크
+        method = order.get("payment_method", "") or ""
+        is_cash_like = any(keyword in method for keyword in ["현금", "계좌이체", "transfer", "cash", "직원방문"])
+        
+        if phone and total_price > 0 and is_cash_like:
+            items = order.get("items", [])
+            if isinstance(items, str):
+                try:
+                    items = json.loads(items)
+                except Exception:
+                    items = []
+            
+            good_name = "식음료"
+            if items and isinstance(items, list):
+                first_item = items[0].get("name", "상품")
+                count = len(items)
+                good_name = f"{first_item} 외 {count-1}건" if count > 1 else first_item
+
+            # 비동기로 현금영수증 발행 API 호출
+            import asyncio
+            asyncio.create_task(register_payapp_cash_receipt(phone, total_price, order["order_id"], good_name))
