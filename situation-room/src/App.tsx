@@ -423,9 +423,9 @@ function App() {
     recognition.start();
   };
 
-  // 토스 결제용 팝업 창 처리 분기 (대화창의 세션/상태 유지를 위해 완전히 독립된 창으로 가동)
+  // 토스 및 페이앱 결제용 팝업 창 처리 분기 (대화창의 세션/상태 유지를 위해 완전히 독립된 창으로 가동)
   const queryParams = new URLSearchParams(window.location.search);
-  const isPayPopup = queryParams.get('mode') === 'pay_popup';
+  const isPayPopup = queryParams.get('mode') === 'pay_popup' || queryParams.get('mode') === 'payapp_popup';
   const isPopupSuccessOrFail = queryParams.get('is_popup') === 'true';
 
   if (isPayPopup || isPopupSuccessOrFail) {

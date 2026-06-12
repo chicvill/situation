@@ -932,7 +932,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                 <button 
                                     onClick={() => {
                                         const goodName = `${cardTouchTableId || '테이블'} 실물카드 결제`;
-                                        const returnUri = encodeURIComponent(`${window.location.origin}/counter/payapp-callback?order_id=${cardTouchOrderId}`);
+                                        const returnUri = encodeURIComponent(`${window.location.origin}/?order_id=${cardTouchOrderId}`);
                                         const payappScheme = `payapp://request?reqType=CARD&goodPrice=${cardTouchAmount}&goodName=${encodeURIComponent(goodName)}&var1=${cardTouchOrderId}&returnUri=${returnUri}&smsuse=n`;
                                         
                                         const startTime = Date.now();
