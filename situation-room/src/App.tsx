@@ -21,6 +21,7 @@ import { CallManager } from './components/CallManager';
 import { StoreManualEditor } from './components/StoreManualEditor';
 import { ParkingManager } from './components/ParkingManager';
 import { PointsManager } from './components/PointsManager';
+import { PaymentSimulator } from './components/PaymentSimulator';
 import QROrderFlow from './components/v2/QROrderFlow';
 import { AdminStoreManager } from './components/AdminStoreManager';
 import { NotificationToast } from './components/NotificationToast';
@@ -36,7 +37,7 @@ import { SideDrawer } from './layout/SideDrawer';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
 
-type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'wifi' | 'paper' | 'tech' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'admin' | 'call' | 'manual' | 'parking' | 'points';
+type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'wifi' | 'paper' | 'tech' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'admin' | 'call' | 'manual' | 'parking' | 'points' | 'simulator';
 
 function App() {
   const { storeId, storeName: initialStoreName, updateStore } = useStoreFilter();
@@ -508,6 +509,7 @@ function App() {
       case 'reserve': return <ReservationManager userRole={user?.role} bundles={bundles} />;
       case 'parking': return <ParkingManager storeId={storeId} onComplete={decrementParking} />;
       case 'points': return <PointsManager storeId={storeId} />;
+      case 'simulator': return <PaymentSimulator storeId={storeId} bundles={bundles} />;
       default: return <QROrderFlow bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} />;
     }
   };
