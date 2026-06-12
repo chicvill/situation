@@ -755,6 +755,15 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         localStorage.setItem('user_phone', extraData.phone);
       }
       const finalAmount = extraData?.dutchAmount !== undefined ? extraData.dutchAmount : cartTotal - (extraData?.usePoints || 0);
+      
+      // Capture items and order name before clearing the cart
+      const mappedItems = cart.map(c => ({
+        name: c.name,
+        value: `${c.qty}개`,
+        price: (c.price || 0) * (c.qty || 1)
+      }));
+      const tossOrderName = extraData?.dutchLabel || (cart.length > 0 ? `${cart[0].name}${cart.length > 1 ? ` 외 ${cart.length - 1}건` : ''}` : '메뉴 주문');
+
       const res = await fetch(`${API_BASE}/api/order/direct`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -771,7 +780,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
       const orderData = await res.json();
       const orderId = orderData.order_id;
 
-      // [FIX] 무조건 장바구니 비우기
+      // 무조건 장바구니 비우기
       setCart([]);
       refreshOrders();
 
@@ -781,11 +790,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         setWaitingOrderId(orderId);
         setWaitingTotal(finalAmount);
         setWaitingMethod(method);
-        setWaitingItems(cart.map(c => ({
-          name: c.name,
-          value: `${c.qty}개`,
-          price: (c.price || 0) * (c.qty || 1)
-        })));
+        setWaitingItems(mappedItems);
         phaseRef.current = 'waiting_payment';
         setPhase('waiting_payment');
         
@@ -803,21 +808,17 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         setReceiptOrderId(orderId);
         setReceiptTotal(finalAmount);
         setReceiptMethod(method);
-        setReceiptItems(cart.map(c => ({
-          name: c.name,
-          value: `${c.qty}개`,
-          price: (c.price || 0) * (c.qty || 1)
-        })));
+        setReceiptItems(mappedItems);
         setShowReceipt(true);
 
         phaseRef.current = 'paid';
         setPhase('paid');
         if (isTestPay) alert('테스트 결제가 성공적으로 완료되었습니다.');
       } else {
-        localStorage.setItem('receipt_items_' + orderId, JSON.stringify(cart.map(c => ({ name: c.name, value: `${c.qty}개`, price: (c.price || 0) * (c.qty || 1) }))));
+        localStorage.setItem('receipt_items_' + orderId, JSON.stringify(mappedItems));
         await PaymentService.requestTossPayment(method, {
           amount: finalAmount, orderId,
-          orderName: extraData?.dutchLabel || `${cart[0].name}${cart.length > 1 ? ` 외 ${cart.length - 1}건` : ''}`,
+          orderName: tossOrderName,
           customerName: '손님',
           customerPhone: extraData?.phone || userPhone
         });
@@ -1194,7 +1195,12 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
       {phase === 'pre_payment' && (
         <PaymentModal
           totalPrice={cartTotal}
-          onClose={() => { phaseRef.current = 'active'; setPhase('active'); }}
+          onClose={() => {
+            if (phaseRef.current === 'pre_payment') {
+              phaseRef.current = 'active';
+              setPhase('active');
+            }
+          }}
           onSubmit={(method, extra) => executeOrder(method, extra)}
           initialPhone={userPhone}
           bundles={bundles}

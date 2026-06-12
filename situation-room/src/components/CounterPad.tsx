@@ -34,6 +34,10 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const initialSelectionDone = useRef(false);
     const [showCardTouchOverlay, setShowCardTouchOverlay] = useState(false);
     const [cardTouchCallback, setCardTouchCallback] = useState<(() => Promise<void>) | null>(null);
+    const [cardTouchAmount, setCardTouchAmount] = useState<number>(0);
+    const [cardTouchOrderId, setCardTouchOrderId] = useState<string>('');
+    const [cardTouchTableId, setCardTouchTableId] = useState<string>('');
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
     // ── 구두 주문 추가를 위한 상태 ──
     const [showAddOrder, setShowAddOrder] = useState(false);
@@ -693,7 +697,13 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                             ) : (
                                                                 <button
                                                                     disabled={isPaidFull}
-                                                                    onClick={() => setSelectedOrderForPay(order)}
+                                                                    onClick={() => {
+                                                                        setCardTouchCallback(() => async () => {
+                                                                            await handlePartialPayment(order.order_id);
+                                                                            if (selectedSession?.session_id) await resolvePendingCardCalls(selectedSession.session_id);
+                                                                        });
+                                                                        setShowCardTouchOverlay(true);
+                                                                    }}
                                                                     style={{ background: isPaidFull ? '#e5e7eb' : 'var(--accent)', border: 'none', color: isPaidFull ? '#9ca3af' : 'white', padding: '3px 6px', borderRadius: '4px', fontSize: '0.65rem', cursor: isPaidFull ? 'default' : 'pointer', fontWeight: '700', whiteSpace: 'nowrap' }}
                                                                 >
                                                                     {isPrepaid ? '완료' : '결제'}
@@ -764,7 +774,18 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                     종료
                                                 </button>
                                             ) : (
-                                                <button onClick={() => setSelectedSessionForPay(selectedSession)} style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '4px 8px', borderRadius: '4px', fontWeight: '700', fontSize: '0.68rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>전체결제</button>
+                                                <button 
+                                                    onClick={() => {
+                                                        setCardTouchCallback(() => async () => {
+                                                            await handleCloseSession(selectedSession.session_id, true);
+                                                            await resolvePendingCardCalls(selectedSession.session_id);
+                                                        });
+                                                        setShowCardTouchOverlay(true);
+                                                    }} 
+                                                    style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '4px 8px', borderRadius: '4px', fontWeight: '700', fontSize: '0.68rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                >
+                                                    전체결제
+                                                </button>
                                             )}
                                         </div>
                                     )}
@@ -793,16 +814,18 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                     onClose={() => { setSelectedSessionForPay(null); setSelectedOrderForPay(null); }}
                     onPayerInfo={(phone, topPercent) => setVipPayerInfo({ phone, topPercent })}
                     onSubmit={async (method) => {
+                        const active = selectedSessionForPay || (selectedOrderForPay ? sessions.find(s => s.orders?.some((o: any) => o.order_id === selectedOrderForPay.order_id)) : null);
+                        const amount = selectedOrderForPay
+                            ? (selectedOrderForPay.total_price ?? selectedOrderForPay.total ?? 0)
+                            : (active?.orders || [])
+                                .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
+                                .reduce((sum: number, o: any) => sum + (o.total_price ?? o.total ?? 0), 0);
+                        const orderId = selectedOrderForPay?.order_id || (active ? `SESS-CLOSE-${active.session_id}` : `REF-${Date.now()}`);
+                        const tableId = active?.table_id || '';
+
                         if (method === '폰 to 폰 결제') {
-                            const active = selectedSessionForPay || (selectedOrderForPay ? sessions.find(s => s.orders?.some((o: any) => o.order_id === selectedOrderForPay.order_id)) : null);
                             if (active) {
                                 try {
-                                    const amount = selectedOrderForPay
-                                        ? (selectedOrderForPay.total_price ?? selectedOrderForPay.total ?? 0)
-                                        : (active.orders || [])
-                                            .filter((o: any) => o.payment_status !== 'paid' && o.payment_status !== 'prepaid' && o.status !== 'paid')
-                                            .reduce((sum: number, o: any) => sum + (o.total_price ?? o.total ?? 0), 0);
-                                            
                                     const res = await fetch(`${getApiUrl()}/api/payment/request-phone-to-phone`, {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
@@ -827,10 +850,10 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                         }
 
                         const executePayment = async () => {
-                            const sessionId = selectedSessionForPay?.session_id || (selectedOrderForPay ? sessions.find(s => s.orders?.some((o: any) => o.order_id === selectedOrderForPay.order_id))?.session_id : null);
+                            const sessionId = active?.session_id || null;
                             if (selectedOrderForPay) {
                                 await handlePartialPayment(selectedOrderForPay.order_id);
-                            } else {
+                            } else if (selectedSessionForPay) {
                                 await handleCloseSession(selectedSessionForPay.session_id);
                             }
                             if (sessionId) {
@@ -845,6 +868,9 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                         };
 
                         if (method.includes('실물카드')) {
+                            setCardTouchAmount(amount);
+                            setCardTouchOrderId(orderId);
+                            setCardTouchTableId(tableId);
                             setCardTouchCallback(() => executePayment);
                             setShowCardTouchOverlay(true);
                         } else {
@@ -902,6 +928,34 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                         </p>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {isMobile && (
+                                <button 
+                                    onClick={() => {
+                                        const goodName = `${cardTouchTableId || '테이블'} 실물카드 결제`;
+                                        const returnUri = encodeURIComponent(`${window.location.origin}/counter/payapp-callback?order_id=${cardTouchOrderId}`);
+                                        const payappScheme = `payapp://request?reqType=CARD&goodPrice=${cardTouchAmount}&goodName=${encodeURIComponent(goodName)}&var1=${cardTouchOrderId}&returnUri=${returnUri}&smsuse=n`;
+                                        
+                                        const startTime = Date.now();
+                                        window.location.href = payappScheme;
+                                        
+                                        setTimeout(() => {
+                                            if (Date.now() - startTime < 1500) {
+                                                window.location.href = "market://details?id=com.udid.payapp";
+                                            }
+                                        }, 1200);
+                                    }}
+                                    style={{
+                                        width: '100%', padding: '16px', borderRadius: '14px',
+                                        background: 'linear-gradient(135deg, #ec4899, #db2777)',
+                                        color: 'white', border: 'none', fontWeight: 800,
+                                        fontSize: '1.05rem', cursor: 'pointer',
+                                        boxShadow: '0 8px 20px rgba(236, 72, 153, 0.3)',
+                                        marginBottom: '6px'
+                                    }}
+                                >
+                                    📲 페이앱 결제 실행 (태깅)
+                                </button>
+                            )}
                             <button 
                                 onClick={async () => {
                                     setShowCardTouchOverlay(false);
@@ -917,8 +971,8 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                     fontSize: '1.05rem', cursor: 'pointer',
                                     boxShadow: '0 8px 20px rgba(249, 115, 22, 0.3)'
                                 }}
-                            >
-                                💳 카드 태그 완료
+                             >
+                                💳 결제 완료 처리 (수동 승인)
                             </button>
                             <button 
                                 onClick={() => {
