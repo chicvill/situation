@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatBizNo } from '../../utils/formatters';
 
 interface StoreCreationFormProps {
   newStoreId: string;
@@ -100,8 +101,8 @@ export const StoreCreationForm: React.FC<StoreCreationFormProps> = ({
             <input
               type="text"
               value={newBizNo}
-              onChange={(e) => onBizNoChange(e.target.value)}
-              placeholder="숫자 10자리 입력"
+              onChange={(e) => onBizNoChange(formatBizNo(e.target.value))}
+              placeholder="000-00-00000"
               style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.92rem', fontWeight: 600 }}
             />
           </div>

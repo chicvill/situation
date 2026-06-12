@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Bundle, EmployeeDetail } from './types';
+import { formatPhone } from '../../utils/formatters';
 
 interface EmployeeCardProps {
   bundle: Bundle;
@@ -23,7 +24,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   const contractStr = bundle.items?.find((i) => i.name === '계약정보')?.value || '{}';
   const scheduleStr = bundle.items?.find((i) => i.name === '스케줄')?.value || '[]';
   /** 전화번호 형식이 아닌 구형 ID 여부 */
-  const isLegacyId = !/^01[0-9]{8,9}$/.test(id);
+  const isLegacyId = !/^01[0-9]{8,9}$/.test(id.replace(/[^0-9]/g, ''));
 
   const handleCardClick = () => {
     onSelect({
@@ -54,7 +55,7 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           <strong style={{ fontSize: '0.95rem', color: 'var(--text-main)' }}>{name}</strong>
           <span style={{ fontSize: '0.78rem', color: isLegacyId ? '#f97316' : 'var(--text-muted)' }}>
-            {isLegacyId ? `🔧 구형ID: ${id}` : `📞 ${id}`}
+            {isLegacyId ? `🔧 구형ID: ${id}` : `📞 ${formatPhone(id)}`}
           </span>
         </div>
       </div>

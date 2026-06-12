@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './Login.css';
 import { OwnerOnboardingChat } from './OwnerOnboardingChat';
 import { API_BASE } from '../config';
+import { formatPhone, formatBizNo } from '../utils/formatters';
 
 interface LoginProps {
     onLogin: (user: any) => void;
@@ -341,12 +342,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                             type="tel"
                             value={id}
                             onChange={(e) => {
-                                // 가입 시에는 숫자만 허용, 로그인 시에는 그대로
-                                const val = isSignup ? e.target.value.replace(/[^0-9]/g, '') : e.target.value;
+                                const val = isSignup ? formatPhone(e.target.value) : e.target.value;
                                 setId(val);
                             }}
-                            placeholder={isSignup ? '예: 01012345678' : '휴대폰 번호 입력'}
-                            maxLength={11}
+                            placeholder={isSignup ? '예: 010-1234-5678' : '휴대폰 번호 입력'}
+                            maxLength={13}
                             required
                         />
                     </div>
@@ -472,7 +472,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                                         <input 
                                             type="text" 
                                             value={regNo} 
-                                            onChange={(e) => { setRegNo(e.target.value); setIsVerified(false); }} 
+                                            onChange={(e) => { setRegNo(formatBizNo(e.target.value)); setIsVerified(false); }} 
                                             placeholder="000-00-00000"
                                             required 
                                         />

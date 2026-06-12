@@ -69,8 +69,12 @@ export const PointsManager = ({ storeId }: PointsManagerProps) => {
     }, [storeId]);
 
     const filteredPoints = useMemo(() => {
+        const queryDigits = searchQuery.replace(/[^0-9]/g, '');
         return points
-            .filter(p => p.phone.includes(searchQuery))
+            .filter(p => {
+                const phoneDigits = p.phone.replace(/[^0-9]/g, '');
+                return phoneDigits.includes(queryDigits);
+            })
             .sort((a, b) => a.phone.localeCompare(b.phone));
     }, [points, searchQuery]);
 

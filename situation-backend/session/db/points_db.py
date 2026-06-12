@@ -20,7 +20,35 @@ def _ensure_accumulated_column():
 _ensure_accumulated_column()
 
 
+def normalize_phone(phone) -> str:
+    if not phone:
+        return ""
+    phone_str = str(phone)
+    digits = "".join(c for c in phone_str if c.isdigit())
+    if digits.startswith("010"):
+        if len(digits) == 11:
+            return f"{digits[:3]}-{digits[3:7]}-{digits[7:]}"
+        elif len(digits) == 10:
+            return f"{digits[:3]}-{digits[3:6]}-{digits[6:]}"
+    elif digits.startswith("02"):
+        if len(digits) == 9:
+            return f"{digits[:2]}-{digits[2:5]}-{digits[5:]}"
+        elif len(digits) == 10:
+            return f"{digits[:2]}-{digits[2:6]}-{digits[6:]}"
+    elif len(digits) >= 9 and any(digits.startswith(prefix) for prefix in ["031", "032", "033", "041", "042", "043", "051", "052", "053", "054", "055", "061", "062", "063", "064"]):
+        if len(digits) == 10:
+            return f"{digits[:3]}-{digits[3:6]}-{digits[6:]}"
+        elif len(digits) == 11:
+            return f"{digits[:3]}-{digits[3:7]}-{digits[7:]}"
+    if len(digits) == 11:
+        return f"{digits[:3]}-{digits[3:7]}-{digits[7:]}"
+    elif len(digits) == 10:
+        return f"{digits[:3]}-{digits[3:6]}-{digits[6:]}"
+    return phone_str
+
+
 def get_customer_points(phone: str, store_id: str = 'store-1'):
+    phone = normalize_phone(phone)
     conn = get_db_conn()
     if not conn: return {'usable_points': 0, 'accumulated_points': 0, 'top_percent_accumulated': 100}
     try:
@@ -50,6 +78,7 @@ def get_customer_points(phone: str, store_id: str = 'store-1'):
 
 
 def update_customer_points(phone: str, points_to_add: int, store_id: str = 'store-1'):
+    phone = normalize_phone(phone)
     if points_to_add < 0:
         print(f"Update Points Error: negative points ({points_to_add}) rejected for {phone}")
         return False
@@ -80,6 +109,7 @@ def update_customer_points(phone: str, points_to_add: int, store_id: str = 'stor
 
 
 def use_customer_points(phone: str, points_to_use: int, store_id: str = 'store-1'):
+    phone = normalize_phone(phone)
     if points_to_use <= 0:
         return False
     conn = get_db_conn()

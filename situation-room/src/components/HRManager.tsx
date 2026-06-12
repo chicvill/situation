@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { apiFetch } from '../utils/apiFetch';
 import { useStoreFilter } from '../hooks/useStoreFilter';
+import { formatPhone } from '../utils/formatters';
 import type { Bundle, EmployeeDetail, PayrollInfo } from './hr/types';
 import { useAttendance } from './hr/useAttendance';
 import { KioskPanel } from './hr/KioskPanel';
@@ -65,7 +66,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         if (b.status === 'resigned') return false;
         if (storeId !== 'Total' && b.store_id !== storeId && b.store_id) return false;
         const empId: string = b.items?.find((i: any) => i.name === '아이디')?.value || b.id.replace(/^EMP-/, '');
-        return /^01[0-9]{8,9}$/.test(empId); // 전화번호 형식 ID만 유효 직원으로 인정
+        return /^01[0-9]{8,9}$/.test(empId.replace(/[^0-9]/g, '')); // 전화번호 형식 ID만 유효 직원으로 인정
     });
     const attendance: Bundle[] = bundles.filter(b => b.type === 'Attendance' && (storeId === 'Total' || b.store_id === storeId || !b.store_id));
 
@@ -365,7 +366,7 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                             </div>
                             <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>아이디 (휴대폰 번호)</label>
-                                <input type="text" value={regPhone} onChange={(ev) => setRegPhone(ev.target.value)} placeholder="예: 01012345678" style={{ padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white' }} required />
+                                <input type="text" value={regPhone} onChange={(ev) => setRegPhone(formatPhone(ev.target.value))} placeholder="예: 010-1234-5678" style={{ padding: '12px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border)', color: 'white' }} required />
                             </div>
                             <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 600 }}>임시 비밀번호</label>

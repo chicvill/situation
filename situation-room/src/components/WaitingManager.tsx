@@ -3,6 +3,7 @@ import { subscribeToStore } from '../services/notifications';
 import { useStoreFilter } from '../hooks/useStoreFilter';
 import { playDingDong } from '../utils/audio';
 import { API_BASE } from '../config';
+import { formatPhone } from '../utils/formatters';
 
 interface WaitingEntry {
     waiting_id: string;
@@ -241,7 +242,7 @@ export const WaitingManager: React.FC<WaitingManagerProps> = ({ onComplete }) =>
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 700 }}>연락처 (필수)</label>
-                            <input type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="010-0000-0000" style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)', boxSizing: 'border-box' }} required />
+                            <input type="tel" value={regPhone} onChange={e => setRegPhone(formatPhone(e.target.value))} placeholder="010-0000-0000" style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-main)', boxSizing: 'border-box' }} required />
                         </div>
                         <div>
                             <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: 700 }}>인원</label>

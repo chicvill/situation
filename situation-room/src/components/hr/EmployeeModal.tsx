@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Bundle, EmployeeDetail } from './types';
 import { apiFetch } from '../../utils/apiFetch';
+import { formatPhone, formatJuminNo } from '../../utils/formatters';
 
 interface EmployeeModalProps {
   employee: EmployeeDetail;
@@ -39,6 +40,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
   const [editWage, setEditWage] = useState('10500');
   const [editGender, setEditGender] = useState('미지정');
   const [editBirthDate, setEditBirthDate] = useState('1995-01-01');
+  const [editResidentNo, setEditResidentNo] = useState('');
   const [editContractStart, setEditContractStart] = useState('2026-05-01');
   const [editContractEnd, setEditContractEnd] = useState('2029-12-31');
   const [editEmploymentType, setEditEmploymentType] = useState('알바');
@@ -56,6 +58,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
     setEditWage(employee.wage || '10500');
     setEditGender(employee.contract?.gender || '미지정');
     setEditBirthDate(employee.contract?.birth_date || '1995-01-01');
+    setEditResidentNo(employee.contract?.resident_no || '');
     setEditContractStart(employee.contract?.start || '2026-05-01');
     setEditContractEnd(employee.contract?.end || '2029-12-31');
     setEditEmploymentType(employee.contract?.employment_type || (employee.contract?.end === '9999-12-31' ? '정규직' : '알바'));
@@ -120,6 +123,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
           contract_end: editContractEnd,
           employment_type: editEmploymentType,
           severance_eligible: editSeveranceEligible,
+          resident_no: editResidentNo.replace(/[^0-9]/g, ''), // 숫자만 백엔드로 전송
           schedules: schedulesList,
         }),
       });
@@ -279,6 +283,10 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>생년월일</label>
                   <input type="date" value={editBirthDate} onChange={(ev) => setEditBirthDate(ev.target.value)} style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569' }}>주민등록번호</label>
+                  <input type="text" value={editResidentNo} onChange={(ev) => setEditResidentNo(formatJuminNo(ev.target.value))} placeholder="xxxxxx-xxxxxxx" style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }} maxLength={14} />
                 </div>
               </div>
             </div>
@@ -517,7 +525,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f8fafc' }}>
                     <span style={{ color: '#64748b', fontWeight: 600, flexShrink: 0, marginRight: '16px' }}>연락처 (ID)</span>
-                    <span style={{ fontWeight: 700, color: '#0f172a', wordBreak: 'break-all', textAlign: 'right' }}>📞 {employee.id}</span>
+                    <span style={{ fontWeight: 700, color: '#0f172a', wordBreak: 'break-all', textAlign: 'right' }}>📞 {formatPhone(employee.id)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f8fafc' }}>
                     <span style={{ color: '#64748b', fontWeight: 600, flexShrink: 0, marginRight: '16px' }}>성별</span>
@@ -527,6 +535,12 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                     <span style={{ color: '#64748b', fontWeight: 600, flexShrink: 0, marginRight: '16px' }}>생년월일</span>
                     <span style={{ fontWeight: 700, color: '#0f172a', wordBreak: 'break-all', textAlign: 'right' }}>{employee.contract?.birth_date || '1995-01-01'}</span>
                   </div>
+                  {employee.contract?.resident_no && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f8fafc' }}>
+                      <span style={{ color: '#64748b', fontWeight: 600, flexShrink: 0, marginRight: '16px' }}>주민등록번호</span>
+                      <span style={{ fontWeight: 700, color: '#0f172a', wordBreak: 'break-all', textAlign: 'right' }}>{formatJuminNo(employee.contract.resident_no)}</span>
+                    </div>
+                  )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #f8fafc' }}>
                     <span style={{ color: '#64748b', fontWeight: 600, flexShrink: 0, marginRight: '16px' }}>직책 / 권한</span>
                     <span style={{ fontWeight: 700, color: '#0f172a', wordBreak: 'break-all', textAlign: 'right' }}>{employee.role}</span>

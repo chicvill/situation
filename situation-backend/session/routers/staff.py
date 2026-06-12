@@ -583,7 +583,8 @@ async def update_staff_all_endpoint(data: Dict):
         "gender": data.get("gender") or "미지정",
         "birth_date": data.get("birth_date") or "1995-01-01",
         "employment_type": data.get("employment_type") or "알바",
-        "severance_eligible": data.get("severance_eligible") or "미대상"
+        "severance_eligible": data.get("severance_eligible") or "미대상",
+        "resident_no": data.get("resident_no") or ""
     }
     
     schedules = data.get("schedules") or []

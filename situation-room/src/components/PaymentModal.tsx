@@ -2,6 +2,7 @@ import React from 'react'; // Git Force Trigger: 2026-05-04 23:27
 import type { BundleData } from '../types';
 import { API_BASE } from '../config';
 import { subscribeTopic } from '../services/mqttClient';
+import { formatPhone } from '../utils/formatters';
 import { PaymentService } from '../services/paymentService';
 
 interface PaymentModalProps {
@@ -458,9 +459,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 placeholder="휴대폰 번호 입력"
                 value={phoneForPoints}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9]/g, '');
-                  setPhoneForPoints(val);
-                  if (val.length >= 10) lookupPoints(val);
+                  const formatted = formatPhone(e.target.value);
+                  setPhoneForPoints(formatted);
+                  const clean = formatted.replace(/[^0-9]/g, '');
+                  if (clean.length >= 10) lookupPoints(clean);
                 }}
                 style={{
                   width: '100%', padding: '16px', borderRadius: '12px',

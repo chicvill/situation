@@ -3,6 +3,7 @@ import './OwnerOnboardingChat.css';
 import { useImageScan, ScanningOverlay, ScanChoiceModal } from '../hooks/useImageScan';
 import { QRManager } from './QRManager';
 import { API_BASE } from '../config';
+import { formatPhone, formatBizNo } from '../utils/formatters';
 
 interface OwnerOnboardingChatProps {
     onClose: () => void;
@@ -1072,8 +1073,8 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                                                                 <input 
                                                                     type="tel"
                                                                     value={ownerId} 
-                                                                    onChange={(e) => { setOwnerId(e.target.value.replace(/[^0-9]/g, '')); setIsIdChecked(false); }} 
-                                                                    placeholder="예: 01012345678" maxLength={11} 
+                                                                    onChange={(e) => { setOwnerId(formatPhone(e.target.value)); setIsIdChecked(false); }} 
+                                                                    placeholder="예: 010-1234-5678" maxLength={13} 
                                                                 />
                                                                 <button 
                                                                     className="form-action-btn" 
@@ -1103,13 +1104,13 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                                                 {/* Step 3 Form: Phone */}
                                                 {msg.formType === 'phone' && currentStep === 3 && (
                                                     <div className="form-row">
-                                                        <label>핸드폰 번호 (하이픈 제외)</label>
+                                                        <label>핸드폰 번호</label>
                                                         <div style={{ display: 'flex', gap: '8px' }}>
                                                             <input 
                                                                 type="tel" 
                                                                 value={phoneNo} 
-                                                                onChange={(e) => setPhoneNo(e.target.value.replace(/[^0-9]/g, ''))} 
-                                                                placeholder="예: 01012345678"
+                                                                onChange={(e) => setPhoneNo(formatPhone(e.target.value))} 
+                                                                placeholder="예: 010-1234-5678"
                                                                 onKeyDown={(e) => e.key === 'Enter' && handlePhoneSubmit()}
                                                             />
                                                             <button className="form-action-btn" onClick={handlePhoneSubmit}>확인</button>
@@ -1131,12 +1132,12 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
                                                             />
                                                         </div>
                                                         <div className="form-row">
-                                                            <label>사업자 등록번호 (10자리)</label>
+                                                            <label>사업자 등록번호</label>
                                                             <input 
                                                                 type="text" 
                                                                 value={bizNo} 
-                                                                onChange={(e) => { setBizNo(e.target.value.replace(/[^0-9]/g, '')); setIsBizVerified(false); }} 
-                                                                placeholder="0000000000" 
+                                                                onChange={(e) => { setBizNo(formatBizNo(e.target.value)); setIsBizVerified(false); }} 
+                                                                placeholder="000-00-00000" 
                                                             />
                                                         </div>
                                                         <div className="form-row">

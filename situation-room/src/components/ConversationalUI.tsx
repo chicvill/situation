@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import './ConversationalUI.css';
 import type { BundleData } from '../types';
 import { API_BASE } from '../config';
+import { formatPhone } from '../utils/formatters';
 
 export interface ConversationalUIProps {
     bundles: BundleData[];
@@ -528,14 +529,15 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                                 <div style={{ display: 'flex', gap: '6px' }}>
                                     <input 
                                         type="tel" 
-                                        placeholder="01012345678" 
+                                        placeholder="010-1234-5678" 
                                         id={`chat-phone-input-${msg.id}`}
+                                        onInput={(e: any) => { e.target.value = formatPhone(e.target.value); }}
                                         style={{ flex: 1, padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '14px', outline: 'none', fontWeight: 700 }}
                                     />
                                     <button 
                                         onClick={() => {
                                             const inputEl = document.getElementById(`chat-phone-input-${msg.id}`) as HTMLInputElement;
-                                            if (inputEl && inputEl.value.length >= 10) {
+                                            if (inputEl && inputEl.value.replace(/[^0-9]/g, '').length >= 10) {
                                                 handleSelectPoints(inputEl.value);
                                             } else {
                                                 alert("올바른 전화번호를 입력해 주세요!");

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { API_BASE } from '../config';
+import { formatBizNo } from '../utils/formatters';
 
 export const StoreSetup: React.FC<{ storeName: string }> = ({ storeName }) => {
     const [uploadingReg, setUploadingReg] = useState(false);
@@ -133,7 +134,7 @@ export const StoreSetup: React.FC<{ storeName: string }> = ({ storeName }) => {
                                 </div>
                                 <div className="result-field highlight">
                                     <label>사업자등록번호</label>
-                                    <input value={storeData.regNo} onChange={(e) => handleStoreChange('regNo', e.target.value)} placeholder="000-00-00000" />
+                                    <input value={storeData.regNo} onChange={(e) => handleStoreChange('regNo', formatBizNo(e.target.value))} placeholder="000-00-00000" />
                                 </div>
                                 <div className="result-field highlight">
                                     <label>사업장 주소</label>

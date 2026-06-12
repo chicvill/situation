@@ -3,6 +3,7 @@ import { useStoreFilter } from '../hooks/useStoreFilter';
 import { CustomDateTimePicker } from './CustomDateTimePicker';
 import { subscribeToStore } from '../services/notifications';
 import { API_BASE } from '../config';
+import { formatPhone } from '../utils/formatters';
 
 const getApiUrl = () => API_BASE;
 
@@ -148,7 +149,7 @@ const CustomerRegistrationForm: React.FC<{ storeId: string; storeName: string }>
                             style={{ display: 'block', marginTop: '8px', width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', boxSizing: 'border-box' }} />
                     </label>
                     <label style={{ fontWeight: 700, fontSize: '0.9rem' }}>연락처
-                        <input type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="010-0000-0000" required
+                        <input type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: formatPhone(e.target.value) }))} placeholder="010-0000-0000" required
                             style={{ display: 'block', marginTop: '8px', width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', boxSizing: 'border-box' }} />
                     </label>
                     <label style={{ fontWeight: 700, fontSize: '0.9rem' }}>예약 일시
@@ -447,7 +448,7 @@ export const ReservationManager: React.FC<{ userRole?: string; bundles?: any[] }
                                     </span>
                                     {r.phone_number && (
                                         <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                                            📞 {r.phone_number}
+                                            📞 {formatPhone(r.phone_number)}
                                         </span>
                                     )}
                                     <span style={{ color: 'var(--accent-orange)', fontWeight: 700, fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
@@ -545,7 +546,10 @@ export const ReservationManager: React.FC<{ userRole?: string; bundles?: any[] }
                                         </div>
                                     ) : (
                                         <input type={f.type} value={(editForm[f.key] as string) || ''} placeholder={f.placeholder}
-                                            onChange={e => setEditForm(prev => ({ ...prev, [f.key]: e.target.value }))}
+                                            onChange={e => {
+                                                const val = f.type === 'tel' ? formatPhone(e.target.value) : e.target.value;
+                                                setEditForm(prev => ({ ...prev, [f.key]: val }));
+                                            }}
                                             style={{ display: 'block', width: '100%', marginTop: '6px', padding: '12px', borderRadius: '10px', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', boxSizing: 'border-box' }} />
                                     )}
                                 </label>

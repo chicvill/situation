@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { apiFetch } from '../../utils/apiFetch';
+import { formatPhone } from '../../utils/formatters';
 
 interface KioskPanelProps {
   kioskPhone: string;
@@ -242,10 +243,10 @@ export const KioskPanel: React.FC<KioskPanelProps> = ({
               <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)' }}>전화번호 (ID)</label>
               <input
                 type="tel"
-                placeholder="01012345678"
+                placeholder="010-1234-5678"
                 value={loginPhone}
-                onChange={(e) => setLoginPhone(e.target.value.replace(/[^0-9]/g, ''))}
-                maxLength={11}
+                onChange={(e) => setLoginPhone(formatPhone(e.target.value))}
+                maxLength={13}
                 style={{
                   width: '100%', padding: '12px 14px', borderRadius: '10px',
                   background: 'var(--background)', border: '1.5px solid var(--border)',

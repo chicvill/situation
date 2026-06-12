@@ -36,6 +36,7 @@ export interface EmployeeDetail {
     birth_date?: string;
     employment_type?: string;
     severance_eligible?: string;
+    resident_no?: string;
   };
   schedule: ScheduleEntry[];
   rawBundle: Bundle;

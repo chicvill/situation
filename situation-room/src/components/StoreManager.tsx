@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/apiFetch';
+import { formatBizNo } from '../utils/formatters';
 import type { BundleData } from '../types';
 import { useImageScan, ScanningOverlay, ScanChoiceModal } from '../hooks/useImageScan';
 
@@ -370,7 +371,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
             <input 
               style={{ padding: '12px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', outline: 'none' }}
               value={storeData.regNo} 
-              onChange={(e) => handleChange('regNo', e.target.value)} 
+              onChange={(e) => handleChange('regNo', formatBizNo(e.target.value))} 
               placeholder="000-00-00000" 
             />
           </div>
