@@ -17,18 +17,7 @@ const getApiUrl = () => {
     return import.meta.env.VITE_API_URL || `http://${host}:8080`;
 };
 
-// 단계 순서 (progress bar용)
-const STAGE_PIPELINE = [
-    { key: 'initial',        label: '비어있음',   color: '#9ca3af', bg: '#ffffff' },
-    { key: 'waiting',        label: '고객대기',   color: '#92400e', bg: '#fef3c7' },
-    { key: 'seated',         label: '주문중',     color: '#1e40af', bg: '#dbeafe' },
-    { key: 'ordered',        label: '주문접수',   color: '#c2410c', bg: '#fed7aa' },
-    { key: 'cooking',        label: '조리중',     color: '#0284c7', bg: '#e0f2fe' },
-    { key: 'cooking_done',   label: '조리완료',   color: '#6d28d9', bg: '#ede9fe' },
-    { key: 'payment_pending',label: '결제대기',   color: '#b91c1c', bg: '#fee2e2' },
-    { key: 'payment_done',   label: '종료',       color: '#15803d', bg: '#dcfce7' },
-    { key: 'closing',        label: '세션종료',   color: '#475569', bg: '#e2e8f0' },
-];
+
 
 export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadProps) => {
     const { storeId: filterStoreId } = useStoreFilter();
@@ -232,7 +221,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         }
     };
 
-    const handleCloseSession = async (sessionId: string) => {
+    const handleCloseSession = async (sessionId: string, silent = false) => {
         try {
             const res = await fetch(`${getApiUrl()}/api/session/close`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -240,14 +229,39 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             });
             const data = await res.json();
             if (res.ok) {
-                alert(data.status === 'partial' ? data.message : '정산이 완료되었습니다.');
+                if (!silent) {
+                    alert(data.status === 'partial' ? data.message : '정산이 완료되었습니다.');
+                }
                 setSelectedSessionForPay(null);
                 setSelectedOrderForPay(null);
                 fetchSessions();
             } else {
                 throw new Error(data.detail || '정산 실패');
             }
-        } catch (e) { console.error('Close Session Error:', e); throw e; }
+        } catch (e) {
+            console.error('Close Session Error:', e);
+            if (!silent) alert('정산 중 오류가 발생했습니다.');
+            throw e;
+        }
+    };
+
+    const resolvePendingCardCalls = async (sessionId: string) => {
+        const session = sessions.find((s: any) => s.session_id === sessionId);
+        if (!session) return;
+        const pendingCardCalls = (session.calls || []).filter(
+            (c: any) => c.call_type === '실물 카드 결제' && c.status === 'pending'
+        );
+        for (const call of pendingCardCalls) {
+            try {
+                await fetch(`${getApiUrl()}/api/call/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ call_id: call.call_id, status: 'completed' })
+                });
+            } catch (e) {
+                console.error('Failed to auto-resolve card call:', e);
+            }
+        }
     };
 
     const handlePartialPayment = async (orderId: string) => {
@@ -440,14 +454,6 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>현황: <span style={{ color: 'var(--accent)' }}>{sessions.length}석 활성</span></span>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
-                        {STAGE_PIPELINE.filter(s => s.key !== 'initial').map(s => (
-                            <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-                                <div style={{ width: '5px', height: '5px', borderRadius: '1px', background: s.bg, border: `1px solid ${s.color}66`, flexShrink: 0 }} />
-                                <span style={{ fontSize: '0.52rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>{s.label}</span>
-                            </div>
-                        ))}
-                    </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '5px' }}>
                     {tables.map(num => {
@@ -525,6 +531,49 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                     🎯 좌석 개시 승인
                                 </button>
                             )}
+
+                            {/* ── 실물카드 결제 퀵 버튼 ── */}
+                            {selectedSession && (() => {
+                                const pendingCardCall = (selectedSession.calls || []).find((c: any) => c.call_type === '실물 카드 결제' && c.status === 'pending');
+                                if (pendingCardCall && unpaidTotal > 0) {
+                                    return (
+                                        <button
+                                            onClick={async () => {
+                                                setCardTouchCallback(() => async () => {
+                                                    await handleCloseSession(selectedSession.session_id, true);
+                                                    await fetch(`${getApiUrl()}/api/call/status`, {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ call_id: pendingCardCall.call_id, status: 'completed' })
+                                                    });
+                                                });
+                                                setShowCardTouchOverlay(true);
+                                            }}
+                                            style={{
+                                                background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+                                                border: 'none',
+                                                color: 'white',
+                                                padding: '12px',
+                                                borderRadius: '8px',
+                                                fontWeight: '900',
+                                                fontSize: '0.92rem',
+                                                cursor: 'pointer',
+                                                width: '100%',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '8px',
+                                                boxShadow: '0 4px 15px rgba(236, 72, 153, 0.4)',
+                                                marginBottom: '6px',
+                                                animation: 'pulse-pink 2s infinite ease-in-out'
+                                            }}
+                                        >
+                                            💳 대기중인 실물카드 결제 받기 ({unpaidTotal.toLocaleString()}원)
+                                        </button>
+                                    );
+                                }
+                                return null;
+                            })()}
 
                             {/* ── 주문 목록 (차수별) ── */}
                             {selectedSession && (
@@ -778,10 +827,14 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                         }
 
                         const executePayment = async () => {
+                            const sessionId = selectedSessionForPay?.session_id || (selectedOrderForPay ? sessions.find(s => s.orders?.some((o: any) => o.order_id === selectedOrderForPay.order_id))?.session_id : null);
                             if (selectedOrderForPay) {
                                 await handlePartialPayment(selectedOrderForPay.order_id);
                             } else {
                                 await handleCloseSession(selectedSessionForPay.session_id);
+                            }
+                            if (sessionId) {
+                                await resolvePendingCardCalls(sessionId);
                             }
                             if (vipPayerInfo && vipPayerInfo.topPercent <= 10) {
                                 setVipFlashVisible(true);
@@ -806,6 +859,10 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             <style>{`
                 @keyframes vipFlash { from { opacity:1; transform:scale(1); } to { opacity:0.6; transform:scale(1.06); } }
                 @keyframes pulse-mild { 0%,100% { box-shadow: none; } 50% { box-shadow: 0 0 8px currentColor; } }
+                @keyframes pulse-pink {
+                    0%, 100% { box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4); }
+                    50% { box-shadow: 0 4px 22px rgba(236, 72, 153, 0.8), 0 0 8px rgba(236, 72, 153, 0.4); transform: scale(1.01); }
+                }
             `}</style>
 
             {/* ── VIP 플래시 ── */}
