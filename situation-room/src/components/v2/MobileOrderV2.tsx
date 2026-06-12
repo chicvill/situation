@@ -102,6 +102,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const [showProgress, setShowProgress] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [voiceToast, setVoiceToast] = useState<string | null>(null);
+  const activeUtteranceRef = React.useRef<SpeechSynthesisUtterance | null>(null);
   
   const [useCall, setUseCall] = useState(true);
   const [useParking, setUseParking] = useState(true);
@@ -694,9 +695,13 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const speakResponse = (msg: string) => {
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
       const utterance = new SpeechSynthesisUtterance(msg);
       utterance.lang = 'ko-KR';
       utterance.rate = 1.0;
+      activeUtteranceRef.current = utterance;
+      utterance.onend = () => { activeUtteranceRef.current = null; };
+      utterance.onerror = () => { activeUtteranceRef.current = null; };
       window.speechSynthesis.speak(utterance);
     }
   };

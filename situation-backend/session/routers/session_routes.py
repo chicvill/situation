@@ -47,6 +47,7 @@ async def check_in(data: Dict):
         except Exception as e:
             print(f"Auto Session Save DB Error: {e}")
             
+        manager.add_seat_request(table_id, store_id, datetime.now().isoformat())
         return {"status": "active", "session": active, "orders": []}
 
     orders = get_orders_by_session(active['session_id'])
@@ -93,6 +94,7 @@ async def check_in(data: Dict):
             except Exception as e:
                 print(f"Auto Session Save DB Error: {e}")
                 
+            manager.add_seat_request(table_id, store_id, datetime.now().isoformat())
             return {"status": "active", "session": new_active, "orders": []}
 
     # ③ 주문 없는 테이블 → 무조건 통과 (보호할 주문 없음)
@@ -104,6 +106,7 @@ async def check_in(data: Dict):
         elif device_id and first_device and device_id != first_device:
             is_new_device = True
         print(f"[check_in] 주문 없음 → active")
+        manager.add_seat_request(table_id, store_id, datetime.now().isoformat())
         return {"status": "active", "session": active, "orders": orders, "is_new_device": is_new_device}
 
     # ④ 주문 있는 테이블 → 테이블 활성화 상태면 기기 불문 즉시 통과 및 자동 승인
@@ -327,6 +330,14 @@ async def close_session(data: Dict):
                     update_order_status(order['order_id'], "paid")
                     update_order_payment_status(order['order_id'], "paid")
                     await trigger_cash_receipt_if_requested(order)
+                    if table_id:
+                        await manager.send_to_table(table_id, {
+                            "type": "PAYMENT_CONFIRMED",
+                            "order_id": order['order_id'],
+                            "payment_status": "paid",
+                            "store_id": session.get("store_id") or "default_store",
+                            "table_id": table_id
+                        })
 
             # 주방 및 해당 테이블 기기에 알림
             await manager.broadcast_to_kitchen({"type": "SESSION_CLOSED", "session_id": session_id})

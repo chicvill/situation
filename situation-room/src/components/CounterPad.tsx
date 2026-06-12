@@ -43,6 +43,8 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const prevCallCountRef = useRef(0);
     const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
     const initialSelectionDone = useRef(false);
+    const [showCardTouchOverlay, setShowCardTouchOverlay] = useState(false);
+    const [cardTouchCallback, setCardTouchCallback] = useState<(() => Promise<void>) | null>(null);
     
     // ── 구두 주문 추가를 위한 상태 ──
     const [showAddOrder, setShowAddOrder] = useState(false);
@@ -775,16 +777,25 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                             return;
                         }
 
-                        if (selectedOrderForPay) {
-                            await handlePartialPayment(selectedOrderForPay.order_id);
+                        const executePayment = async () => {
+                            if (selectedOrderForPay) {
+                                await handlePartialPayment(selectedOrderForPay.order_id);
+                            } else {
+                                await handleCloseSession(selectedSessionForPay.session_id);
+                            }
+                            if (vipPayerInfo && vipPayerInfo.topPercent <= 10) {
+                                setVipFlashVisible(true);
+                                setTimeout(() => { setVipFlashVisible(false); setVipPayerInfo(null); }, 3000);
+                            } else {
+                                setVipPayerInfo(null);
+                            }
+                        };
+
+                        if (method.includes('실물카드')) {
+                            setCardTouchCallback(() => executePayment);
+                            setShowCardTouchOverlay(true);
                         } else {
-                            await handleCloseSession(selectedSessionForPay.session_id);
-                        }
-                        if (vipPayerInfo && vipPayerInfo.topPercent <= 10) {
-                            setVipFlashVisible(true);
-                            setTimeout(() => { setVipFlashVisible(false); setVipPayerInfo(null); }, 3000);
-                        } else {
-                            setVipPayerInfo(null);
+                            await executePayment();
                         }
                     }}
                     isCounter={true}
@@ -805,6 +816,76 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                         <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#92400e', letterSpacing: '0.1em' }}>VIP</div>
                         <div style={{ fontSize: '1rem', color: '#b45309', fontWeight: 700, marginTop: '8px' }}>상위 {vipPayerInfo?.topPercent}% 단골 고객</div>
                     </div>
+                </div>
+            )}
+            {showCardTouchOverlay && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 11000,
+                    background: 'rgba(15, 23, 42, 0.95)',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center',
+                    padding: '30px'
+                }}>
+                    <div className="glass-card animate-fade-in" style={{
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '24px',
+                        padding: '40px 30px',
+                        maxWidth: '380px',
+                        width: '100%',
+                        textAlign: 'center',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                    }}>
+                        <div style={{ fontSize: '5rem', marginBottom: '20px', animation: 'cardTouchBlink 1.5s infinite alternate' }}>📲💳</div>
+                        
+                        <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'white', marginBottom: '12px' }}>실물카드 터치</h2>
+                        <p style={{ fontSize: '0.92rem', color: '#94a3b8', lineHeight: 1.6, marginBottom: '30px' }}>
+                            실물카드를 휴대폰 뒷면(NFC 영역)에<br/>
+                            대고 잠시만 기다려 주세요.
+                        </p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <button 
+                                onClick={async () => {
+                                    setShowCardTouchOverlay(false);
+                                    if (cardTouchCallback) {
+                                        await cardTouchCallback();
+                                        setCardTouchCallback(null);
+                                    }
+                                }}
+                                style={{
+                                    width: '100%', padding: '16px', borderRadius: '14px',
+                                    background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                                    color: 'white', border: 'none', fontWeight: 800,
+                                    fontSize: '1.05rem', cursor: 'pointer',
+                                    boxShadow: '0 8px 20px rgba(249, 115, 22, 0.3)'
+                                }}
+                            >
+                                💳 카드 태그 완료
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    setShowCardTouchOverlay(false);
+                                    setCardTouchCallback(null);
+                                }}
+                                style={{
+                                    width: '100%', padding: '12px', borderRadius: '12px',
+                                    background: 'transparent', color: '#94a3b8',
+                                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                                    fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer'
+                                }}
+                            >
+                                취소
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <style>{`
+                        @keyframes cardTouchBlink {
+                            0% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 5px rgba(249,115,22,0.2)); }
+                            100% { transform: translateY(-8px) scale(1.05); filter: drop-shadow(0 0 20px rgba(249,115,22,0.6)); }
+                        }
+                    `}</style>
                 </div>
             )}
         </div>

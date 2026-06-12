@@ -24,6 +24,11 @@ import json
 import argparse
 import requests
 
+# Reconfigure stdout to support UTF-8 characters (like emojis) on Windows command prompt
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+
+
 # ─── 설정 ───────────────────────────────────────────────
 DEFAULT_URL  = "http://localhost:8000"
 TEST_STORE   = "test_store"
@@ -295,7 +300,7 @@ def s5_same_device_rescan(base: str, result: Result):
 
 
 def s6_different_device_join(base: str, result: Result):
-    section("S6: 다른 기기 스캔 (합석 요청) → waiting_approval")
+    section("S6: 다른 기기 스캔 (합석 요청) → 자동 승인 및 is_new_device 반환")
     cleanup(base)
 
     # 1. 세션 생성 + 주문 (Device A)
@@ -312,10 +317,13 @@ def s6_different_device_join(base: str, result: Result):
 
     # 2. 다른 기기 스캔 (Device B)
     resp = checkin(base, device=DEVICE_B)
-    result.check("다른 기기 스캔 → status=waiting_approval",
-                 resp.get("status") == "waiting_approval", "waiting_approval", resp.get("status"))
-    result.check("session_id 포함됨",
-                 "session_id" in resp, True, list(resp.keys()))
+    result.check("다른 기기 스캔 → status=active",
+                 resp.get("status") == "active", "active", resp.get("status"))
+    result.check("is_new_device=True 반환됨",
+                 resp.get("is_new_device") is True, True, resp.get("is_new_device"))
+    result.check("session object 포함됨",
+                 "session" in resp, True, list(resp.keys()))
+
 
 
 def s7_session_reset(base: str, result: Result):

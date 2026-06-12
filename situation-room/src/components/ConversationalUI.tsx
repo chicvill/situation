@@ -36,6 +36,7 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     const scrollRef = useRef<HTMLDivElement>(null);   // chat messages container
     const messagesEndRef = useRef<HTMLDivElement>(null); // sentinel for auto-scroll
     const hasSpokenWelcome = useRef(false);
+    const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
     const tableId = `T${tableNo.padStart(2, '0')}`;
 
@@ -86,16 +87,21 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
     const speak = (text: string) => {
         if (!window.speechSynthesis) return;
         window.speechSynthesis.cancel();
+        window.speechSynthesis.resume();
         
         // Remove [GOTO] tags, emojis, and icons for clean TTS
         const speechText = text.replace(/\[GOTO:(\w+)\]/g, '')
                                .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}]/gu, '')
                                .replace(/[☕🎉🍱🥩🎨🍲🍶🥤🍦🥛🥞🍰🍳🍜🥣🌶️🥗🌯🍚🧀🐖🍤🫓🍖🐚🍺🧇🍹🍳]/g, '')
                                .trim();
+        if (!speechText) return;
         
         const utterance = new SpeechSynthesisUtterance(speechText);
         utterance.lang = 'ko-KR';
         utterance.rate = 1.05;
+        activeUtteranceRef.current = utterance;
+        utterance.onend = () => { activeUtteranceRef.current = null; };
+        utterance.onerror = () => { activeUtteranceRef.current = null; };
         window.speechSynthesis.speak(utterance);
     };
 

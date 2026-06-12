@@ -171,7 +171,7 @@ ${items.map(item => {
             onClick={onClose}
             style={{ padding: '15px', background: '#1e293b', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
           >
-            취소
+            종료
           </button>
         </div>
 

@@ -216,5 +216,7 @@ async def update_payment_status(update: PaymentStatusUpdate):
             "table_id": table_id,
         }
         await manager.broadcast_to_kitchen(msg)
+        if table_id:
+            await manager.send_to_table(table_id, msg)
         return {"status": "success"}
     return {"status": "failed"}
