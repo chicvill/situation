@@ -27,6 +27,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
   const [showPostPaymentModal, setShowPostPaymentModal] = useState(false);
   const [isCartView, setIsCartView] = useState(false);
   const [isOrdered, setIsOrdered] = useState(false);
+  const [isStaffCall, setIsStaffCall] = useState(false);
   const [userPhone, setUserPhone] = useState('');
   const [isWaitingForPartyApproval, setIsWaitingForPartyApproval] = useState(false);
   const [pendingJoinRequest, setPendingJoinRequest] = useState<{ deviceId: string; sessionId: string } | null>(null);
@@ -310,11 +311,51 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
           payload.payment_status = 'paid';
           payload.payment_method = 'points';
         }
+
+        // 셀프 결제 성공 → 주방으로 주문 전송
+        const res = await fetch(`${API_BASE}/api/order/direct`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.detail || '주문 전송 실패');
+        }
+        setIsStaffCall(false);
+        setIsOrdered(true);
+        setShowPayModal(false);
+        setIsCartView(false);
+        setCart({});
+        setShowPostPaymentModal(true);
+        return;
+
       } else if (method === 'call_staff') {
-        payload.payment_status = 'pending_payment';
-        payload.payment_method = '직원호출';
+        // 직원 호출: 주문을 주방으로 전송하지 않고 직원 호출만 실행
+        const callRes = await fetch(`${API_BASE}/api/call`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            table_id: tableId,
+            call_type: '결제 요청',
+            store_id: storeId,
+            amount: totalPrice,
+            items: cartList.map(item => ({ name: item.name, price: item.price, quantity: item.qty })),
+            metadata: { phone: extraData?.phone, usePoints: extraData?.usePoints, isTakeout: extraData?.isTakeout }
+          })
+        });
+        if (!callRes.ok) {
+          throw new Error('직원 호출 실패. 다시 시도해 주세요.');
+        }
+        setIsStaffCall(true);
+        setIsOrdered(true);
+        setShowPayModal(false);
+        setIsCartView(false);
+        setCart({});
+        return;
       }
 
+      // call_staff는 위에서 이미 return했으므로 여기는 self_pay 나 기타 경우만 도달
       const res = await fetch(`${API_BASE}/api/order/direct`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -362,11 +403,16 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
           textAlign: 'center',
           gap: '16px'
         }}>
-          <div style={{ fontSize: '5rem', lineHeight: 1 }}>✅</div>
-          <h2 style={{ fontSize: '1.8rem', margin: '0', fontWeight: '800', color: 'white' }}>주문해 주셔서 감사합니다!</h2>
+          <div style={{ fontSize: '5rem', lineHeight: 1 }}>{isStaffCall ? '🙋' : '✅'}</div>
+          <h2 style={{ fontSize: '1.8rem', margin: '0', fontWeight: '800', color: 'white' }}>
+            {isStaffCall ? '직원 호출 완료!' : '주문해 주셔서 감사합니다!'}
+          </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '1rem', lineHeight: 1.7, margin: 0 }}>
-            주문이 주방으로 전달되었습니다.<br/>
-            잠시만 기다려 주세요. 😊
+            {isStaffCall ? (
+              <>직원이 실물카드 단말기를 가지고 테이블로 방문드립니다.<br/>직원이 결제를 완료하면 주방으로 주문이 전달됩니다. 🙋</>
+            ) : (
+              <>주문이 주방으로 전달되었습니다.<br/>잠시만 기다려 주세요. 😊</>
+            )}
           </p>
           <div style={{
             marginTop: '12px',

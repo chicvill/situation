@@ -254,7 +254,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           </button>
         </div>
         
-        {/* 선결제 취소 불가 경고 */}
+        {/* 결제 안내 */}
         <div style={{
           marginTop: '20px', padding: '12px 16px', borderRadius: '12px',
           background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.25)',
@@ -262,7 +262,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         }}>
           <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚠️</span>
           <span style={{ fontSize: '0.78rem', color: '#dc2626', fontWeight: 600, lineHeight: 1.5 }}>
-            셀프 결제 완료 및 직원 호출 시 주문이 바로 주방으로 전달되며, 주문 취소가 불가능하오니 신중하게 선택해 주세요.
+            📱 <strong>셀프 결제</strong>: 결제 완료 즉시 주방으로 주문 전달<br/>
+            🙋 <strong>직원 호출</strong>: 직원이 테이블로 방문하여 결제 후 주방 전달<br/>
+            선택 후 주문 취소가 불가능하오니 신중하게 선택해 주세요.
           </span>
         </div>
       </div>
