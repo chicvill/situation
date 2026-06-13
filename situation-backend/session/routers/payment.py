@@ -401,9 +401,8 @@ async def payapp_feedback(request: Request):
     print(f"[PayApp Webhook Received] Order: {order_id}, Price: {price}, State: {pay_state}, Transaction: {mul_no}")
 
     # 1. 보안 검증 (linkval 검증)
-    payapp_linkval = os.getenv("PAYAPP_LINKVAL") or "test_linkval"
-    # 테스트 ID인 경우 검증을 우회하여 테스트를 용이하게 합니다.
-    if userid != "payapp_test_id" and linkval != payapp_linkval:
+    payapp_linkval = os.getenv("PAYAPP_LINKVAL") or ""
+    if payapp_linkval and linkval != payapp_linkval:
         print(f"[PayApp Validation Failed] linkval mismatch. Expected: {payapp_linkval}, Got: {linkval}")
         raise HTTPException(status_code=400, detail="Invalid linkval verification")
 
