@@ -1,0 +1,23 @@
+{
+  "snapshot_time": "2026-06-03T05:50:11.784619",
+  "label": "CREATE",
+  "session": {
+    "session_id": "SESS-A8B30378",
+    "store_id": "store-chicvill",
+    "table_id": "T05",
+    "device_id": "DEV-USER-03",
+    "status": "active",
+    "checkin_time": "2026-06-03T05:50:11.321957",
+    "checkout_time": null,
+    "metadata": {
+      "pin": "1414",
+      "pin_verified": true
+    },
+    "orders": [],
+    "splits": [],
+    "calls": [],
+    "parking": null,
+    "point": null,
+    "version": 1
+  }
+}

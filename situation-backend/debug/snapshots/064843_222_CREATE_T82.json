@@ -1,0 +1,45 @@
+{
+  "snapshot_time": "2026-06-03T06:48:43.231315",
+  "label": "CREATE",
+  "session": {
+    "session_id": "SESS-1151FA11",
+    "store_id": "store-chicvill",
+    "table_id": "T82",
+    "device_id": "DEV-USER-02A",
+    "status": "active",
+    "checkin_time": "2026-06-03T06:48:41.698485",
+    "checkout_time": null,
+    "metadata": {
+      "pin": "7014",
+      "pin_verified": true
+    },
+    "orders": [
+      {
+        "seq": 1,
+        "items": [
+          {
+            "name": "아메리카노",
+            "price": 4500,
+            "quantity": 1
+          }
+        ],
+        "total": 4500,
+        "status": "ready",
+        "order_id": "ORD-226BE59B",
+        "created_at": "2026-06-02T21:48:42.725697Z",
+        "payment_method": "TossPay",
+        "payment_status": "paid",
+        "total_price": 4500,
+        "order_seq": 1,
+        "timestamp": "2026-06-02T21:48:42.725697Z",
+        "table_id": "T82",
+        "store_id": "store-chicvill"
+      }
+    ],
+    "splits": [],
+    "calls": [],
+    "parking": null,
+    "point": null,
+    "version": 3
+  }
+}

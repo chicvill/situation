@@ -18,3 +18,5 @@
 [2026-05-26 13:02:46] GET /api/stats/store/store-chicvill?period=daily
 [2026-05-26 13:02:48] GET /api/stats/store/store-chicvill?period=weekly
 [2026-05-26 13:02:50] GET /api/stats/store/store-chicvill?period=monthly
+[2026-06-01 10:30:29] GET /api/stats/store/store-grace?period=daily
+[2026-06-01 10:30:30] GET /api/stats/store/store-grace?period=daily

@@ -1,0 +1,90 @@
+{
+  "snapshot_time": "2026-06-02T22:12:50.135500",
+  "label": "CREATE",
+  "session": {
+    "session_id": "SESS-E7E5AC5A",
+    "store_id": "store-grace",
+    "table_id": "T09",
+    "device_id": "DEV-9KFB34XWQ",
+    "status": "active",
+    "checkin_time": "2026-06-02T20:57:54.687562",
+    "checkout_time": null,
+    "metadata": {
+      "pin": "5174",
+      "pin_verified": true,
+      "approved_devices": [
+        "DEV-9KFB34XWQ"
+      ]
+    },
+    "orders": [
+      {
+        "seq": 1,
+        "items": [
+          {
+            "name": "프리미엄 콜드브루 커피",
+            "price": 4500,
+            "quantity": 1
+          },
+          {
+            "name": "맥주",
+            "price": 6000,
+            "quantity": 2
+          },
+          {
+            "name": "한우 생육회",
+            "price": 28000,
+            "quantity": 1
+          }
+        ],
+        "total": 44500,
+        "status": "ready",
+        "order_id": "ORD-B6A58CC2",
+        "created_at": "2026-06-02T12:12:59.205204Z",
+        "payment_method": "가상 결제 (테스트)",
+        "payment_status": "paid",
+        "total_price": 44500,
+        "order_seq": 1,
+        "timestamp": "2026-06-02T12:12:59.205204Z",
+        "table_id": "T09",
+        "store_id": "store-grace"
+      },
+      {
+        "seq": 2,
+        "items": [
+          {
+            "name": "명품 한우 갈비살",
+            "price": 42000,
+            "quantity": 1
+          },
+          {
+            "name": "명품 한우 등심",
+            "price": 45000,
+            "quantity": 1
+          }
+        ],
+        "total": 87000,
+        "status": "pending_payment",
+        "order_id": "ORD-103ADDB9",
+        "created_at": "2026-06-02T13:12:31.499032Z",
+        "payment_method": "카드 / 간편결제",
+        "payment_status": "pending",
+        "total_price": 87000,
+        "order_seq": 2,
+        "timestamp": "2026-06-02T13:12:31.499032Z",
+        "table_id": "T09",
+        "store_id": "store-grace"
+      }
+    ],
+    "splits": [],
+    "calls": [],
+    "parking": {
+      "status": "applied",
+      "created_at": "2026-06-02T21:13:26.973005",
+      "parking_id": "PARK-174D",
+      "vehicle_number": "5555",
+      "discount_minutes": 120
+    },
+    "point": null,
+    "version": 5
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "snapshot_time": "2026-06-03T05:48:31.524968",
+  "label": "CREATE",
+  "session": {
+    "session_id": "SESS-E79661C6",
+    "store_id": "default_store",
+    "table_id": "T03",
+    "device_id": "DEV-VB3A42P6C",
+    "status": "active",
+    "checkin_time": "2026-05-28T23:20:47.260992",
+    "checkout_time": null,
+    "metadata": {
+      "pin": "4501",
+      "pin_verified": true,
+      "approved_devices": [
+        "DEV-9KFB34XWQ",
+        "DEV-USER-01"
+      ]
+    },
+    "orders": [
+      {
+        "seq": 1,
+        "items": [
+          {
+            "name": "순대국밥",
+            "price": 9000,
+            "quantity": 1
+          }
+        ],
+        "total": 9000,
+        "status": "cooking",
+        "order_id": "ORD-E13B5057",
+        "created_at": "2026-05-28T23:21:32.237605Z",
+        "payment_method": "가상 결제 (테스트)",
+        "payment_status": "paid",
+        "total_price": 9000,
+        "order_seq": 1,
+        "timestamp": "2026-05-28T23:21:32.237605Z",
+        "table_id": "T03",
+        "store_id": "default_store"
+      },
+      {
+        "seq": 2,
+        "items": [
+          {
+            "name": "돼지국밥",
+            "price": 9000,
+            "quantity": 1
+          }
+        ],
+        "total": 9000,
+        "status": "cooking",
+        "order_id": "ORD-C1636D12",
+        "created_at": "2026-05-28T23:22:52.984406Z",
+        "payment_method": "가상 결제 (테스트)",
+        "payment_status": "paid",
+        "total_price": 9000,
+        "order_seq": 2,
+        "timestamp": "2026-05-28T23:22:52.984406Z",
+        "table_id": "T03",
+        "store_id": "default_store"
+      },
+      {
+        "seq": 3,
+        "items": [
+          {
+            "name": "돼지국밥",
+            "price": 9000,
+            "quantity": 1
+          }
+        ],
+        "total": 9000,
+        "status": "cooking",
+        "order_id": "ORD-B975064E",
+        "created_at": "2026-05-28T23:24:06.983543Z",
+        "payment_method": "가상 결제 (테스트)",
+        "payment_status": "paid",
+        "total_price": 9000,
+        "order_seq": 3,
+        "timestamp": "2026-05-28T23:24:06.983543Z",
+        "table_id": "T03",
+        "store_id": "default_store"
+      }
+    ],
+    "splits": [],
+    "calls": [
+      {
+        "type": "직원호출",
+        "status": "pending",
+        "call_id": "CALL-309D",
+        "created_at": "2026-05-28T23:23:11.282627",
+        "resolved_at": null
+      },
+      {
+        "type": "직원호출",
+        "status": "pending",
+        "call_id": "CALL-8B51",
+        "created_at": "2026-05-28T23:23:30.001395",
+        "resolved_at": null
+      },
+      {
+        "type": "직원호출",
+        "status": "pending",
+        "call_id": "CALL-060B",
+        "created_at": "2026-05-28T23:24:25.671050",
+        "resolved_at": null
+      },
+      {
+        "type": "직원호출",
+        "status": "pending",
+        "call_id": "CALL-7EE1",
+        "created_at": "2026-05-28T23:24:54.796238",
+        "resolved_at": null
+      },
+      {
+        "type": "직원호출",
+        "status": "pending",
+        "call_id": "CALL-C5E8",
+        "created_at": "2026-05-28T23:25:56.598632",
+        "resolved_at": null
+      },
+      {
+        "type": "직원호출",
+        "status": "pending",
+        "call_id": "CALL-0AA9",
+        "created_at": "2026-05-28T23:26:14.779539",
+        "resolved_at": null
+      }
+    ],
+    "parking": {
+      "status": "applied",
+      "created_at": "2026-05-28T23:25:09.422464",
+      "parking_id": "PARK-3872",
+      "vehicle_number": "3333",
+      "discount_minutes": 120
+    },
+    "point": null,
+    "version": 14
+  }
+}

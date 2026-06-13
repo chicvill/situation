@@ -1,0 +1,23 @@
+{
+  "snapshot_time": "2026-06-03T05:50:26.752152",
+  "label": "CREATE",
+  "session": {
+    "session_id": "SESS-D9B00087",
+    "store_id": "store-chicvill",
+    "table_id": "T12",
+    "device_id": "DEV-MASS-12",
+    "status": "active",
+    "checkin_time": "2026-06-03T05:50:24.761578",
+    "checkout_time": null,
+    "metadata": {
+      "pin": "7734",
+      "pin_verified": true
+    },
+    "orders": [],
+    "splits": [],
+    "calls": [],
+    "parking": null,
+    "point": null,
+    "version": 1
+  }
+}

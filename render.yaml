@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: situation
+    runtime: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    customDomains:
+      - situation.chicvill.store
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: DATABASE_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MQTT_BROKER_HOST
+        value: 315e5d948dad4a52b84916853d7e9344.s1.eu.hivemq.cloud
+      - key: MQTT_BROKER_PORT
+        value: 8883
+      - key: MQTT_USERNAME
+        value: situation
+      - key: MQTT_PASSWORD
+        sync: false
+      - key: TOSS_CLIENT_KEY
+        value: test_ck_D5b4Zne68wxL1Pn6k0m8rlzYWBn1
+      - key: TOSS_SECRET_KEY
+        sync: false
+      - key: MASTER_CRYPTO_KEY
+        sync: false

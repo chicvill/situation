@@ -1,62 +1,79 @@
 {
-  "updated_at": "2026-05-26T12:09:29.733198",
+  "updated_at": "2026-06-12T11:54:16.878417",
   "seat_requests": [],
   "sessions": {
-    "count": 4,
+    "count": 3,
     "active": [
       {
-        "session_id": "SESS-C3A947BB",
-        "table_id": "T04",
+        "session_id": "SESS-C97047EE",
+        "table_id": "T05",
         "store_id": "default_store",
         "status": "active",
-        "checkin_time": "2026-05-25T22:27:17.349468",
+        "checkin_time": "2026-06-11T11:49:17.035370",
         "seat_requested": false,
-        "order_count": 0,
-        "total_amount": 0,
-        "orders": []
+        "order_count": 2,
+        "total_amount": 2000,
+        "orders": [
+          {
+            "order_id": "ORD-766374C0",
+            "order_seq": 1,
+            "status": "pending_payment",
+            "total_price": 1000,
+            "items": [
+              {
+                "name": "테스트 커피",
+                "price": 1000,
+                "quantity": 1
+              }
+            ]
+          },
+          {
+            "order_id": "ORD-B69E3EBD",
+            "order_seq": 2,
+            "status": "pending_payment",
+            "total_price": 1000,
+            "items": [
+              {
+                "name": "테스트 커피",
+                "price": 1000,
+                "quantity": 1
+              }
+            ]
+          }
+        ]
       },
       {
-        "session_id": "SESS-CB9C77C9",
+        "session_id": "SESS-81493C0F",
         "table_id": "T06",
         "store_id": "default_store",
         "status": "active",
-        "checkin_time": "2026-05-25T22:27:33.980946",
+        "checkin_time": "2026-06-11T12:59:16.437021",
         "seat_requested": false,
         "order_count": 2,
-        "total_amount": 25000,
+        "total_amount": 9000,
         "orders": [
           {
-            "order_id": "ORD-74B20876",
+            "order_id": "ORD-EDF6744C",
             "order_seq": 1,
-            "status": "cooking",
-            "total_price": 16000,
+            "status": "pending_payment",
+            "total_price": 4500,
             "items": [
               {
-                "name": "제육볶음",
-                "price": 11000,
-                "quantity": 1
-              },
-              {
-                "name": "보리차",
-                "price": 0,
-                "quantity": 1
-              },
-              {
-                "name": "막걸리",
-                "price": 5000,
+                "name": "따뜻한 아메리카노",
+                "price": 4500,
                 "quantity": 1
               }
             ]
           },
           {
-            "order_id": "ORD-E1F131D5",
+            "order_id": "ORD-0E552D91",
             "order_seq": 2,
-            "status": "cooking",
-            "total_price": 9000,
+            "status": "pending_payment",
+            "total_price": 4500,
             "items": [
               {
-                "name": "김치찌개",
-                "price": 9000,
+                "name": "따뜻한 아메리카노",
+                "price": 4500,
                 "quantity": 1
               }
             ]
@@ -64,93 +81,24 @@
         ]
       },
       {
-        "session_id": "SESS-A95A74C6",
-        "table_id": "T08",
-        "store_id": "default_store",
-        "status": "active",
-        "checkin_time": "2026-05-26T10:22:24.738216",
-        "seat_requested": false,
-        "order_count": 1,
-        "total_amount": 20000,
-        "orders": [
-          {
-            "order_id": "ORD-07E7E36A",
-            "order_seq": 1,
-            "status": "cooking",
-            "total_price": 20000,
-            "items": [
-              {
-                "name": "김치찌개",
-                "price": 9000,
-                "quantity": 1
-              },
-              {
-                "name": "제육볶음",
-                "price": 11000,
-                "quantity": 1
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "session_id": "SESS-D5E603C9",
-        "table_id": "T03",
+        "session_id": "SESS-222BDEFD",
+        "table_id": "T02",
         "store_id": "store-chicvill",
         "status": "active",
-        "checkin_time": "2026-05-26T11:22:43.784303",
+        "checkin_time": "2026-06-12T01:53:24.304998",
         "seat_requested": false,
-        "order_count": 4,
-        "total_amount": 25000,
+        "order_count": 1,
+        "total_amount": 33000,
         "orders": [
           {
-            "order_id": "ORD-CFECA46F",
+            "order_id": "ORD-4F81587C",
             "order_seq": 1,
             "status": "cooking",
-            "total_price": 5000,
+            "total_price": 33000,
             "items": [
               {
-                "name": "에스프레소",
-                "price": 5000,
-                "quantity": 1
-              }
-            ]
-          },
-          {
-            "order_id": "ORD-1CCE8B1C",
-            "order_seq": 2,
-            "status": "cooking",
-            "total_price": 5000,
-            "items": [
-              {
-                "name": "에스프레소",
-                "price": 5000,
-                "quantity": 1
-              }
-            ]
-          },
-          {
-            "order_id": "ORD-D0B2F866",
-            "order_seq": 3,
-            "status": "cooking",
-            "total_price": 9000,
-            "items": [
-              {
-                "name": "아이스 아메리카노",
-                "price": 4500,
-                "quantity": 2
-              }
-            ]
-          },
-          {
-            "order_id": "ORD-ECA18D67",
-            "order_seq": 4,
-            "status": "cooking",
-            "total_price": 6000,
-            "items": [
-              {
-                "name": "크로플",
-                "price": 6000,
+                "name": "명품 한우 갈비살",
+                "price": 42000,
                 "quantity": 1
               }
             ]

@@ -1,0 +1,16 @@
+{
+  "snapshot_time": "2026-06-02T20:57:54.690979",
+  "label": "CREATE",
+  "session": {
+    "session_id": "SESS-E7E5AC5A",
+    "store_id": "store-grace",
+    "table_id": "T09",
+    "device_id": "DEV-9KFB34XWQ",
+    "status": "active",
+    "checkin_time": "2026-06-02T20:57:54.687562",
+    "metadata": {
+      "pin": "5174",
+      "pin_verified": true
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "snapshot_time": "2026-06-11T11:49:17.037220",
+  "label": "CREATE",
+  "session": {
+    "session_id": "SESS-C97047EE",
+    "store_id": "default_store",
+    "table_id": "T05",
+    "device_id": "",
+    "status": "active",
+    "checkin_time": "2026-06-11T11:49:17.035370",
+    "metadata": {
+      "pin": "2134",
+      "pin_verified": true
+    }
+  }
+}

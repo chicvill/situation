@@ -1,0 +1,16 @@
+{
+  "snapshot_time": "2026-06-03T05:50:24.334523",
+  "label": "CREATE",
+  "session": {
+    "session_id": "SESS-91738930",
+    "store_id": "store-chicvill",
+    "table_id": "T11",
+    "device_id": "DEV-MASS-11",
+    "status": "active",
+    "checkin_time": "2026-06-03T05:50:24.333635",
+    "metadata": {
+      "pin": "5121",
+      "pin_verified": true
+    }
+  }
+}
