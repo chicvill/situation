@@ -135,13 +135,13 @@ def get_kitchen_orders(store_id: Optional[str] = None):
         if store_id and store_id != "Total":
             cur.execute("""
                 SELECT * FROM table_orders
-                WHERE store_id = %(store_id)s AND status IN ('cooking', 'pending_payment')
+                WHERE store_id = %(store_id)s AND status IN ('cooking')
                 ORDER BY timestamp ASC
             """, {'store_id': store_id})
         else:
             cur.execute("""
                 SELECT * FROM table_orders
-                WHERE status IN ('cooking', 'pending_payment')
+                WHERE status IN ('cooking')
                 ORDER BY timestamp ASC
             """)
         results = cur.fetchall()

@@ -282,30 +282,40 @@ async def validate_parking(data: Dict):
         raise HTTPException(status_code=400, detail="session_id and vehicle_number are required")
 
     parking_id = f"PARK-{uuid.uuid4().hex[:4].upper()}"
+    
+    from ..database import save_parking, get_session_by_id, get_orders_by_session
+    session_info = get_session_by_id(session_id)
+    store_id = (session_info.get("store_id") if session_info else None) or data.get("store_id") or data.get("storeId") or "Total"
+    table_id_from_session = session_info.get("table_id") if session_info else None
+
+    # 결제 대기 중인 주문이 있는지 확인 (선불 매장 주차 등록 지연 처리용)
+    orders = get_orders_by_session(session_id)
+    has_pending_payment = any(o.get("status") == "pending_payment" for o in orders)
+    status_val = "pending_payment" if has_pending_payment else "applied"
+
     park_data = {
         "parking_id": parking_id,
         "session_id": session_id,
         "vehicle_number": vehicle_number,
         "discount_minutes": int(discount_minutes),
-        "status": "applied",
+        "status": status_val,
         "timestamp": datetime.now().isoformat()
     }
 
-    from ..database import save_parking, get_session_by_id
-    session_info = get_session_by_id(session_id)
-    store_id = (session_info.get("store_id") if session_info else None) or data.get("store_id") or data.get("storeId") or "Total"
-    table_id_from_session = session_info.get("table_id") if session_info else None
-
     if save_parking(park_data):
-        await manager.broadcast_to_kitchen({
-            "type": "PARKING_APPLIED",
-            "parking_id": parking_id,
-            "session_id": session_id,
-            "vehicle_number": vehicle_number,
-            "status": "applied",
-            "store_id": store_id,
-            "table_id": table_id_from_session
-        })
+        if status_val == "applied":
+            await manager.broadcast_to_kitchen({
+                "type": "PARKING_APPLIED",
+                "parking_id": parking_id,
+                "session_id": session_id,
+                "vehicle_number": vehicle_number,
+                "status": "applied",
+                "store_id": store_id,
+                "table_id": table_id_from_session
+            })
+            print(f"[Parking Registered] Instantly activated: {parking_id} for session {session_id}")
+        else:
+            print(f"[Parking Registered] Postponed validation (pending payment): {parking_id} for session {session_id}")
         return park_data
     raise HTTPException(status_code=500, detail="Failed to save parking registration")
 

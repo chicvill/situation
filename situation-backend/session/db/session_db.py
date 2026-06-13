@@ -368,6 +368,7 @@ def append_order(session_id: str, order_data: dict) -> bool:
         'payment_status': order_data.get('payment_status', 'unpaid'),
         'payment_method': order_data.get('payment_method'),
         'created_at':     order_data.get('timestamp', _now()),
+        'metadata':       order_data.get('metadata', {}),
     }
     try:
         cur = conn.cursor()
@@ -536,7 +537,7 @@ def get_kitchen_orders(store_id: Optional[str] = None) -> list:
             FROM table_sessions s,
                  jsonb_array_elements(s.orders) AS elem
             WHERE s.status != 'closed'
-              AND elem->>'status' IN ('pending', 'cooking', 'pending_payment')
+              AND elem->>'status' IN ('pending', 'cooking')
         """
         if store_id and store_id not in ('Total', 'default_store'):
             cur.execute(base + " AND s.store_id = %(sid)s ORDER BY elem->>'created_at' ASC",

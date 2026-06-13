@@ -118,37 +118,40 @@ async def process_order(order_req: OrderRequest):
     metadata = order_req.metadata or {}
     phone = metadata.get("phone")
     if phone:
-        from ..database import update_customer_points, use_customer_points
-        # 기본 0.1% 적립
-        pts = int(order_req.total_price * 0.001)
-        update_customer_points(phone, pts, effective_store_id)
-        print(f"[Checkpoint 4] Accumulated {pts}P for {phone} under Store {effective_store_id}")
+        if initial_status != "pending_payment":
+            from ..database import update_customer_points, use_customer_points
+            # 기본 0.1% 적립
+            pts = int(order_req.total_price * 0.001)
+            update_customer_points(phone, pts, effective_store_id)
+            print(f"[Checkpoint 4] Accumulated {pts}P for {phone} under Store {effective_store_id}")
 
-        # 사용한 포인트 차감 처리
-        use_pts = int(metadata.get("usePoints") or metadata.get("use_points") or 0)
-        if use_pts > 0:
-            use_customer_points(phone, use_pts, effective_store_id)
-            print(f"[Checkpoint 4] Deducted {use_pts}P used points for {phone} under Store {effective_store_id}")
+            # 사용한 포인트 차감 처리
+            use_pts = int(metadata.get("usePoints") or metadata.get("use_points") or 0)
+            if use_pts > 0:
+                use_customer_points(phone, use_pts, effective_store_id)
+                print(f"[Checkpoint 4] Deducted {use_pts}P used points for {phone} under Store {effective_store_id}")
 
-        # 주방/카운터에 실시간 포인트 적립 브로드캐스트 전송
-        await manager.broadcast_to_kitchen({
-            "type": "POINTS_UPDATED",
-            "phone": phone,
-            "points": pts,
-            "store_id": effective_store_id
-        })
+            # 주방/카운터에 실시간 포인트 적립 브로드캐스트 전송
+            await manager.broadcast_to_kitchen({
+                "type": "POINTS_UPDATED",
+                "phone": phone,
+                "points": pts,
+                "store_id": effective_store_id
+            })
+        else:
+            print(f"[Checkpoint 4 Bypassed] Waiting for payment. Points update for {phone} postponed.")
 
     print(f"[Checkpoint 5] Order Saved Successfully: {order_id}")
 
-    # 5. 주방에 알림 전송 (PIN 인증 완료 상태 또는 카운터 주문일 때만 즉각 전송)
-    if initial_status != "waiting_pin":
+    # 5. 주방에 알림 전송 (결제 완료 대기중이 아니거나 PIN 인증 대기중이 아닐 때만 즉각 전송)
+    if initial_status not in ("pending_payment", "waiting_pin"):
         await manager.broadcast_to_kitchen({
             "type": "NEW_ORDER",
             "order": new_order
         })
         print(f"[Checkpoint 6] Broadcast NEW_ORDER sent to kitchen monitors.")
     else:
-        print(f"[Checkpoint 6 Bypassed] Waiting for PIN verification. NEW_ORDER broadcast postponed.")
+        print(f"[Checkpoint 6 Bypassed] Waiting for payment or PIN verification. NEW_ORDER broadcast postponed.")
 
     return {"status": "success", "order_id": order_id, "order_seq": next_seq}
 

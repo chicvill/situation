@@ -55,6 +55,64 @@ async def verify_payapp_payment_or_throw(payment_key: str, order_id: str, amount
 router = APIRouter()
 
 
+async def process_order_points_and_broadcast(order: dict):
+    """결제가 완료된 시점에 주문에 대한 포인트를 적립/차감하고 주방에 알립니다."""
+    metadata = order.get("metadata") or {}
+    if isinstance(metadata, str):
+        try:
+            import json
+            metadata = json.loads(metadata)
+        except Exception:
+            metadata = {}
+            
+    phone = metadata.get("phone")
+    if phone:
+        from ..database import update_customer_points, use_customer_points
+        total_price = order.get("total_price", 0)
+        effective_store_id = order.get("store_id") or "default_store"
+        
+        # 기본 0.1% 적립
+        pts = int(total_price * 0.001)
+        update_customer_points(phone, pts, effective_store_id)
+        print(f"[Points Post-Payment] Accumulated {pts}P for {phone} under Store {effective_store_id}")
+
+        # 사용한 포인트 차감 처리
+        use_pts = int(metadata.get("usePoints") or metadata.get("use_points") or 0)
+        if use_pts > 0:
+            use_customer_points(phone, use_pts, effective_store_id)
+            print(f"[Points Post-Payment] Deducted {use_pts}P used points for {phone} under Store {effective_store_id}")
+
+        # 주방/카운터에 실시간 포인트 적립 브로드캐스트 전송
+        await manager.broadcast_to_kitchen({
+            "type": "POINTS_UPDATED",
+            "phone": phone,
+            "points": pts,
+            "store_id": effective_store_id
+        })
+
+
+async def process_order_parking_and_broadcast(session_id: str, store_id: str):
+    """결제가 완료된 시점에 세션에 묶인 주차 대기 건(pending_payment)을 applied 상태로 변경하고 주방에 알립니다."""
+    from ..database import get_parking_by_session, update_parking_status, get_session_by_id
+    parking = get_parking_by_session(session_id)
+    if parking and parking.get("status") == "pending_payment":
+        if update_parking_status(session_id, "applied"):
+            session_info = get_session_by_id(session_id)
+            table_id = session_info.get("table_id") if session_info else None
+            
+            # 주방/카운터에 주차 등록 알림 전송
+            await manager.broadcast_to_kitchen({
+                "type": "PARKING_APPLIED",
+                "parking_id": parking.get("parking_id"),
+                "session_id": session_id,
+                "vehicle_number": parking.get("vehicle_number"),
+                "status": "applied",
+                "store_id": store_id,
+                "table_id": table_id
+            })
+            print(f"[Parking Post-Payment] Parking {parking.get('parking_id')} activated for session {session_id}")
+
+
 @router.post("/api/payment/confirm")
 async def confirm_payment(data: Dict):
     """페이앱 결제 승인 후 검증 및 처리 (폴백 및 동기화)"""
@@ -135,6 +193,9 @@ async def confirm_payment(data: Dict):
                     update_order_status(oid, post_payment_status)
                     update_order_payment_key(oid, payment_key)
                     
+                    # Dutch Pay도 포인트 지연 처리 실행
+                    await process_order_points_and_broadcast(order)
+                    
                     msg_confirmed = {"type": "PAYMENT_CONFIRMED", "order_id": oid, "status": "paid", "store_id": store_id}
                     await manager.broadcast_to_kitchen(msg_confirmed)
                     
@@ -155,6 +216,9 @@ async def confirm_payment(data: Dict):
                             "store_id": store_id
                         })
             
+            # Dutch Pay 세션의 모든 결제가 완료되었으므로 주차 지연 처리 실행
+            await process_order_parking_and_broadcast(session_id, store_id)
+
             completion_payload = {
                 "type": "DUTCH_COMPLETED",
                 "session_id": session_id,
@@ -171,6 +235,12 @@ async def confirm_payment(data: Dict):
     order = get_order_by_id(order_id)
     if not order:
         raise HTTPException(status_code=404, detail="주문을 찾을 수 없습니다")
+        
+    # 중복 결제 처리 방지
+    if order.get("payment_status") == "paid":
+        print(f"[Payment Confirm Bypass] Order {order_id} is already paid. Skipping process.")
+        return {"status": "success", "order_id": order_id}
+
     expected_amount = order.get("total_price", 0)
     if int(amount) != int(expected_amount):
         print(f"[Payment Tamper] Order: {order_id}, Expected: {expected_amount}, Got: {amount}")
@@ -192,8 +262,13 @@ async def confirm_payment(data: Dict):
     else:
         print(f"Failed to save payment_key: {order_id}")
 
-    # 선불 결제 승인 성공 시, 세션의 pin_verified 상태를 True로 즉각 활성화 (추가 주문 시 인증번호 생략을 위함)
+    # 포인트 적립 및 주차 승인 지연 처리 (결제가 최종 완료된 후 등록)
+    await process_order_points_and_broadcast(order)
     session_id = order.get("session_id")
+    if session_id:
+        await process_order_parking_and_broadcast(session_id, store_id)
+
+    # 선불 결제 승인 성공 시, 세션의 pin_verified 상태를 True로 즉각 활성화 (추가 주문 시 인증번호 생략을 위함)
     if session_id:
         import json
         from ..database import get_session_by_id, save_session
@@ -217,6 +292,15 @@ async def confirm_payment(data: Dict):
 
     msg_update = {"type": "STATUS_UPDATE", "order_id": order_id, "status": post_payment_status, "payment_status": "paid"}
     await manager.broadcast_to_kitchen(msg_update)
+
+    # 새 주문 알림을 주방에 전달 (결제 완료되었으므로 이제 주방 전송 가능)
+    updated_order = get_order_by_id(order_id)
+    if updated_order:
+        await manager.broadcast_to_kitchen({
+            "type": "NEW_ORDER",
+            "order": updated_order,
+            "store_id": store_id
+        })
 
     return {"status": "success", "order_id": order_id}
 
@@ -464,6 +548,9 @@ async def payapp_feedback(request: Request):
                                     update_order_status(oid, post_payment_status)
                                     update_order_payment_key(oid, str(mul_no))
                                     
+                                    # Dutch Pay도 포인트 지연 처리 실행
+                                    await process_order_points_and_broadcast(order)
+                                    
                                     msg_confirmed = {"type": "PAYMENT_CONFIRMED", "order_id": oid, "status": "paid", "store_id": store_id}
                                     await manager.broadcast_to_kitchen(msg_confirmed)
                                     
@@ -484,6 +571,9 @@ async def payapp_feedback(request: Request):
                                             "store_id": store_id
                                         })
                             
+                            # Dutch Pay 세션의 모든 결제가 완료되었으므로 주차 지연 처리 실행
+                            await process_order_parking_and_broadcast(session_id, store_id)
+
                             completion_payload = {
                                 "type": "DUTCH_COMPLETED",
                                 "session_id": session_id,
@@ -502,6 +592,12 @@ async def payapp_feedback(request: Request):
                 from fastapi.responses import PlainTextResponse
                 return PlainTextResponse("SUCCESS")
 
+            # 중복 웹훅 처리 방지
+            if order.get("payment_status") == "paid":
+                print(f"[PayApp Callback Bypass] Order {order_id} is already paid. Skipping broadcast.")
+                from fastapi.responses import PlainTextResponse
+                return PlainTextResponse("SUCCESS")
+
             # 금액 검증 (테스트 가맹점 ID인 경우 우회)
             expected_amount = order.get("total_price", 0)
             if userid != "payapp_test_id" and int(price) != int(expected_amount):
@@ -516,8 +612,13 @@ async def payapp_feedback(request: Request):
             update_order_status(order_id, post_payment_status)
             update_order_payment_key(order_id, str(mul_no))
 
-            # 선불 결제 승인 성공 시, 세션의 pin_verified 상태를 True로 즉각 활성화
+            # 포인트 적립 및 주차 승인 지연 처리 (결제가 최종 완료된 후 등록)
+            await process_order_points_and_broadcast(order)
             session_id = order.get("session_id")
+            if session_id:
+                await process_order_parking_and_broadcast(session_id, store_id)
+
+            # 선불 결제 승인 성공 시, 세션의 pin_verified 상태를 True로 즉각 활성화
             if session_id:
                 import json
                 from ..database import get_session_by_id, save_session
