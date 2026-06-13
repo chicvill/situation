@@ -632,8 +632,15 @@ function App() {
         onSwitchStore={() => setSelectedAdminStore(null)}
       />
 
-      <main className="saas-main-full" style={{ paddingBottom: isCustomerMode ? '0' : '80px' }}>
-        <div className="view-content">
+      <main 
+        className="saas-main-full" 
+        style={
+          (activeTab === 'counter' && counterPad)
+            ? { height: 'calc(100vh - 106px)', overflow: 'hidden', paddingBottom: '0' }
+            : { paddingBottom: isCustomerMode ? '0' : '80px' }
+        }
+      >
+        <div className="view-content" style={ (activeTab === 'counter' && counterPad) ? { height: '100%' } : undefined }>
           {user ? renderContent() : <Login onLogin={handleLogin} bundles={bundles} />}
         </div>
       </main>

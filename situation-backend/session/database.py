@@ -123,6 +123,8 @@ from .db.store_db import (
     update_store_use_dutch,
     get_reservation_settings,
     update_reservation_settings,
+    get_store_table_count,
+    update_store_table_count,
 )
 
 __all__ = [
@@ -238,4 +240,6 @@ __all__ = [
     "update_store_use_dutch",
     "get_reservation_settings",
     "update_reservation_settings",
+    "get_store_table_count",
+    "update_store_table_count",
 ]

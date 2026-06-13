@@ -83,6 +83,7 @@ def init_config_db():
         )
     """)
     # 주방 사용 여부 컬럼 추가 (기존 배포 환경 호환)
+    cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS table_count INTEGER DEFAULT 12")
     cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_kitchen BOOLEAN DEFAULT TRUE")
     cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_call BOOLEAN DEFAULT TRUE")
     cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_waiting BOOLEAN DEFAULT TRUE")

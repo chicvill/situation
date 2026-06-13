@@ -23,6 +23,28 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const { storeId: filterStoreId } = useStoreFilter();
     const storeId = propStoreId || filterStoreId;
     const [sessions, setSessions] = useState<any[]>([]);
+    const [tableCount, setTableCount] = useState<number>(12);
+
+    useEffect(() => {
+        if (!storeId || storeId === 'Total') {
+            setTableCount(12);
+            return;
+        }
+        fetch(`${getApiUrl()}/api/stores/${storeId}/settings`)
+            .then(res => {
+                if (res.ok) return res.json();
+                throw new Error('Failed to load settings');
+            })
+            .then(data => {
+                if (data && typeof data.table_count === 'number') {
+                    setTableCount(data.table_count);
+                }
+            })
+            .catch(err => {
+                console.error("Error loading store table count setting:", err);
+                setTableCount(12);
+            });
+    }, [storeId]);
     const [selectedSessionForPay, setSelectedSessionForPay] = useState<any | null>(null);
     const [selectedOrderForPay, setSelectedOrderForPay] = useState<any | null>(null);
     const [seatRequests, setSeatRequests] = useState<{ table_id: string; timestamp: string }[]>([]);
@@ -429,7 +451,69 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         }
     }, [lastTapInfo, getTableStage, patchSessionStatus, sessions, handleOpenSession, fetchSessions]);
 
-    const tables = Array.from({ length: 12 }, (_, i) => i + 1);
+    const tables = Array.from({ length: tableCount }, (_, i) => i + 1);
+
+    let cols = 3;
+    let buttonPadding = '16px 8px';
+    let buttonHeight = '95px';
+    let titleFontSize = '1.1rem';
+    let subFontSize = '0.78rem';
+    let showPriceBadge = true;
+
+    if (padMode) {
+        if (tableCount <= 12) {
+            cols = 3;
+            buttonPadding = '16px 8px';
+            buttonHeight = '95px';
+            titleFontSize = '1.1rem';
+            subFontSize = '0.78rem';
+            showPriceBadge = true;
+        } else if (tableCount <= 20) {
+            cols = 4;
+            buttonPadding = '12px 6px';
+            buttonHeight = '80px';
+            titleFontSize = '1rem';
+            subFontSize = '0.7rem';
+            showPriceBadge = true;
+        } else if (tableCount <= 36) {
+            cols = 5;
+            buttonPadding = '8px 4px';
+            buttonHeight = '65px';
+            titleFontSize = '0.9rem';
+            subFontSize = '0.65rem';
+            showPriceBadge = false;
+        } else if (tableCount <= 64) {
+            cols = 7;
+            buttonPadding = '6px 2px';
+            buttonHeight = '50px';
+            titleFontSize = '0.8rem';
+            subFontSize = '0.6rem';
+            showPriceBadge = false;
+        } else {
+            cols = 9;
+            buttonPadding = '4px 2px';
+            buttonHeight = '40px';
+            titleFontSize = '0.75rem';
+            subFontSize = '0.55rem';
+            showPriceBadge = false;
+        }
+    } else {
+        // Mobile layout (non-pad mode)
+        if (tableCount <= 15) {
+            cols = 5;
+        } else if (tableCount <= 24) {
+            cols = 6;
+        } else if (tableCount <= 50) {
+            cols = 8;
+        } else {
+            cols = 10;
+        }
+        buttonPadding = '4px 2px';
+        buttonHeight = 'auto';
+        titleFontSize = '0.75rem';
+        subFontSize = '0.58rem';
+        showPriceBadge = false;
+    }
 
     // ── 선택된 테이블 데이터 계산 ──
     const selectedSession = sessions.find((s: any) => s.table_id === selectedTableId);
@@ -485,7 +569,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 </div>
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: padMode ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)',
+                    gridTemplateColumns: `repeat(${cols}, 1fr)`,
                     gap: padMode ? '10px' : '5px',
                     flex: padMode ? 1 : 'none',
                     overflowY: padMode ? 'auto' : 'visible'
@@ -525,8 +609,8 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                 onClick={() => handleTableTap(tableId)}
                                 className={isWaiting ? 'table-seat-waiting' : ''}
                                 style={{
-                                    padding: padMode ? '16px 8px' : '3px 2px',
-                                    height: padMode ? '95px' : 'auto',
+                                    padding: buttonPadding,
+                                    height: buttonHeight,
                                     borderRadius: padMode ? '12px' : '6px',
                                     border: buttonBorder,
                                     background: buttonBg,
@@ -541,9 +625,9 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                     ...(isWaiting ? {} : { animation: hasAlert ? 'pulse-mild 2s infinite' : 'none' }),
                                 }}
                             >
-                                <div style={{ fontSize: padMode ? '1.1rem' : '0.7rem', fontWeight: '900', color: 'inherit', whiteSpace: 'nowrap' }}>{tableId}</div>
-                                <div style={{ lineHeight: 1.1, fontSize: padMode ? '0.78rem' : '0.58rem', fontWeight: '800', color: 'inherit', whiteSpace: 'nowrap', marginTop: '2px' }}>{label}</div>
-                                {padMode && tableSessionTotal > 0 && (
+                                <div style={{ fontSize: titleFontSize, fontWeight: '900', color: 'inherit', whiteSpace: 'nowrap' }}>{tableId}</div>
+                                <div style={{ lineHeight: 1.1, fontSize: subFontSize, fontWeight: '800', color: 'inherit', whiteSpace: 'nowrap', marginTop: '2px' }}>{label}</div>
+                                {showPriceBadge && tableSessionTotal > 0 && (
                                     <div style={{
                                         marginTop: '6px',
                                         fontSize: '0.75rem',

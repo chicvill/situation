@@ -65,6 +65,7 @@ def get_stores_db():
                 COALESCE(monthly_fee, 0) AS monthly_fee,
                 COALESCE(payment_status, '정상') AS payment_status,
                 payment_history,
+                COALESCE(table_count, 12) AS table_count,
                 COALESCE(use_kitchen, TRUE) AS use_kitchen,
                 COALESCE(use_call, TRUE) AS use_call,
                 COALESCE(use_waiting, TRUE) AS use_waiting,
@@ -274,4 +275,34 @@ def update_reservation_settings(store_id: str, settings: dict) -> bool:
         return True
     except Exception as e:
         print(f"Update reservation_settings Error: {e}")
+        return False
+
+def get_store_table_count(store_id: str) -> int:
+    conn = get_db_conn()
+    if not conn: return 12
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT table_count FROM stores WHERE id = %s", (store_id,))
+        row = cur.fetchone()
+        cur.close()
+        conn.close()
+        if row is None or row[0] is None:
+            return 12
+        return int(row[0])
+    except Exception as e:
+        print(f"Get Store table_count Error: {e}")
+        return 12
+
+def update_store_table_count(store_id: str, table_count: int) -> bool:
+    conn = get_db_conn()
+    if not conn: return False
+    try:
+        cur = conn.cursor()
+        cur.execute("UPDATE stores SET table_count = %s WHERE id = %s", (table_count, store_id))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Update Store table_count Error: {e}")
         return False

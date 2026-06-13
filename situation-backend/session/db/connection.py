@@ -343,6 +343,7 @@ def init_db_v2():
                 monthly_fee INTEGER DEFAULT 0,
                 payment_status TEXT DEFAULT '정상',
                 payment_history JSONB DEFAULT '[]',
+                table_count INTEGER DEFAULT 12,
                 use_kitchen BOOLEAN DEFAULT TRUE,
                 use_call BOOLEAN DEFAULT TRUE,
                 use_waiting BOOLEAN DEFAULT TRUE,
@@ -376,6 +377,7 @@ def init_db_v2():
             cur.execute("ALTER TABLE table_orders ADD COLUMN IF NOT EXISTS payment_key TEXT")
             
             # stores 테이블 누락 컬럼 보완 (마이그레이션)
+            cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS table_count INTEGER DEFAULT 12")
             cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_kitchen BOOLEAN DEFAULT TRUE")
             cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_call BOOLEAN DEFAULT TRUE")
             cur.execute("ALTER TABLE stores ADD COLUMN IF NOT EXISTS use_waiting BOOLEAN DEFAULT TRUE")

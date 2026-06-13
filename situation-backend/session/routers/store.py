@@ -130,7 +130,8 @@ async def get_store_settings(store_id: str):
         get_store_use_display,
         get_store_use_staff,
         get_store_use_dutch,
-        get_reservation_settings
+        get_reservation_settings,
+        get_store_table_count
     )
     use_kitchen = get_store_use_kitchen(store_id)
     use_call = get_store_use_call(store_id)
@@ -142,6 +143,7 @@ async def get_store_settings(store_id: str):
     use_staff = get_store_use_staff(store_id)
     use_dutch = get_store_use_dutch(store_id)
     reservation_settings = get_reservation_settings(store_id)
+    table_count = get_store_table_count(store_id)
     return {
         "store_id": store_id,
         "use_kitchen": use_kitchen,
@@ -153,7 +155,8 @@ async def get_store_settings(store_id: str):
         "use_display": use_display,
         "use_staff": use_staff,
         "use_dutch": use_dutch,
-        "reservation_settings": reservation_settings
+        "reservation_settings": reservation_settings,
+        "table_count": table_count
     }
 
 
@@ -169,7 +172,8 @@ async def update_store_settings(store_id: str, data: Dict[str, Any]):
         update_store_use_display,
         update_store_use_staff,
         update_store_use_dutch,
-        update_reservation_settings
+        update_reservation_settings,
+        update_store_table_count
     )
     if "use_kitchen" in data:
         update_store_use_kitchen(store_id, bool(data.get("use_kitchen", True)))
@@ -191,4 +195,6 @@ async def update_store_settings(store_id: str, data: Dict[str, Any]):
         update_store_use_dutch(store_id, bool(data.get("use_dutch", True)))
     if "reservation_settings" in data:
         update_reservation_settings(store_id, data["reservation_settings"])
+    if "table_count" in data:
+        update_store_table_count(store_id, int(data["table_count"]))
     return {"status": "success"}

@@ -16,10 +16,53 @@ def load_pool() -> list:
         try:
             with open(POOL_FILE, "r", encoding="utf-8") as f:
                 _pool_cache = json.load(f)
-                return _pool_cache
         except Exception:
-            pass
-    _pool_cache = []
+            _pool_cache = []
+    else:
+        _pool_cache = []
+
+    # PostgreSQL의 knowledge_bundles 테이블에서 데이터를 로드하여 캐시와 머지
+    try:
+        from .db.connection import get_db_conn
+        conn = get_db_conn()
+        if conn:
+            cur = conn.cursor()
+            cur.execute("SELECT id, type, store_id, title, items, timestamp FROM knowledge_bundles")
+            rows = cur.fetchall()
+            cur.close()
+            conn.close()
+            
+            db_bundles = {}
+            for r in rows:
+                b_id, b_type, s_id, title, items, ts = r
+                ts_str = ts.strftime("%Y-%m-%d %H:%M:%S") if hasattr(ts, "strftime") else str(ts)
+                
+                items_list = items
+                if isinstance(items, str):
+                    try:
+                        import json
+                        items_list = json.loads(items)
+                    except:
+                        items_list = []
+                
+                db_bundles[b_id] = {
+                    "id": b_id,
+                    "type": b_type,
+                    "store_id": s_id,
+                    "title": title,
+                    "items": items_list,
+                    "timestamp": ts_str
+                }
+            
+            pool_map = {b.get("id"): b for b in _pool_cache if b.get("id")}
+            for b_id, db_b in db_bundles.items():
+                pool_map[b_id] = db_b
+            
+            _pool_cache = list(pool_map.values())
+            print(f"✅ Loaded {len(db_bundles)} bundles from database knowledge_bundles.")
+    except Exception as db_err:
+        print(f"⚠️ Failed to merge knowledge_bundles from DB: {db_err}")
+
     return _pool_cache
 
 

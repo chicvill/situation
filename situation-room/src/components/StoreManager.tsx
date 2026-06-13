@@ -29,6 +29,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
   const [useDisplay, setUseDisplay] = useState(true);
   const [useStaff, setUseStaff] = useState(true);
   const [useDutch, setUseDutch] = useState(true);
+  const [tableCount, setTableCount] = useState<number>(12);
 
   useEffect(() => {
     if (!storeId || storeId === 'Total') return;
@@ -44,9 +45,24 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
         setUseDisplay(d.use_display ?? true);
         setUseStaff(d.use_staff ?? true);
         setUseDutch(d.use_dutch ?? true);
+        setTableCount(d.table_count ?? 12);
       })
       .catch(() => {});
   }, [storeId]);
+
+  const handleTableCountChange = async (value: number) => {
+    setTableCount(value);
+    if (value < 1 || value > 100) return;
+    try {
+      await apiFetch(`/api/stores/${storeId}/settings`, {
+        method: 'PUT',
+        body: JSON.stringify({ table_count: value }),
+      });
+      if (onRefreshStoreDetails) {
+        onRefreshStoreDetails();
+      }
+    } catch {}
+  };
 
   const handleSettingToggle = async (key: string, value: boolean, setter: (v: boolean) => void) => {
     setter(value);
@@ -454,6 +470,42 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
               <h3 style={{ color: 'var(--text-main)', margin: 0, fontSize: '1rem', fontWeight: '700' }}>운영 설정</h3>
               <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600 }}>선택 옵션당 월 1,000원 추가 (기본 솔루션 무료)</span>
             </div>
+
+            {/* 테이블 수 설정 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <p style={{ margin: 0, fontWeight: '600', color: 'var(--text-main)', fontSize: '0.95rem' }}>
+                  매장 테이블 수 설정
+                </p>
+                <p style={{ margin: '4px 0 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  카운터 패드 및 매장 레이아웃에 표시할 테이블의 개수를 설정합니다. (1 ~ 100개)
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={tableCount}
+                  onChange={(e) => handleTableCountChange(parseInt(e.target.value) || 12)}
+                  style={{
+                    width: '80px',
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-main)',
+                    color: 'var(--text-main)',
+                    fontSize: '0.95rem',
+                    fontWeight: '600',
+                    textAlign: 'center',
+                    outline: 'none'
+                  }}
+                />
+                <span style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-main)' }}>개</span>
+              </div>
+            </div>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
             
             {/* 1. 주방 디스플레이 */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

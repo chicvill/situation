@@ -174,6 +174,32 @@ async def update_bundle(bundle_id: str, bundle: Dict):
             store_id = bundle.get("store_id") or "default_store"
             items = bundle.get("items") or []
             
+            # 모든 JSON pool에 저장되는 bundles (Menus, StoreConfig, PersonalInfos 등)를 PostgreSQL의 knowledge_bundles에도 추가/갱신
+            import json
+            conn = get_db_conn()
+            if conn:
+                cur = conn.cursor()
+                cur.execute("""
+                    INSERT INTO knowledge_bundles (id, type, store_id, title, items, timestamp)
+                    VALUES (%s, %s, %s, %s, %s, NOW())
+                    ON CONFLICT (id) DO UPDATE SET
+                        type = EXCLUDED.type,
+                        store_id = EXCLUDED.store_id,
+                        title = EXCLUDED.title,
+                        items = EXCLUDED.items,
+                        timestamp = NOW()
+                """, (
+                    bundle_id,
+                    b_type,
+                    store_id,
+                    bundle.get("title", ""),
+                    json.dumps(items, ensure_ascii=False)
+                ))
+                conn.commit()
+                cur.close()
+                conn.close()
+                print(f"🔄 Sync Engine [JSON + RDBMS]: knowledge_bundles 테이블 동기화 완료 (bundle_id={bundle_id})")
+
             # Helper to parse items array to dict
             items_dict = {item.get("name"): item.get("value") for item in items if "name" in item}
 
@@ -223,6 +249,19 @@ async def delete_bundle(bundle_id: str):
     original_pool_len = len(pool)
     pool = [b for b in pool if b.get("id") != bundle_id]
 
+    # knowledge_bundles 테이블에서 삭제
+    try:
+        conn = get_db_conn()
+        if conn:
+            cur = conn.cursor()
+            cur.execute("DELETE FROM knowledge_bundles WHERE id = %s", (bundle_id,))
+            conn.commit()
+            cur.close()
+            conn.close()
+            print(f"🗑️ knowledge_bundles deleted (bundle_id={bundle_id})")
+    except Exception as e:
+        print(f"Error deleting bundle from knowledge_bundles: {e}")
+
     # 근태 기록(Attendance) 삭제 로직 - ATT-XXXX 또는 LOG-XXXX 형식 모두 처리
     if "ATT-" in bundle_id or "LOG-" in bundle_id:
         try:
@@ -259,4 +298,21 @@ async def reset_pool(store_id: Optional[str] = None):
         pool = load_pool()
         pool = [b for b in pool if b.get("store_id") != store_id]
         save_pool(pool)
+
+    # DB에서도 번들 초기화
+    try:
+        conn = get_db_conn()
+        if conn:
+            cur = conn.cursor()
+            if not store_id or store_id == "Total":
+                cur.execute("DELETE FROM knowledge_bundles")
+            else:
+                cur.execute("DELETE FROM knowledge_bundles WHERE store_id = %s", (store_id,))
+            conn.commit()
+            cur.close()
+            conn.close()
+            print(f"🗑️ knowledge_bundles reset (store_id={store_id})")
+    except Exception as e:
+        print(f"Error resetting knowledge_bundles from DB: {e}")
+
     return {"status": "success"}
