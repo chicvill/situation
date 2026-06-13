@@ -970,12 +970,12 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           setShowProgress(true);
         }
       } else {
-        // [CP-03] 토스 결제 호출 (Service 모듈로 위임)
+        // [CP-03] 페이앱 결제 호출 (Service 모듈로 위임)
         PaymentService.log("CP-02", "Electronic Payment Flow - Handoff to PaymentService");
         localStorage.setItem('receipt_items_' + orderId, JSON.stringify(
           currentCart.map(c => ({ name: c.name, value: String(c.qty || 1) + '개', price: (c.price || 0) * (c.qty || 1) }))
         ));
-        await PaymentService.requestTossPayment(method, {
+        await PaymentService.requestPayAppPayment(method, {
           amount: finalAmount,
           orderId: orderId,
           orderName: extraData?.dutchLabel || `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,

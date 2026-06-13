@@ -4,6 +4,7 @@ import type { BundleData } from '../../types';
 import { API_BASE } from '../../config';
 import { subscribeTopic } from '../../services/mqttClient';
 import { PaymentModal } from '../PaymentModal';
+import { PaymentService } from '../../services/paymentService';
 
 interface Props {
   bundles: BundleData[];
@@ -280,27 +281,16 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
             alert('테스트 결제가 성공적으로 완료되었습니다.');
           }
         } else {
-          // 카드 / 계좌이체 -> 토스 결제창 호출
-          const tossPayments = (window as any).TossPayments('test_ck_D5b4Zne68wxL1Pn6k0m8rlzYWBn1');
-          const tossMethod = method.includes('카드') ? '카드' : '계좌이체';
-          
-          // Preserve existing query params (like mode=customer, table=3, etc.)
-          const successParams = new URLSearchParams(window.location.search);
-          successParams.set('payment_success', 'true');
-          successParams.set('order_id', orderId);
-          successParams.set('amount', String(totalPrice));
-
-          const failParams = new URLSearchParams(window.location.search);
-          failParams.set('payment_fail', 'true');
-          failParams.set('order_id', orderId);
-
-          await tossPayments.requestPayment(tossMethod, {
+          // 카드 / 계좌이체 -> 페이앱 결제창 호출
+          localStorage.setItem('receipt_items_' + orderId, JSON.stringify(
+            currentCart.map(c => ({ name: c.name, value: String(c.qty || 1) + '개', price: (c.price || 0) * (c.qty || 1) }))
+          ));
+          await PaymentService.requestPayAppPayment(method, {
             amount: totalPrice,
             orderId: orderId,
             orderName: `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,
             customerName: '손님',
-            successUrl: `${window.location.origin}${window.location.pathname}?${successParams.toString()}`,
-            failUrl: `${window.location.origin}${window.location.pathname}?${failParams.toString()}`,
+            customerPhone: userPhone || undefined
           });
         }
       }

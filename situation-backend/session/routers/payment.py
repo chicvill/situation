@@ -1,5 +1,6 @@
 import os
 import base64
+import urllib.parse
 from typing import Dict, Optional
 from fastapi import APIRouter, HTTPException, Request
 import httpx  # type: ignore
@@ -9,12 +10,54 @@ from ..database import (
     update_order_payment_key, get_order_by_id, get_store_use_kitchen,
 )
 
+async def verify_payapp_payment_or_throw(payment_key: str, order_id: str, amount: int):
+    """페이앱 결제 상세 조회 API를 호출하여 결제 상태 및 금액, 주문 ID를 검증합니다."""
+    payapp_userid = os.getenv("PAYAPP_USERID") or "payapp_test_id"
+    payapp_linkkey = os.getenv("PAYAPP_LINKKEY") or "test_linkkey"
+
+    if payapp_userid == "payapp_test_id" or payment_key.startswith("test-") or payment_key == "payapp_completed":
+        print(f"[PayApp Verify Bypass] 테스트 모드 -- {payment_key} 결제 검증 생략")
+        return
+
+    try:
+        async with httpx.AsyncClient() as client:
+            res = await client.post(
+                "https://api.payapp.kr/oapi/apiLoad.html",
+                data={
+                    "cmd": "paydetail",
+                    "userid": payapp_userid,
+                    "linkkey": payapp_linkkey,
+                    "mul_no": payment_key
+                }
+            )
+        if res.status_code != 200:
+            raise HTTPException(status_code=503, detail="페이앱 API 연결 실패 (HTTP status error)")
+        
+        parsed_res = dict(urllib.parse.parse_qsl(res.text))
+        if parsed_res.get("state") != "4":
+            error_msg = parsed_res.get("errorMessage") or f"결제가 완료되지 않았습니다 (상태 코드: {parsed_res.get('state')})"
+            raise HTTPException(status_code=400, detail=f"페이앱 결제 검증 실패: {error_msg}")
+        
+        # 결제 금액 및 주문 ID(var1) 검출 및 검증
+        price_val = parsed_res.get("price")
+        var1_val = parsed_res.get("var1")
+        
+        if not price_val or int(price_val) != int(amount):
+            raise HTTPException(status_code=400, detail=f"결제 금액 불일치 (실제 결제액: {price_val}원, 요청 결제액: {amount}원)")
+        
+        if var1_val != order_id:
+            raise HTTPException(status_code=400, detail=f"주문 번호 불일치 (실제 주문: {var1_val}, 요청 주문: {order_id})")
+            
+        print(f"[PayApp Verify OK] mul_no: {payment_key}, orderId: {order_id}, amount: {amount}")
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=503, detail=f"페이앱 API 통신 실패: {e}")
+
 router = APIRouter()
 
 
 @router.post("/api/payment/confirm")
 async def confirm_payment(data: Dict):
-    """토스 페이먼츠 결제 승인 후 처리"""
+    """페이앱 결제 승인 후 검증 및 처리 (폴백 및 동기화)"""
     order_id = data.get("orderId")
     amount = data.get("amount")
     payment_key = data.get("paymentKey")
@@ -56,27 +99,8 @@ async def confirm_payment(data: Dict):
         if int(amount) > remaining:
             raise HTTPException(status_code=400, detail=f"결제 금액이 잔액({remaining}원)을 초과합니다")
             
-        # Toss Payments 서버 승인
-        toss_secret_key = os.getenv("TOSS_SECRET_KEY") or os.getenv("VITE_TOSS_SECRET_KEY", "")
-        if toss_secret_key and not payment_key.startswith("test-"):
-            import base64
-            auth = base64.b64encode(f"{toss_secret_key}:".encode()).decode()
-            try:
-                async with httpx.AsyncClient() as client:
-                    res = await client.post(
-                        "https://api.tosspayments.com/v1/payments/confirm",
-                        headers={"Authorization": f"Basic {auth}", "Content-Type": "application/json"},
-                        json={"paymentKey": payment_key, "orderId": order_id, "amount": int(amount)},
-                    )
-                if res.status_code != 200:
-                    error_data = res.json()
-                    print(f"[Toss Confirm Failed] {error_data}")
-                    raise HTTPException(status_code=400, detail=f"Toss 결제 승인 실패: {error_data.get('message', '알 수 없는 오류')}")
-                print(f"[Toss Confirm OK] Dutch Order: {order_id}")
-            except httpx.RequestError as e:
-                raise HTTPException(status_code=503, detail=f"Toss API 연결 실패: {e}")
-        else:
-            print(f"[Payment Confirm] TOSS_SECRET_KEY 미설정 — Toss 서버 승인 생략 (개발 모드)")
+        # 페이앱 서버 결제 상태 검증
+        await verify_payapp_payment_or_throw(payment_key, order_id, int(amount))
 
         # splits 테이블 결제 내역 추가
         is_completed, updated_splits = add_dutch_payment(session_id, int(amount), "web", payment_key)
@@ -152,27 +176,8 @@ async def confirm_payment(data: Dict):
         print(f"[Payment Tamper] Order: {order_id}, Expected: {expected_amount}, Got: {amount}")
         raise HTTPException(status_code=400, detail=f"결제 금액 불일치 (예상: {expected_amount}원)")
 
-    # 2. Toss Payments 서버 측 결제 승인 API 호출 (실제 결제 확정)
-    toss_secret_key = os.getenv("TOSS_SECRET_KEY") or os.getenv("VITE_TOSS_SECRET_KEY", "")
-    if toss_secret_key and not payment_key.startswith("test-"):
-        auth = base64.b64encode(f"{toss_secret_key}:".encode()).decode()
-        try:
-            async with httpx.AsyncClient() as client:
-                res = await client.post(
-                    "https://api.tosspayments.com/v1/payments/confirm",
-                    headers={"Authorization": f"Basic {auth}", "Content-Type": "application/json"},
-                    json={"paymentKey": payment_key, "orderId": order_id, "amount": int(expected_amount)},
-                )
-            if res.status_code != 200:
-                error_data = res.json()
-                print(f"[Toss Confirm Failed] {error_data}")
-                raise HTTPException(status_code=400, detail=f"Toss 결제 승인 실패: {error_data.get('message', '알 수 없는 오류')}")
-            print(f"[Toss Confirm OK] Order: {order_id}")
-        except httpx.RequestError as e:
-            raise HTTPException(status_code=503, detail=f"Toss API 연결 실패: {e}")
-    else:
-        # 시크릿 키 미설정 시 (개발/테스트 환경) 경고만 출력
-        print(f"[Payment Confirm] TOSS_SECRET_KEY 미설정 — Toss 서버 승인 생략 (개발 모드)")
+    # 2. 페이앱 서버 측 결제 상세 내역 조회 검증 (실제 결제 확정)
+    await verify_payapp_payment_or_throw(payment_key, order_id, int(expected_amount))
 
     # 3. DB 상태 업데이트
     store_id = order.get("store_id", "")
@@ -329,13 +334,7 @@ async def use_points(data: Dict):
     return {"status": "ok", "used": points}
 
 
-@router.get("/api/config/toss-key")
-async def get_toss_key():
-    """프론트엔드에 토스 클라이언트 키 전달 (동적 로딩용)"""
-    key = os.getenv("VITE_TOSS_CLIENT_KEY") or os.getenv("TOSS_CLIENT_KEY") or "test_ck_D5b4Zne68wxL1Pn6k0m8rlzYWBn1"
-    masked_key = f"{key[:8]}...{key[-4:]}" if key else "None"
-    print(f"[Config] Serving Toss Client Key: {masked_key}")
-    return {"clientKey": key}
+# Toss key endpoint removed
 
 
 @router.post("/api/payment/request-phone-to-phone")

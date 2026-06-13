@@ -41,4 +41,3 @@ const getMqttWsBase = () => {
 export const API_BASE = getApiBase();
 export const WS_BASE = getWsBase();
 export const MQTT_WS_BASE = getMqttWsBase();
-export const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY || 'test_ck_D5b4Zne68wxL1Pn6k0m8rlzYWBn1';

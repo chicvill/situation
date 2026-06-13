@@ -1,30 +1,13 @@
-import { TOSS_CLIENT_KEY, API_BASE } from '../config';
+import { API_BASE } from '../config';
 
 /**
- * 🛠️ PaymentService with Enhanced Debugging Checkpoints
+ * 🛠️ PaymentService for PayApp Integration
  */
 export const PaymentService = {
   // --- Debug Logger ---
   log(checkpoint: string, message: string, data?: any) {
     const timestamp = new Date().toLocaleTimeString();
     console.log(`%c[${checkpoint}] %c${timestamp} - ${message}`, "color: #f97316; font-weight: bold", "color: #64748b", data || '');
-  },
-
-  /**
-   * [CP-01] Get Toss Client Key
-   */
-  async getActiveClientKey(): Promise<string> {
-    this.log("CP-01", "Fetching dynamic Toss Client Key...");
-    try {
-      const res = await fetch(`${API_BASE}/api/config/toss-key`);
-      if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
-      const data = await res.json();
-      this.log("CP-01", "Success: Key loaded from backend", data.clientKey ? "Dynamic" : "Fallback used");
-      return data.clientKey || TOSS_CLIENT_KEY;
-    } catch (e: any) {
-      this.log("CP-01-ERR", "Failed to fetch dynamic key", e.message);
-      return TOSS_CLIENT_KEY;
-    }
   },
 
   /**
@@ -40,7 +23,7 @@ export const PaymentService = {
   /**
    * [CP-03] Initiate External Payment Gateway (PayApp)
    */
-  async requestTossPayment(method: string, options: {
+  async requestPayAppPayment(method: string, options: {
     amount: number;
     orderId: string;
     orderName: string;
@@ -77,7 +60,6 @@ export const PaymentService = {
         throw new Error('팝업 차단이 활성화되어 있습니다. 브라우저 설정에서 팝업을 허용해 주세요.');
       }
 
-      // Return a handle to the popup for any parent monitoring if needed
       return paymentPopup;
     } catch (e: any) {
       this.log("CP-03-ERR", "Payment popup initialization failed", e.message);
@@ -88,13 +70,13 @@ export const PaymentService = {
   /**
    * [CP-04] Finalize Payment on Backend
    */
-  async confirmOnBackend(orderId: string, amount: string | number) {
-    this.log("CP-04", "Finalizing payment on backend...", { orderId, amount });
+  async confirmOnBackend(orderId: string, amount: string | number, paymentKey?: string) {
+    this.log("CP-04", "Finalizing payment on backend...", { orderId, amount, paymentKey });
     try {
       const res = await fetch(`${API_BASE}/api/payment/confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, amount })
+        body: JSON.stringify({ orderId, amount, paymentKey })
       });
       
       if (!res.ok) {

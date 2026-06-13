@@ -144,7 +144,7 @@ ${items.map(item => {
                 color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold' 
               }}
             >
-              📄 전자 영수증 확인 (Toss)
+              📄 전자 영수증 확인 (PayApp)
             </a>
           ) : (
             <div style={{ 
@@ -152,7 +152,7 @@ ${items.map(item => {
               padding: '14px', fontSize: '0.8rem', color: '#64748b', textAlign: 'center',
               lineHeight: 1.45, fontWeight: 500
             }}>
-              💡 테스트(Sandbox) 결제 건은 토스 공식 전자의무영수증 발급이 생략됩니다.
+              💡 테스트(Sandbox) 결제 건은 페이앱 공식 전자의무영수증 발급이 생략됩니다.
             </div>
           )}
           <button 

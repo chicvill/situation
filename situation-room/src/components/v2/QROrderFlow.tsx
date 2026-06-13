@@ -762,7 +762,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         value: `${c.qty}개`,
         price: (c.price || 0) * (c.qty || 1)
       }));
-      const tossOrderName = extraData?.dutchLabel || (cart.length > 0 ? `${cart[0].name}${cart.length > 1 ? ` 외 ${cart.length - 1}건` : ''}` : '메뉴 주문');
+      const payappOrderName = extraData?.dutchLabel || (cart.length > 0 ? `${cart[0].name}${cart.length > 1 ? ` 외 ${cart.length - 1}건` : ''}` : '메뉴 주문');
 
       const res = await fetch(`${API_BASE}/api/order/direct`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -816,9 +816,9 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         if (isTestPay) alert('테스트 결제가 성공적으로 완료되었습니다.');
       } else {
         localStorage.setItem('receipt_items_' + orderId, JSON.stringify(mappedItems));
-        await PaymentService.requestTossPayment(method, {
+        await PaymentService.requestPayAppPayment(method, {
           amount: finalAmount, orderId,
-          orderName: tossOrderName,
+          orderName: payappOrderName,
           customerName: '손님',
           customerPhone: extraData?.phone || userPhone
         });
@@ -957,7 +957,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
             onClick={async () => {
               try {
                 const orderId = `dutch_${queryDutchSessionId}_${Date.now()}`;
-                await PaymentService.requestTossPayment('카드', {
+                await PaymentService.requestPayAppPayment('카드', {
                   amount: splitAmount,
                   orderId,
                   orderName: '더치페이 분할 결제',
@@ -1540,7 +1540,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
             } else {
               const orderId = remotePayRequest.orderId || `SESS-${sessionIdRef.current.substring(5, 13)}-${Date.now().toString().substring(8)}`;
               localStorage.setItem('receipt_items_' + orderId, JSON.stringify([{ name: '원격 주문 결제', value: '1개' }]));
-              await PaymentService.requestTossPayment(method, {
+              await PaymentService.requestPayAppPayment(method, {
                 amount: remotePayRequest.amount,
                 orderId: orderId,
                 orderName: remotePayRequest.orderId ? `주문 번호 결제` : `테이블 전체 식사 결제`,

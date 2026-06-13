@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 import { KitchenDisplay } from './components/KitchenDisplay';
-import { API_BASE, TOSS_CLIENT_KEY } from './config';
+import { API_BASE } from './config';
 import { AdminDashboard } from './components/AdminDashboard';
 import { MenuManager } from './components/MenuManager';
 import { DisplayBoard } from './components/DisplayBoard';
@@ -286,9 +286,9 @@ function App() {
               totalPrice: amount,
               paymentMethod: '카드',
               items: items,
-              receiptUrl: paymentKey && (paymentKey.startsWith('tviva') || paymentKey.startsWith('test'))
+              receiptUrl: paymentKey && (paymentKey.startsWith('test') || paymentKey === 'payapp_completed')
                 ? undefined
-                : `https://dashboard.tosspayments.com/receipt/helper?paymentKey=${paymentKey}`
+                : `https://www.payapp.kr/query/receipt.html?mul_no=${paymentKey}`
           });
 
           // URL 정제 (중복 처리 방지)
@@ -328,9 +328,9 @@ function App() {
             totalPrice: amount,
             paymentMethod: '카드',
             items: items,
-            receiptUrl: paymentKey && (paymentKey.startsWith('tviva') || paymentKey.startsWith('test'))
+            receiptUrl: paymentKey && (paymentKey.startsWith('test') || paymentKey === 'payapp_completed')
               ? undefined
-              : `https://dashboard.tosspayments.com/receipt/helper?paymentKey=${paymentKey}`
+              : `https://www.payapp.kr/query/receipt.html?mul_no=${paymentKey}`
           });
 
           // 하위 UI 컴포넌트에 즉시 결제 완료 시그널 전파 (새로고침 없이 실시간 UI 전환!)
@@ -661,9 +661,7 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
   const orderId = params.get('orderId') || params.get('order_id') || '';
   const amount = Number(params.get('amount') || 0);
   const orderName = params.get('orderName') || '주문 결제';
-  const customerName = params.get('customerName') || '고객';
-  const method = params.get('method') || '카드';
-  const paymentKey = params.get('paymentKey') || '';
+  const paymentKey = params.get('paymentKey') || params.get('mul_no') || '';
   const phone = params.get('phone') || '';
 
   const [statusText, setStatusText] = useState('결제 시스템을 준비 중입니다...');
@@ -716,50 +714,6 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
         document.head.appendChild(script);
       } else {
         initiatePayApp();
-      }
-    } else if (mode === 'pay_popup') {
-      const initiateToss = async () => {
-        try {
-          setStatusText('토스 안전 결제 화면으로 이동 중입니다...');
-          
-          // 백엔드로부터 동적 Toss Client Key 조회
-          const apiUrl = API_BASE;
-          const configRes = await fetch(`${apiUrl}/api/config/toss-key`);
-          const configData = await configRes.json();
-          const clientKey = configData.clientKey || TOSS_CLIENT_KEY;
-
-          if (!(window as any).TossPayments) {
-            throw new Error('토스 결제 모듈이 로드되지 않았습니다. 잠시만 기다려 주세요.');
-          }
-
-          const toss = (window as any).TossPayments(clientKey);
-          const baseUrl = `${window.location.origin}${window.location.pathname}`;
-
-          // 팝업 내부의 최종 분기 주소 설정 (is_popup=true 포함하여 팝업 내부 유지)
-          const successUrl = `${baseUrl}?payment_success=true&is_popup=true&order_id=${orderId}&amount=${amount}`;
-          const failUrl = `${baseUrl}?payment_fail=true&is_popup=true&order_id=${orderId}`;
-
-          await toss.requestPayment(method, {
-            amount,
-            orderId,
-            orderName,
-            customerName,
-            successUrl,
-            failUrl
-          });
-        } catch (err: any) {
-          setErrorText(err.message || '결제 창 호출 과정에서 오류가 발생했습니다.');
-        }
-      };
-
-      if (!(window as any).TossPayments) {
-        const script = document.createElement('script');
-        script.src = 'https://js.tosspayments.com/v1/payment';
-        script.onload = () => initiateToss();
-        script.onerror = () => setErrorText('토스 라이브러리 스크립트 로드에 실패했습니다.');
-        document.head.appendChild(script);
-      } else {
-        initiateToss();
       }
     }
   }, [mode]);
@@ -888,7 +842,7 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
           {errorText ? '❌' : isSuccess ? '✅' : '💳'}
         </div>
         <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>
-          {errorText ? '결제 실패' : '안전한 토스 결제'}
+          {errorText ? '결제 실패' : '안전한 페이앱 결제'}
         </h2>
         <p style={{ fontSize: '14px', color: '#94a3b8', lineHeight: '1.6', marginBottom: '24px' }}>
           {errorText || statusText}

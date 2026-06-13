@@ -693,7 +693,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           onClick={async () => {
             try {
               const orderId = `dutch_${resolvedSessionId}_${Date.now()}`;
-              await PaymentService.requestTossPayment('카드', {
+              await PaymentService.requestPayAppPayment('카드', {
                 amount: splitAmount,
                 orderId,
                 orderName: `더치페이 분할 결제 (${resolvedTableId})`,

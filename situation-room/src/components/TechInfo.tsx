@@ -129,9 +129,9 @@ const groups: Group[] = [
     icon: '💳', label: '결제 & 외부 연동', color: '#e11d48',
     techs: [
       {
-        name: 'TossPayments',
+        name: 'PayApp',
         role: '한국 결제 게이트웨이',
-        detail: '카드 결제 요청·승인·취소 API를 연동합니다. 팝업 창으로 결제 흐름을 분리해 메인 앱 상태를 유지하고, postMessage로 결제 결과를 부모 창에 전달합니다.',
+        detail: '카드 및 가상 결제 요청·상세조회·취소 API를 연동합니다. 팝업 창으로 결제 흐름을 분리해 메인 앱 상태를 유지하고, postMessage로 결제 결과를 부모 창에 전달합니다.',
       },
       {
         name: 'QR Server API',
