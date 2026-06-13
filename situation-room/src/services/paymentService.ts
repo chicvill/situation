@@ -28,6 +28,7 @@ export const PaymentService = {
     orderId: string;
     orderName: string;
     customerName: string;
+    storeName?: string;
   }) {
     this.log("CP-03", "Opening Center Popup for PayApp Payment...");
     
@@ -44,7 +45,7 @@ export const PaymentService = {
       const top = window.top ? (window.top.outerHeight - popupHeight) / 2 + window.top.screenY : (window.screen.height - popupHeight) / 2;
 
       // Construct a special URL to handle the payment flow inside the isolated popup window
-      const popupUrl = `${baseUrl}?mode=payapp_popup&orderId=${options.orderId}&amount=${options.amount}&orderName=${encodeURIComponent(options.orderName)}&customerName=${encodeURIComponent(options.customerName)}&method=${encodeURIComponent(payappMethod)}`;
+      const popupUrl = `${baseUrl}?mode=payapp_popup&orderId=${options.orderId}&amount=${options.amount}&orderName=${encodeURIComponent(options.orderName)}&customerName=${encodeURIComponent(options.customerName)}&method=${encodeURIComponent(payappMethod)}&storeName=${encodeURIComponent(options.storeName || '')}`;
 
       this.log("CP-03", "Launching Payment Popup Window...", { popupUrl });
 

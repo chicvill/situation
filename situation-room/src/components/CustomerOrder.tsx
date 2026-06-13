@@ -283,8 +283,11 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
           PaymentService.requestPayAppPayment('card', {
             amount: finalPrice,
             orderId: tempOrderId,
-            orderName: '테이블 주문',
-            customerName: '고객'
+            orderName: cartList.length > 0
+              ? `${cartList[0].name}${cartList.length > 1 ? ` 외 ${cartList.length - 1}건` : ''}`
+              : '테이블 주문',
+            customerName: '고객',
+            storeName: storeName
           });
 
           // 결제 완료 메시지 대기

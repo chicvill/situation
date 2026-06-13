@@ -674,6 +674,7 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
   const amount = Number(params.get('amount') || 0);
   const orderName = params.get('orderName') || '주문 결제';
   const paymentKey = params.get('paymentKey') || params.get('mul_no') || '';
+  const storeName = params.get('storeName') || '시크빌';
 
   const [statusText, setStatusText] = useState('결제 시스템을 준비 중입니다...');
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -698,7 +699,7 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
           const redirectUrl = `${window.location.origin}${window.location.pathname}?payment_success=true&is_popup=true&order_id=${orderId}&amount=${amount}`;
 
           PayAppObj.setParam('userid', userid);
-          PayAppObj.setParam('shopname', '그레이스 하이테크 커피');
+          PayAppObj.setParam('shopname', storeName);
           PayAppObj.setParam('goodname', orderName);
           PayAppObj.setParam('price', String(amount));
           PayAppObj.setParam('var1', orderId);
