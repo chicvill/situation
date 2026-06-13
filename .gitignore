@@ -16,3 +16,8 @@ dist-ssr/
 .vscode/
 .idea/
 .DS_Store
+
+# Debug & Temporary files
+situation-backend/debug/
+situation-backend/scratch/
+
