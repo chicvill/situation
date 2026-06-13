@@ -47,7 +47,8 @@ async def check_in(data: Dict):
         except Exception as e:
             print(f"Auto Session Save DB Error: {e}")
             
-        manager.add_seat_request(table_id, store_id, datetime.now().isoformat())
+        # 선결제 매장: 주방/카운터에 불필요한 좌석 승인 요청(대기 배너) 표시 제외
+        # manager.add_seat_request(table_id, store_id, datetime.now().isoformat())
         return {"status": "active", "session": active, "orders": []}
 
     orders = get_orders_by_session(active['session_id'])
@@ -94,7 +95,8 @@ async def check_in(data: Dict):
             except Exception as e:
                 print(f"Auto Session Save DB Error: {e}")
                 
-            manager.add_seat_request(table_id, store_id, datetime.now().isoformat())
+            # 선결제 매장: 주방/카운터에 불필요한 좌석 승인 요청(대기 배너) 표시 제외
+            # manager.add_seat_request(table_id, store_id, datetime.now().isoformat())
             return {"status": "active", "session": new_active, "orders": []}
 
     # ③ 주문 없는 테이블 → 무조건 통과 (보호할 주문 없음)
@@ -106,7 +108,8 @@ async def check_in(data: Dict):
         elif device_id and first_device and device_id != first_device:
             is_new_device = True
         print(f"[check_in] 주문 없음 → active")
-        manager.add_seat_request(table_id, store_id, datetime.now().isoformat())
+        # 선결제 매장: 주방/카운터에 불필요한 좌석 승인 요청(대기 배너) 표시 제외
+        # manager.add_seat_request(table_id, store_id, datetime.now().isoformat())
         return {"status": "active", "session": active, "orders": orders, "is_new_device": is_new_device}
 
     # ④ 주문 있는 테이블 → 테이블 활성화 상태면 기기 불문 즉시 통과 및 자동 승인
