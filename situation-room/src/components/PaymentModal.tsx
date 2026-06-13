@@ -31,6 +31,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [usePoints, setUsePoints] = React.useState(0);
   const [accumulatePoints, setAccumulatePoints] = React.useState(!!initialPhone);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isTakeout, setIsTakeout] = React.useState(false);
 
   const potentialPoints = Math.floor(totalPrice * 0.001);
   const finalTotal = Math.max(0, totalPrice - usePoints);
@@ -61,7 +62,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const handlePay = async (method: string) => {
     setIsSubmitting(true);
     try {
-      await onSubmit(method, { phone: phoneForPoints, usePoints });
+      await onSubmit(method, { phone: phoneForPoints, usePoints, isTakeout });
     } catch (err) {
       console.error(err);
       alert('결제 처리 중 오류가 발생했습니다.');
@@ -86,6 +87,31 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' }}>
           <h2 style={{ color:'var(--text-main)', margin:0, fontSize:'1.2rem', fontWeight:700 }}>주문 확인 및 결제</h2>
           <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:'1.5rem', cursor:'pointer', lineHeight:1 }}>×</button>
+        </div>
+
+        {/* 매장에서/포장 선택 */}
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{ color:'var(--text-muted)', fontSize:'0.8rem', fontWeight:700, marginBottom:'10px' }}>식사 옵션</div>
+          <div style={{ display:'flex', gap:'10px' }}>
+            {[{ val: false, icon: '🍽️', label: '매장에서' }, { val: true, icon: '📦', label: '포장' }].map(opt => (
+              <button
+                key={String(opt.val)}
+                onClick={() => setIsTakeout(opt.val)}
+                style={{
+                  flex: 1, padding: '14px 10px', borderRadius: '14px', cursor: 'pointer',
+                  border: isTakeout === opt.val ? '2px solid var(--accent-orange)' : '1px solid var(--border)',
+                  background: isTakeout === opt.val ? 'rgba(249,115,22,0.08)' : 'white',
+                  fontWeight: 800, fontSize: '0.95rem',
+                  color: isTakeout === opt.val ? 'var(--accent-orange)' : 'var(--text-main)',
+                  transition: 'all 0.18s',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px'
+                }}
+              >
+                <span style={{ fontSize: '1.6rem' }}>{opt.icon}</span>
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* 상단 주문 내역 확인 영역 */}

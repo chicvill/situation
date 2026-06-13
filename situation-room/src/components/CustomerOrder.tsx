@@ -269,7 +269,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
         payment_status: method ? 'prepaid' : 'unpaid',
         payment_method: method,
         join_order: isJoinedDevice,
-        metadata: { phone: extraData?.phone, usePoints: extraData?.usePoints }
+        metadata: { phone: extraData?.phone, usePoints: extraData?.usePoints, isTakeout: extraData?.isTakeout }
       };
 
       if (method === 'self_pay') {
