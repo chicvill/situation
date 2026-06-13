@@ -979,7 +979,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           amount: finalAmount,
           orderId: orderId,
           orderName: extraData?.dutchLabel || `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,
-          customerName: '손님'
+          customerName: '손님',
+          storeName: storeName
         });
       }
     } catch (err: any) { 

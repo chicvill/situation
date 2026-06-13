@@ -133,6 +133,7 @@ function App() {
     paymentMethod: string;
     items: { name: string; value: string }[];
     receiptUrl?: string;
+    storeName?: string;
   } | null>(null);
 
   const [storeDetails, setStoreDetails] = useState<any>(null);
@@ -300,7 +301,8 @@ function App() {
               items: items,
               receiptUrl: paymentKey && (paymentKey.startsWith('test') || paymentKey === 'payapp_completed')
                 ? undefined
-                : `https://www.payapp.kr/query/receipt.html?mul_no=${paymentKey}`
+                : `https://www.payapp.kr/query/receipt.html?mul_no=${paymentKey}`,
+              storeName: storeName
           });
 
           // URL 정제 (중복 처리 방지)
@@ -321,7 +323,7 @@ function App() {
       };
       confirmPayment();
     }
-  }, [safeBundles]);
+  }, [safeBundles, storeName]);
 
   // 팝업 창으로부터 결제 완료 수신을 대기하는 글로벌 메시지 이벤트 리스너 (부모 창 상태 완전 보존)
   useEffect(() => {
@@ -342,7 +344,8 @@ function App() {
             items: items,
             receiptUrl: paymentKey && (paymentKey.startsWith('test') || paymentKey === 'payapp_completed')
               ? undefined
-              : `https://www.payapp.kr/query/receipt.html?mul_no=${paymentKey}`
+              : `https://www.payapp.kr/query/receipt.html?mul_no=${paymentKey}`,
+            storeName: storeName
           });
 
           // 하위 UI 컴포넌트에 즉시 결제 완료 시그널 전파 (새로고침 없이 실시간 UI 전환!)
@@ -357,7 +360,7 @@ function App() {
 
     window.addEventListener('message', handlePaymentMessage);
     return () => window.removeEventListener('message', handlePaymentMessage);
-  }, [safeBundles]);
+  }, [safeBundles, storeName]);
 
 
   const navigateTo = (tab: MainTab) => {

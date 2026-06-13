@@ -20,7 +20,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   orderId, totalPrice, paymentMethod, items, onClose, receiptUrl, storeName
 }) => {
   const today = new Date().toLocaleString();
-  const displayStoreName = storeName || '그레이스 하이테크 커피';
+  const displayStoreName = storeName || '시크빌';
 
   // 정밀 한글/영문 텍스트 바이트 정렬 헬퍼
   const getByteLength = (str: string) => {
