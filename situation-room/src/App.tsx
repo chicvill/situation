@@ -712,6 +712,7 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
             PayAppObj.setParam('recvphone', phone.replace(/[^0-9]/g, '').trim());
           }
 
+          PayAppObj.setTarget('_self');
           PayAppObj.payrequest();
         } catch (err: any) {
           setErrorText(err.message || '결제창 호출 오류가 발생했습니다.');
