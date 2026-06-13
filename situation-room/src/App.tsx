@@ -33,6 +33,7 @@ import { useStoreSync } from './hooks/useStoreSync';
 import { TopBar } from './layout/TopBar';
 import { BottomNav } from './layout/BottomNav';
 import { SideDrawer } from './layout/SideDrawer';
+import { usePadMode } from './hooks/usePadMode';
 
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
@@ -44,6 +45,10 @@ function App() {
   const { bundles, handleSendMessage, fetchInitialData } = useSituation(storeId, initialStoreName);
   const { flashingTabs, callCount, waitingCount, parkingCount, reservationCount, callFlashing, waitingFlashing, parkingFlashing, resetFlash, decrementCall, decrementWaiting, decrementParking } = useStoreSync(storeId);
 
+  const { padMode: kitchenPad } = usePadMode('kitchen');
+  const { padMode: counterPad } = usePadMode('counter');
+  const { padMode: displayPad } = usePadMode('display');
+
   const [user, setUser] = useState<any>(null);
   const [reminderQueue, setReminderQueue] = useState<any[]>([]);
   const [selectedAdminStore, setSelectedAdminStore] = useState<string | null>(() => {
@@ -53,6 +58,13 @@ function App() {
   const [activeTab, setActiveTab] = useState<MainTab>(() => {
     return (localStorage.getItem('situation_active_tab') as MainTab) || 'guide';
   });
+  const isWideTab = ['counter', 'kitchen', 'display', 'stats', 'admin', 'menu', 'settings', 'qr', 'simulator', 'inventory', 'hr', 'manual'].includes(activeTab);
+  const isPadLayout = isWideTab && (
+    (activeTab === 'counter' && counterPad) ||
+    (activeTab === 'kitchen' && kitchenPad) ||
+    (activeTab === 'display' && displayPad) ||
+    !['counter', 'kitchen', 'display'].includes(activeTab)
+  );
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [recognizedText, setRecognizedText] = useState("");
   const [isListening, setIsListening] = useState(false);
@@ -516,7 +528,7 @@ function App() {
 
 
   return (
-    <div className={`saas-container mobile-full-mode ${isCustomerMode ? 'customer-mode' : ''}`}>
+    <div className={`saas-container mobile-full-mode ${isCustomerMode ? 'customer-mode' : ''} ${isPadLayout ? 'wide-layout' : ''}`}>
       
       {receiptData && (
         <ReceiptModal
