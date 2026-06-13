@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 
 export function usePadMode(key: 'counter' | 'kitchen' | 'display') {
     const storageKey = `${key}PadMode`;
-    const [padMode, setPadMode] = useState(() => localStorage.getItem(storageKey) === 'true');
+    const [padMode, setPadMode] = useState(() => {
+        const val = localStorage.getItem(storageKey);
+        return val === null ? true : val === 'true';
+    });
 
     useEffect(() => {
         const handleStorageChange = () => {

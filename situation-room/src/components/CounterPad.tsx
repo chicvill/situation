@@ -447,25 +447,62 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const isSeatReqSelected = seatRequests.some((r: any) => r.table_id === selectedTableId);
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 110px)', overflow: 'hidden', background: 'var(--bg-main)', padding: '4px 4px 0', gap: '4px', boxSizing: 'border-box', zoom: padMode ? 1.35 : 1 } as React.CSSProperties}>
+        <div style={{
+            display: 'flex',
+            flexDirection: padMode ? 'row' : 'column',
+            height: 'calc(100dvh - 110px)',
+            overflow: 'hidden',
+            background: 'var(--bg-main)',
+            padding: padMode ? '12px' : '4px 4px 0',
+            gap: padMode ? '16px' : '4px',
+            boxSizing: 'border-box'
+        } as React.CSSProperties}>
 
             {/* ── 좌석 승인 요청 배너 제거 (선결제 도입으로 점주 승인 불필요) ── */}
 
 
-            {/* ── 상단 바: 테이블 그리드 ── */}
-            <div style={{ background: 'var(--surface)', borderBottom: '2px solid var(--border)', borderRadius: '12px', padding: '4px 8px 4px', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            {/* ── 테이블 그리드 ── */}
+            <div style={{
+                background: 'var(--surface)',
+                border: padMode ? '1px solid var(--border)' : 'none',
+                borderBottom: padMode ? 'none' : '2px solid var(--border)',
+                borderRadius: '12px',
+                padding: padMode ? '16px' : '4px 8px 4px',
+                flexShrink: 0,
+                width: padMode ? '42%' : '100%',
+                minWidth: padMode ? '380px' : 'auto',
+                boxShadow: padMode ? 'var(--shadow-sm)' : '0 2px 8px rgba(0,0,0,0.04)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: padMode ? '12px' : '4px'
+            }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>현황: <span style={{ color: 'var(--accent)' }}>{sessions.length}석 활성</span></span>
+                        <span style={{ fontSize: padMode ? '0.88rem' : '0.68rem', fontWeight: '700', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                            현황: <span style={{ color: 'var(--accent)', fontWeight: '800' }}>{sessions.length}석 활성</span>
+                        </span>
                     </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '5px' }}>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: padMode ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)',
+                    gap: padMode ? '10px' : '5px',
+                    flex: padMode ? 1 : 'none',
+                    overflowY: padMode ? 'auto' : 'visible'
+                }}>
                     {tables.map(num => {
                         const tableId = `T${String(num).padStart(2, '0')}`;
                         const { label, bg, color, stage } = getTableStage(tableId);
                         const isSelected = selectedTableId === tableId;
                         const isWaiting = stage === 'waiting';
                         const hasAlert = isWaiting || stage === 'cooking_done' || stage === 'payment_pending';
+
+                        // Table session info for POS indicator
+                        const tableSession = sessions.find(s => s.table_id === tableId);
+                        const tableActiveOrders = tableSession ? (tableSession.orders || []).filter((o: any) => o.status !== 'cancelled') : [];
+                        const tableSessionTotal = tableActiveOrders.reduce((sum: number, o: any) => sum + (o.total_price ?? o.total ?? 0), 0);
+                        const tablePaidTotal = tableActiveOrders.filter((o: any) => o.payment_status === 'paid' || o.payment_status === 'prepaid' || o.status === 'paid').reduce((sum: number, o: any) => sum + (o.total_price ?? o.total ?? 0), 0);
+                        const tableUnpaidTotal = tableSessionTotal - tablePaidTotal;
 
                         // Determine background, text color, and border based on selection and state
                         const buttonBg = isSelected
@@ -488,42 +525,71 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                 onClick={() => handleTableTap(tableId)}
                                 className={isWaiting ? 'table-seat-waiting' : ''}
                                 style={{
-                                    padding: '3px 2px',
-                                    borderRadius: '6px',
+                                    padding: padMode ? '16px 8px' : '3px 2px',
+                                    height: padMode ? '95px' : 'auto',
+                                    borderRadius: padMode ? '12px' : '6px',
                                     border: buttonBorder,
                                     background: buttonBg,
                                     color: buttonColor,
                                     cursor: 'pointer',
-                                    textAlign: 'center',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'center',
+                                    alignItems: 'center',
                                     boxShadow: isSelected ? `0 0 0 2px ${color}22` : (!isWaiting && hasAlert) ? `0 0 6px ${color}44` : 'none',
                                     transition: isWaiting ? 'none' : 'all 0.15s',
                                     ...(isWaiting ? {} : { animation: hasAlert ? 'pulse-mild 2s infinite' : 'none' }),
                                 }}
                             >
-                                <div style={{ fontSize: '0.7rem', fontWeight: '900', color: 'inherit', whiteSpace: 'nowrap' }}>{tableId}</div>
-                                <div style={{ lineHeight: 1.1, fontSize: '0.58rem', fontWeight: '800', color: 'inherit', whiteSpace: 'nowrap' }}>{label}</div>
+                                <div style={{ fontSize: padMode ? '1.1rem' : '0.7rem', fontWeight: '900', color: 'inherit', whiteSpace: 'nowrap' }}>{tableId}</div>
+                                <div style={{ lineHeight: 1.1, fontSize: padMode ? '0.78rem' : '0.58rem', fontWeight: '800', color: 'inherit', whiteSpace: 'nowrap', marginTop: '2px' }}>{label}</div>
+                                {padMode && tableSessionTotal > 0 && (
+                                    <div style={{
+                                        marginTop: '6px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: '800',
+                                        background: isSelected ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)',
+                                        padding: '2px 6px',
+                                        borderRadius: '6px',
+                                        color: 'inherit'
+                                    }}>
+                                        {tableUnpaidTotal > 0 ? `${tableUnpaidTotal.toLocaleString()}원` : '결제완료'}
+                                    </div>
+                                )}
                             </button>
                         );
                     })}
                 </div>
             </div>
 
-            {/* ── 하단: 선택 테이블 상세 ── */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', overflow: 'auto', minHeight: 0 }}>
+            {/* ── 우측: 선택 테이블 상세 ── */}
+            <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: padMode ? '12px' : '4px',
+                overflow: 'auto',
+                minHeight: 0,
+                background: padMode ? 'var(--surface)' : 'transparent',
+                borderRadius: padMode ? '16px' : '0',
+                padding: padMode ? '20px' : '0',
+                boxShadow: padMode ? 'var(--shadow-sm)' : 'none',
+                border: padMode ? '1px solid var(--border)' : 'none'
+            }}>
                     {selectedTableId && selectedStage ? (
                         <>
                             {/* 헤더 */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--surface)', borderRadius: '8px', padding: '4px 8px', border: `1px solid ${selectedStage.color}33`, flexWrap: 'wrap' }}>
-                                <span style={{ fontSize: '0.9rem', fontWeight: '900', color: selectedStage.color }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: padMode ? 'var(--bg-secondary)' : 'var(--surface)', borderRadius: '10px', padding: padMode ? '10px 16px' : '4px 8px', border: padMode ? 'none' : `1px solid ${selectedStage.color}33`, flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: padMode ? '1.1rem' : '0.9rem', fontWeight: '900', color: selectedStage.color }}>
                                     TABLE {selectedTableId}
                                 </span>
-                                <span style={{ background: selectedStage.bg, color: selectedStage.color, padding: '1px 5px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: '700', border: `1px solid ${selectedStage.color}44` }}>
+                                <span style={{ background: selectedStage.bg, color: selectedStage.color, padding: padMode ? '2px 8px' : '1px 5px', borderRadius: '6px', fontSize: padMode ? '0.78rem' : '0.65rem', fontWeight: '800', border: `1px solid ${selectedStage.color}44` }}>
                                     {selectedStage.label}
                                 </span>
                                 {selectedSession && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: 'auto' }}>
-                                        <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            {selectedSession.session_id}
+                                        <span style={{ fontSize: padMode ? '0.75rem' : '0.55rem', color: 'var(--text-muted)', maxWidth: padMode ? '150px' : '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            ID: {selectedSession.session_id}
                                         </span>
                                     </div>
                                 )}
@@ -557,10 +623,10 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                 background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
                                                 border: 'none',
                                                 color: 'white',
-                                                padding: '12px',
-                                                borderRadius: '8px',
+                                                padding: padMode ? '16px' : '12px',
+                                                borderRadius: '12px',
                                                 fontWeight: '900',
-                                                fontSize: '0.92rem',
+                                                fontSize: padMode ? '1.05rem' : '0.92rem',
                                                 cursor: 'pointer',
                                                 width: '100%',
                                                 display: 'flex',
@@ -582,15 +648,15 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                             {/* ── 주문 목록 (차수별) ── */}
                             {selectedSession && (
                                 <div style={{ background: 'var(--surface)', borderRadius: '10px', border: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-                                    <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                                    <div style={{ padding: padMode ? '8px 16px' : '4px 8px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <span style={{ fontSize: '0.7rem', fontWeight: '700', color: 'var(--text-muted)' }}>주문 내역</span>
+                                            <span style={{ fontSize: padMode ? '0.85rem' : '0.7rem', fontWeight: '700', color: 'var(--text-muted)' }}>주문 내역</span>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{activeOrders.length}건</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <span style={{ fontSize: padMode ? '0.8rem' : '0.68rem', color: 'var(--text-muted)' }}>{activeOrders.length}건</span>
                                             <button 
                                                 onClick={() => setShowAddOrder(!showAddOrder)} 
-                                                style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', color: '#f97316', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}
+                                                style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', color: '#f97316', padding: padMode ? '4px 10px' : '2px 6px', borderRadius: '6px', fontSize: padMode ? '0.8rem' : '0.68rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px' }}
                                             >
                                                 {showAddOrder ? '✕ 닫기' : '➕ 구두 주문 추가'}
                                             </button>
@@ -599,14 +665,14 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                     
                                     {/* ── 구두 주문 수동 추가 폼 ── */}
                                     {showAddOrder && (
-                                        <div style={{ padding: '14px', background: 'rgba(249,115,22,0.03)', borderBottom: '1px solid rgba(249,115,22,0.15)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                                <div style={{ flex: 1, minWidth: '150px' }}>
-                                                    <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px' }}>메뉴 선택 (풀다운)</label>
+                                        <div style={{ padding: padMode ? '20px' : '14px', background: 'rgba(249,115,22,0.03)', borderBottom: '1px solid rgba(249,115,22,0.15)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                                                <div style={{ flex: 1, minWidth: '200px' }}>
+                                                    <label style={{ display: 'block', fontSize: padMode ? '0.78rem' : '0.65rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px' }}>메뉴 선택 (풀다운)</label>
                                                     <select 
                                                         value={selectedMenuName}
                                                         onChange={(e) => setSelectedMenuName(e.target.value)}
-                                                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', color: 'var(--text-main)', fontSize: '0.85rem', fontWeight: '700', outline: 'none' }}
+                                                        style={{ width: '100%', padding: padMode ? '10px 14px' : '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'white', color: 'var(--text-main)', fontSize: padMode ? '0.95rem' : '0.85rem', fontWeight: '700', outline: 'none' }}
                                                     >
                                                         <option value="">-- 메뉴를 선택해 주세요 --</option>
                                                         {(bundles?.find((b: any) => b.type === 'Menus' && (storeId === 'Total' || !storeId || b.store_id === storeId))?.items ?? []).map((m: any) => {
@@ -618,19 +684,19 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                     </select>
                                                 </div>
                                                 
-                                                <div style={{ width: '100px' }}>
-                                                    <label style={{ display: 'block', fontSize: '0.65rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '4px' }}>수량</label>
+                                                <div style={{ width: '120px' }}>
+                                                    <label style={{ display: 'block', fontSize: padMode ? '0.78rem' : '0.65rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px' }}>수량</label>
                                                     <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: '8px', background: 'white', overflow: 'hidden' }}>
                                                         <button 
                                                             onClick={() => setSelectedMenuQty(q => Math.max(1, q - 1))}
-                                                            style={{ width: '28px', height: '32px', border: 'none', background: 'none', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}
+                                                            style={{ width: '32px', height: '36px', border: 'none', background: 'none', color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer' }}
                                                         >
                                                             -
                                                         </button>
-                                                        <span style={{ flex: 1, textAlign: 'center', fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-main)' }}>{selectedMenuQty}</span>
+                                                        <span style={{ flex: 1, textAlign: 'center', fontSize: padMode ? '0.95rem' : '0.85rem', fontWeight: '800', color: 'var(--text-main)' }}>{selectedMenuQty}</span>
                                                         <button 
                                                             onClick={() => setSelectedMenuQty(q => q + 1)}
-                                                            style={{ width: '28px', height: '32px', border: 'none', background: 'none', color: 'var(--text-main)', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' }}
+                                                            style={{ width: '32px', height: '36px', border: 'none', background: 'none', color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer' }}
                                                         >
                                                             +
                                                         </button>
@@ -640,7 +706,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                 <button 
                                                     disabled={isSubmittingManualOrder}
                                                     onClick={handleManualOrderSubmit}
-                                                    style={{ marginTop: '16px', background: '#f97316', border: 'none', color: 'white', padding: '10px 16px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer', flexShrink: 0, height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                    style={{ marginTop: '20px', background: '#f97316', border: 'none', color: 'white', padding: padMode ? '12px 24px' : '10px 16px', borderRadius: '8px', fontSize: padMode ? '0.92rem' : '0.82rem', fontWeight: '800', cursor: 'pointer', flexShrink: 0, height: padMode ? '38px' : '34px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                 >
                                                     {isSubmittingManualOrder ? '등록 중...' : '확인 (주문 등록)'}
                                                 </button>
@@ -661,37 +727,37 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                     const isReady = order.status === 'ready';
                                                 return (
                                                     <div key={order.order_id} style={{
-                                                        padding: '4px 8px',
+                                                        padding: padMode ? '8px 16px' : '4px 8px',
                                                         borderBottom: idx < activeOrders.length - 1 ? '1px solid var(--border)' : 'none',
-                                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                                        display: 'flex', alignItems: 'center', gap: '8px',
                                                         background: 'transparent',
                                                         borderLeft: '3px solid transparent',
                                                     }}>
                                                         {/* 차수 배지 */}
-                                                        <div style={{ flexShrink: 0, textAlign: 'center', minWidth: '28px' }}>
-                                                            <div style={{ fontSize: '0.68rem', fontWeight: '800', color: 'var(--text-muted)' }}>#{order.order_seq || 1}</div>
+                                                        <div style={{ flexShrink: 0, textAlign: 'center', minWidth: '32px' }}>
+                                                            <div style={{ fontSize: padMode ? '0.82rem' : '0.68rem', fontWeight: '800', color: 'var(--text-muted)' }}>#{order.order_seq || 1}</div>
                                                         </div>
 
                                                         {/* 메뉴 목록 */}
-                                                        <div style={{ flex: 1, fontSize: '0.78rem', color: 'var(--text-main)', lineHeight: 1.3 }}>
+                                                        <div style={{ flex: 1, fontSize: padMode ? '0.92rem' : '0.78rem', color: 'var(--text-main)', lineHeight: 1.4 }}>
                                                             {(order.items || []).map((item: any) => `${item.name} ${item.quantity || item.qty}개`).join(' · ')}
                                                         </div>
 
                                                         {/* 금액 */}
-                                                        <div style={{ flexShrink: 0, textAlign: 'right', marginRight: '4px' }}>
-                                                            <div style={{ fontSize: '0.82rem', fontWeight: '800', color: isPaidFull ? '#10b981' : 'var(--accent)', whiteSpace: 'nowrap' }}>
+                                                        <div style={{ flexShrink: 0, textAlign: 'right', marginRight: '8px' }}>
+                                                            <div style={{ fontSize: padMode ? '0.95rem' : '0.82rem', fontWeight: '800', color: isPaidFull ? '#10b981' : 'var(--accent)', whiteSpace: 'nowrap' }}>
                                                                 {orderAmt.toLocaleString()}원
                                                             </div>
-                                                            <div style={{ fontSize: '0.58rem', fontWeight: '600', color: isPrepaid ? '#10b981' : '#9ca3af' }}>
+                                                            <div style={{ fontSize: padMode ? '0.68rem' : '0.58rem', fontWeight: '600', color: isPrepaid ? '#10b981' : '#9ca3af' }}>
                                                                 {isPrepaid ? '선불' : '후불'}
                                                             </div>
                                                         </div>
 
                                                         {/* 액션 버튼 */}
-                                                        <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }}>
-                                                            <button onClick={() => handleCancelWithRefund(order)} style={{ background: 'transparent', border: '1px solid #fca5a5', color: '#ef4444', padding: '3px 5px', borderRadius: '4px', fontSize: '0.65rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>취소</button>
+                                                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                                            <button onClick={() => handleCancelWithRefund(order)} style={{ background: 'transparent', border: '1px solid #fca5a5', color: '#ef4444', padding: padMode ? '6px 10px' : '3px 5px', borderRadius: '6px', fontSize: padMode ? '0.78rem' : '0.65rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>취소</button>
                                                             {isReady ? (
-                                                                <button onClick={() => handleStatusUpdate(order.order_id, 'served')} style={{ background: '#10b981', border: 'none', color: 'white', padding: '3px 6px', borderRadius: '4px', fontSize: '0.65rem', cursor: 'pointer', fontWeight: '700', whiteSpace: 'nowrap', boxShadow: '0 0 6px rgba(16,185,129,0.3)' }}>
+                                                                <button onClick={() => handleStatusUpdate(order.order_id, 'served')} style={{ background: '#10b981', border: 'none', color: 'white', padding: padMode ? '6px 12px' : '3px 6px', borderRadius: '6px', fontSize: padMode ? '0.78rem' : '0.65rem', cursor: 'pointer', fontWeight: '700', whiteSpace: 'nowrap', boxShadow: '0 0 6px rgba(16,185,129,0.3)' }}>
                                                                     서빙
                                                                 </button>
                                                             ) : (
@@ -704,7 +770,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                                         });
                                                                         setShowCardTouchOverlay(true);
                                                                     }}
-                                                                    style={{ background: isPaidFull ? '#e5e7eb' : 'var(--accent)', border: 'none', color: isPaidFull ? '#9ca3af' : 'white', padding: '3px 6px', borderRadius: '4px', fontSize: '0.65rem', cursor: isPaidFull ? 'default' : 'pointer', fontWeight: '700', whiteSpace: 'nowrap' }}
+                                                                    style={{ background: isPaidFull ? '#e5e7eb' : 'var(--accent)', border: 'none', color: isPaidFull ? '#9ca3af' : 'white', padding: padMode ? '6px 12px' : '3px 6px', borderRadius: '6px', fontSize: padMode ? '0.78rem' : '0.65rem', cursor: isPaidFull ? 'default' : 'pointer', fontWeight: '700', whiteSpace: 'nowrap' }}
                                                                 >
                                                                     {isPrepaid ? '완료' : '결제'}
                                                                 </button>
@@ -720,31 +786,31 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
 
                             {/* ── 합계 + 세션 액션 바 ── */}
                             {selectedSession && (
-                                <div style={{ background: 'var(--surface)', borderRadius: '8px', border: '1px solid var(--border)', padding: '4px 6px', display: 'flex', alignItems: 'center', gap: '3px', justifyContent: 'space-between' }}>
+                                <div style={{ background: padMode ? 'var(--bg-secondary)' : 'var(--surface)', borderRadius: '10px', border: padMode ? 'none' : '1px solid var(--border)', padding: padMode ? '8px 12px' : '4px 6px', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
                                     {/* 결제 요약 */}
-                                    <div style={{ flex: 1, display: 'flex', gap: '4px', minWidth: 0 }}>
+                                    <div style={{ flex: 1, display: 'flex', gap: '8px', minWidth: 0 }}>
                                         <div style={{ whiteSpace: 'nowrap', minWidth: 0 }}>
-                                            <div style={{ fontSize: '0.52rem', color: 'var(--text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>완료</div>
-                                            <div style={{ fontSize: '0.78rem', fontWeight: '900', color: '#10b981', whiteSpace: 'nowrap' }}>{paidTotal.toLocaleString()}원</div>
+                                            <div style={{ fontSize: padMode ? '0.68rem' : '0.52rem', color: 'var(--text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>완료</div>
+                                            <div style={{ fontSize: padMode ? '0.95rem' : '0.78rem', fontWeight: '900', color: '#10b981', whiteSpace: 'nowrap' }}>{paidTotal.toLocaleString()}원</div>
                                         </div>
                                         <div style={{ whiteSpace: 'nowrap', minWidth: 0 }}>
-                                            <div style={{ fontSize: '0.52rem', color: 'var(--text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>미결</div>
-                                            <div style={{ fontSize: '0.78rem', fontWeight: '900', color: unpaidTotal > 0 ? '#ef4444' : '#10b981', whiteSpace: 'nowrap' }}>
+                                            <div style={{ fontSize: padMode ? '0.68rem' : '0.52rem', color: 'var(--text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>미결</div>
+                                            <div style={{ fontSize: padMode ? '0.95rem' : '0.78rem', fontWeight: '900', color: unpaidTotal > 0 ? '#ef4444' : '#10b981', whiteSpace: 'nowrap' }}>
                                                 {unpaidTotal > 0 ? `${unpaidTotal.toLocaleString()}원` : activeOrders.length === 0 ? '없음' : '완료'}
                                             </div>
                                         </div>
                                         <div style={{ whiteSpace: 'nowrap', minWidth: 0 }}>
-                                            <div style={{ fontSize: '0.52rem', color: 'var(--text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>합계</div>
-                                            <div style={{ fontSize: '0.78rem', fontWeight: '900', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>{sessionTotal.toLocaleString()}원</div>
+                                            <div style={{ fontSize: padMode ? '0.68rem' : '0.52rem', color: 'var(--text-muted)', fontWeight: '700', whiteSpace: 'nowrap' }}>합계</div>
+                                            <div style={{ fontSize: padMode ? '0.95rem' : '0.78rem', fontWeight: '900', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>{sessionTotal.toLocaleString()}원</div>
                                         </div>
                                     </div>
  
                                     {/* 액션 버튼 */}
                                     {isPending ? (
-                                        <button onClick={() => handleOpenSession(selectedSession.table_id)} style={{ background: '#f97316', border: 'none', color: 'white', padding: '4px 6px', borderRadius: '4px', fontWeight: '700', fontSize: '0.68rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>개시 승인</button>
+                                        <button onClick={() => handleOpenSession(selectedSession.table_id)} style={{ background: '#f97316', border: 'none', color: 'white', padding: padMode ? '8px 16px' : '4px 6px', borderRadius: '6px', fontWeight: '700', fontSize: padMode ? '0.85rem' : '0.68rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>개시 승인</button>
                                     ) : (
-                                        <div style={{ display: 'flex', gap: '2px', flexShrink: 0 }}>
-                                            <button onClick={() => handleResetSession(selectedSession.session_id)} style={{ background: 'transparent', border: '1px solid #fca5a5', color: '#ef4444', padding: '4px 5px', borderRadius: '4px', fontWeight: '600', fontSize: '0.68rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>초기화</button>
+                                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                            <button onClick={() => handleResetSession(selectedSession.session_id)} style={{ background: 'transparent', border: '1px solid #fca5a5', color: '#ef4444', padding: padMode ? '8px 12px' : '4px 5px', borderRadius: '6px', fontWeight: '600', fontSize: padMode ? '0.85rem' : '0.68rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>초기화</button>
                                             {unpaidTotal === 0 ? (
                                                 <button 
                                                     disabled={hasCookingOrder}
@@ -762,10 +828,10 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                         background: hasCookingOrder ? '#cbd5e1' : 'var(--accent)', 
                                                         border: 'none', 
                                                         color: hasCookingOrder ? '#64748b' : 'white', 
-                                                        padding: '4px 6px', 
-                                                        borderRadius: '4px', 
+                                                        padding: padMode ? '8px 16px' : '4px 6px', 
+                                                        borderRadius: '6px', 
                                                         fontWeight: '700', 
-                                                        fontSize: '0.68rem', 
+                                                        fontSize: padMode ? '0.85rem' : '0.68rem', 
                                                         cursor: hasCookingOrder ? 'not-allowed' : 'pointer', 
                                                         whiteSpace: 'nowrap',
                                                         opacity: hasCookingOrder ? 0.65 : 1
@@ -782,7 +848,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                         });
                                                         setShowCardTouchOverlay(true);
                                                     }} 
-                                                    style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: '4px 8px', borderRadius: '4px', fontWeight: '700', fontSize: '0.68rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                                    style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: padMode ? '8px 16px' : '4px 8px', borderRadius: '6px', fontWeight: '700', fontSize: padMode ? '0.85rem' : '0.68rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
                                                 >
                                                     전체결제
                                                 </button>

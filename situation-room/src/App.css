@@ -24,6 +24,11 @@
     align-items: flex-start;
     min-height: 100vh;
   }
+  #root {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
   .saas-container.mobile-full-mode {
     box-shadow: 0 0 0 1px rgba(0,0,0,0.06), 0 24px 64px rgba(0,0,0,0.12);
     border-radius: 0;
