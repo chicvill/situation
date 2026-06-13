@@ -3,6 +3,7 @@ import { API_BASE } from '../config';
 import { subscribeTopic } from '../services/mqttClient';
 import type { BundleData } from '../types';
 import { PaymentModal } from './PaymentModal';
+import { PostPaymentModal } from './PostPaymentModal';
 
 interface Props {
   bundles: BundleData[];
@@ -23,6 +24,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
   const [activeCategory, setActiveCategory] = useState('전체');
   const [cart, setCart] = useState<{ [key: string]: number }>({});
   const [showPayModal, setShowPayModal] = useState(false);
+  const [showPostPaymentModal, setShowPostPaymentModal] = useState(false);
   const [isCartView, setIsCartView] = useState(false);
   const [isOrdered, setIsOrdered] = useState(false);
   const [userPhone, setUserPhone] = useState('');
@@ -247,30 +249,76 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
       return { ...item!, qty };
     });
 
-  const handleSubmit = async (method: string | null = null, isCall: boolean = false) => {
+  const handleSubmit = async (method: string | null = null, isCall: boolean = false, extraData?: any) => {
     if (!isCall && !method && showPayModal) {
       alert("결제 수단을 선택해 주세요!");
       return;
     }
 
-
-
     try {
+      const items = isCall 
+        ? [{ name: '호출', price: 0, quantity: 1 }]
+        : cartList.map(item => ({ name: item.name, price: item.price, quantity: item.qty }));
+      
+      const payload: any = {
+        table_id: tableId,
+        device_id: deviceId,
+        store_id: storeId,
+        items,
+        total_price: isCall ? 0 : totalPrice,
+        payment_status: method ? 'prepaid' : 'unpaid',
+        payment_method: method,
+        join_order: isJoinedDevice,
+        metadata: { phone: extraData?.phone, usePoints: extraData?.usePoints }
+      };
+
+      if (method === 'self_pay') {
+        const finalPrice = Math.max(0, totalPrice - (extraData?.usePoints || 0));
+        
+        if (finalPrice > 0) {
+          const tempOrderId = `TMP-${Date.now()}`;
+          const { PaymentService } = await import('../services/paymentService');
+          
+          PaymentService.requestPayAppPayment('card', {
+            amount: finalPrice,
+            orderId: tempOrderId,
+            orderName: '테이블 주문',
+            customerName: '고객'
+          });
+
+          // 결제 완료 메시지 대기
+          const result = await new Promise<any>((resolve, reject) => {
+            const handler = (e: MessageEvent) => {
+              if (e.data && e.data.type === 'PAYMENT_FINISHED' && e.data.orderId === tempOrderId) {
+                window.removeEventListener('message', handler);
+                if (e.data.success) {
+                  resolve(e.data);
+                } else {
+                  reject(new Error('결제가 실패하거나 취소되었습니다.'));
+                }
+              }
+            };
+            window.addEventListener('message', handler);
+          });
+
+          payload.payment_status = 'paid';
+          payload.payment_method = 'payapp';
+          payload.metadata.temp_order_id = tempOrderId;
+          payload.metadata.payment_key = result.paymentKey;
+        } else {
+          // 전액 포인트 결제 (0원)
+          payload.payment_status = 'paid';
+          payload.payment_method = 'points';
+        }
+      } else if (method === 'call_staff') {
+        payload.payment_status = 'pending_payment';
+        payload.payment_method = '직원호출';
+      }
+
       const res = await fetch(`${API_BASE}/api/order/direct`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          table_id: tableId, // T03 형식
-          device_id: deviceId,
-          store_id: storeId,
-          items: isCall 
-            ? [{ name: '호출', price: 0, quantity: 1 }]
-            : cartList.map(item => ({ name: item.name, price: item.price, quantity: item.qty })),
-          total_price: isCall ? 0 : totalPrice,
-          payment_status: method ? 'prepaid' : 'unpaid', // 결제 방식이 있으면 선불로 표시
-          payment_method: method,
-          join_order: isJoinedDevice
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -282,8 +330,13 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
       setShowPayModal(false);
       setIsCartView(false);
       setCart({});
-    } catch (err) {
-      alert(isCall ? "호출 실패!" : "주문 전송 실패!");
+      
+      // 결제가 완료되었거나 직원 호출일 경우 주차 등록 모달을 표시
+      if (!isCall) {
+        setShowPostPaymentModal(true);
+      }
+    } catch (err: any) {
+      alert(err.message || (isCall ? "호출 실패!" : "주문 전송 실패!"));
     }
   };
 
@@ -566,6 +619,14 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
           sessionId={sessionId}
           storeId={storeId}
           tableId={tableId}
+        />
+      )}
+
+      {showPostPaymentModal && (
+        <PostPaymentModal 
+           sessionId={sessionId}
+           storeId={storeId}
+           onClose={() => setShowPostPaymentModal(false)}
         />
       )}
 

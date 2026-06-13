@@ -726,8 +726,8 @@ async def register_payapp_cash_receipt(phone: str, total_price: int, order_id: s
 
 async def trigger_cash_receipt_if_requested(order: dict):
     """주문에 현금영수증 발행이 요청된 경우 페이앱 API를 호출하여 등록합니다."""
-    if not order:
-        return
+    # 사용자의 피드백에 따라 PayApp에서 직접 현금영수증을 발행하므로 백엔드 발행 로직을 생략합니다.
+    return
 
     raw_meta = order.get("metadata") or {}
     try:

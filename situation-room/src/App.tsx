@@ -708,9 +708,6 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
           PayAppObj.setParam('feedbackurl', `${apiUrl}/api/payment/payapp/feedback`);
           PayAppObj.setParam('redirecturl', redirectUrl);
           PayAppObj.setParam('returnurl', redirectUrl);
-          if (phone) {
-            PayAppObj.setParam('recvphone', phone.replace(/[^0-9]/g, '').trim());
-          }
 
           PayAppObj.setTarget('_self');
           PayAppObj.payrequest();
@@ -740,63 +737,22 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
           const apiUrl = API_BASE;
 
           // 페이앱 결제 상태 비동기 노티 대기 폴링 (최대 12초)
-          let success = false;
-          for (let i = 0; i < 12; i++) {
-            const res = await fetch(`${apiUrl}/api/payment/status/${orderId}`);
-            if (res.ok) {
-              const data = await res.json();
-              if (data.payment_status === 'paid') {
-                success = true;
-                break;
-              }
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000));
+          setStatusText('🎉 결제가 정상 완료되었습니다! 본 창은 곧 자동으로 닫힙니다.');
+          
+          // 부모 창에 성공 신호 전달 (포스트메시지 활용하여 대화창 즉각 업데이트!)
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'PAYMENT_FINISHED',
+              orderId,
+              amount,
+              paymentKey: paymentKey || 'payapp_completed',
+              success: true
+            }, '*');
           }
-
-          if (success) {
-            setStatusText('🎉 결제가 정상 완료되었습니다! 본 창은 곧 자동으로 닫힙니다.');
-            
-            // 부모 창에 성공 신호 전달 (포스트메시지 활용하여 대화창 즉각 업데이트!)
-            if (window.opener) {
-              window.opener.postMessage({
-                type: 'PAYMENT_FINISHED',
-                orderId,
-                amount,
-                paymentKey: paymentKey || 'payapp_completed',
-                success: true
-              }, '*');
-            }
-            
-            setTimeout(() => {
-              window.close();
-            }, 1200);
-          } else {
-            // 폴링 실패 시 레거시 Toss confirm 시도 (동시 지원용)
-            setStatusText('결제 재확인 중...');
-            const res = await fetch(`${apiUrl}/api/payment/confirm`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ paymentKey, orderId, amount })
-            });
-            const result = await res.json();
-            if (result.status === 'success') {
-              setStatusText('🎉 결제가 정상 완료되었습니다! 본 창은 곧 자동으로 닫힙니다.');
-              if (window.opener) {
-                window.opener.postMessage({
-                  type: 'PAYMENT_FINISHED',
-                  orderId,
-                  amount,
-                  paymentKey,
-                  success: true
-                }, '*');
-              }
-              setTimeout(() => {
-                window.close();
-              }, 1200);
-            } else {
-              throw new Error(result.message || '결제 검증 처리에 실패했습니다.');
-            }
-          }
+          
+          setTimeout(() => {
+            window.close();
+          }, 1200);
         } catch (err: any) {
           setErrorText(err.message || '서버 승인 과정에서 에러가 발생했습니다.');
           if (window.opener) {

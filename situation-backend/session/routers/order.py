@@ -67,6 +67,20 @@ async def process_order(order_req: OrderRequest):
         metadata = {}
     pin_verified = metadata.get('pin_verified', False)
 
+    # 2.5 PayApp 결제 검증 (프론트엔드에서 결제 성공 후 보낸 경우)
+    req_meta = order_req.metadata or {}
+    payment_key = req_meta.get("payment_key")
+    if order_req.payment_status == "paid" and order_req.payment_method == "payapp":
+        temp_order_id = req_meta.get("temp_order_id")
+        use_pts = int(req_meta.get("usePoints") or req_meta.get("use_points") or 0)
+        expected_pay_amount = max(0, order_req.total_price - use_pts)
+        
+        if payment_key and temp_order_id:
+            from .payment import verify_payapp_payment_or_throw
+            await verify_payapp_payment_or_throw(payment_key, temp_order_id, expected_pay_amount)
+        else:
+            raise HTTPException(status_code=400, detail="결제 키 또는 임시 주문 번호가 누락되었습니다.")
+
     # QR 선불 결제인 경우 (결제 상태가 paid인 경우) 승인번호 없이 자동 승인 처리
     if is_mobile_order and order_req.payment_status == "paid":
         pin_verified = True
@@ -99,6 +113,7 @@ async def process_order(order_req: OrderRequest):
         "status": initial_status,
         "payment_status": order_req.payment_status,
         "payment_method": order_req.payment_method,
+        "payment_key": payment_key,
         "join_order": order_req.join_order,
         "order_seq": next_seq,
         "display_number": display_number,
