@@ -26,14 +26,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
   const [phoneForPoints, setPhoneForPoints] = React.useState(initialPhone);
   const [existingPoints, setExistingPoints] = React.useState(0);
-  const [accumulatedPoints, setAccumulatedPoints] = React.useState(0);
-  const [topPercentAccumulated, setTopPercentAccumulated] = React.useState(100);
   const [usePoints, setUsePoints] = React.useState(0);
   const [accumulatePoints, setAccumulatePoints] = React.useState(!!initialPhone);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isTakeout, setIsTakeout] = React.useState(false);
 
-  const potentialPoints = Math.floor(totalPrice * 0.001);
   const finalTotal = Math.max(0, totalPrice - usePoints);
 
   React.useEffect(() => {
@@ -46,16 +43,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       const res = await fetch(`${API_BASE}/api/points/${phone}`);
       const data = await res.json();
       const usable = data.usable_points ?? data.points ?? 0;
-      const accumulated = data.accumulated_points ?? 0;
       const topPct = data.top_percent_accumulated ?? 100;
       setExistingPoints(usable);
-      setAccumulatedPoints(accumulated);
-      setTopPercentAccumulated(topPct);
       if (onPayerInfo) onPayerInfo(phone, topPct);
     } catch {
       setExistingPoints(0);
-      setAccumulatedPoints(0);
-      setTopPercentAccumulated(100);
     }
   };
 

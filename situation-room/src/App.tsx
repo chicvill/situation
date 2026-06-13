@@ -674,7 +674,6 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
   const amount = Number(params.get('amount') || 0);
   const orderName = params.get('orderName') || '주문 결제';
   const paymentKey = params.get('paymentKey') || params.get('mul_no') || '';
-  const phone = params.get('phone') || '';
 
   const [statusText, setStatusText] = useState('결제 시스템을 준비 중입니다...');
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -734,7 +733,6 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
       const confirmPayment = async () => {
         try {
           setStatusText('결제 승인 결과를 확인하는 중입니다. 안전한 거래를 위해 창을 닫지 마세요...');
-          const apiUrl = API_BASE;
 
           // 페이앱 결제 상태 비동기 노티 대기 폴링 (최대 12초)
           setStatusText('🎉 결제가 정상 완료되었습니다! 본 창은 곧 자동으로 닫힙니다.');

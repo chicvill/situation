@@ -762,7 +762,6 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         value: `${c.qty}개`,
         price: (c.price || 0) * (c.qty || 1)
       }));
-      const payappOrderName = extraData?.dutchLabel || (cart.length > 0 ? `${cart[0].name}${cart.length > 1 ? ` 외 ${cart.length - 1}건` : ''}` : '메뉴 주문');
 
       const res = await fetch(`${API_BASE}/api/order/direct`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -818,9 +817,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
         localStorage.setItem('receipt_items_' + orderId, JSON.stringify(mappedItems));
         await PaymentService.requestPayAppPayment(method, {
           amount: finalAmount, orderId,
-          orderName: payappOrderName,
-          customerName: '손님',
-          customerPhone: extraData?.phone || userPhone
+          orderName: `주문 (${tableId})`,
+          customerName: '손님'
         });
       }
     } catch (err: any) {
@@ -960,9 +958,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
                 await PaymentService.requestPayAppPayment('카드', {
                   amount: splitAmount,
                   orderId,
-                  orderName: '더치페이 분할 결제',
-                  customerName: '동행 고객',
-                  customerPhone: userPhone || undefined
+                  orderName: '더치페이 결제',
+                  customerName: '손님'
                 });
               } catch (err: any) {
                 alert(err.message || '결제창 호출에 실패했습니다.');
@@ -1543,9 +1540,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
               await PaymentService.requestPayAppPayment(method, {
                 amount: remotePayRequest.amount,
                 orderId: orderId,
-                orderName: remotePayRequest.orderId ? `주문 번호 결제` : `테이블 전체 식사 결제`,
-                customerName: '손님',
-                customerPhone: userPhone || undefined
+                orderName: remotePayRequest.orderId ? `주문 번호 결제` : `모바일 식대 결제 요청`,
+                customerName: '고객'
               });
               setRemotePayRequest(null);
             }

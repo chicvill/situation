@@ -289,8 +289,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
             amount: totalPrice,
             orderId: orderId,
             orderName: `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,
-            customerName: '손님',
-            customerPhone: userPhone || undefined
+            customerName: '손님'
           });
         }
       }
