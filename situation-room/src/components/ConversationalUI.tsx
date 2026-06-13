@@ -245,10 +245,10 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
         addAiMessage(`포인트 적립을 원하시면 휴대폰 번호를 입력해 주세요. 건너뛰려면 아래 버튼을 눌러주세요.`, { isPointGuide: true });
     };
 
-    // Select point accumulation option
+    // Select point accumulation option → skip cash receipt step, go directly to payment selection
     const handleSelectPoints = (choice: string) => {
-        setOrderStep('cash_invoice_guide');
-        const userText = choice === 'skip' ? '적립 건너뛰기 ⏩' : `${choice} 적립 선택`;
+        setOrderStep('payment_method_selection');
+        const userText = choice === 'skip' ? '포인트 건너뛰기 ⏩' : `포인트 적립 신청`;
         setMessages(prev => [...prev, {
             id: Date.now() + 1,
             sender: 'user',
@@ -256,33 +256,25 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }]);
 
-        addAiMessage(`현금영수증이 필요하신가요? 아래에서 선택해 주세요.`, { isCashInvoiceGuide: true });
+        addAiMessage(`결제 방법을 선택해 주세요.\n\n📱 셀프 결제: 앱카드, 삼성페이, 카카오페이 등을 내 폰에서 직접 결제\n🙋 직원 호출: 실물카드, 현금, 더치페이 등 직원이 도와드립니다`, { isPaymentMethodGuide: true });
     };
 
-    // Select cash receipt option
-    const handleSelectCashReceipt = (choice: string) => {
-        setOrderStep('payment_method_selection');
-        setMessages(prev => [...prev, {
-            id: Date.now() + 2,
-            sender: 'user',
-            text: choice,
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }]);
-
-        addAiMessage(`결제 수단을 선택해 주세요.`, { isPaymentMethodGuide: true });
-    };
-
-    // Select payment method and show card terminal mockup
-    const handleSelectPaymentMethod = (method: string) => {
+    // Self-pay via PayApp
+    const handleSelfPay = () => {
         setOrderStep('paying');
         setMessages(prev => [...prev, {
             id: Date.now() + 3,
             sender: 'user',
-            text: `💳 ${method} 선택`,
+            text: `📱 셀프 결제 선택`,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }]);
+        addAiMessage(`아래 버튼을 눌러 결제를 진행해 주세요. 현금영수증도 결제창 안에서 처리됩니다.`, { isPayAppPayment: true });
+    };
 
-        addAiMessage(`아래 단말기에 카드를 삽입하거나 버튼을 눌러 결제를 완료해 주세요.`, { isCardTerminalSim: true });
+    // Call staff for physical card / cash / dutch pay
+    const handleCallStaffForPayment = () => {
+        triggerStaffCallFlow('결제 요청');
+        addAiMessage(`직원을 호출했습니다. 실물카드, 현금, 더치페이 등을 도와드리겠습니다. 🙋`);
     };
 
     // Simulate safe checkout card terminal action
@@ -563,51 +555,29 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                             </div>
                         )}
 
-                        {/* Cash receipt invoice action buttons */}
-                        {msg.isCashInvoiceGuide && orderStep === 'cash_invoice_guide' && (
-                            <div style={{ display: 'flex', gap: '6px', marginTop: '10px', flexWrap: 'wrap' }}>
-                                <button onClick={() => handleSelectCashReceipt('👤 개인소득공제용')} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', color: '#0f172a' }}>
-                                    👤 개인소득공제
-                                </button>
-                                <button onClick={() => handleSelectCashReceipt('🏢 사업자증빙용')} style={{ flex: 1, padding: '8px', background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', color: '#0f172a' }}>
-                                    🏢 사업자증빙
-                                </button>
-                                <button onClick={() => handleSelectCashReceipt('미발행')} style={{ flex: 1, padding: '8px', background: '#f1f5f9', border: 'none', borderRadius: '8px', fontSize: '11px', fontWeight: 700, cursor: 'pointer', color: '#64748b' }}>
-                                    미발행 ⏩
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Payment Method Selection Dropdown */}
+                        {/* Payment Method Selection - 2 buttons only */}
                         {msg.isPaymentMethodGuide && orderStep === 'payment_method_selection' && (
-                            <div style={{ marginTop: '10px', minWidth: '220px' }}>
-                                <select 
-                                    onChange={(e) => {
-                                        if (e.target.value) handleSelectPaymentMethod(e.target.value);
-                                    }}
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px',
-                                        borderRadius: '10px',
-                                        border: '2px solid #3b82f6',
-                                        background: 'white',
-                                        fontSize: '14px',
-                                        fontWeight: 700,
-                                        color: '#1e293b',
-                                        outline: 'none',
-                                        appearance: 'none',
-                                        backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%231e293b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
-                                        backgroundRepeat: 'no-repeat',
-                                        backgroundPosition: 'right 12px top 50%',
-                                        backgroundSize: '12px auto'
-                                    }}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '12px', minWidth: '220px' }}>
+                                <button
+                                    onClick={handleSelfPay}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 800, fontSize: '14px', cursor: 'pointer', textAlign: 'left' }}
                                 >
-                                    <option value="">결제 수단 선택...</option>
-                                    <option value="계좌이체">🏦 계좌이체</option>
-                                    <option value="카드/페이">💳 카드 / 페이 결제</option>
-                                    <option value="카운터결제">🏪 카운터에서 결제</option>
-                                    <option value="가상 결제 (테스트)">⚡ 가상 결제 (테스트)</option>
-                                </select>
+                                    <span style={{ fontSize: '1.4rem' }}>📱</span>
+                                    <div>
+                                        <div>셀프 결제하기</div>
+                                        <div style={{ fontSize: '11px', fontWeight: 500, opacity: 0.85, marginTop: '2px' }}>삼성페이, 카카오페이, 네이버페이, 앱카드 등</div>
+                                    </div>
+                                </button>
+                                <button
+                                    onClick={handleCallStaffForPayment}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: 'white', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '12px', fontWeight: 700, fontSize: '14px', cursor: 'pointer', textAlign: 'left' }}
+                                >
+                                    <span style={{ fontSize: '1.4rem' }}>🙋</span>
+                                    <div>
+                                        <div>직원 호출하기</div>
+                                        <div style={{ fontSize: '11px', fontWeight: 500, color: '#64748b', marginTop: '2px' }}>실물카드, 현금, 더치페이 등</div>
+                                    </div>
+                                </button>
                             </div>
                         )}
 
@@ -726,36 +696,17 @@ export const ConversationalUI: React.FC<ConversationalUIProps> = ({ bundles, sto
                     {orderStep === 'point_guide' && (
                         <>
                             <button onClick={() => handleSelectPoints('skip')} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                적립 건너뛰기
-                            </button>
-                        </>
-                    )}
-                    {orderStep === 'cash_invoice_guide' && (
-                        <>
-                            <button onClick={() => handleSelectCashReceipt('👤 개인소득공제용')} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                개인소득공제
-                            </button>
-                            <button onClick={() => handleSelectCashReceipt('🏢 사업자증빙용')} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                사업자증빙
-                            </button>
-                            <button onClick={() => handleSelectCashReceipt('미발행')} className="suggestion-chip" style={{ background: '#fff', color: '#94a3b8', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                미발행
+                                포인트 건너뛰기
                             </button>
                         </>
                     )}
                     {orderStep === 'payment_method_selection' && (
                         <>
-                            <button onClick={() => handleSelectPaymentMethod('신용카드')} className="suggestion-chip" style={{ background: '#2563eb', color: '#fff', border: 'none', fontWeight: 600, padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                💳 카드 결제
+                            <button onClick={handleSelfPay} className="suggestion-chip" style={{ background: '#2563eb', color: '#fff', border: 'none', fontWeight: 700, padding: '7px 18px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                📱 셀프 결제
                             </button>
-                            <button onClick={() => handleSelectPaymentMethod('토스페이')} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                토스페이
-                            </button>
-                            <button onClick={() => handleSelectPaymentMethod('카카오페이')} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                카카오페이
-                            </button>
-                            <button onClick={() => triggerStaffCallFlow('카운터 현금결제')} className="suggestion-chip" style={{ background: '#fff', color: '#94a3b8', border: '1px solid #dde3ea', padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                                카운터 결제
+                            <button onClick={handleCallStaffForPayment} className="suggestion-chip" style={{ background: '#fff', color: '#334155', border: '1px solid #dde3ea', fontWeight: 600, padding: '7px 14px', borderRadius: '20px', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                🙋 직원 호출
                             </button>
                         </>
                     )}
