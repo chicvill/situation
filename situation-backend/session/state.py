@@ -16,7 +16,10 @@ def load_pool() -> list:
         try:
             with open(POOL_FILE, "r", encoding="utf-8") as f:
                 _pool_cache = json.load(f)
-        except Exception:
+        except Exception as file_err:
+            print(f"[DB ERROR] Failed to load POOL_FILE: {file_err}")
+            import traceback
+            traceback.print_exc()
             _pool_cache = []
     else:
         _pool_cache = []
@@ -40,7 +43,6 @@ def load_pool() -> list:
                 items_list = items
                 if isinstance(items, str):
                     try:
-                        import json
                         items_list = json.loads(items)
                     except:
                         items_list = []
@@ -59,9 +61,9 @@ def load_pool() -> list:
                 pool_map[b_id] = db_b
             
             _pool_cache = list(pool_map.values())
-            print(f"✅ Loaded {len(db_bundles)} bundles from database knowledge_bundles.")
+            print(f"[DB] Loaded {len(db_bundles)} bundles from database knowledge_bundles.")
     except Exception as db_err:
-        print(f"⚠️ Failed to merge knowledge_bundles from DB: {db_err}")
+        print(f"[DB ERROR] Failed to merge knowledge_bundles from DB: {db_err}")
 
     return _pool_cache
 

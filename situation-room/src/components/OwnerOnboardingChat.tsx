@@ -198,6 +198,68 @@ export const OwnerOnboardingChat: React.FC<OwnerOnboardingChatProps> = ({
         }
     }, [messages, isTyping]);
 
+    // Sync existing store and menu settings from DB/bundles if they exist
+    useEffect(() => {
+        if (!storeId || storeId === 'Total') return;
+
+        // Find existing StoreConfig bundle for this store
+        const storeBundle = bundles.find(b => b.type === 'StoreConfig' && b.store_id === storeId);
+        if (storeBundle) {
+            const findValue = (keys: string[]) => storeBundle.items?.find((i: any) => keys.some(k => i.name.includes(k)))?.value || '';
+
+            const dbStoreName = findValue(['상호', '브랜드', 'brand']);
+            const dbBizNo = findValue(['사업자', '번호', 'reg']);
+            const dbOpenDate = findValue(['개업', '날짜', 'open']);
+            const dbOwnerName = findValue(['대표', '이름', 'owner', '점주']);
+            const dbBankAccount = findValue(['계좌', '정산', '은행']);
+
+            if (dbStoreName) setStoreName(dbStoreName);
+            if (dbBizNo) setBizNo(dbBizNo);
+            if (dbOpenDate) setOpenDate(dbOpenDate);
+            if (dbOwnerName) setOwnerName(dbOwnerName);
+
+            if (dbBankAccount) {
+                const spaceIdx = dbBankAccount.indexOf(' ');
+                if (spaceIdx > 0) {
+                    setBankName(dbBankAccount.slice(0, spaceIdx));
+                    setAccountNo(dbBankAccount.slice(spaceIdx + 1));
+                } else {
+                    setAccountNo(dbBankAccount);
+                }
+            }
+
+            // Parse table settings
+            const tableVal = findValue(['테이블', '구성', '설정', '테이블설정']);
+            if (tableVal) {
+                const parts = tableVal.split(',').map((p: string) => p.trim());
+                const sizes: number[] = [];
+                parts.forEach((part: string) => {
+                    const match = part.match(/(\d+)인석/) || part.match(/(\d+)인/);
+                    if (match) {
+                        sizes.push(parseInt(match[1], 10));
+                    }
+                });
+                if (sizes.length > 0) {
+                    setTableCount(sizes.length);
+                    setTableSizes(sizes);
+                }
+            }
+            setIsBizVerified(true);
+        }
+
+        // Find existing Menus bundle for this store
+        const menuBundle = bundles.find(b => b.type === 'Menus' && b.store_id === storeId);
+        if (menuBundle && menuBundle.items && menuBundle.items.length > 0) {
+            setMenuItems(menuBundle.items.map((item: any) => ({
+                name: item.name,
+                value: typeof item.value === 'number' ? String(item.value) : String(item.value || '').replace(/[^0-9]/g, ''),
+                icon: item.icon || '🍴',
+                category: item.category || '기타',
+                description: item.description || ''
+            })));
+        }
+    }, [storeId, bundles]);
+
     // Handle initial greeting on starting chat
     const startChatFlow = () => {
         setShowChat(true);
