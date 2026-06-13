@@ -273,77 +273,77 @@
     "items": [
       {
         "name": "명품 한우 갈비살",
-        "value": 42000,
+        "value": 1,
         "icon": "🥩",
         "category": "구이류",
         "description": "한우 고유의 고소한 맛과 부드러운 육질이 일품인 최상급 갈비살 (150g)"
       },
       {
         "name": "명품 한우 등심",
-        "value": 45000,
+        "value": 1,
         "icon": "🥩",
         "category": "구이류",
         "description": "풍부한 마블링에서 우러나는 진한 풍미의 최고급 등심 (150g)"
       },
       {
         "name": "명품 한우 안심",
-        "value": 48000,
+        "value": 1,
         "icon": "🥩",
         "category": "구이류",
         "description": "가장 부드럽고 담백하며 육즙이 가득한 프리미엄 안심 (150g)"
       },
       {
         "name": "한우 생육회",
-        "value": 28000,
+        "value": 1,
         "icon": "🥩",
         "category": "요리류",
         "description": "당일 도축한 한우 우둔살을 특제 양념으로 맛깔나게 버무린 육회 (150g)"
       },
       {
         "name": "시골 순두부찌개",
-        "value": 9000,
+        "value": 1,
         "icon": "🍲",
         "category": "식사류",
         "description": "정선 콩으로 만든 고소한 순두부와 국산 멸치 육수로 끓인 찌개"
       },
       {
         "name": "한우 차돌된장찌개",
-        "value": 10000,
+        "value": 1,
         "icon": "🍲",
         "category": "식사류",
         "description": "구수한 된장에 부드러운 한우 차돌박이를 듬뿍 넣고 끓여낸 찌개"
       },
       {
         "name": "함흥 비빔냉면",
-        "value": 9000,
+        "value": 1,
         "icon": "🍜",
         "category": "식사류",
         "description": "직접 뽑은 쫄깃한 면발과 매콤새콤한 수제 비빔 양념의 함흥 냉면"
       },
       {
         "name": "함흥 물냉면",
-        "value": 9000,
+        "value": 1,
         "icon": "🍜",
         "category": "식사류",
         "description": "깊고 깔끔한 소고기 육수에 얼음을 동동 띄워 시원하게 즐기는 물냉면"
       },
       {
         "name": "소주",
-        "value": 5000,
+        "value": 1,
         "icon": "🍶",
         "category": "주류/음료",
         "description": "참이슬 / 처음처럼 / 진로 중 선택"
       },
       {
         "name": "맥주",
-        "value": 6000,
+        "value": 1,
         "icon": "🍺",
         "category": "주류/음료",
         "description": "카스 / 테라 / 켈리 중 선택"
       },
       {
         "name": "프리미엄 콜드브루 커피",
-        "value": 4500,
+        "value": 1,
         "icon": "☕",
         "category": "주류/음료",
         "description": "시크빌이 직접 내린 깊고 풍부한 에티오피아 콜드브루"
