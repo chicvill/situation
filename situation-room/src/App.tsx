@@ -685,6 +685,7 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
   const orderName = params.get('orderName') || '주문 결제';
   const paymentKey = params.get('paymentKey') || params.get('mul_no') || '';
   const storeName = params.get('storeName') || '시크빌';
+  const phone = params.get('phone') || '';
 
   const [statusText, setStatusText] = useState('결제 시스템을 준비 중입니다...');
   const [errorText, setErrorText] = useState<string | null>(null);
@@ -718,6 +719,9 @@ function PaymentPopupHandler({ safeBundles }: { safeBundles: any[] }) {
           PayAppObj.setParam('feedbackurl', `${apiUrl}/api/payment/payapp/feedback`);
           PayAppObj.setParam('redirecturl', redirectUrl);
           PayAppObj.setParam('returnurl', redirectUrl);
+          if (phone) {
+            PayAppObj.setParam('recvphone', phone.replace(/[^0-9]/g, ''));
+          }
 
           PayAppObj.setTarget('_self');
           PayAppObj.payrequest();

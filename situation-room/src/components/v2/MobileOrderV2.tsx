@@ -114,7 +114,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
   const [parkingApplied, setParkingApplied] = useState(false);
   const [callOverlay, setCallOverlay] = useState<{ status: 'pending' | 'completed'; callId: string; callType: string } | null>(null);
   const [parkingOverlay, setParkingOverlay] = useState<{ status: 'pending' | 'completed'; parkingId: string } | null>(null);
-  const [userPhone] = useState('');
+  const [userPhone, setUserPhone] = useState(() => localStorage.getItem('user_phone') || '');
   const [aiStoryContent, setAiStoryContent] = useState({ title: '', body: '', icon: '🍽️' });
   const [showDelayedHelp, setShowDelayedHelp] = useState(false);
 
@@ -905,6 +905,10 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
 
   const executeOrderWithPayment = useCallback(async (method: string, extraData?: any) => {
     setIsOrdering(true);
+    if (extraData?.phone) {
+      setUserPhone(extraData.phone);
+      localStorage.setItem('user_phone', extraData.phone);
+    }
     // setShowPayModal(false); // <--- 여기서 미리 닫지 않고, 서버 처리가 끝나면 닫도록 변경
     
     // [CP-00] 주문 시작 로그
@@ -980,7 +984,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           orderId: orderId,
           orderName: extraData?.dutchLabel || `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,
           customerName: '손님',
-          storeName: storeName
+          storeName: storeName,
+          phone: extraData?.phone || userPhone
         });
       }
     } catch (err: any) { 
@@ -989,7 +994,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     } finally { 
       setIsOrdering(false); 
     }
-  }, [tableId, deviceId, storeId, cart, totalPrice, refreshOrders, generateAiStory]);
+  }, [tableId, deviceId, storeId, cart, totalPrice, refreshOrders, generateAiStory, userPhone]);
 
   const handleAddUpsell = useCallback((rec: any) => {
     // Find if this menu item exists in our loaded menus
@@ -1738,6 +1743,7 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           onClose={() => setShowPayModal(false)}
           onSubmit={executeOrderWithPayment}
           initialPhone={userPhone}
+          onPhoneChange={setUserPhone}
           bundles={bundles}
           cart={cart}
         />
@@ -1838,6 +1844,8 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
             setDutchPayingSlot(null);
             dutchPayingSlotRef.current = null;
           }}
+          initialPhone={userPhone}
+          onPhoneChange={setUserPhone}
           onSubmit={(method, extraData) => {
             const isLast = dutchPayingSlot === dutchCount - 1;
             const perPerson = isLast
@@ -1850,7 +1858,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
               isDutchPay: true,
             });
           }}
-          initialPhone={userPhone}
           bundles={bundles}
           cart={cart}
         />

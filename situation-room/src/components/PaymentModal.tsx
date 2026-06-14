@@ -183,7 +183,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                   }}
                 />
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '6px' }}>
-                  번호 입력 시 자동으로 포인트를 조회합니다.
+                  번호 입력 시 자동으로 포인트를 조회합니다. (결제창 현금영수증/영수증 수신 번호로 자동 연동)
                 </div>
               </div>
 

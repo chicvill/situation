@@ -52,7 +52,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
-  const [userPhone] = useState('');
+  const [userPhone, setUserPhone] = useState(() => localStorage.getItem('user_phone') || '');
   const [aiStoryContent, setAiStoryContent] = useState({ title: '', body: '', icon: '🍽️' });
 
   // --- Memos & Config ---
@@ -244,9 +244,18 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
 
   const executeOrderWithPayment = useCallback(async (method: string, extraData?: any) => {
     setIsOrdering(true);
-    setShowPayModal(false);
+    if (extraData?.phone) {
+      setUserPhone(extraData.phone);
+      localStorage.setItem('user_phone', extraData.phone);
+    }
+    
+    // [CP-00] 주문 시작 로그
+    PaymentService.log("CP-00", "Order process initiated", { method, cartSize: cart.length });
+
     try {
       const currentCart = [...cart];
+      const usePoints = extraData?.usePoints || 0;
+      const finalAmount = Math.max(0, totalPrice - usePoints);
       
       // 1. 주문 생성 요청
       const res = await fetch(`${API_BASE}/api/order/direct`, {
@@ -255,7 +264,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
         body: JSON.stringify({
           table_id: tableId, device_id: deviceId, store_id: storeId,
           items: cart.map(c => ({ name: c.name, quantity: c.qty || 1, price: c.price, qty: c.qty || 1 })),
-          total_price: totalPrice,
+          total_price: finalAmount,
           // 카운터 결제는 unpaid, 카트는 결제 대기(pending) 상태로 시작
           payment_status: (method.includes('카운터') || method.includes('현금') || method.includes('cash') || method.includes('직원방문') || method.includes('직원호출') || method.includes('실물카드')) ? 'unpaid' : (method.includes('가상 결제') || method.includes('테스트') ? 'paid' : 'pending'),
           payment_method: method,
@@ -286,10 +295,11 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
             currentCart.map(c => ({ name: c.name, value: String(c.qty || 1) + '개', price: (c.price || 0) * (c.qty || 1) }))
           ));
           await PaymentService.requestPayAppPayment(method, {
-            amount: totalPrice,
+            amount: finalAmount,
             orderId: orderId,
             orderName: `${currentCart[0].name}${currentCart.length > 1 ? ` 외 ${currentCart.length-1}건` : ''}`,
-            customerName: '손님'
+            customerName: '손님',
+            phone: extraData?.phone || userPhone
           });
         }
       }
@@ -299,7 +309,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
     } finally { 
       setIsOrdering(false); 
     }
-  }, [tableId, deviceId, storeId, cart, totalPrice, fetchMySession, generateAiStory]);
+  }, [tableId, deviceId, storeId, cart, totalPrice, fetchMySession, generateAiStory, userPhone]);
 
   // --- Render Functions ---
 
@@ -737,6 +747,7 @@ const Orders: React.FC<Props> = ({ bundles, storeId, storeName, onNavigate }) =>
           onClose={() => setShowPayModal(false)}
           onSubmit={executeOrderWithPayment}
           initialPhone={userPhone}
+          onPhoneChange={setUserPhone}
           bundles={bundles}
         />
       )}

@@ -28,7 +28,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
   const [isCartView, setIsCartView] = useState(false);
   const [isOrdered, setIsOrdered] = useState(false);
   const [isStaffCall, setIsStaffCall] = useState(false);
-  const [userPhone, setUserPhone] = useState('');
+  const [userPhone, setUserPhone] = useState(() => localStorage.getItem('user_phone') || '');
   const [isWaitingForPartyApproval, setIsWaitingForPartyApproval] = useState(false);
   const [pendingJoinRequest, setPendingJoinRequest] = useState<{ deviceId: string; sessionId: string } | null>(null);
   const [isJoinedDevice, setIsJoinedDevice] = useState(false);
@@ -251,6 +251,10 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
     });
 
   const handleSubmit = async (method: string | null = null, isCall: boolean = false, extraData?: any) => {
+    if (extraData?.phone) {
+      setUserPhone(extraData.phone);
+      localStorage.setItem('user_phone', extraData.phone);
+    }
     if (!isCall && !method && showPayModal) {
       alert("결제 수단을 선택해 주세요!");
       return;
@@ -287,7 +291,8 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
               ? `${cartList[0].name}${cartList.length > 1 ? ` 외 ${cartList.length - 1}건` : ''}`
               : '테이블 주문',
             customerName: '고객',
-            storeName: storeName
+            storeName: storeName,
+            phone: extraData?.phone || userPhone
           });
 
           // 결제 완료 메시지 대기
@@ -661,7 +666,7 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
         <PaymentModal 
           totalPrice={totalPrice}
           onClose={() => setShowPayModal(false)}
-          onSubmit={(method) => handleSubmit(method, false)}
+          onSubmit={(method, extraData) => handleSubmit(method, false, extraData)}
           bundles={bundles}
           initialPhone={userPhone}
           onPhoneChange={setUserPhone}

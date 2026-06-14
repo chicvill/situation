@@ -819,7 +819,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           amount: finalAmount, orderId,
           orderName: `주문 (${tableId})`,
           customerName: '손님',
-          storeName: storeName
+          storeName: storeName,
+          phone: extraData?.phone || userPhone
         });
       }
     } catch (err: any) {
@@ -961,7 +962,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
                   orderId,
                   orderName: '더치페이 결제',
                   customerName: '손님',
-                  storeName: storeName
+                  storeName: storeName,
+                  phone: userPhone
                 });
               } catch (err: any) {
                 alert(err.message || '결제창 호출에 실패했습니다.');
@@ -1544,7 +1546,8 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
                 orderId: orderId,
                 orderName: remotePayRequest.orderId ? `주문 번호 결제` : `모바일 식대 결제 요청`,
                 customerName: '고객',
-                storeName: storeName
+                storeName: storeName,
+                phone: userPhone
               });
               setRemotePayRequest(null);
             }
