@@ -51,6 +51,15 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
     }
   };
 
+  React.useEffect(() => {
+    if (initialPhone) {
+      const clean = initialPhone.replace(/[^0-9]/g, '');
+      if (clean.length >= 10) {
+        lookupPoints(clean);
+      }
+    }
+  }, [initialPhone]);
+
   const handlePay = async (method: string) => {
     setIsSubmitting(true);
     try {
