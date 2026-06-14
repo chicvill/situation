@@ -159,50 +159,85 @@ stateDiagram-v2
 본 플랫폼은 주문 창(모바일 고객), 주방 모니터(KDS), 카운터 POS 패널, 대형 전광판(Display Board) 등 **매장 내의 서로 다른 다중 웹 페이지들이 실시간으로 완벽하게 상호작용하며 통신하는 분산형 동기화 구조**를 지니고 있습니다. 손님이 폰으로 주문을 넣거나 주방장이 완료 버튼을 클릭하는 등의 행동이 발생하는 즉시, 전 기기에 0.1초 이내로 실시간 반영됩니다.
 
 #### 1. 🌟 시스템 핵심 특징 (Key System Characteristics)
-* **단일 연결 원칙 (Single Connection Protocol):** 각 클라이언트 페이지는 브라우저 기동 시 백엔드의 WebSocket 채널(`ws/kitchen` 또는 `ws/table/{table_id}`)로 단 하나의 커넥션만 유지합니다. 이를 통해 서버 부하를 무결하게 억제하면서 초고속 수납 채널을 보장합니다.
-* **이벤트 소싱 기반 경량 알림 (Lightweight Event Sourcing):** 무겁고 변조의 여지가 있는 가공되지 않은 통 데이터 전체를 웹소켓으로 직접 퍼 나르지 않습니다. 대신 백엔드는 `"NEW_ORDER"`, `"STATUS_UPDATED"`, `"PAYMENT_APPROVED"`와 같은 **초경량 표준 액션 이벤트 시그널**만을 순간적으로 멀티캐스트(Multicast)합니다.
+* **단일 연결 원칙 (Single Connection Protocol):** 각 클라이언트 페이지는 브라우저 기동 시 Mosquitto 로컬 브로커(TCP :1883 / WebSocket :9001)의 MQTT 채널로 단 하나의 구독(Subscription) 커넥션만 유지합니다. 이를 통해 서버 부하를 무결하게 억제하면서 초고속 수납 채널을 보장합니다.
+* **이벤트 소싱 기반 경량 알림 (Lightweight Event Sourcing):** 무겁고 변조의 여지가 있는 가공되지 않은 통 데이터 전체를 소켓으로 직접 퍼 나르지 않습니다. 대신 백엔드는 `store/{store_id}` 등의 단일 채널로 `"NEW_ORDER"`, `"STATUS_UPDATE"`, `"STAFF_CALL"`, `"PAYMENT_CONFIRMED"` 등 **초경량 표준 액션 이벤트 시그널**만을 순간적으로 발행(Publish)합니다.
 * **사일런트 풀링 동기화 (Silent Pull-Sync Architecture):** 액션 시그널을 수신한 클라이언트 페이지는 해당 신호의 종류에 알맞은 API를 배경에서 자동으로 정밀 호출(Silent Fetch)하여 수렴 데이터를 조회합니다. 데이터 유실 및 메모리 상태 정합성 오염을 100% 차단하며, 최상의 렌더링 성능과 무결한 영구 상태 정합성을 동시에 달성합니다.
-* **다중 가상 매장 논리 격리 (Multi-Tenant Logic Isolation):** 통합 소켓 허브(`ws/kitchen`)를 이용함에도 불구하고, 수신된 소켓 프레임에 담긴 `store_id`를 각 브라우저가 본인의 활성 `store_id`와 대조하여 필터링하므로 여러 가맹 매장이 동시 접속하더라도 데이터 혼선이 완벽히 예방됩니다.
+* **다중 가상 매장 논리 격리 (Multi-Tenant Logic Isolation):** 통합 MQTT 채널을 이용함에도 불구하고, 수신된 메시지에 담긴 `store_id`를 각 브라우저가 본인의 활성 `store_id`와 대조하여 필터링하므로 여러 가맹 매장이 동시에 접속하더라도 데이터 혼선이 완벽히 예방됩니다.
+* **폴링 안전망 (Polling Fallback):** MQTT 연결 실패 및 불안정한 인터넷 환경에 대비하여 3~5초 주기의 HTTP 폴링(Polling)이 백그라운드에서 병행 구동됩니다.
 
 ---
 
 #### 2. 🔌 실시간 통신 흐름 상세도 (Event Broadcasting Pipeline)
 
-```mermaid
-sequenceDiagram
-    participant Mobile as 📱 손님 모바일 (주문창)
-    participant Server as ⚡ 백엔드 서버 (WebSocket Hub)
-    participant KDS as 👨‍🍳 주방 모니터 (Kitchen Display)
-    participant POS as 💻 카운터 패드 (Counter POS)
-    participant Display as 📺 대형 전광판 (Display Board)
-
-    %% 1. 주문 발생 파이프라인
-    Note over Mobile,Display: [시나리오 A: 주문창에서 선결제 또는 후불 주문 완료 발생]
-    Mobile->>Server: 1. 주문서 전송 & 결제 처리 (HTTP POST)
-    Server->>Server: 2. DB 트랜잭션 완료 & 이벤트 생성
-    Server-->>KDS: 3. Websocket 전파 (NEW_ORDER)
-    Server-->>POS: 4. Websocket 전파 (NEW_ORDER)
-    KDS->>Server: 5. 신규 데이터 자동 조회 (Silent Fetch)
-    POS->>Server: 6. 신규 데이터 자동 조회 (Silent Fetch)
-    Note over KDS,POS: 💡 주방과 카운터 화면이 수동 새로고침 없이 즉시 갱신!
-
-    %% 2. 조리 완료 파이프라인
-    Note over Mobile,Display: [시나리오 B: 주방에서 특정 주문 "조리 완료" 처리]
-    KDS->>Server: 1. 조리 완료 상태 변경 요청 (HTTP POST)
-    Server->>Server: 2. DB 주문 상태 'ready' 갱신
-    Server-->>Display: 3. Websocket 전파 (STATUS_UPDATED)
-    Server-->>Mobile: 4. Websocket 전파 (KITCHEN_DONE)
-    Display->>Server: 5. 완료 주문 리스트 자동 조회 (Silent Fetch)
-    Mobile->>Server: 6. 세션 정보 갱신 (fetchMySession)
-    Note over Mobile,Display: 💡 전광판에 알림 전등 및 고객 스마트폰의 조리 상태바가 실시간 변경!
-
-    %% 3. 정산 및 마감 파이프라인
-    Note over Mobile,Display: [시나리오 C: 카운터에서 사장님이 정산 마감 및 테이블 세션 초기화]
-    POS->>Server: 1. 세션 종료 처리 (HTTP POST)
-    Server->>Server: 2. DB 세션 상태 'closed' 갱신
-    Server-->>Mobile: 3. Websocket 전파 (SESSION_CLOSED)
-    Mobile->>Mobile: 4. 브라우저 세션 클리어 및 리로드
-    Note over Mobile: 💡 고객 스마트폰 화면이 "감사합니다"와 함께 메인으로 안전 퇴장!
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         MQTT BROKER (Mosquitto)                                 │
+│                                                                                 │
+│   TCP :1883  ←── Backend (aiomqtt)          WebSocket :9001  ←── Frontend      │
+│                                                                                 │
+│   ┌──────────────────────────────────────────────────────────────────────────┐  │
+│   │  store/{store_id}          ← 매장 내 모든 이벤트 (주 토픽)               │  │
+│   │  store/broadcast           ← store_id 미확정 이벤트                     │  │
+│   │  store/+                   ← Total 모드 (store/broadcast 포함)           │  │
+│   │  store/{sid}/table/{tid}   ← 테이블별 개별 메시지 (신규)                 │  │
+│   │  situation/table/{tid}     ← 레거시 폴백 (store_id 없을 때)             │  │
+│   │  store/+/call              ← 모바일→백엔드 호출 (백엔드 전용 구독)       │  │
+│   └──────────────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────┬────────────────────────────────────────────────┘
+                                 │
+           ┌─────────────────────┴──────────────────────┐
+           │ PUBLISH                                     │ SUBSCRIBE
+           ▼                                             ▼
+┌─────────────────────┐                   ┌───────────────────────────────────────┐
+│   BACKEND (FastAPI) │                   │         FRONTEND (React + Vite)        │
+│                     │                   │                                        │
+│  ┌───────────────┐  │                   │  ┌──────────────────────────────────┐  │
+│  │  Routers      │  │                   │  │  [ 매니저 화면 ]                  │  │
+│  │               │  │                   │  │                                  │  │
+│  │ /api/order    │  │  store/{sid}      │  │  CounterPad                      │  │
+│  │ /api/notify   │──┼──────────────────►│  │  └ store/{sid} + store/broadcast │  │
+│  │ /api/waiting  │  │  store/broadcast  │  │    NEW_ORDER, STAFF_CALL,        │  │
+│  │ /api/parking  │  │  store/{sid}/     │  │    WAITING_*, PARKING_APPLIED,   │  │
+│  │ /api/session  │  │    table/{tid}    │  │    SESSION_*, PAYMENT_*          │  │
+│  │ /api/kitchen  │  │  situation/       │  │                                  │  │
+│  │ └──────┬────────┘  │    table/{tid}   │  │  KitchenDisplay                  │  │
+│         │           │                   │  │  └ store/{sid} + store/broadcast │  │
+│  ┌──────▼────────┐  │                   │  │    NEW_ORDER, STATUS_UPDATE,     │  │
+│  │ConnectionMgr  │  │                   │  │    PAYMENT_CONFIRMED             │  │
+│  │ (state.py)    │  │                   │  │                                  │  │
+│  │               │  │                   │  │  useStoreSync (공통 훅)           │  │
+│  │broadcast_to_  │  │                   │  │  └ store/{sid} (subscribeToStore)│  │
+│  │  kitchen()    │  │                   │  │    STAFF_CALL → 호출탭 깜빡임    │  │
+│  │send_to_table()│  │                   │  │    WAITING_REGISTERED → 대기탭   │  │
+│  └──────┬────────┘  │                   │  │    PARKING_APPLIED → 주차탭      │  │
+│         │           │                   │  │    딩동 + 카운트 배지 실시간     │  │
+│  ┌──────▼────────┐  │                   │  │                                  │  │
+│  │ mqtt_handler  │  │                   │  │  WaitingManager                  │  │
+│  │  (aiomqtt)    │  │                   │  │  └ subscribeToStore()            │  │
+│  │               │◄─┼── store/+/call    │  │    WAITING_REGISTERED,           │  │
+│  │ store/+/call  │  │  (모바일 호출수신)│  │    WAITING_UPDATED               │  │
+│  └──────┬────────┘  │                   │  │                                  │  │
+│         │           │                   │  │  useSituation (SituationConsole) │  │
+│  ┌──────▼────────┐  │                   │  │  └ store/{sid} 또는 store/+      │  │
+│  │  PostgreSQL   │  │                   │  │    모든 이벤트 → knowledge pool  │  │
+│  │  (psycopg2)   │  │                   └──┼──────────────────────────────────┘  │
+│  │               │  │                   │  │                                      │
+│  │  sessions     │  │                   │  │  ┌──────────────────────────────┐   │
+│  │  orders       │  │                   │  │  │  [ 고객 화면 (모바일 QR) ]   │   │
+│  │  calls        │  │                   │  │  │                              │   │
+│  │  waitings     │  │                   │  │  │  CustomerOrder               │   │
+│  │  parkings     │  │                   │  │  │  MobileOrderV2               │   │
+│  │  points       │  │                   │  │  │  Orders (v2)                 │   │
+│  │  reservations │  │                   │  │  │  QROrderFlow                 │   │
+│  │  └───────────────┘  │                   │  │  │                              │   │
+│                     │                   │  │  │  └ store/{sid}/table/{tid}   │   │
+│  ┌───────────────┐  │                   │  │  │    + situation/table/{tid}   │   │
+│  │ debug_writer  │  │                   │  │  │    SESSION_OPENED,           │   │
+│  │               │  │                   │  │  │    JOIN_RESPONSE,            │   │
+│  │ session.json  │◄─┤  _monitor()       │  │  │    SESSION_CLOSED,           │   │
+│  │ state.json    │  │  (자동 기록)      │  │  │    STATUS_UPDATE             │   │
+│  └───────────────┘  │                   │  │  └──────────────────────────────┘   │
+└─────────────────────┘                   └───────────────────────────────────────┘
 ```
 
 ---
@@ -214,12 +249,13 @@ sequenceDiagram
 | 이벤트명 (Type) | 송신 주체 | 수신 대상 | 주요 동작 및 영향 |
 | :--- | :--- | :--- | :--- |
 | `NEW_ORDER` | 주문창 (모바일) | 주방, 카운터 | 주방 화면에 주문서 카드 추가, 대기 중 주문 카운트 실시간 증가 |
-| `PAYMENT_APPROVED` | 외부 결제 대행 (Toss) | 주문창, 카운터 | 결제 대기 상태가 해제되며 주방으로 정상 주문 발송 처리 |
-| `STATUS_UPDATED` | 주방 (조리 완료) | 전광판, 주문창 | 대형 전광판에 호출 번호 자동 점등, 고객폰 알림 활성화 |
-| `STAFF_CALL` | 주문창 (호출 버튼) | 카운터 | 카운터 화면 하단의 직원 호출 탭에 알림 깜빡임 점멸 가동 |
+| `PAYMENT_CONFIRMED` | 카운터 / Toss | 주문창, 카운터 | 결제가 완료되어 상태가 paid로 업데이트되며 화면 갱신 및 매출 기록 |
+| `STATUS_UPDATE` | 주방 / 카운터 | 주방, 카운터, 주문창 | 주문 진행 단계 변경(cooking, ready, served 등)에 따른 화면 갱신 |
+| `STAFF_CALL` | 주문창 (호출 버튼) | 카운터 | 카운터 화면 하단의 직원 호출 탭에 알림 깜빡임 점멸 가동 및 딩동음 재생 |
 | `SESSION_OPENED` | 카운터 (점장 승인) | 주문창 (모바일) | QR 스캔 대기 화면에서 실시간 메뉴판 화면으로 페이지 즉시 자동 전환 |
 | `SESSION_CLOSED` | 카운터 (정산/퇴장) | 주문창 (모바일) | 식사가 끝난 고객의 주문 페이지를 영구 정지하고 홈으로 내보냄 |
 | `WAITING_REGISTERED`| 웨이팅 패드 (입구) | 카운터 | 실시간 웨이팅 탭에 신규 고객 대기 신청을 자동 갱신 및 경보 |
+| `PARKING_APPLIED` | 주문창 (셀프주차) | 카운터, 주문창 | 주차 할인 2시간 적용 완료 실시간 알림 |
 
 ---
 
@@ -238,8 +274,8 @@ flowchart TD
     %% 1. 후불 파이프라인
     CashFlow --> CreateOrderCash[API /api/order/direct 호출]
     CreateOrderCash --> DB_SaveCash[주문 DB 저장<br/>status: 'cooking'<br/>payment_status: 'unpaid']
-    DB_SaveCash --> WS_BroadcastCash[주방/카운터에 실시간 알림 전송<br/>event: STATUS_UPDATE / NEW_ORDER]
-    WS_BroadcastCash --> KitchenShowCash[👨‍🍳 주방 모니터에 즉시 주문 카드 깜빡이며 노출]
+    DB_SaveCash --> MQTT_BroadcastCash[주방/카운터에 실시간 알림 전송<br/>event: STATUS_UPDATE / NEW_ORDER]
+    MQTT_BroadcastCash --> KitchenShowCash[👨‍🍳 주방 모니터에 즉시 주문 카드 깜빡이며 노출]
     
     %% 2. 선불 파이프라인
     CardFlow --> CreateOrderCard[API /api/order/direct 호출]
@@ -248,15 +284,15 @@ flowchart TD
     Toss_SDK -->|손님이 결제 인증 완료| Toss_Success[API /api/payment/confirm 호출]
     Toss_Success --> DB_UpdateCard[주문 DB 상태 확정 업데이트<br/>status: 'cooking'<br/>payment_status: 'paid']
     
-    %% 중요! 실시간 웹소켓 전파
-    DB_UpdateCard --> WS_BroadcastCard["🔌 실시간 웹소켓 알림 동시 전파<br/>event: STATUS_UPDATE (cooking) & PAYMENT_CONFIRMED"]
-    WS_BroadcastCard --> KitchenShowCard[👨‍🍳 주방 모니터에 실시간 동기화되어 주문 카드 노출]
-    WS_BroadcastCard --> CounterShowCard[💰 카운터 POS 패드에 실시간 '결제완료/조리중' 상태 동기화]
+    %% 중요! 실시간 MQTT 전파
+    DB_UpdateCard --> MQTT_BroadcastCard["🔌 실시간 MQTT 알림 동시 전파<br/>event: STATUS_UPDATE (cooking) & PAYMENT_CONFIRMED"]
+    MQTT_BroadcastCard --> KitchenShowCard[👨‍🍳 주방 모니터에 실시간 동기화되어 주문 카드 노출]
+    MQTT_BroadcastCard --> CounterShowCard[💰 카운터 POS 패드에 실시간 '결제완료/조리중' 상태 동기화]
 
     classDef success fill:#10b981,stroke:#047857,color:#fff;
     classDef highlight fill:#f59e0b,stroke:#b45309,color:#fff;
     class KitchenShowCash,KitchenShowCard,CounterShowCard success;
-    class WS_BroadcastCard highlight;
+    class MQTT_BroadcastCard highlight;
 ```
 
 ---
@@ -281,7 +317,7 @@ graph TD
         ParkReg[🚗 주차 자동 등록]
     end
 
-    GuestApp <-->|실시간 API / WS 연결| CounterPanel
+    GuestApp <-->|실시간 API / MQTT 연결| CounterPanel
 ```
 
 ---
@@ -365,21 +401,21 @@ graph TD
 
 ---
 
-## 6. 🎛️ 실시간 웹소켓 동기화 매트릭스 (Real-time WS Event Matrix)
+## 6. 🎛️ 실시간 MQTT 동기화 매트릭스 (Real-time MQTT Event Matrix)
 
 어느 단말기에서 이벤트가 발생하든 즉각적으로 다른 단말기들이 0.1초 만에 최신 정보를 갱신하도록 구성하는 백엔드 전파 계약서입니다.
 
-| 전송 주체 (Sender) | 유발 동작 (Action) | 웹소켓 이벤트명 (`type`) | 데이터 페이로드 (`payload`) | 수신 주체 및 반응 (Receiver Action) |
-| :--- | :--- | :--- | :--- | :--- |
-| **백엔드 (API)** | 새로운 손님 QR 스캔 대기 | `JOIN_REQUEST` | `table_id`, `device_id` | **카운터 & 기존손님:** 신규 기기 합류 승인 팝업 노출 |
-| **백엔드 (API)** | 세션 승인 / 수동 개시 | `SESSION_OPENED` | `session` (상태: `active`) | **손님 스마트폰:** 대기 화면 해제 및 메뉴판 즉시 활성화 |
-| **백엔드 (API)** | 테이블 정산 완료 및 퇴실 | `SESSION_CLOSED` | `session_id` | **손님 스마트폰:** 첫 로딩 화면으로 복귀 (세션 초기화) |
-| **백엔드 (API)** | 신규 후불 주문 등록 | `NEW_ORDER` | `order` (상태: `cooking`) | **주방 모니터 & 카운터:** 화면 리로드 및 신규 알림음 출력 |
-| **백엔드 (API)** | 선불 결제 승인 성공 | `STATUS_UPDATE` | `order_id`, `status: 'cooking'` | **주방 모니터 & 카운터:** '결제완료/조리대기' 리스트에 주문 카드 자동 추가 |
-| **주방 (Monitor)**| 셰프의 [조리 완료] 클릭 | `STATUS_UPDATE` | `order_id`, `status: 'ready'` | **카운터 패드:** '서빙대기' 색상 표출<br>**손님 스마트폰:** 주문 진행 상황 '조리' 완료 체크 |
-| **카운터 (POS)**  | 카운터 직원의 [서빙 완료] | `STATUS_UPDATE` | `order_id`, `status: 'served'` | **손님 스마트폰:** 진행 현황 '서빙 완료' 체크 및 소등 |
-| **백엔드 (API)** | 손님의 대기 신청 등록 | `WAITING_REGISTERED` | `waiting_id`, `phone_number` | **카운터 패드:** 대기 목록 카운트 갱신 및 실시간 경고음 출력 |
-| **백엔드 (API)** | 손님의 모바일 용건 호출 | `STAFF_CALL` | `call_id`, `table_id`, `call_type`| **카운터 패드:** "T03번 물 배달" 알림 팝업 및 깜빡임 연동 |
+| MQTT 토픽 (Topic) | 전송 주체 (Sender) | 유발 동작 (Action) | 이벤트명 (`type`) | 데이터 페이로드 (`payload`) | 수신 주체 및 반응 (Receiver Action) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `store/{sid}/table/{tid}` | **백엔드 (API)** | 새로운 손님 QR 스캔 대기 | `JOIN_REQUEST` | `table_id`, `device_id` | **카운터 & 기존손님:** 신규 기기 합류 승인 팝업 노출 |
+| `store/{sid}/table/{tid}` | **백엔드 (API)** | 세션 승인 / 수동 개시 | `SESSION_OPENED` | `session` (상태: `active`) | **손님 스마트폰:** 대기 화면 해제 및 메뉴판 즉시 활성화 |
+| `store/{sid}/table/{tid}` | **백엔드 (API)** | 테이블 정산 완료 및 퇴실 | `SESSION_CLOSED` | `session_id` | **손님 스마트폰:** 첫 로딩 화면으로 복귀 (세션 초기화) |
+| `store/{store_id}` | **백엔드 (API)** | 신규 후불 주문 등록 | `NEW_ORDER` | `order` (상태: `cooking`) | **주방 모니터 & 카운터:** 화면 리로드 및 신규 알림음 출력 |
+| `store/{store_id}` | **백엔드 (API)** | 선불 결제 승인 성공 | `STATUS_UPDATE` | `order_id`, `status: 'cooking'` | **주방 모니터 & 카운터:** '결제완료/조리대기' 리스트에 주문 카드 자동 추가 |
+| `store/{store_id}` | **주방 (Monitor)** | 셰프의 [조리 완료] 클릭 | `STATUS_UPDATE` | `order_id`, `status: 'ready'` | **카운터 패드:** '서빙대기' 색상 표출<br>**손님 스마트폰:** 주문 진행 상황 '조리' 완료 체크 |
+| `store/{store_id}` | **카운터 (POS)** | 카운터 직원의 [서빙 완료] | `STATUS_UPDATE` | `order_id`, `status: 'served'` | **손님 스마트폰:** 진행 현황 '서빙 완료' 체크 및 소등 |
+| `store/{store_id}` | **백엔드 (API)** | 손님의 대기 신청 등록 | `WAITING_REGISTERED` | `waiting_id`, `phone_number` | **카운터 패드:** 대기 목록 카운트 갱신 및 실시간 경고음 출력 |
+| `store/+/call` -> `store/{store_id}` | **백엔드 (API)** | 손님의 모바일 용건 호출 | `STAFF_CALL` | `call_id`, `table_id`, `call_type` | **카운터 패드:** "T03번 물 배달" 알림 팝업 및 깜빡임 연동 |
 
 ---
 
@@ -426,8 +462,8 @@ graph TD
 ---
 
 ### 🧱 7-2. 아키텍처 연동 및 침범 금지 원칙
-1. **동기화는 웹소켓 브로드캐스트로 통합**
-   * 데이터베이스 값을 직접 업데이트하는 모든 API(`/api/order/status`, `/api/payment/confirm`, `/api/session/open`)는 반드시 DB 처리 성공 직후 `ConnectionManager`를 통해 `STATUS_UPDATE` 또는 `NEW_ORDER`를 브로드캐스트해야 합니다.
+1. **동기화는 MQTT 브로드캐스트로 통합**
+   * 데이터베이스 값을 직접 업데이트하는 모든 API(`/api/order/status`, `/api/payment/confirm`, `/api/session/open`)는 반드시 DB 처리 성공 직후 MQTT 브로커를 통해 `store/{store_id}` 또는 `store/{store_id}/table/{table_id}` 토픽으로 이벤트를 발행(Publish)해야 합니다.
 2. **영역별 독립성(Sandboxing) 유지**
    * 손님 스마트폰 결제창 로직을 수정할 때, 주방 모니터가 데이터를 페치하는 주소(`get_kitchen_orders`)나 쿼리를 건드리지 않습니다.
    * 공용 유틸리티(`storeFilter.ts` 등)의 구조를 바꿀 때는 반드시 전 사가 사용하는 모든 탭의 기본 테스트를 거칩니다.
