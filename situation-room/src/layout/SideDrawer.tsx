@@ -97,7 +97,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
             <button onClick={() => onNavigate('hr')}>👥 직원 및 근태 관리</button>
           )}
           <button onClick={() => onNavigate('tech')}>🛠 기술 정보</button>
-          <button onClick={() => onNavigate('simulator')}>🎭 결제 시나리오 시뮬레이터</button>
+          <button onClick={() => onNavigate('simulator')}>💳 payapp 설정 방법</button>
           {user?.role === 'admin' && (
             <>
               <button onClick={() => onNavigate('admin')}>🏢 플랫폼 가맹점 관리</button>
