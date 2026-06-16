@@ -72,10 +72,11 @@ async def login(data: dict):
     if not pw_valid:
         raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다")
 
-    if not db_approved and db_role != "admin":
+    if not db_approved and db_role not in ("admin", "owner"):
         raise HTTPException(status_code=403, detail="승인 대기 중인 계정입니다. 관리자 승인 후 로그인 가능합니다.")
 
     store_id = db_store_id or ""
     name = db_name or db_username
     token = create_token(db_username, store_id, db_role)
-    return {"token": token, "role": db_role, "store_id": store_id, "name": name}
+    return {"token": token, "role": db_role, "store_id": store_id, "name": name, "is_approved": db_approved}
+

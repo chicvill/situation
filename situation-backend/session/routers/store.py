@@ -131,7 +131,8 @@ async def get_store_settings(store_id: str):
         get_store_use_staff,
         get_store_use_dutch,
         get_reservation_settings,
-        get_store_table_count
+        get_store_table_count,
+        get_db_conn
     )
     use_kitchen = get_store_use_kitchen(store_id)
     use_call = get_store_use_call(store_id)
@@ -144,6 +145,30 @@ async def get_store_settings(store_id: str):
     use_dutch = get_store_use_dutch(store_id)
     reservation_settings = get_reservation_settings(store_id)
     table_count = get_store_table_count(store_id)
+    
+    # RDBMS에서 payment_status 및 점주 승인 여부 동적 쿼리
+    payment_status = "정상"
+    is_approved = True
+    conn = get_db_conn()
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT payment_status, signature_owner FROM stores WHERE id = %s", (store_id,))
+            row = cur.fetchone()
+            if row:
+                payment_status = row[0] or "정상"
+                owner_username = row[1]
+                if owner_username:
+                    cur.execute("SELECT is_approved FROM users WHERE username = %s", (owner_username,))
+                    urow = cur.fetchone()
+                    if urow:
+                        is_approved = bool(urow[0])
+            cur.close()
+        except Exception as e:
+            print(f"Error querying payment_status in API: {e}")
+        finally:
+            conn.close()
+
     return {
         "store_id": store_id,
         "use_kitchen": use_kitchen,
@@ -156,7 +181,9 @@ async def get_store_settings(store_id: str):
         "use_staff": use_staff,
         "use_dutch": use_dutch,
         "reservation_settings": reservation_settings,
-        "table_count": table_count
+        "table_count": table_count,
+        "payment_status": payment_status,
+        "is_approved": is_approved
     }
 
 

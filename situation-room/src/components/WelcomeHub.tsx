@@ -419,8 +419,68 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
     !isNewOwnerBuildingStore &&
     ((user?.role === 'owner' && pendingStaffList.length > 0) || (user?.role === 'admin' && pendingOwnerList.length > 0));
 
+  if (user?.role === 'owner' && storeDetails?.payment_status === '연체') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', padding: '30px', textAlign: 'center', background: '#090d16', color: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
+        <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '24px', padding: '40px', maxWidth: '460px', width: '100%', boxShadow: '0 20px 50px rgba(239,68,68,0.15)' }}>
+          <span style={{ fontSize: '4rem', display: 'block', marginBottom: '20px' }}>🚨</span>
+          <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#fca5a5', margin: '0 0 12px 0' }}>서비스 이용 일시 정지 안내</h2>
+          <p style={{ fontSize: '0.92rem', color: '#cbd5e1', lineHeight: '1.6', margin: '0 0 24px 0' }}>
+            가입 1개월 무료 체험 기간이 만료되어 <strong>가맹 이용료(월 사용료)가 청구</strong>되었습니다.<br />
+            현재 미납 상태로 매장 시스템 운영이 일시 정지(가맹비 연체 상태)되었습니다.
+          </p>
+          
+          <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '20px', textAlign: 'left', marginBottom: '24px', fontSize: '0.88rem' }}>
+            <h4 style={{ margin: '0 0 10px 0', color: '#fff', fontWeight: 800 }}>💰 플랫폼 이용료 납부 계좌</h4>
+            <p style={{ margin: '4px 0', color: '#cbd5e1' }}><strong>은행명:</strong> 국민은행</p>
+            <p style={{ margin: '4px 0', color: '#cbd5e1' }}><strong>계좌번호:</strong> 123-45-6789-012</p>
+            <p style={{ margin: '4px 0', color: '#cbd5e1' }}><strong>예금주:</strong> (주)시튜에이션스마트POS</p>
+            <p style={{ margin: '12px 0 0 0', color: '#fda4af', fontWeight: 700 }}>* 청구 금액: 월 { (storeDetails?.monthly_fee || 10000).toLocaleString() }원</p>
+          </div>
+          
+          <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 20px 0' }}>
+            * 가맹비 입금 확인 즉시 당사 최고관리자(Admin)가 운영 정지를 해제하고 서비스를 재활성화해 드립니다.
+          </p>
+          
+          <button 
+            onClick={onLogout}
+            style={{ width: '100%', padding: '14px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s' }}
+          >
+            🔓 로그아웃
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="welcome-hub-container animate-fade-in" style={{ padding: '12px 14px', maxWidth: '560px', margin: '0 auto' }}>
+
+      {/* ⏳ 미승인 (PayApp 가입 연동 중) 안내 배너 */}
+      {!user?.is_approved && user?.role === 'owner' && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.04))',
+          border: '1.5px dashed #f59e0b',
+          borderRadius: '16px',
+          padding: '16px 20px',
+          marginBottom: '14px',
+          fontSize: '0.85rem',
+          color: 'var(--text-main)',
+          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.05)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <span style={{ fontSize: '1.6rem' }}>⏳</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
+            <span style={{ fontWeight: '800', color: '#e0a82e' }}>[PayApp 가맹 승인 및 연동 심사 진행 중]</span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+              현재 최고관리자가 PayApp 가입 및 승인을 대행 처리하고 있습니다. 
+              승인 완료(1~2일 소요) 전까지 실결제는 대기 상태이나, 매장 설정 및 메뉴 구성, 직원 등록 등의 운영 준비는 자유롭게 진행 가능합니다.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* 1. Header with Edit Button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>

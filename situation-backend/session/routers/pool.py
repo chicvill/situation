@@ -234,6 +234,107 @@ async def update_bundle(bundle_id: str, bundle: Dict):
                         conn.close()
                         print(f"🔄 Sync Engine [JSON + RDBMS]: users 테이블 계정 동기화 완료 ({username})")
 
+                # 점주 가입 신청 시 빈 매장 뼈대 자동 생성 연동 (RDBMS 및 JSON Pool 동시 반영)
+                if role == "owner" and store_id:
+                    store_name = bundle.get("store") or "새로운 매장"
+                    # 요금 옵션 파싱 (기본료 10,000 + 옵션 개수 * 1,000)
+                    use_call = items_dict.get("옵션_호출") == "Y"
+                    use_waiting = items_dict.get("옵션_대기") == "Y"
+                    use_parking = items_dict.get("옵션_주차") == "Y"
+                    use_points = items_dict.get("옵션_포인트") == "Y"
+                    use_staff = items_dict.get("옵션_직원") == "Y"
+                    
+                    active_options = sum([use_call, use_waiting, use_parking, use_points, use_staff])
+                    monthly_fee = 10000 + (active_options * 1000)
+                    
+                    biz_no = items_dict.get("사업자번호") or ""
+                    open_date = items_dict.get("개업일자") or ""
+                    table_count_val = items_dict.get("테이블수")
+                    try:
+                        table_count = int(table_count_val) if table_count_val else 12
+                    except:
+                        table_count = 12
+                    
+                    # 1. stores 에 매장 생성
+                    conn_store = get_db_conn()
+                    if conn_store:
+                        cur_store = conn_store.cursor()
+                        cur_store.execute("SELECT id FROM stores WHERE id = %s", (store_id,))
+                        if not cur_store.fetchone():
+                            cur_store.execute("""
+                                INSERT INTO stores (id, name, ceo_name, signature_owner, monthly_fee, payment_status, payment_history, created_at, table_count, use_call, use_waiting, use_parking, use_points, use_staff)
+                                VALUES (%s, %s, %s, %s, %s, '정상', '[]', NOW(), %s, %s, %s, %s, %s, %s)
+                            """, (store_id, store_name, full_name, username, monthly_fee, table_count, use_call, use_waiting, use_parking, use_points, use_staff))
+                            conn_store.commit()
+                            print(f"🏠 신규 점주 빈 매장 개설 완료: {store_name} ({store_id})")
+                        cur_store.close()
+                        conn_store.close()
+                        
+                    # 2. RDBMS knowledge_bundles 에 빈 Menus 및 StoreConfig 번들 생성
+                    menu_bundle_id = f"MENUS_{store_id}"
+                    config_bundle_id = f"store-config-{store_id}"
+                    config_items = [
+                        {"name": "상호명", "value": store_name},
+                        {"name": "사업자번호", "value": biz_no},
+                        {"name": "대표자", "value": full_name},
+                        {"name": "개업일자", "value": open_date},
+                        {"name": "테이블설정", "value": f"1번부터 {table_count}번까지 기본 배치"}
+                    ]
+                    
+                    import json
+                    conn_bundles = get_db_conn()
+                    if conn_bundles:
+                        cur_b = conn_bundles.cursor()
+                        # Menus
+                        cur_b.execute("""
+                            INSERT INTO knowledge_bundles (id, type, store_id, title, items, timestamp)
+                            VALUES (%s, 'Menus', %s, '메뉴 정보', '[]', NOW())
+                            ON CONFLICT (id) DO NOTHING
+                        """, (menu_bundle_id, store_id))
+                        # StoreConfig
+                        cur_b.execute("""
+                            INSERT INTO knowledge_bundles (id, type, store_id, title, items, timestamp)
+                            VALUES (%s, 'StoreConfig', %s, '매장 정보', %s, NOW())
+                            ON CONFLICT (id) DO NOTHING
+                        """, (config_bundle_id, store_id, json.dumps(config_items, ensure_ascii=False)))
+                        conn_bundles.commit()
+                        cur_b.close()
+                        conn_bundles.close()
+                        
+                    # 3. JSON pool(knowledge_pool.json) 파일에도 Menus와 StoreConfig 추가 후 저장
+                    current_pool = list(load_pool())
+                    has_menus = any(x.get("id") == menu_bundle_id for x in current_pool)
+                    has_config = any(x.get("id") == config_bundle_id for x in current_pool)
+                    pool_changed = False
+                    
+                    if not has_menus:
+                        current_pool.append({
+                            "id": menu_bundle_id,
+                            "type": "Menus",
+                            "title": "메뉴 정보",
+                            "store_id": store_id,
+                            "store": store_name,
+                            "timestamp": bundle.get("timestamp") or "",
+                            "items": []
+                        })
+                        pool_changed = True
+                    if not has_config:
+                        current_pool.append({
+                            "id": config_bundle_id,
+                            "type": "StoreConfig",
+                            "title": "매장 정보",
+                            "store_id": store_id,
+                            "store": store_name,
+                            "status": "approved",
+                            "timestamp": bundle.get("timestamp") or "",
+                            "items": config_items
+                        })
+                        pool_changed = True
+                        
+                    if pool_changed:
+                        save_pool(current_pool)
+                        print(f"📁 JSON Pool에 Menus/StoreConfig 추가 완료 ({store_id})")
+
         except Exception as sync_err:
             print(f"⚠️ Sync Engine Warning: Failed to sync bundle data to PostgreSQL tables: {sync_err}")
 

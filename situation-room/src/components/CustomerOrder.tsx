@@ -32,6 +32,21 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
   const [isWaitingForPartyApproval, setIsWaitingForPartyApproval] = useState(false);
   const [pendingJoinRequest, setPendingJoinRequest] = useState<{ deviceId: string; sessionId: string } | null>(null);
   const [isJoinedDevice, setIsJoinedDevice] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState('정상');
+  const [isStoreApproved, setIsStoreApproved] = useState(true);
+
+  useEffect(() => {
+    if (!storeId) return;
+    fetch(`${API_BASE}/api/stores/${storeId}/settings`)
+      .then(res => res.json())
+      .then(data => {
+        if (data) {
+          setPaymentStatus(data.payment_status || '정상');
+          setIsStoreApproved(data.is_approved !== false);
+        }
+      })
+      .catch(err => console.error("Error fetching settings in CustomerOrder:", err));
+  }, [storeId]);
 
   const playDingDong = () => {
     try {
@@ -251,6 +266,10 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
     });
 
   const handleSubmit = async (method: string | null = null, isCall: boolean = false, extraData?: any) => {
+    if (!isCall && method && !isStoreApproved) {
+      alert("⏳ 가맹점 승인 대기 안내\n\n현재 이 매장은 최고관리자(Admin)의 PayApp 결제 연동 심사가 진행 중입니다.\n\n심사가 완료(1~2일 소요)된 이후부터 테이블 선불 결제 기능을 이용하실 수 있습니다. 주문은 직원에게 구두로 직접 진행해 주세요!");
+      return;
+    }
     if (extraData?.phone) {
       setUserPhone(extraData.phone);
       localStorage.setItem('user_phone', extraData.phone);
@@ -462,6 +481,21 @@ export const CustomerOrder: React.FC<Props> = ({ bundles, storeId, storeName }) 
           >
             🍽️ 추가주문
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentStatus === '연체') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '30px', textAlign: 'center', background: '#090d16', color: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
+        <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '24px', padding: '40px', maxWidth: '440px', width: '100%', boxShadow: '0 20px 50px rgba(239,68,68,0.15)' }}>
+          <span style={{ fontSize: '4rem', display: 'block', marginBottom: '20px' }}>⚠️</span>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fca5a5', margin: '0 0 12px 0' }}>매장 서비스 점검 중</h2>
+          <p style={{ fontSize: '0.9rem', color: '#cbd5e1', lineHeight: '1.6', margin: '0' }}>
+            현재 본 매장은 플랫폼 서비스 사용료 정산 지연으로 인해 <strong>시스템 운영이 임시 제한</strong>되었습니다.<br />
+            불편을 드려 죄송합니다. 매장 점원에게 직접 주문을 진행해 주세요.
+          </p>
         </div>
       </div>
     );

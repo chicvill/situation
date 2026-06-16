@@ -28,6 +28,8 @@ import { NotificationToast } from './components/NotificationToast';
 import { WelcomeHub } from './components/WelcomeHub';
 import { StaffDashboard } from './components/StaffDashboard';
 import { useSituation } from './hooks/useSituation';
+import { LandingHome } from './components/welcome/LandingHome';
+import { ContractSignup } from './components/welcome/ContractSignup';
 import { useStoreFilter } from './hooks/useStoreFilter';
 import { useStoreSync } from './hooks/useStoreSync';
 import { TopBar } from './layout/TopBar';
@@ -50,6 +52,7 @@ function App() {
   const { padMode: displayPad } = usePadMode('display');
 
   const [user, setUser] = useState<any>(null);
+  const [nonAuthView, setNonAuthView] = useState<'landing' | 'login' | 'signup'>('landing');
   const [reminderQueue, setReminderQueue] = useState<any[]>([]);
   const [selectedAdminStore, setSelectedAdminStore] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -463,6 +466,44 @@ function App() {
   }
 
   const renderContent = () => {
+    // 🚨 Overdue billing guard for store dashboard/personnel (Owner, Manager, Staff)
+    if (user && user.role !== 'admin' && user.role !== 'customer' && storeDetails?.payment_status === '연체') {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', padding: '30px', textAlign: 'center', background: '#090d16', color: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
+          <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '24px', padding: '40px', maxWidth: '460px', width: '100%', boxShadow: '0 20px 50px rgba(239,68,68,0.15)' }}>
+            <span style={{ fontSize: '4rem', display: 'block', marginBottom: '20px' }}>🚨</span>
+            <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#fca5a5', margin: '0 0 12px 0' }}>서비스 이용 일시 정지 안내</h2>
+            <p style={{ fontSize: '0.92rem', color: '#cbd5e1', lineHeight: '1.6', margin: '0 0 24px 0' }}>
+              가입 1개월 무료 체험 기간이 만료되어 <strong>가맹 이용료(월 사용료)가 청구</strong>되었습니다.<br />
+              현재 미납 상태로 매장 시스템 운영이 일시 정지(가맹비 연체 상태)되었습니다.
+            </p>
+            
+            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '20px', textAlign: 'left', marginBottom: '24px', fontSize: '0.88rem' }}>
+              <h4 style={{ margin: '0 0 10px 0', color: '#fff', fontWeight: 800 }}>💰 플랫폼 이용료 납부 계좌</h4>
+              <p style={{ margin: '4px 0', color: '#cbd5e1' }}><strong>은행명:</strong> 국민은행</p>
+              <p style={{ margin: '4px 0', color: '#cbd5e1' }}><strong>계좌번호:</strong> 123-45-6789-012</p>
+              <p style={{ margin: '4px 0', color: '#cbd5e1' }}><strong>예금주:</strong> (주)시튜에이션스마트POS</p>
+              <p style={{ margin: '12px 0 0 0', color: '#fda4af', fontWeight: 700 }}>* 청구 금액: 월 { (storeDetails?.monthly_fee || 10000).toLocaleString() }원</p>
+            </div>
+            
+            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 20px 0' }}>
+              {user.role === 'owner' 
+                ? '* 가맹비 입금 확인 즉시 당사 최고관리자(Admin)가 운영 정지를 해제하고 서비스를 재활성화해 드립니다.'
+                : '* 가맹점 가맹비 연체 상태로 인해 시스템 사용이 중지되었습니다. 점주에게 문의해 주세요.'
+              }
+            </p>
+            
+            <button 
+              onClick={handleLogout}
+              style={{ width: '100%', padding: '14px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '12px', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer', transition: 'all 0.2s' }}
+            >
+              🔓 로그아웃
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'guide':
       case 'orderV2': {
@@ -529,6 +570,38 @@ function App() {
     }
   };
 
+  const renderNonAuthContent = () => {
+    if (nonAuthView === 'landing') {
+      return <LandingHome onNavigate={(view) => setNonAuthView(view)} />;
+    } else if (nonAuthView === 'signup') {
+      return (
+        <ContractSignup 
+          onBack={() => setNonAuthView('landing')} 
+          onSignupSuccess={(u) => {
+            handleLogin(u);
+          }}
+        />
+      );
+    } else {
+      return (
+        <div className="login-wrapper-view" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 50% 50%, #0d1527 0%, #070a12 90%)', padding: '20px' }}>
+          <div style={{ width: '100%', maxWidth: '420px', position: 'relative' }}>
+            <button 
+              onClick={() => setNonAuthView('landing')}
+              style={{ position: 'absolute', top: '-40px', left: '0', background: 'transparent', border: 'none', color: '#94a3b8', fontWeight: 700, cursor: 'pointer', fontSize: '0.95rem' }}
+            >
+              ← 홈페이지로 돌아가기
+            </button>
+            <Login onLogin={handleLogin} bundles={bundles} />
+          </div>
+        </div>
+      );
+    }
+  };
+
+  if (!user) {
+    return renderNonAuthContent();
+  }
 
   return (
     <div className={`saas-container mobile-full-mode ${isCustomerMode ? 'customer-mode' : ''} ${isPadLayout ? 'wide-layout' : ''}`}>
@@ -606,7 +679,7 @@ function App() {
       )}
 
       {/* ── Side Drawer (includes overlay) ── */}
-      {!isCustomerMode && user && user.role !== 'staff' && (
+      {!isCustomerMode && user && user.role !== 'staff' && storeDetails?.payment_status !== '연체' && (
         <SideDrawer
           isOpen={isMenuOpen}
           storeName={storeName}
@@ -628,7 +701,11 @@ function App() {
         user={user}
         currentTime={currentTime}
         isCustomerMode={isCustomerMode}
-        onMenuOpen={() => setIsMenuOpen(true)}
+        onMenuOpen={() => {
+          if (storeDetails?.payment_status !== '연체') {
+            setIsMenuOpen(true);
+          }
+        }}
         onSwitchStore={() => setSelectedAdminStore(null)}
       />
 
@@ -645,7 +722,7 @@ function App() {
         </div>
       </main>
 
-      {!isCustomerMode && user && activeTab !== 'order' && activeTab !== 'orderV2' && (
+      {!isCustomerMode && user && activeTab !== 'order' && activeTab !== 'orderV2' && storeDetails?.payment_status !== '연체' && (
         <BottomNav
           navItems={navItems}
           activeTab={activeTab}
@@ -662,7 +739,7 @@ function App() {
         />
       )}
 
-      {!isCustomerMode && user && (
+      {!isCustomerMode && user && storeDetails?.payment_status !== '연체' && (
         <NotificationToast
           storeId={storeId}
           onNavigate={(tab) => navigateTo(tab as MainTab)}
