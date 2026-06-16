@@ -390,6 +390,8 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
     return links;
   };
 
+  const isApproved = storeDetails ? storeDetails.is_approved : user?.is_approved;
+
   // Real-time Onboarding Data Matching
   const isStep1Done = !!storeDetails;
 
@@ -457,7 +459,7 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
     <div className="welcome-hub-container animate-fade-in" style={{ padding: '12px 14px', maxWidth: '560px', margin: '0 auto' }}>
 
       {/* ⏳ 미승인 (PayApp 가입 연동 중) 안내 배너 */}
-      {!user?.is_approved && user?.role === 'owner' && (
+      {!isApproved && user?.role === 'owner' && (
         <div style={{
           background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.04))',
           border: '1.5px dashed #f59e0b',
@@ -475,8 +477,9 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
             <span style={{ fontWeight: '800', color: '#e0a82e' }}>[PayApp 가맹 승인 및 연동 심사 진행 중]</span>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-              현재 최고관리자가 PayApp 가입 및 승인을 대행 처리하고 있습니다. 
-              승인 완료(1~2일 소요) 전까지 실결제는 대기 상태이나, 매장 설정 및 메뉴 구성, 직원 등록 등의 운영 준비는 자유롭게 진행 가능합니다.
+              현재 최고관리자가 PayApp 가입 및 승인을 대행 처리하고 있습니다.<br />
+              가맹 승인 및 결제 연동 심사를 완료하기 위해, <strong>사업자등록증, 통장 사본, 대표자 신분증</strong> 사본을 당사 대표 이메일(<a href="mailto:mqnet@naver.com" style={{ color: '#e0a82e', fontWeight: 'bold', textDecoration: 'underline' }}>mqnet@naver.com</a>)로 즉시 제출해 주시기 바랍니다.<br />
+              승인 완료(서류 제출 후 1~2일 소요) 전까지 실결제는 대기 상태이나, 매장 설정 및 메뉴 구성, 직원 등록 등의 운영 준비는 자유롭게 진행 가능합니다.
             </span>
           </div>
         </div>

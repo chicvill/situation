@@ -142,20 +142,34 @@ function App() {
   const [storeDetails, setStoreDetails] = useState<any>(null);
 
   const fetchStoreDetails = () => {
-    if (storeId && user && user.role !== 'customer') {
-      fetch(`${API_BASE}/api/stores`)
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            const currentStore = data.find((s: any) => s.store_id === storeId);
-            if (currentStore) {
-              setStoreDetails(currentStore);
-            } else {
-              setStoreDetails(null);
-            }
-          }
+    if (storeId && storeId !== 'Total' && user && user.role !== 'customer') {
+      fetch(`${API_BASE}/api/stores/${storeId}/settings`)
+        .then(res => {
+          if (!res.ok) throw new Error("Settings fetch failed");
+          return res.json();
         })
-        .catch(err => console.error('Error fetching store details:', err));
+        .then(data => {
+          setStoreDetails({
+            ...data,
+            store_name: data.store_name || storeName,
+          });
+        })
+        .catch(() => {
+          // Fallback to all stores list
+          fetch(`${API_BASE}/api/stores`)
+            .then(res => res.json())
+            .then(data => {
+              if (Array.isArray(data)) {
+                const currentStore = data.find((s: any) => s.store_id === storeId);
+                if (currentStore) {
+                  setStoreDetails(currentStore);
+                } else {
+                  setStoreDetails(null);
+                }
+              }
+            })
+            .catch(() => setStoreDetails(null));
+        });
     }
   };
 
