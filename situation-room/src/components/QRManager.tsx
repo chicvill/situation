@@ -83,6 +83,8 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                 title: item.title,
                 url: item.data,
                 isTable: false,
+                storeName: storeName,
+                storePhone: storePhone,
             })),
             ...parsedTables.map(item => ({
                 title: `테이블 ${item.num} (${item.seats})`,
@@ -122,6 +124,13 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
             : `width:100%;aspect-ratio:1;border:1px solid #e2e8f0;border-radius:8px;padding:3px;background:white;flex:1;min-height:0;`;
 
         const cardsHtml = allCards.map(card => {
+            const bottomHtml = `
+                <div style="margin-top:${isA4 ? '28px' : '10px'};text-align:center;width:100%;">
+                    <div style="font-size:${isA4 ? '1.8rem' : '0.82rem'};font-weight:900;color:#0f172a;word-break:break-all;line-height:1.25;">${card.storeName}</div>
+                    <div style="font-size:${isA4 ? '1.25rem' : '0.68rem'};font-weight:700;color:#64748b;margin-top:2px;">Tel: ${card.storePhone}</div>
+                </div>
+            `;
+
             if (card.isTable) {
                 return `
                     <div style="${cardStyle}">
@@ -129,10 +138,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                         <div style="${imgBoxStyle}">
                             <img src="${getQRUri(card.url, qrSize)}" style="width:100%;height:100%;display:block;object-fit:contain;" />
                         </div>
-                        <div style="margin-top:${isA4 ? '28px' : '10px'};text-align:center;width:100%;">
-                            <div style="font-size:${isA4 ? '1.8rem' : '0.82rem'};font-weight:900;color:#0f172a;word-break:break-all;line-height:1.25;">${card.storeName}</div>
-                            <div style="font-size:${isA4 ? '1.25rem' : '0.68rem'};font-weight:700;color:#64748b;margin-top:2px;">Tel: ${card.storePhone}</div>
-                        </div>
+                        ${bottomHtml}
                     </div>
                 `;
             } else {
@@ -142,7 +148,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                         <div style="${imgBoxStyle}">
                             <img src="${getQRUri(card.url, qrSize)}" style="width:100%;height:100%;display:block;object-fit:contain;" />
                         </div>
-                        <div style="height:${isA4 ? '50px' : '15px'};"></div>
+                        ${bottomHtml}
                     </div>
                 `;
             }
@@ -244,7 +250,10 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                             <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '4px', width: printMode === 'single' ? '80px' : '140px', height: printMode === 'single' ? '80px' : '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <img src={getQRUri(item.data)} alt="QR" style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }} />
                             </div>
-                            <div style={{ height: printMode === 'single' ? '15px' : '30px' }}></div>
+                            <div style={{ marginTop: '8px', textAlign: 'center', width: '100%' }}>
+                                <div style={{ fontSize: printMode === 'single' ? '0.78rem' : '0.92rem', fontWeight: '900', color: '#1e293b', wordBreak: 'break-all' }}>{storeName}</div>
+                                <div style={{ fontSize: printMode === 'single' ? '0.68rem' : '0.75rem', fontWeight: '700', color: '#64748b', marginTop: '2px' }}>Tel: {storePhone}</div>
+                            </div>
                         </div>
                     ))}
                     {parsedTables.map((item, idx) => (
