@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface Props {
   bundles: any[];
@@ -8,6 +8,15 @@ interface Props {
 
 export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initialStoreName }) => {
     const [printMode, setPrintMode] = useState<'single' | 'a4' | 'grid'>('single');
+
+    const [tableQty, setTableQty] = useState(0);
+    const [funcQty, setFuncQty] = useState(5);
+    const [receiverName, setReceiverName] = useState('');
+    const [deliveryAddress, setDeliveryAddress] = useState('');
+    const [contactNumber, setContactNumber] = useState('');
+    const [orderNotes, setOrderNotes] = useState('');
+    const [orderSuccess, setOrderSuccess] = useState(false);
+    const [placedOrderId, setPlacedOrderId] = useState('');
 
     const safeBundles = Array.isArray(bundles) ? bundles : [];
     const storeBundle = (storeId && safeBundles.find(b => b.type === 'StoreConfig' && (b.store_id === storeId || b.id === storeId)))
@@ -45,6 +54,10 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
             return [1, 2, 3, 4, 5, 6, 7, 8].map(num => ({ num, label: `Table ${num}`, seats: '4인석' }));
         }
     })();
+
+    useEffect(() => {
+        setTableQty(parsedTables.length);
+    }, [parsedTables.length]);
 
     // 현재 접속 중인 브라우저의 주소(로컬 Vite 포트 또는 운영 도메인)를 그대로 사용하여 QR 생성
     let baseUrl = window.location.origin;
@@ -232,10 +245,239 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                             <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '4px', width: printMode === 'single' ? '80px' : '140px', height: printMode === 'single' ? '80px' : '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <img src={getQRUri(`${baseUrl}/?mode=customer&table=${item.num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`)} alt={`${item.label} QR`} style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }} />
                             </div>
-                            <div style={{ background: 'var(--accent-orange)', color: 'white', borderRadius: '50px', padding: printMode === 'single' ? '2px 8px' : '4px 15px', fontSize: printMode === 'single' ? '0.6rem' : '0.8rem', fontWeight: '900', marginTop: '8px' }}>{`T${String(item.num).padStart(2, '0')}[${item.seats.replace(/[^0-9]/g, '')}]`}</div>
                         </div>
                     ))}
                 </div>
+            </div>
+
+            {/* 💎 프리미엄 방수 플라스틱 QR 명판 제작 주문 */}
+            <div style={{
+                background: 'var(--surface)',
+                padding: '24px',
+                borderRadius: '16px',
+                border: '1px solid var(--border)',
+                marginTop: '25px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.04)',
+                fontFamily: 'system-ui, sans-serif'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                    <span style={{ fontSize: '1.5rem' }}>💎</span>
+                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-main)' }}>
+                        테이블 부착용 방수 플라스틱 QR 명판 주문
+                    </h3>
+                </div>
+
+                <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', lineHeight: '1.5', margin: '0 0 20px 0' }}>
+                    인쇄소 출력 번거로움 없이, <strong>물에 젖지 않는 내구성 강한 아크릴 플라스틱 명판</strong>을 간편하게 주문하세요.<br />
+                    명판 뒷면에 강력 양면테이프가 부착되어 배송되므로 테이블에 바로 부착하실 수 있습니다. (장당 단가: <strong>200원</strong>)
+                </p>
+
+                {orderSuccess ? (
+                    <div style={{
+                        background: 'rgba(16, 185, 129, 0.08)',
+                        border: '1.5px solid rgba(16, 185, 129, 0.3)',
+                        borderRadius: '12px',
+                        padding: '20px',
+                        textAlign: 'center',
+                        color: 'var(--text-main)'
+                    }}>
+                        <span style={{ fontSize: '3rem', display: 'block', marginBottom: '10px' }}>🎉</span>
+                        <h4 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontWeight: 800, color: '#10b981' }}>QR 명판 주문 접수 완료!</h4>
+                        <p style={{ fontSize: '0.88rem', margin: '0 0 15px', color: 'var(--text-muted)' }}>
+                            주문 번호: <strong>{placedOrderId}</strong><br />
+                            아래 가상 전용 계좌로 입금해 주시면, 제작을 시작하여 3영업일 이내에 출고 및 배송됩니다.
+                        </p>
+                        
+                        <div style={{
+                            background: 'var(--bg-main)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '8px',
+                            padding: '14px',
+                            fontSize: '0.85rem',
+                            textAlign: 'left',
+                            maxWidth: '360px',
+                            margin: '0 auto 20px',
+                            lineHeight: '1.6'
+                        }}>
+                            <strong>💰 입금 계좌 안내:</strong><br />
+                            • 은행명: <strong>국민은행</strong><br />
+                            • 계좌번호: <strong>123-45-6789-012</strong><br />
+                            • 예금주: <strong>(주)시튜에이션스마트POS</strong><br />
+                            • 입금 금액: <strong>{((tableQty + funcQty) * 200 + ((tableQty + funcQty) >= 25 ? 0 : 2500)).toLocaleString()}원</strong>
+                        </div>
+
+                        <button 
+                            onClick={() => {
+                                setOrderSuccess(false);
+                                setReceiverName('');
+                                setDeliveryAddress('');
+                                setContactNumber('');
+                                setOrderNotes('');
+                            }}
+                            style={{
+                                padding: '10px 20px',
+                                background: '#10b981',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem'
+                            }}
+                        >
+                            새로 주문하기
+                        </button>
+                    </div>
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', flexWrap: 'wrap' }}>
+                        {/* 주문 수량 설정 및 견적 */}
+                        <div style={{
+                            background: 'var(--bg-main)',
+                            border: '1px solid var(--border)',
+                            borderRadius: '12px',
+                            padding: '18px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between'
+                        }}>
+                            <div>
+                                <h4 style={{ margin: '0 0 14px', fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-main)' }}>
+                                    📋 주문 구성 및 견적
+                                </h4>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ color: 'var(--text-main)' }}>테이블 QR 명판 (개당 200원)</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <input 
+                                                type="number" 
+                                                min={0} 
+                                                value={tableQty} 
+                                                onChange={e => setTableQty(Math.max(0, parseInt(e.target.value) || 0))}
+                                                style={{ width: '60px', padding: '4px', border: '1px solid var(--border)', borderRadius: '6px', textAlign: 'center', background: 'var(--surface)', color: 'var(--text-main)' }} 
+                                            />
+                                            <span style={{ color: 'var(--text-muted)' }}>개</span>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ color: 'var(--text-main)' }}>부가 기능 QR 명판 (개당 200원)</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <input 
+                                                type="number" 
+                                                min={0} 
+                                                value={funcQty} 
+                                                onChange={e => setFuncQty(Math.max(0, parseInt(e.target.value) || 0))}
+                                                style={{ width: '60px', padding: '4px', border: '1px solid var(--border)', borderRadius: '6px', textAlign: 'center', background: 'var(--surface)', color: 'var(--text-main)' }} 
+                                            />
+                                            <span style={{ color: 'var(--text-muted)' }}>개</span>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', paddingBottom: '10px', marginTop: '4px' }}>
+                                        * 기본 포함 기능: 대기, 예약, 출퇴근, 매설, 결제 QR 명판 총 5개
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: '20px', paddingTop: '14px', borderTop: '1px dashed var(--border)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                                    <span>상품 금액 (총 {tableQty + funcQty}개)</span>
+                                    <span style={{ color: 'var(--text-main)' }}>{((tableQty + funcQty) * 200).toLocaleString()}원</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '10px' }}>
+                                    <span>배송비 (25개 이상 주문 시 무료)</span>
+                                    <span style={{ color: 'var(--text-main)' }}>{(tableQty + funcQty) >= 25 ? '무료' : '2,500원'}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: '900', color: 'var(--text-main)' }}>
+                                    <span>최종 금액</span>
+                                    <span style={{ color: 'var(--accent-orange)' }}>
+                                        {((tableQty + funcQty) * 200 + ((tableQty + funcQty) >= 25 ? 0 : 2500)).toLocaleString()}원
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 배송 정보 입력 폼 */}
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            if (!receiverName.trim() || !deliveryAddress.trim() || !contactNumber.trim()) {
+                                alert('수령인, 주소, 연락처를 모두 입력해 주세요.');
+                                return;
+                            }
+                            const randId = 'QR-' + Math.floor(100000 + Math.random() * 900000);
+                            setPlacedOrderId(randId);
+                            setOrderSuccess(true);
+                            alert(`🎉 QR 명판 제작 주문이 성공적으로 접수되었습니다.\n주문 번호: ${randId}`);
+                        }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>수령인 성함 *</label>
+                                <input 
+                                    type="text" 
+                                    value={receiverName} 
+                                    onChange={e => setReceiverName(e.target.value)} 
+                                    placeholder="홍길동" 
+                                    required 
+                                    style={{ padding: '10px', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.85rem' }} 
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>연락처 (휴대폰 번호) *</label>
+                                <input 
+                                    type="tel" 
+                                    value={contactNumber} 
+                                    onChange={e => setContactNumber(e.target.value)} 
+                                    placeholder="010-1234-5678" 
+                                    required 
+                                    style={{ padding: '10px', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.85rem' }} 
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>배송지 주소 *</label>
+                                <input 
+                                    type="text" 
+                                    value={deliveryAddress} 
+                                    onChange={e => setDeliveryAddress(e.target.value)} 
+                                    placeholder="배송받으실 전체 상세 주소를 입력하세요" 
+                                    required 
+                                    style={{ padding: '10px', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.85rem' }} 
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <label style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)' }}>요청 사항 (선택)</label>
+                                <input 
+                                    type="text" 
+                                    value={orderNotes} 
+                                    onChange={e => setOrderNotes(e.target.value)} 
+                                    placeholder="예: 문 앞에 놓아주세요" 
+                                    style={{ padding: '10px', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--surface)', color: 'var(--text-main)', fontSize: '0.85rem' }} 
+                                />
+                            </div>
+
+                            <button 
+                                type="submit" 
+                                className="premium-btn" 
+                                style={{
+                                    marginTop: '8px',
+                                    padding: '12px',
+                                    fontSize: '0.9rem',
+                                    fontWeight: '800',
+                                    background: 'var(--accent-orange)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)'
+                                }}
+                            >
+                                📦 명판 인쇄 제작 주문 접수
+                            </button>
+                        </form>
+                    </div>
+                )}
             </div>
         </div>
     );
