@@ -17,7 +17,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
   const { storeId, storeName } = useStoreFilter();
   const [storeData, setStoreData] = useState<any>({
     brand: '', regNo: '', address: '', owner: '', bankName: '', accountNo: '', accountHolder: '',
-    openDate: '', isVerified: false, bundleId: null
+    openDate: '', phone: '', isVerified: false, bundleId: null
   });
   const [isVerifying, setIsVerifying] = useState(false);
   const [useKitchen, setUseKitchen] = useState(true);
@@ -90,6 +90,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
         accountNo: findValue(['계좌', '번호']),
         accountHolder: findValue(['예금주']),
         openDate: findValue(['개업', '날짜', 'open']),
+        phone:    findValue(['전화번호', '연락처', 'phone']),
         isVerified: storeBundle.status === 'approved',
         bundleId: storeBundle.id
       });
@@ -118,6 +119,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
           accountNo: '',
           accountHolder: ownerSignupBundle.store || '',
           openDate: ownerSignupBundle.items?.find((i: any) => i.name === '개업일자')?.value || '',
+          phone:    ownerSignupBundle.items?.find((i: any) => i.name === '연락처')?.value || '',
           isVerified: true, // 관리자가 승인한 점주 가입건이므로 국세청 검증을 이미 마친 신뢰 상태로 자동 마킹합니다.
           bundleId: `store-config-${storeId}`
         });
@@ -132,6 +134,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
           accountNo: '',
           accountHolder: '',
           openDate: '',
+          phone: '',
           isVerified: false,
           bundleId: `store-config-${storeId}`
         });
@@ -154,6 +157,7 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
       { name: '주소',       value: activeData.address },
       { name: '대표자',     value: activeData.owner },
       { name: '개업일자',   value: activeData.openDate },
+      { name: '전화번호',   value: activeData.phone },
       { name: '은행명',     value: activeData.bankName },
       { name: '계좌번호',   value: activeData.accountNo },
       { name: '예금주',     value: activeData.accountHolder },
@@ -398,6 +402,15 @@ export const StoreManager: React.FC<StoreManagerProps> = ({ bundles, user, onNav
               value={storeData.address} 
               onChange={(e) => handleChange('address', e.target.value)} 
               placeholder="전체 주소 입력" 
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-muted)' }}>매장 전화번호</label>
+            <input 
+              style={{ padding: '12px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', background: 'var(--bg-main)', color: 'var(--text-main)', fontSize: '1rem', outline: 'none' }}
+              value={storeData.phone} 
+              onChange={(e) => handleChange('phone', e.target.value)} 
+              placeholder="예: 02-1234-5678 또는 010-1234-5678" 
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

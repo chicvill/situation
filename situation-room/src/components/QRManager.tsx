@@ -24,6 +24,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
     const safeItems = Array.isArray(storeBundle?.items) ? storeBundle!.items : [];
     const resolvedStoreId = storeBundle?.store_id || storeBundle?.id || 'default_store';
     const storeName = safeItems.find((i: any) => i.name === '상호명' || i.name === 'brand')?.value || initialStoreName || '우리식당';
+    const storePhone = safeItems.find((i: any) => i.name === '전화번호' || i.name === '연락처' || i.name === '대표번호' || i.name === 'phone')?.value || '010-3269-3343';
 
     const tablesItem = safeItems.find((i: any) => i.name === '테이블설정')?.value;
     const parsedTables = (() => {
@@ -66,29 +67,31 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
     }
 
     const qrItems = [
-        { title: "🛎️ 웨이팅 등록",       label: "WT", data: `${baseUrl}/?mode=waiting&action=register&table=99&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
-        { title: "📅 실시간 예약 신청",   label: "RS", data: `${baseUrl}/?mode=reserve&action=register&table=98&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
+        { title: "🛎️ 대기 등록",       label: "WT", data: `${baseUrl}/?mode=waiting&action=register&table=99&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
+        { title: "📅 실시간 예약",   label: "RS", data: `${baseUrl}/?mode=reserve&action=register&table=98&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
         { title: "👥 직원 출퇴근",        label: "AB", data: `${baseUrl}/?mode=hr&action=checkin&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
-        { title: "📚 사용자 매뉴얼",      label: "MU", data: `${baseUrl}/?mode=manual&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
-        { title: "💳 자리에서 결제",      label: "PY", data: `${baseUrl}/?mode=customer&action=pay&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
+        { title: "📚 사용자 메뉴얼",      label: "MU", data: `${baseUrl}/?mode=manual&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
+        { title: "💳 카운터에서 결제",      label: "PY", data: `${baseUrl}/?mode=customer&action=pay&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}` },
     ];
 
     const getQRUri = (data: string, size = 200) =>
         `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}`;
 
     const handlePrint = () => {
-        const allCards = [
+        const allCards: any[] = [
             ...qrItems.map(item => ({
                 title: item.title,
-                badge: item.label,
-                badgeColor: '#0f172a',
                 url: item.data,
+                isTable: false,
             })),
             ...parsedTables.map(item => ({
-                title: `${item.label} (${item.seats})`,
-                badge: `T${String(item.num).padStart(2, '0')}[${item.seats.replace(/[^0-9]/g, '')}]`,
-                badgeColor: '#f97316',
+                title: `테이블 ${item.num} (${item.seats})`,
                 url: `${baseUrl}/?mode=customer&table=${item.num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`,
+                isTable: true,
+                tableNum: item.num,
+                tableSeats: item.seats,
+                storeName: storeName,
+                storePhone: storePhone,
             })),
         ];
 
@@ -99,8 +102,8 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
         const cardStyle = isA4
             ? `display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;page-break-after:always;background:white;padding:40px;box-sizing:border-box;`
             : isSingle
-            ? `display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:6px 4px;border:1.5px dashed #94a3b8;border-radius:8px;background:white;box-sizing:border-box;break-inside:avoid;height:100%;`
-            : `display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:14px;border:1px solid #e2e8f0;border-radius:10px;background:white;box-sizing:border-box;break-inside:avoid;height:100%;`;
+            ? `display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:12px 6px;border:1.5px dashed #94a3b8;border-radius:8px;background:white;box-sizing:border-box;break-inside:avoid;height:100%;`
+            : `display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:20px 14px;border:1px solid #e2e8f0;border-radius:10px;background:white;box-sizing:border-box;break-inside:avoid;height:100%;`;
 
         const gridStyle = isA4
             ? `display:block;`
@@ -109,29 +112,41 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
             : `display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:12px;width:100%;height:calc(297mm - 16mm);`;
 
         const titleStyle = isA4
-            ? `font-size:2rem;font-weight:900;color:#0f172a;margin:0 0 30px;text-align:center;`
+            ? `font-size:2.4rem;font-weight:900;color:#0f172a;margin:0 0 30px;text-align:center;`
             : isSingle
-            ? `font-size:0.72rem;font-weight:800;color:#0f172a;margin:0 0 6px;text-align:center;`
-            : `font-size:1rem;font-weight:800;color:#0f172a;margin:0 0 10px;text-align:center;`;
+            ? `font-size:0.75rem;font-weight:900;color:#0f172a;margin:0 0 6px;text-align:center;`
+            : `font-size:1.1rem;font-weight:900;color:#0f172a;margin:0 0 10px;text-align:center;`;
 
         const imgBoxStyle = isA4
             ? `width:${qrSize}px;height:${qrSize}px;border:3px solid #000;border-radius:16px;padding:12px;background:white;flex-shrink:0;`
             : `width:100%;aspect-ratio:1;border:1px solid #e2e8f0;border-radius:8px;padding:3px;background:white;flex:1;min-height:0;`;
 
-        const badgeStyle = (color: string) => isA4
-            ? `margin-top:28px;background:${color};color:white;border-radius:50px;padding:10px 36px;font-size:1.4rem;font-weight:900;`
-            : `margin-top:6px;background:${color};color:white;border-radius:50px;padding:2px 10px;font-size:0.65rem;font-weight:800;`;
-
-        const cardsHtml = allCards.map(card => `
-            <div style="${cardStyle}">
-                <div style="${titleStyle}">${card.title}</div>
-                <div style="${imgBoxStyle}">
-                    <img src="${getQRUri(card.url, qrSize)}" style="width:100%;height:100%;display:block;object-fit:contain;" />
-                </div>
-                <div style="${badgeStyle(card.badgeColor)}">${card.badge}</div>
-                ${isA4 ? `<div style="margin-top:20px;font-size:0.8rem;color:#64748b;font-family:monospace;word-break:break-all;max-width:500px;text-align:center;">${card.url}</div>` : ''}
-            </div>
-        `).join('');
+        const cardsHtml = allCards.map(card => {
+            if (card.isTable) {
+                return `
+                    <div style="${cardStyle}">
+                        <div style="${titleStyle}">테이블 ${card.tableNum} (${card.tableSeats})</div>
+                        <div style="${imgBoxStyle}">
+                            <img src="${getQRUri(card.url, qrSize)}" style="width:100%;height:100%;display:block;object-fit:contain;" />
+                        </div>
+                        <div style="margin-top:${isA4 ? '28px' : '10px'};text-align:center;width:100%;">
+                            <div style="font-size:${isA4 ? '1.8rem' : '0.82rem'};font-weight:900;color:#0f172a;word-break:break-all;line-height:1.25;">${card.storeName}</div>
+                            <div style="font-size:${isA4 ? '1.25rem' : '0.68rem'};font-weight:700;color:#64748b;margin-top:2px;">Tel: ${card.storePhone}</div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div style="${cardStyle}">
+                        <div style="${titleStyle}">${card.title}</div>
+                        <div style="${imgBoxStyle}">
+                            <img src="${getQRUri(card.url, qrSize)}" style="width:100%;height:100%;display:block;object-fit:contain;" />
+                        </div>
+                        <div style="height:${isA4 ? '50px' : '15px'};"></div>
+                    </div>
+                `;
+            }
+        }).join('');
 
         const html = `<!DOCTYPE html>
 <html>
@@ -229,7 +244,7 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                             <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '4px', width: printMode === 'single' ? '80px' : '140px', height: printMode === 'single' ? '80px' : '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <img src={getQRUri(item.data)} alt="QR" style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }} />
                             </div>
-                            <div style={{ background: '#0f172a', color: 'white', borderRadius: '50px', padding: printMode === 'single' ? '2px 8px' : '4px 15px', fontSize: printMode === 'single' ? '0.6rem' : '0.8rem', fontWeight: '900', marginTop: '8px' }}>{item.label}</div>
+                            <div style={{ height: printMode === 'single' ? '15px' : '30px' }}></div>
                         </div>
                     ))}
                     {parsedTables.map((item, idx) => (
@@ -239,11 +254,15 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                             padding: printMode === 'single' ? '10px' : '20px',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
                         }}>
-                            <h3 style={{ margin: '0 0 10px', fontSize: printMode === 'single' ? '0.75rem' : '1rem', fontWeight: '900', color: '#1e293b' }}>
-                                {item.label} <span style={{ fontSize: printMode === 'single' ? '10px' : '13px', color: 'var(--accent-orange)' }}>({item.seats})</span>
+                            <h3 style={{ margin: '0 0 10px', fontSize: printMode === 'single' ? '0.75rem' : '1.1rem', fontWeight: '900', color: '#1e293b' }}>
+                                테이블 {item.num} ({item.seats})
                             </h3>
                             <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '4px', width: printMode === 'single' ? '80px' : '140px', height: printMode === 'single' ? '80px' : '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <img src={getQRUri(`${baseUrl}/?mode=customer&table=${item.num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`)} alt={`${item.label} QR`} style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }} />
+                            </div>
+                            <div style={{ marginTop: '8px', textAlign: 'center', width: '100%' }}>
+                                <div style={{ fontSize: printMode === 'single' ? '0.78rem' : '0.92rem', fontWeight: '900', color: '#1e293b', wordBreak: 'break-all' }}>{storeName}</div>
+                                <div style={{ fontSize: printMode === 'single' ? '0.68rem' : '0.75rem', fontWeight: '700', color: '#64748b', marginTop: '2px' }}>Tel: {storePhone}</div>
                             </div>
                         </div>
                     ))}

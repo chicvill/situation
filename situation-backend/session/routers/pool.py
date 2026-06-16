@@ -273,11 +273,13 @@ async def update_bundle(bundle_id: str, bundle: Dict):
                     # 2. RDBMS knowledge_bundles 에 빈 Menus 및 StoreConfig 번들 생성
                     menu_bundle_id = f"MENUS_{store_id}"
                     config_bundle_id = f"store-config-{store_id}"
+                    phone_no = items_dict.get("연락처") or username or ""
                     config_items = [
                         {"name": "상호명", "value": store_name},
                         {"name": "사업자번호", "value": biz_no},
                         {"name": "대표자", "value": full_name},
                         {"name": "개업일자", "value": open_date},
+                        {"name": "전화번호", "value": phone_no},
                         {"name": "테이블설정", "value": f"1번부터 {table_count}번까지 기본 배치"}
                     ]
                     
