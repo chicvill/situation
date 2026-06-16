@@ -592,7 +592,7 @@ function App() {
             >
               ← 홈페이지로 돌아가기
             </button>
-            <Login onLogin={handleLogin} bundles={bundles} />
+            <Login onLogin={handleLogin} bundles={bundles} onGoToSignup={() => setNonAuthView('signup')} />
           </div>
         </div>
       );
@@ -718,7 +718,7 @@ function App() {
         }
       >
         <div className="view-content" style={ (activeTab === 'counter' && counterPad) ? { height: '100%' } : undefined }>
-          {user ? renderContent() : <Login onLogin={handleLogin} bundles={bundles} />}
+          {user ? renderContent() : <Login onLogin={handleLogin} bundles={bundles} onGoToSignup={() => setNonAuthView('signup')} />}
         </div>
       </main>
 

@@ -34,11 +34,8 @@ export const LandingHome: React.FC<LandingHomeProps> = ({ onNavigate }) => {
           <span className="logo-text">SITUATION SMART POS</span>
         </div>
         <div className="header-actions">
-          <button className="btn-secondary" onClick={() => onNavigate('login')}>
-            로그인
-          </button>
-          <button className="btn-primary" onClick={() => onNavigate('signup')}>
-            사용해보기
+          <button className="btn-primary" onClick={() => onNavigate('login')}>
+            로그인 / 시작하기
           </button>
         </div>
       </header>
@@ -55,11 +52,8 @@ export const LandingHome: React.FC<LandingHomeProps> = ({ onNavigate }) => {
           그리고 정교한 매출 데이터 분석까지. 단 하나의 지능형 모바일 시스템으로 통합하세요.
         </p>
         <div className="hero-buttons">
-          <button className="btn-hero-primary" onClick={() => onNavigate('signup')}>
-            무료로 사용해보기 (사전 체험)
-          </button>
-          <button className="btn-hero-secondary" onClick={() => onNavigate('login')}>
-            점주 대시보드 로그인
+          <button className="btn-hero-primary" style={{ maxWidth: '380px' }} onClick={() => onNavigate('login')}>
+            시작하기 (로그인 및 매장 개설)
           </button>
         </div>
       </section>
@@ -141,7 +135,7 @@ export const LandingHome: React.FC<LandingHomeProps> = ({ onNavigate }) => {
                 <li>언제 해지해도 해지 위약금 없음</li>
                 <li>가입비 및 설치비 일체 면제</li>
               </ul>
-              <button className="btn-pricing-action" onClick={() => onNavigate('signup')}>
+              <button className="btn-pricing-action" onClick={() => onNavigate('login')}>
                 이 구성으로 시작하기
               </button>
             </div>

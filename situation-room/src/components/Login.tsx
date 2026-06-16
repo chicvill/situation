@@ -1,85 +1,39 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import './Login.css';
 import { OwnerOnboardingChat } from './OwnerOnboardingChat';
 import { API_BASE } from '../config';
-import { formatPhone, formatBizNo } from '../utils/formatters';
 
 interface LoginProps {
     onLogin: (user: any) => void;
     bundles: any[];
+    onGoToSignup: () => void;
 }
 
 const hashPassword = async (password: string): Promise<string> => {
-    if (!crypto?.subtle) return password; // HTTP(비보안) 환경 폴백: 평문 그대로 반환
+    if (!crypto?.subtle) return password; // HTTP fallback
     const msgUint8 = new TextEncoder().encode(password);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, bundles, onGoToSignup }) => {
     const [id, setId] = useState('');
     const [pw, setPw] = useState('');
     const [error, setError] = useState('');
-    const [isSignup, setIsSignup] = useState(false);
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [showOnboardingChat, setShowOnboardingChat] = useState(() => {
         return localStorage.getItem('situation_show_onboarding_chat') === 'true';
     });
-    
-    // 회원가입 필드
-    const [name, setName] = useState('');
-    const [role, setRole] = useState('staff');
-    const [storeName, setStoreName] = useState('');
-    const [isProcessing, setIsProcessing] = useState(false);
-
-    // 사업자 인증 필드 (점주용)
-    const [regNo, setRegNo] = useState('');
-    const [openDate, setOpenDate] = useState('');
-    const [isVerified, setIsVerified] = useState(false);
-    const [isVerifying, setIsVerifying] = useState(false);
-
-    // 개인정보 동의
-    const [consentPrivacy, setConsentPrivacy] = useState(false);
-    const [consentTerms, setConsentTerms] = useState(false);
-    const [consentMarketing, setConsentMarketing] = useState(false);
-    const [showPrivacyDetail, setShowPrivacyDetail] = useState(false);
-    const [showTermsDetail, setShowTermsDetail] = useState(false);
-
-    // 매장 검색 (직원/점장용)
-    const [storeList, setStoreList] = useState<{ store_id: string; store_name: string }[]>([]);
-    const [storeSearch, setStoreSearch] = useState('');
-    const [selectedStoreId, setSelectedStoreId] = useState('');
-    const [showStoreDropdown, setShowStoreDropdown] = useState(false);
-    const storeDropdownRef = useRef<HTMLDivElement>(null);
-
-    // 매장 목록 로드 (직원/점장 가입 시)
-    useEffect(() => {
-        if (!isSignup || role === 'owner') return;
-        const apiUrl = API_BASE;
-        fetch(`${apiUrl}/api/stores`)
-            .then(r => r.json())
-            .then((data: any[]) => setStoreList(data))
-            .catch(() => setStoreList([]));
-    }, [isSignup, role]);
-
-    // 매장 드롭다운 외부 클릭 시 닫기
-    useEffect(() => {
-        const handleClick = (e: MouseEvent) => {
-            if (storeDropdownRef.current && !storeDropdownRef.current.contains(e.target as Node)) {
-                setShowStoreDropdown(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
-    }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsLoggingIn(true);
 
         const hashedPw = await hashPassword(pw);
 
-        // 1. 서버에서 JWT 발급 (자격증명 검증 + 토큰 발급)
+        // 1. 서버에서 JWT 발급
         try {
             const apiUrl = API_BASE;
             const res = await fetch(`${apiUrl}/api/auth/login`, {
@@ -93,13 +47,14 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                 localStorage.setItem('mqnet_token', token);
                 const matchedBundle = bundles.find(b => b.type === 'PersonalInfos' && b.store_id === store_id);
                 onLogin({ id, name: userName, role, storeId: store_id, storeName: matchedBundle?.store ?? '' });
+                setIsLoggingIn(false);
                 return;
             }
 
             const err = await res.json().catch(() => ({}));
-            // 403 = 승인 대기
             if (res.status === 403) {
                 setError(err.detail || '승인 대기 중인 계정입니다.');
+                setIsLoggingIn(false);
                 return;
             }
         } catch {
@@ -125,6 +80,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                     userRole === 'manager' ? '점장 계정은 매장 점주의 승인이 필요합니다.' :
                                             '점원 계정은 매장 점주 또는 점장의 승인이 필요합니다.';
                 setError(msg);
+                setIsLoggingIn(false);
                 return;
             }
 
@@ -132,185 +88,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
         } else {
             setError('아이디 또는 비밀번호가 일치하지 않습니다.');
         }
-    };
-
-    const handleVerifyBusiness = async () => {
-        const cleanRegNo = regNo.replace(/[^0-9]/g, '').trim();
-        const cleanOpenDate = openDate.replace(/[^0-9]/g, '').trim();
-        const cleanOwnerName = name.trim();
-
-        if (!cleanRegNo || !cleanOpenDate || !cleanOwnerName) {
-            alert("⚠️ 사업자번호, 개업일자, 대표자명(이름)이 모두 필요합니다.");
-            return;
-        }
-
-        if (cleanRegNo.length !== 10) {
-            alert("⚠️ 사업자등록번호는 하이픈 제외 반드시 10자리 숫자여야 국세청 조회가 가능합니다. 입력값(현재 " + cleanRegNo.length + "자리)을 확인해 주세요.");
-            return;
-        }
-
-        if (cleanOpenDate.length !== 8) {
-            alert("⚠️ 개업연월일은 반드시 YYYYMMDD 형태의 8자리 숫자여야 국세청 조회가 가능합니다. 입력값(현재 " + cleanOpenDate.length + "자리)을 확인해 주세요.");
-            return;
-        }
-
-        setIsVerifying(true);
-        await new Promise(r => setTimeout(r, 1800));
-
-        try {
-            const SERVICE_KEY = import.meta.env.VITE_DATA_GO_KR_SERVICE_KEY;
-            
-            if (!SERVICE_KEY || SERVICE_KEY === "your_key_here") {
-                setIsVerified(true);
-                console.log("Business verified (Test Mode)");
-                alert("✅ [테스트 모드] 사업자 정보가 확인되었습니다.");
-                return;
-            }
-
-            const encodedKey = encodeURIComponent(SERVICE_KEY);
-            const cleanStoreName = (storeName || '').trim();
-
-            const response = await fetch(`https://api.odcloud.kr/api/nts-businessman/v1/validate?serviceKey=${encodedKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    businesses: [{
-                        b_no: cleanRegNo,
-                        start_dt: cleanOpenDate,
-                        p_nm: cleanOwnerName,
-                        b_nm: cleanStoreName,
-                        p_nm2: '',
-                        corp_no: '',
-                        b_sector: '',
-                        b_type: ''
-                    }]
-                })
-            });
-
-            const result = await response.json();
-            if (result.data && result.data[0].valid === '01') {
-                setIsVerified(true);
-                console.log("Business verified (NTS API)");
-                alert("✅ 사업자 정보가 국세청 데이터를 통해 검증되었습니다.");
-            } else {
-                console.warn("Business verification failed:", result);
-                const errMsg = result.message || (result.data && result.data[0].valid_msg) || "입력하신 정보를 다시 확인해 주세요.";
-                alert(`⚠️ 사업자 정보가 국세청 데이터와 일치하지 않습니다.\n\n${errMsg}`);
-            }
-        } catch (err) {
-            alert("⚠️ 국세청 API 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
-        } finally {
-            setIsVerifying(false);
-        }
-    };
-
-    const handleSignup = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // 전화번호 형식 검증 (10~11자리 숫자, 010/011/016/017/018/019 시작)
-        const phoneClean = id.replace(/[^0-9]/g, '');
-        if (!/^01[0-9]{8,9}$/.test(phoneClean)) {
-            setError('아이디는 휴대폰 번호 형식이어야 합니다. (예: 01012345678)');
-            return;
-        }
-
-        // 비밀번호 강도 검증: 영문 + 숫자 + 특수문자 포함, 8자 이상
-        if (pw.length < 8) {
-            setError('비밀번호는 8자 이상이어야 합니다.');
-            return;
-        }
-        if (!/[a-zA-Z]/.test(pw)) {
-            setError('비밀번호에 영문자를 포함해야 합니다.');
-            return;
-        }
-        if (!/[0-9]/.test(pw)) {
-            setError('비밀번호에 숫자를 포함해야 합니다.');
-            return;
-        }
-        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]/.test(pw)) {
-            setError('비밀번호에 특수문자(!@#$% 등)를 포함해야 합니다.');
-            return;
-        }
-
-        if (role === 'owner' && !isVerified) {
-            setError('점주 가입을 위해 먼저 사업자 진위 확인을 완료해 주세요.');
-            return;
-        }
-
-        if (!consentPrivacy || !consentTerms) {
-            setError('개인정보 수집·이용 동의 및 서비스 이용약관 동의는 필수입니다.');
-            return;
-        }
-
-        if (role !== 'owner' && !selectedStoreId) {
-            setError('소속 매장을 검색하여 선택해 주세요.');
-            return;
-        }
-
-        setIsProcessing(true);
-        setError('');
-
-        try {
-            const apiUrl = API_BASE;
-            
-            // 중복 아이디 확인
-            const existing = bundles.find(b => 
-                b.type === 'PersonalInfos' && 
-                b.items?.find((i: any) => i.name === '아이디')?.value === id
-            );
-
-            if (existing) {
-                setError('이미 존재하는 아이디입니다.');
-                setIsProcessing(false);
-                return;
-            }
-
-            const finalStoreId = role === 'owner' ? `store-${id}` : selectedStoreId;
-
-            const hashedSignupPw = await hashPassword(pw);
-
-            const signupBundle = {
-                id: `USER-${Date.now()}`,
-                type: 'PersonalInfos',
-                title: role === 'owner' ? `${name}님 가입 완료 (점주)` : `${name}님 가입 신청`,
-                items: [
-                    { name: '이름', value: name },
-                    { name: '아이디', value: id },
-                    { name: '비밀번호', value: hashedSignupPw },
-                    { name: '권한', value: role },
-                    { name: '사업자번호', value: regNo },
-                    { name: '개업일자', value: openDate }
-                ],
-                status: role === 'owner' ? 'approved' : 'pending',
-                timestamp: new Date().toLocaleString(),
-                store: storeName || '미지정',
-                store_id: finalStoreId
-            };
-
-            const response = await fetch(`${apiUrl}/api/bundle/${signupBundle.id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(signupBundle),
-            });
-
-            if (response.ok) {
-                if (role === 'owner') {
-                    alert('🎉 회원가입이 완료되었습니다!\n바로 로그인하여 나만의 매장을 개설(내 집 짓기)하세요.');
-                } else if (role === 'manager') {
-                    alert('✅ 점장 가입 신청이 완료되었습니다.\n매장 점주의 승인 후 로그인이 가능합니다.');
-                } else {
-                    alert('✅ 점원 가입 신청이 완료되었습니다.\n매장 점주 또는 점장의 승인 후 로그인이 가능합니다.');
-                }
-                setIsSignup(false);
-                setPw('');
-            } else {
-                throw new Error('Server error');
-            }
-        } catch (err) {
-            setError('회원가입 처리 중 오류가 발생했습니다.');
-        } finally {
-            setIsProcessing(false);
-        }
+        setIsLoggingIn(false);
     };
 
     return (
@@ -322,270 +100,52 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                     <p>지능형 매장 운영 시스템 로그인</p>
                 </div>
 
-                <form onSubmit={isSignup ? handleSignup : handleLogin}>
-                    {isSignup && (
-                        <div className="input-group">
-                            <label>이름</label>
-                            <input 
-                                type="text" 
-                                value={name} 
-                                onChange={(e) => { setName(e.target.value); setIsVerified(false); }} 
-                                placeholder="실명을 입력하세요"
-                                required 
-                            />
-                        </div>
-                    )}
-
+                <form onSubmit={handleLogin}>
                     <div className="input-group">
                         <label>아이디 (휴대폰 번호)</label>
                         <input
                             type="tel"
                             value={id}
-                            onChange={(e) => {
-                                const val = isSignup ? formatPhone(e.target.value) : e.target.value;
-                                setId(val);
-                            }}
-                            placeholder={isSignup ? '예: 010-1234-5678' : '휴대폰 번호 입력'}
-                            maxLength={13}
+                            onChange={(e) => setId(e.target.value)}
+                            placeholder="휴대폰 번호 입력"
                             required
                         />
                     </div>
                     <div className="input-group">
-                        <label>비밀번호{isSignup && <span style={{ fontWeight: 400, fontSize: '0.78rem', color: 'var(--text-muted)', marginLeft: '6px' }}>영문+숫자+특수문자 8자 이상</span>}</label>
+                        <label>비밀번호</label>
                         <input
                             type="password"
                             value={pw}
                             onChange={(e) => setPw(e.target.value)}
-                            placeholder={isSignup ? '예: Hello@1234' : '••••••••'}
+                            placeholder="••••••••"
                             required
                         />
-                        {isSignup && pw.length > 0 && (() => {
-                            const checks = [
-                                { label: '8자 이상', ok: pw.length >= 8 },
-                                { label: '영문 포함', ok: /[a-zA-Z]/.test(pw) },
-                                { label: '숫자 포함', ok: /[0-9]/.test(pw) },
-                                { label: '특수문자 포함', ok: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?`~]/.test(pw) },
-                            ];
-                            const allOk = checks.every(c => c.ok);
-                            return (
-                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
-                                    {checks.map(({ label, ok }) => (
-                                        <span key={label} style={{
-                                            fontSize: '0.72rem', fontWeight: 600, padding: '2px 7px',
-                                            borderRadius: '4px',
-                                            background: ok ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.1)',
-                                            color: ok ? '#10b981' : '#ef4444',
-                                        }}>
-                                            {ok ? '✓' : '✗'} {label}
-                                        </span>
-                                    ))}
-                                    {allOk && <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 700 }}>✅ 안전한 비밀번호</span>}
-                                </div>
-                            );
-                        })()}
                     </div>
-
-                    {isSignup && (
-                        <>
-                            <div className="input-group">
-                                <label>계정 권한</label>
-                                <select
-                                    className="role-select"
-                                    value={role}
-                                    onChange={(e) => {
-                                        setRole(e.target.value);
-                                        setStoreSearch('');
-                                        setSelectedStoreId('');
-                                        setStoreName('');
-                                        setConsentPrivacy(false);
-                                        setConsentTerms(false);
-                                        setConsentMarketing(false);
-                                    }}
-                                >
-                                    <option value="owner">점주 (관리자 승인)</option>
-                                    <option value="manager">점장 (점주 승인)</option>
-                                    <option value="staff">점원 (점주·점장 승인)</option>
-                                </select>
-                            </div>
-                            <div className="input-group">
-                                <label>{role === 'owner' ? '신규 매장명' : '소속 매장 검색'}</label>
-                                {role === 'owner' ? (
-                                    <input
-                                        type="text"
-                                        value={storeName}
-                                        onChange={(e) => setStoreName(e.target.value)}
-                                        placeholder="매장 이름을 직접 입력하세요"
-                                        required
-                                    />
-                                ) : (
-                                    <div ref={storeDropdownRef} style={{ position: 'relative' }}>
-                                        <input
-                                            type="text"
-                                            value={storeSearch}
-                                            onChange={(e) => {
-                                                setStoreSearch(e.target.value);
-                                                setSelectedStoreId('');
-                                                setStoreName('');
-                                                setShowStoreDropdown(true);
-                                            }}
-                                            onFocus={() => setShowStoreDropdown(true)}
-                                            placeholder="매장명을 입력하여 검색"
-                                            required
-                                            style={{ borderColor: selectedStoreId ? 'var(--success)' : undefined }}
-                                        />
-                                        {selectedStoreId && (
-                                            <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--success)', fontSize: '0.85rem' }}>✅ 선택됨</span>
-                                        )}
-                                        {showStoreDropdown && storeSearch && (
-                                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', zIndex: 100, maxHeight: '180px', overflowY: 'auto', boxShadow: '0 4px 16px rgba(0,0,0,0.15)' }}>
-                                                {storeList
-                                                    .filter(s => s.store_name.toLowerCase().includes(storeSearch.toLowerCase()))
-                                                    .map(s => (
-                                                        <div
-                                                            key={s.store_id}
-                                                            onClick={() => {
-                                                                setStoreName(s.store_name);
-                                                                setSelectedStoreId(s.store_id);
-                                                                setStoreSearch(s.store_name);
-                                                                setShowStoreDropdown(false);
-                                                            }}
-                                                            style={{ padding: '10px 14px', cursor: 'pointer', fontSize: '0.9rem' }}
-                                                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-main)')}
-                                                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                                                        >
-                                                            {s.store_name}
-                                                        </div>
-                                                    ))}
-                                                {storeList.filter(s => s.store_name.toLowerCase().includes(storeSearch.toLowerCase())).length === 0 && (
-                                                    <div style={{ padding: '10px 14px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>검색 결과 없음</div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            {role === 'owner' && (
-                                <>
-                                    <div className="input-group">
-                                        <label>사업자 등록번호</label>
-                                        <input 
-                                            type="text" 
-                                            value={regNo} 
-                                            onChange={(e) => { setRegNo(formatBizNo(e.target.value)); setIsVerified(false); }} 
-                                            placeholder="000-00-00000"
-                                            required 
-                                        />
-                                    </div>
-                                    <div className="input-group">
-                                        <label>개업연월일</label>
-                                        <div style={{ display: 'flex', gap: '10px' }}>
-                                            <input 
-                                                type="text" 
-                                                value={openDate} 
-                                                onChange={(e) => { setOpenDate(e.target.value); setIsVerified(false); }} 
-                                                placeholder="YYYYMMDD (8자리)"
-                                                style={{ flex: 1 }}
-                                                required 
-                                            />
-                                            <button 
-                                                type="button"
-                                                onClick={handleVerifyBusiness}
-                                                disabled={isVerifying || isVerified}
-                                                style={{ 
-                                                    padding: '0 15px', borderRadius: 'var(--radius-sm)', border: 'none',
-                                                    background: isVerified ? 'var(--success)' : 'var(--primary)',
-                                                    color: 'white', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
-                                                    whiteSpace: 'nowrap'
-                                                }}
-                                            >
-                                                {isVerifying ? '확인 중...' : isVerified ? '✅ 완료' : '진위 확인'}
-                                            </button>
-                                        </div>
-                                    </div>
-                                    {isVerified && <p style={{ fontSize: '0.8rem', color: 'var(--success)', margin: '5px 0 0 0', textAlign: 'left' }}>✅ 국세청 데이터와 일치함이 확인되었습니다.</p>}
-                                </>
-                            )}
-                        </>
-                    )}
-
-                    {/* 가입 동의 (모든 역할) */}
-                    {isSignup && (
-                        <div style={{ margin: '16px 0 8px', padding: '14px', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                            <p style={{ margin: '0 0 10px', fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)' }}>📜 서비스 이용 동의</p>
-
-                            {/* 전체 동의 */}
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingBottom: '8px', borderBottom: '1px solid var(--border)', marginBottom: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem' }}>
-                                <input type="checkbox" checked={consentPrivacy && consentTerms && consentMarketing}
-                                    onChange={e => { setConsentPrivacy(e.target.checked); setConsentTerms(e.target.checked); setConsentMarketing(e.target.checked); }}
-                                    style={{ width: '16px', height: '16px', accentColor: 'var(--primary)', cursor: 'pointer' }} />
-                                전체 동의
-                            </label>
-
-                            {/* [필수] 개인정보 */}
-                            <div style={{ marginBottom: '6px' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                                    <input type="checkbox" checked={consentPrivacy} onChange={e => setConsentPrivacy(e.target.checked)}
-                                        style={{ width: '15px', height: '15px', accentColor: 'var(--primary)', cursor: 'pointer' }} />
-                                    <span><span style={{ color: '#ef4444', fontWeight: 700 }}>[필수]</span> 개인정보 수집·이용 동의</span>
-                                    <button type="button" onClick={() => setShowPrivacyDetail(v => !v)}
-                                        style={{ marginLeft: 'auto', fontSize: '0.72rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-                                        {showPrivacyDetail ? '접기' : '내용보기'}
-                                    </button>
-                                </label>
-                                {showPrivacyDetail && (
-                                    <div style={{ marginTop: '6px', padding: '8px', background: 'var(--surface)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
-                                        {role === 'owner' ? (<>
-                                            <strong>수집 항목:</strong> 대표자명, 연락처, 사업자등록번호, 정산 계좌번호<br/>
-                                            <strong>수집 목적:</strong> MQnet 가맹점 서비스 계약 이행 및 매출 정산<br/>
-                                            <strong>보유 기간:</strong> 계약 종료 후 5년 (관련 법령에 따름)
-                                        </>) : (<>
-                                            <strong>수집 항목:</strong> 이름, 연락처<br/>
-                                            <strong>수집 목적:</strong> 매장 서비스 이용 및 근태·급여 관리<br/>
-                                            <strong>보유 기간:</strong> 고용 종료 후 3년 (관련 법령에 따름)
-                                        </>)}<br/>
-                                        ※ 동의 거부 시 서비스 이용이 제한됩니다.
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* [필수] 이용약관 */}
-                            <div style={{ marginBottom: '6px' }}>
-                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                                    <input type="checkbox" checked={consentTerms} onChange={e => setConsentTerms(e.target.checked)}
-                                        style={{ width: '15px', height: '15px', accentColor: 'var(--primary)', cursor: 'pointer' }} />
-                                    <span><span style={{ color: '#ef4444', fontWeight: 700 }}>[필수]</span> MQnet 서비스 이용약관 동의</span>
-                                    <button type="button" onClick={() => setShowTermsDetail(v => !v)}
-                                        style={{ marginLeft: 'auto', fontSize: '0.72rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-                                        {showTermsDetail ? '접기' : '내용보기'}
-                                    </button>
-                                </label>
-                                {showTermsDetail && (
-                                    <div style={{ marginTop: '6px', padding: '8px', background: 'var(--surface)', borderRadius: '6px', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.65 }}>
-                                        본 서비스는 MQnet이 제공하는 스마트 매장 운영 SaaS입니다.<br/>
-                                        <strong>월정액 구독 서비스</strong>로, 매월 협의된 이용료가 청구됩니다.<br/>
-                                        서비스 해지 시 잔여 기간 환불은 이용약관 제10조에 따릅니다.<br/>
-                                        무단 양도·재판매 등 남용 행위는 즉시 계약 해지 사유입니다.
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* [선택] 마케팅 */}
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                                <input type="checkbox" checked={consentMarketing} onChange={e => setConsentMarketing(e.target.checked)}
-                                    style={{ width: '15px', height: '15px', accentColor: 'var(--primary)', cursor: 'pointer' }} />
-                                <span><span style={{ color: 'var(--text-muted)', fontWeight: 700 }}>[선택]</span> 마케팅 정보 수신 동의</span>
-                            </label>
-                        </div>
-                    )}
 
                     {error && <div className="login-error">{error}</div>}
 
-                    <button type="submit" className="login-btn" disabled={isProcessing}>
-                        {isProcessing ? '처리 중...' : (isSignup ? '회원 가입 신청' : '로그인')}
+                    <button type="submit" className="login-btn" disabled={isLoggingIn}>
+                        {isLoggingIn ? '로그인 중...' : '로그인'}
                     </button>
 
-                    {!isSignup && (
+                    <div style={{ margin: '24px 0 16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '20px' }}>
+                        <p style={{ margin: '0 0 12px', fontSize: '0.85rem', fontWeight: 700, color: '#94a3b8', textAlign: 'center' }}>
+                            처음이신가요? 3분만에 매장을 개설해 보세요
+                        </p>
+                        
+                        <button 
+                            type="button" 
+                            className="login-btn" 
+                            onClick={onGoToSignup}
+                            style={{
+                                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                                boxShadow: '0 4px 15px rgba(29, 78, 216, 0.25)',
+                                marginBottom: '10px'
+                            }}
+                        >
+                            ✍️ 전자계약 및 매장 개설 (3분 완료)
+                        </button>
+
                         <button 
                             type="button" 
                             className="onboarding-launch-btn" 
@@ -595,8 +155,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                             }}
                             style={{
                                 width: '100%',
-                                marginTop: '12px',
-                                padding: '16px',
+                                padding: '14px',
                                 background: '#FEE500',
                                 color: '#191919',
                                 border: 'none',
@@ -612,19 +171,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                                 gap: '8px'
                             }}
                         >
-                            🎙️ AI 비서와 새로운 매장 개설하기 (3분 완공)
+                            🎙️ AI 비서와 매장 개설 (음성 대화)
                         </button>
-                    )}
-                    
-                    <div className="signup-toggle">
-                        {isSignup ? (
-                            <>이미 계정이 있으신가요? <span onClick={() => setIsSignup(false)}>로그인하기</span></>
-                        ) : (
-                            <>처음이신가요? <span onClick={() => setIsSignup(true)}>회원 가입하기</span></>
-                        )}
                     </div>
 
-                    <div style={{ marginTop: '25px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    <div style={{ marginTop: '25px', fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center' }}>
                         mqnet@naver.com
                     </div>
                 </form>
@@ -641,7 +192,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin, bundles }) => {
                         localStorage.setItem('situation_show_onboarding_chat', 'false');
                     }}
                     onOnboardingComplete={(userProfile) => {
-                        // 🌟 회원가입/개설이 완료되면 관련된 모든 onboarding 캐시를 완전히 청소합니다.
                         Object.keys(localStorage).forEach(key => {
                             if (key.startsWith('mqonboard_')) {
                                 localStorage.removeItem(key);
