@@ -24,6 +24,10 @@ class SafeConnectionWrapper:
         self._closed = False
 
     def cursor(self, *args, **kwargs):
+        if 'cursor_factory' in kwargs:
+            kwargs.pop('cursor_factory')
+            from psycopg.rows import dict_row
+            kwargs['row_factory'] = dict_row
         cur = self._conn.cursor(*args, **kwargs)
         return SafeCursorWrapper(cur, self)
 

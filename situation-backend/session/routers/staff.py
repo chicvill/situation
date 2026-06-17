@@ -488,7 +488,8 @@ async def pay_staff_endpoint(staff_id: str):
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
         # 1. Fetch only UNPAID logs
-        cur = conn.cursor()
+        from psycopg2.extras import RealDictCursor
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("SELECT * FROM table_attendance_logs WHERE staff_id = %s AND (paid = FALSE OR paid IS NULL)", (staff_id,))
         unpaid_logs = cur.fetchall()
 
