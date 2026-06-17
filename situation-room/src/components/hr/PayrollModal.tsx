@@ -92,6 +92,35 @@ export const PayrollModal: React.FC<PayrollModalProps> = ({
 
   const netWage = grossWage - totalDeduction;
 
+  const [copied, setCopied] = React.useState(false);
+
+  const handleCopy = () => {
+    const text = `🧾 급여명세서 (PAYROLL STATEMENT)
+----------------------------------------
+• 대상자: ${payrollModal.name} (${payrollModal.role} · ${isAlba ? '단기 알바' : payrollModal.employmentType || '직원'})
+• 시급: ${hourlyWage.toLocaleString()}원
+• 누적 근무시간: ${payrollModal.hours}시간
+${weeklyHours > 0 ? `• 주간 소정근로: ${weeklyHours.toFixed(1)}시간/주\n` : ''}----------------------------------------
+• 기본급 (시스템 누적): ${grossWage.toLocaleString()}원
+${weeklyHolPay > 0 ? `• 주휴수당 (별도 추산): ${totalHolPay.toLocaleString()}원 (주 ${weeklyHours.toFixed(1)}h 기준, 시스템 기본급 미포함)\n` : ''}• 공제 내역 (${isAlba ? '알바 원천세' : '4대보험 근로자 부담'}):
+${taxLines.map(t => `  - ${t.label} (${t.rate}): -${t.amount.toLocaleString()}원`).join('\n')}
+• 공제 합계: -${totalDeduction.toLocaleString()}원
+----------------------------------------
+• 실수령 누적금액: ${netWage.toLocaleString()}원
+• 이미 지급된 금액: ${paidWage.toLocaleString()}원
+• 미지급 잔액: ${unpaidWage.toLocaleString()}원
+----------------------------------------
+※ 급여의 지급은 점주만의 권한입니다.`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(err => {
+      console.error('Copy failed:', err);
+      alert('복사에 실패했습니다.');
+    });
+  };
+
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -111,7 +140,35 @@ export const PayrollModal: React.FC<PayrollModalProps> = ({
 
         {/* 헤더 */}
         <div style={{ textAlign: 'center', borderBottom: '1.5px dashed rgba(255,255,255,0.12)',
-          paddingBottom: '18px', marginBottom: '18px' }}>
+          paddingBottom: '18px', marginBottom: '18px', position: 'relative' }}>
+          
+          <button 
+            onClick={handleCopy}
+            title="클립보드 복사"
+            style={{
+              position: 'absolute', right: '0px', top: '0px',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '8px', cursor: 'pointer', padding: '6px 10px',
+              fontSize: '0.8rem', color: copied ? '#10b981' : '#e5e7eb',
+              display: 'flex', alignItems: 'center', gap: '4px',
+              transition: 'all 0.2s', fontWeight: 700
+            }}
+            onMouseOver={(e) => {
+              if (!copied) {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.color = 'var(--accent-orange)';
+              }
+            }}
+            onMouseOut={(e) => {
+              if (!copied) {
+                e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                e.currentTarget.style.color = '#e5e7eb';
+              }
+            }}
+          >
+            {copied ? '✅ 복사 완료' : '📋 텍스트 복사'}
+          </button>
+
           <span style={{ fontSize: '1.8rem' }}>🧾</span>
           <h4 style={{ margin: '8px 0 2px', fontSize: '1.1rem', fontWeight: 800,
             letterSpacing: '1.5px', color: '#f3f4f6' }}>PAYROLL STATEMENT</h4>
@@ -206,6 +263,12 @@ export const PayrollModal: React.FC<PayrollModalProps> = ({
               ※ 주휴수당({totalHolPay.toLocaleString()}원)은 미포함 — 지급 시 합산 권장
             </div>
           )}
+          <div style={{ fontSize: '0.68rem', color: '#9ca3af', textAlign: 'right', marginTop: '4px', lineHeight: '1.5' }}>
+            ※ 급여의 지급은 점주만의 권한입니다.
+          </div>
+          <div style={{ fontSize: '0.68rem', color: '#60a5fa', textAlign: 'right', marginTop: '4px', lineHeight: '1.5', fontWeight: 600 }}>
+            ※ 급여 이체 후 급여 명세서를 복사하여 본인에게 메시지 등으로 꼭 알려주세요.
+          </div>
         </div>
 
         {/* 버튼 */}

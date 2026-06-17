@@ -149,6 +149,28 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
         } catch (err) { console.error(err); } finally { setIsProcessing(false); }
     };
 
+    const handleRejectAccount = async (bundle: Bundle) => {
+        const name = bundle.items?.find((i: any) => i.name === '이름')?.value || bundle.title;
+        if (!window.confirm(`❌ ${name} 계정의 가입 신청을 거절하고 삭제하시겠습니까?`)) return;
+        setIsProcessing(true);
+        try {
+            const response = await apiFetch(`/api/bundle/${bundle.id}`, {
+                method: 'DELETE',
+            });
+            if (response.ok) {
+                alert('거절 및 삭제 처리가 완료되었습니다.');
+                if (onRefresh) onRefresh();
+            } else {
+                alert('거절 처리 중 오류가 발생했습니다.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('거절 처리 중 서버 오류가 발생했습니다.');
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
     const handlePaySalary = async (staffId: string, name: string) => {
         if (!window.confirm(`💰 ${name} 사원에게 쌓인 모든 미지급 임금을 정상 지급 완료 처리하시겠습니까?`)) return;
         setIsProcessing(true);
@@ -461,7 +483,10 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                                             <span style={{ opacity: 0.7, fontSize: '0.85rem', marginLeft: '6px' }}>({roleLabel})</span>
                                             {b.store && <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>{b.store}</span>}
                                         </div>
-                                        <button onClick={() => handleApproveAccount(b)} className="confirm-btn success-green" style={{ padding: '8px 16px', fontSize: '0.85rem' }} disabled={isProcessing}>승인하기</button>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button onClick={() => handleApproveAccount(b)} className="confirm-btn success-green" style={{ padding: '8px 16px', fontSize: '0.85rem' }} disabled={isProcessing}>승인하기</button>
+                                            <button onClick={() => handleRejectAccount(b)} className="confirm-btn" style={{ padding: '8px 16px', fontSize: '0.85rem', background: 'var(--danger)', color: '#fff' }} disabled={isProcessing}>취소</button>
+                                        </div>
                                     </div>
                                 );
                             })}
