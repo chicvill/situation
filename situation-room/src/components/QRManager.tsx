@@ -123,11 +123,13 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
             ? `width:${qrSize}px;height:${qrSize}px;border:3px solid #000;border-radius:16px;padding:12px;background:white;flex-shrink:0;`
             : `width:100%;aspect-ratio:1;border:1px solid #e2e8f0;border-radius:8px;padding:3px;background:white;flex:1;min-height:0;`;
 
+        const printFontSize = isA4 ? '2.4rem' : isSingle ? '0.75rem' : '1.1rem';
         const cardsHtml = allCards.map(card => {
             const bottomHtml = `
-                <div style="margin-top:${isA4 ? '28px' : '10px'};text-align:center;width:100%;">
-                    <div style="font-size:${isA4 ? '1.8rem' : '0.82rem'};font-weight:900;color:#0f172a;word-break:break-all;line-height:1.25;">${card.storeName}</div>
-                    <div style="font-size:${isA4 ? '1.25rem' : '0.68rem'};font-weight:700;color:#64748b;margin-top:2px;">Tel: ${card.storePhone}</div>
+                <div style="margin-top:${isA4 ? '28px' : '6px'};text-align:center;width:100%;">
+                    <div style="font-size:${printFontSize};font-weight:900;color:#14532d;word-break:break-all;line-height:1.2;">${card.storeName}</div>
+                    <div style="font-size:${printFontSize};font-weight:700;color:#14532d;margin-top:2px;">Tel: ${card.storePhone}</div>
+                    <div style="font-size:${printFontSize};font-weight:700;color:#1e3a8a;margin-top:2px;">문의 : situation.chicvill.store</div>
                 </div>
             `;
 
@@ -186,6 +188,8 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
             else { imgs.forEach(img => { if (img.complete) tryPrint(); else { img.onload = tryPrint; img.onerror = tryPrint; } }); }
         };
     };
+
+    const previewFontSize = printMode === 'single' ? '0.75rem' : '1.1rem';
 
     return (
         <div className="qr-manager-container animate-fade-in" style={{ padding: '16px' }}>
@@ -246,13 +250,14 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                             padding: printMode === 'single' ? '10px' : '20px',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
                         }}>
-                            <h3 style={{ margin: '0 0 10px', fontSize: printMode === 'single' ? '0.75rem' : '1rem', fontWeight: '900', color: '#1e293b' }}>{item.title}</h3>
+                            <h3 style={{ margin: '0 0 10px', fontSize: previewFontSize, fontWeight: '900', color: '#1e293b' }}>{item.title}</h3>
                             <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '4px', width: printMode === 'single' ? '80px' : '140px', height: printMode === 'single' ? '80px' : '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <img src={getQRUri(item.data)} alt="QR" style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }} />
                             </div>
                             <div style={{ marginTop: '8px', textAlign: 'center', width: '100%' }}>
-                                <div style={{ fontSize: printMode === 'single' ? '0.78rem' : '0.92rem', fontWeight: '900', color: '#1e293b', wordBreak: 'break-all' }}>{storeName}</div>
-                                <div style={{ fontSize: printMode === 'single' ? '0.68rem' : '0.75rem', fontWeight: '700', color: '#64748b', marginTop: '2px' }}>Tel: {storePhone}</div>
+                                <div style={{ fontSize: previewFontSize, fontWeight: '900', color: '#14532d', wordBreak: 'break-all' }}>{storeName}</div>
+                                <div style={{ fontSize: previewFontSize, fontWeight: '700', color: '#14532d', marginTop: '2px' }}>Tel: {storePhone}</div>
+                                <div style={{ fontSize: previewFontSize, fontWeight: '700', color: '#1e3a8a', marginTop: '2px' }}>문의 : situation.chicvill.store</div>
                             </div>
                         </div>
                     ))}
@@ -263,15 +268,16 @@ export const QRManager: React.FC<Props> = ({ bundles, storeId, storeName: initia
                             padding: printMode === 'single' ? '10px' : '20px',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
                         }}>
-                            <h3 style={{ margin: '0 0 10px', fontSize: printMode === 'single' ? '0.75rem' : '1.1rem', fontWeight: '900', color: '#1e293b' }}>
+                            <h3 style={{ margin: '0 0 10px', fontSize: previewFontSize, fontWeight: '900', color: '#1e293b' }}>
                                 테이블 {item.num} ({item.seats})
                             </h3>
                             <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '4px', width: printMode === 'single' ? '80px' : '140px', height: printMode === 'single' ? '80px' : '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                 <img src={getQRUri(`${baseUrl}/?mode=customer&table=${item.num}&storeId=${resolvedStoreId}&store=${encodeURIComponent(storeName)}`)} alt={`${item.label} QR`} style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }} />
                             </div>
                             <div style={{ marginTop: '8px', textAlign: 'center', width: '100%' }}>
-                                <div style={{ fontSize: printMode === 'single' ? '0.78rem' : '0.92rem', fontWeight: '900', color: '#1e293b', wordBreak: 'break-all' }}>{storeName}</div>
-                                <div style={{ fontSize: printMode === 'single' ? '0.68rem' : '0.75rem', fontWeight: '700', color: '#64748b', marginTop: '2px' }}>Tel: {storePhone}</div>
+                                <div style={{ fontSize: previewFontSize, fontWeight: '900', color: '#14532d', wordBreak: 'break-all' }}>{storeName}</div>
+                                <div style={{ fontSize: previewFontSize, fontWeight: '700', color: '#14532d', marginTop: '2px' }}>Tel: {storePhone}</div>
+                                <div style={{ fontSize: previewFontSize, fontWeight: '700', color: '#1e3a8a', marginTop: '2px' }}>문의 : situation.chicvill.store</div>
                             </div>
                         </div>
                     ))}

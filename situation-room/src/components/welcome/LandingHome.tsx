@@ -51,10 +51,13 @@ export const LandingHome: React.FC<LandingHomeProps> = ({ onNavigate }) => {
           테이블 QR 주문부터 선불 결제, 포인트 적립, 직원 QR 출퇴근 관리와 AI 임금 산출, 
           그리고 정교한 매출 데이터 분석까지. 단 하나의 지능형 모바일 시스템으로 통합하세요.
         </p>
-        <div className="hero-buttons">
-          <button className="btn-hero-primary" style={{ maxWidth: '380px' }} onClick={() => onNavigate('login')}>
+        <div className="hero-buttons" style={{ flexDirection: 'column', gap: '8px' }}>
+          <button className="btn-hero-primary" style={{ maxWidth: '380px', width: '100%' }} onClick={() => onNavigate('login')}>
             시작하기 (로그인 및 매장 개설)
           </button>
+          <div style={{ fontSize: '1.05rem', color: '#94a3b8', fontWeight: '700', marginTop: '8px' }}>
+            문의 : 010-3269-3343
+          </div>
         </div>
       </section>
 
