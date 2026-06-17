@@ -528,7 +528,6 @@ export const HRManager: React.FC<{ bundles: any[], user: any, storeDetails?: any
                         onClose={() => setSelectedEmployee(null)}
                         employeeAttendance={employeeAttendance}
                         handleForceAttendance={handleForceAttendance}
-                        handlePaySalary={handlePaySalary}
                         handleResignEmployee={handleResignEmployee}
                         handleDeleteLog={handleDeleteLog}
                         setPayrollModal={setPayrollModal}

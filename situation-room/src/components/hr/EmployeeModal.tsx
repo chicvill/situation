@@ -12,7 +12,6 @@ interface EmployeeModalProps {
   onClose: () => void;
   employeeAttendance: Bundle[];
   handleForceAttendance: (ev: React.MouseEvent, bundle: Bundle, action: 'check-in' | 'check-out') => void;
-  handlePaySalary: (staffId: string, name: string) => void;
   handleResignEmployee: (bundle: Bundle) => void;
   handleDeleteLog: (ev: React.MouseEvent, bundleId: string) => void;
   setPayrollModal: (payroll: any) => void;
@@ -28,7 +27,6 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
   onClose,
   employeeAttendance,
   handleForceAttendance,
-  handlePaySalary,
   handleResignEmployee,
   handleDeleteLog,
   setPayrollModal,
@@ -498,14 +496,6 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                     >
                       📄 급여 명세서 상세 확인
                     </button>
-                    {userRole === 'owner' && parseInt(employee.unpaidWage) > 0 && (
-                      <button
-                        onClick={() => handlePaySalary(employee.id, employee.name)}
-                        style={{ background: '#10b981', color: 'white', border: 'none', fontSize: '0.85rem', padding: '10px 16px', borderRadius: '8px', fontWeight: 800, cursor: 'pointer', flex: 1 }}
-                      >
-                        💸 급여 정상 지급 처리
-                      </button>
-                    )}
                   </div>
                 </div>
               )}
