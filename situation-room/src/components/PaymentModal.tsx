@@ -31,6 +31,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   const [accumulatePoints, setAccumulatePoints] = React.useState(!!initialPhone);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [isTakeout, setIsTakeout] = React.useState(false);
+  const [showStaffPayOptions, setShowStaffPayOptions] = React.useState(false);
 
   const finalTotal = Math.max(0, totalPrice - usePoints);
 
@@ -322,6 +323,100 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 </div>
               </button>
             </>
+          ) : showStaffPayOptions ? (
+            <>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 700, marginBottom: '6px', textAlign: 'center' }}>
+                직원 방문 시 이용하실 결제 수단을 선택해 주세요.
+              </div>
+              
+              <button
+                onClick={() => handlePay('call_card')}
+                disabled={isSubmitting}
+                style={{ 
+                  display:'flex', alignItems:'center', gap:'14px', padding:'12px 16px',
+                  borderRadius:'12px', border:'1px solid var(--border)', background: 'white',
+                  color: 'var(--text-main)', textAlign:'left', cursor: isSubmitting ? 'not-allowed' : 'pointer', 
+                  transition:'all 0.15s',
+                }}
+              >
+                <span style={{ fontSize:'1.5rem' }}>💳</span>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontWeight:800, fontSize:'0.95rem' }}>실물카드 결제</div>
+                  <div style={{ color:'var(--text-muted)', fontSize:'0.7rem', marginTop:'1px' }}>
+                    신용/체크 카드를 준비해 주세요.
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => handlePay('call_cash')}
+                disabled={isSubmitting}
+                style={{ 
+                  display:'flex', alignItems:'center', gap:'14px', padding:'12px 16px',
+                  borderRadius:'12px', border:'1px solid var(--border)', background: 'white',
+                  color: 'var(--text-main)', textAlign:'left', cursor: isSubmitting ? 'not-allowed' : 'pointer', 
+                  transition:'all 0.15s',
+                }}
+              >
+                <span style={{ fontSize:'1.5rem' }}>💵</span>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontWeight:800, fontSize:'0.95rem' }}>현금 결제</div>
+                  <div style={{ color:'var(--text-muted)', fontSize:'0.7rem', marginTop:'1px' }}>
+                    현금(지폐/동전)을 준비해 주세요.
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => handlePay('call_kakao')}
+                disabled={isSubmitting}
+                style={{ 
+                  display:'flex', alignItems:'center', gap:'14px', padding:'12px 16px',
+                  borderRadius:'12px', border:'1px solid var(--border)', background: '#fee500',
+                  color: '#3c1e1e', textAlign:'left', cursor: isSubmitting ? 'not-allowed' : 'pointer', 
+                  transition:'all 0.15s',
+                }}
+              >
+                <span style={{ fontSize:'1.5rem' }}>💛</span>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontWeight:800, fontSize:'0.95rem', color: '#3c1e1e' }}>카카오페이 결제</div>
+                  <div style={{ color:'rgba(60,30,30,0.8)', fontSize:'0.7rem', marginTop:'1px' }}>
+                    카카오페이 결제 화면을 미리 켜주세요.
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => handlePay('call_naver')}
+                disabled={isSubmitting}
+                style={{ 
+                  display:'flex', alignItems:'center', gap:'14px', padding:'12px 16px',
+                  borderRadius:'12px', border:'1px solid var(--border)', background: '#03c75a',
+                  color: 'white', textAlign:'left', cursor: isSubmitting ? 'not-allowed' : 'pointer', 
+                  transition:'all 0.15s',
+                }}
+              >
+                <span style={{ fontSize:'1.5rem' }}>💚</span>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontWeight:800, fontSize:'0.95rem' }}>네이버페이 결제</div>
+                  <div style={{ color:'rgba(255,255,255,0.8)', fontSize:'0.7rem', marginTop:'1px' }}>
+                    네이버페이 결제 화면을 미리 켜주세요.
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setShowStaffPayOptions(false)}
+                style={{
+                  marginTop: '6px', padding: '10px', borderRadius: '10px',
+                  border: '1px solid var(--border)', background: 'transparent',
+                  color: 'var(--text-muted)', fontWeight: 700, fontSize: '0.85rem',
+                  cursor: 'pointer'
+                }}
+              >
+                이전 단계로
+              </button>
+            </>
           ) : (
             <>
               <button
@@ -344,7 +439,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </button>
 
               <button
-                onClick={() => handlePay('call_staff')}
+                onClick={() => setShowStaffPayOptions(true)}
                 disabled={isSubmitting}
                 style={{ 
                   display:'flex', alignItems:'center', gap:'16px', padding:'18px 20px',

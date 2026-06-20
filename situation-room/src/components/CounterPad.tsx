@@ -276,7 +276,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         const session = sessions.find((s: any) => s.session_id === sessionId);
         if (!session) return;
         const pendingCardCalls = (session.calls || []).filter(
-            (c: any) => c.call_type === '실물 카드 결제' && c.status === 'pending'
+            (c: any) => ['실물 카드 결제', '카카오페이 결제', '네이버페이 결제'].includes(c.call_type) && c.status === 'pending'
         );
         for (const call of pendingCardCalls) {
             try {
@@ -687,10 +687,32 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                 </button>
                             )}
 
-                            {/* ── 실물카드 결제 퀵 버튼 ── */}
+                            {/* ── 실물카드/간편결제 결제 퀵 버튼 ── */}
                             {selectedSession && (() => {
-                                const pendingCardCall = (selectedSession.calls || []).find((c: any) => c.call_type === '실물 카드 결제' && c.status === 'pending');
+                                const pendingCardCall = (selectedSession.calls || []).find((c: any) => 
+                                    ['실물 카드 결제', '카카오페이 결제', '네이버페이 결제'].includes(c.call_type) && c.status === 'pending'
+                                );
                                 if (pendingCardCall && unpaidTotal > 0) {
+                                    let btnIcon = '💳';
+                                    let btnLabel = '실물카드 결제 받기';
+                                    let btnBg = 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)';
+                                    let btnColor = 'white';
+                                    let targetMethod: 'CARD' | 'KAKAO_PAY' | 'NAVER_PAY' = 'CARD';
+
+                                    if (pendingCardCall.call_type === '카카오페이 결제') {
+                                        btnIcon = '💛';
+                                        btnLabel = '카카오페이 결제 받기';
+                                        btnBg = 'linear-gradient(135deg, #facc15 0%, #eab308 100%)';
+                                        btnColor = '#3c1e1e';
+                                        targetMethod = 'KAKAO_PAY';
+                                    } else if (pendingCardCall.call_type === '네이버페이 결제') {
+                                        btnIcon = '💚';
+                                        btnLabel = '네이버페이 결제 받기';
+                                        btnBg = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+                                        btnColor = 'white';
+                                        targetMethod = 'NAVER_PAY';
+                                    }
+
                                     return (
                                         <button
                                             onClick={async () => {
@@ -702,13 +724,13 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                         body: JSON.stringify({ call_id: pendingCardCall.call_id, status: 'completed' })
                                                     });
                                                 });
-                                                setCardTouchMethod('CARD');
+                                                setCardTouchMethod(targetMethod);
                                                 setShowCardTouchOverlay(true);
                                             }}
                                             style={{
-                                                background: 'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
+                                                background: btnBg,
                                                 border: 'none',
-                                                color: 'white',
+                                                color: btnColor,
                                                 padding: padMode ? '16px' : '12px',
                                                 borderRadius: '12px',
                                                 fontWeight: '900',
@@ -719,12 +741,12 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 gap: '8px',
-                                                boxShadow: '0 4px 15px rgba(236, 72, 153, 0.4)',
+                                                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
                                                 marginBottom: '6px',
                                                 animation: 'pulse-pink 2s infinite ease-in-out'
                                             }}
                                         >
-                                            💳 대기중인 실물카드 결제 받기 ({unpaidTotal.toLocaleString()}원)
+                                            {btnIcon} 대기중인 {btnLabel} ({unpaidTotal.toLocaleString()}원)
                                         </button>
                                     );
                                 }

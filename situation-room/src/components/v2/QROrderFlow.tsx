@@ -793,20 +793,40 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
 
       const isTestPay = method.includes('가상 결제') || method.includes('테스트');
 
-      if (method.includes('실물카드')) {
+      const isCallStaffPayment = ['call_card', 'call_cash', 'call_kakao', 'call_naver'].includes(method);
+
+      if (method.includes('실물카드') || isCallStaffPayment) {
+        let callType = '실물 카드 결제';
+        let displayMethod = '실물카드 결제 (직원호출)';
+        let speakMsg = '직원이 와서 결제할 때까지 카드를 준비하고 기다려 주세요.';
+
+        if (method === 'call_cash') {
+          callType = '현금 결제';
+          displayMethod = '현금 결제 (직원호출)';
+          speakMsg = '직원이 와서 결제할 때까지 현금을 준비하고 기다려 주세요.';
+        } else if (method === 'call_kakao') {
+          callType = '카카오페이 결제';
+          displayMethod = '카카오페이 결제 (직원호출)';
+          speakMsg = '직원이 와서 결제할 때까지 카카오페이 결제 화면을 미리 켜고 기다려 주세요.';
+        } else if (method === 'call_naver') {
+          callType = '네이버페이 결제';
+          displayMethod = '네이버페이 결제 (직원호출)';
+          speakMsg = '직원이 와서 결제할 때까지 네이버페이 결제 화면을 미리 켜고 기다려 주세요.';
+        }
+
         setWaitingOrderId(orderId);
         setWaitingTotal(finalAmount);
-        setWaitingMethod(method);
+        setWaitingMethod(displayMethod);
         setWaitingItems(mappedItems);
         phaseRef.current = 'waiting_payment';
         setPhase('waiting_payment');
         
-        speak('직원이 와서 결제할 때까지 기다려 주세요.');
+        speak(speakMsg);
         
         try {
           await fetch(`${API_BASE}/api/call`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ store_id: storeId, table_id: tableId, call_type: '실물 카드 결제' })
+            body: JSON.stringify({ store_id: storeId, table_id: tableId, call_type: callType })
           });
         } catch (e) {
           console.error("Staff call error:", e);
@@ -1250,7 +1270,9 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           padding: '40px 28px',
           gap: 0,
         }}>
-          <div style={{ fontSize: '5.5rem', marginBottom: '24px', animation: 'pulse-mild 2s infinite' }}>📲</div>
+          <div style={{ fontSize: '5.5rem', marginBottom: '24px', animation: 'pulse-mild 2s infinite' }}>
+            {waitingMethod.includes('카카오') ? '💛📲' : waitingMethod.includes('네이버') ? '💚📲' : waitingMethod.includes('현금') ? '💵📲' : '💳📲'}
+          </div>
           
           <h2 style={{
             fontSize: '1.8rem', fontWeight: 900, color: 'white',
@@ -1263,7 +1285,13 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
           }}>
             직원이 결제 단말기(스마트폰)를 지참하고<br/>
             고객님의 테이블로 이동하고 있습니다.<br/>
-            <span style={{ color: '#f97316', fontWeight: 700 }}>실물카드를 준비해 주세요.</span>
+            {waitingMethod.includes('카카오') || waitingMethod.includes('네이버') ? (
+              <span style={{ color: '#f97316', fontWeight: 700 }}>네이버/카카오페이 결제 화면(QR/바코드)을 미리 열어 준비해 주세요.</span>
+            ) : waitingMethod.includes('현금') ? (
+              <span style={{ color: '#f97316', fontWeight: 700 }}>현금을 미리 준비해 주세요.</span>
+            ) : (
+              <span style={{ color: '#f97316', fontWeight: 700 }}>실물카드를 준비해 주세요.</span>
+            )}
           </p>
 
           <div style={{
@@ -1290,7 +1318,7 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span>결제 방법</span>
-              <span style={{ fontWeight: 700 }}>실물카드 결제 (직원방문)</span>
+              <span style={{ fontWeight: 700 }}>{waitingMethod || '실물카드 결제 (직원방문)'}</span>
             </div>
           </div>
           
