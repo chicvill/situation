@@ -59,6 +59,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const [cardTouchAmount, setCardTouchAmount] = useState<number>(0);
     const [cardTouchOrderId, setCardTouchOrderId] = useState<string>('');
     const [cardTouchTableId, setCardTouchTableId] = useState<string>('');
+    const [cardTouchMethod, setCardTouchMethod] = useState<'CARD' | 'KAKAO_PAY' | 'NAVER_PAY'>('CARD');
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
     // ── 구두 주문 추가를 위한 상태 ──
@@ -701,6 +702,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                         body: JSON.stringify({ call_id: pendingCardCall.call_id, status: 'completed' })
                                                     });
                                                 });
+                                                setCardTouchMethod('CARD');
                                                 setShowCardTouchOverlay(true);
                                             }}
                                             style={{
@@ -848,11 +850,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                                 <button
                                                                     disabled={isPaidFull}
                                                                     onClick={() => {
-                                                                        setCardTouchCallback(() => async () => {
-                                                                            await handlePartialPayment(order.order_id);
-                                                                            if (selectedSession?.session_id) await resolvePendingCardCalls(selectedSession.session_id);
-                                                                        });
-                                                                        setShowCardTouchOverlay(true);
+                                                                        setSelectedOrderForPay(order);
                                                                     }}
                                                                     style={{ background: isPaidFull ? '#e5e7eb' : 'var(--accent)', border: 'none', color: isPaidFull ? '#9ca3af' : 'white', padding: padMode ? '6px 12px' : '3px 6px', borderRadius: '6px', fontSize: padMode ? '0.78rem' : '0.65rem', cursor: isPaidFull ? 'default' : 'pointer', fontWeight: '700', whiteSpace: 'nowrap' }}
                                                                 >
@@ -926,11 +924,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                             ) : (
                                                 <button 
                                                     onClick={() => {
-                                                        setCardTouchCallback(() => async () => {
-                                                            await handleCloseSession(selectedSession.session_id, true);
-                                                            await resolvePendingCardCalls(selectedSession.session_id);
-                                                        });
-                                                        setShowCardTouchOverlay(true);
+                                                        setSelectedSessionForPay(selectedSession);
                                                     }} 
                                                     style={{ background: 'var(--primary)', border: 'none', color: 'white', padding: padMode ? '8px 16px' : '4px 8px', borderRadius: '6px', fontWeight: '700', fontSize: padMode ? '0.85rem' : '0.68rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
                                                 >
@@ -1017,10 +1011,14 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                             }
                         };
 
-                        if (method.includes('실물카드')) {
+                        if (method.includes('실물카드') || method === '카카오페이' || method === '네이버페이') {
                             setCardTouchAmount(amount);
                             setCardTouchOrderId(orderId);
                             setCardTouchTableId(tableId);
+                            setCardTouchMethod(
+                                method === '카카오페이' ? 'KAKAO_PAY' :
+                                method === '네이버페이' ? 'NAVER_PAY' : 'CARD'
+                            );
                             setCardTouchCallback(() => executePayment);
                             setShowCardTouchOverlay(true);
                         } else {
@@ -1051,104 +1049,114 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                     </div>
                 </div>
             )}
-            {showCardTouchOverlay && (
-                <div style={{
-                    position: 'fixed', inset: 0, zIndex: 11000,
-                    background: 'rgba(15, 23, 42, 0.95)',
-                    display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center',
-                    padding: '30px'
-                }}>
-                    <div className="glass-card animate-fade-in" style={{
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '24px',
-                        padding: '40px 30px',
-                        maxWidth: '380px',
-                        width: '100%',
-                        textAlign: 'center',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+            {showCardTouchOverlay && (() => {
+                const methodTitle = cardTouchMethod === 'KAKAO_PAY' ? '카카오페이 스캔' : cardTouchMethod === 'NAVER_PAY' ? '네이버페이 스캔' : '실물카드 터치';
+                const methodIcon = cardTouchMethod === 'KAKAO_PAY' ? '💛📲' : cardTouchMethod === 'NAVER_PAY' ? '💚📲' : '📲💳';
+                const methodDesc = cardTouchMethod === 'KAKAO_PAY' 
+                    ? '고객의 카카오페이 결제 화면(QR/바코드)을\n직원 폰 카메라로 스캔해 주세요.'
+                    : cardTouchMethod === 'NAVER_PAY'
+                    ? '고객의 네이버페이 결제 화면(QR/바코드)을\n직원 폰 카메라로 스캔해 주세요.'
+                    : '실물카드를 휴대폰 뒷면(NFC 영역)에\n대고 잠시만 기다려 주세요.';
+                const methodBtnText = cardTouchMethod === 'KAKAO_PAY' ? '스캔' : cardTouchMethod === 'NAVER_PAY' ? '스캔' : '태깅';
+                return (
+                    <div style={{
+                        position: 'fixed', inset: 0, zIndex: 11000,
+                        background: 'rgba(15, 23, 42, 0.95)',
+                        display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', justifyContent: 'center',
+                        padding: '30px'
                     }}>
-                        <div style={{ fontSize: '5rem', marginBottom: '20px', animation: 'cardTouchBlink 1.5s infinite alternate' }}>📲💳</div>
-                        
-                        <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'white', marginBottom: '12px' }}>실물카드 터치</h2>
-                        <p style={{ fontSize: '0.92rem', color: '#94a3b8', lineHeight: 1.6, marginBottom: '30px' }}>
-                            실물카드를 휴대폰 뒷면(NFC 영역)에<br/>
-                            대고 잠시만 기다려 주세요.
-                        </p>
+                        <div className="glass-card animate-fade-in" style={{
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '24px',
+                            padding: '40px 30px',
+                            maxWidth: '380px',
+                            width: '100%',
+                            textAlign: 'center',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                        }}>
+                            <div style={{ fontSize: '5rem', marginBottom: '20px', animation: 'cardTouchBlink 1.5s infinite alternate' }}>{methodIcon}</div>
+                            
+                            <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: 'white', marginBottom: '12px' }}>{methodTitle}</h2>
+                            <p style={{ fontSize: '0.92rem', color: '#94a3b8', lineHeight: 1.6, marginBottom: '30px', whiteSpace: 'pre-line' }}>
+                                {methodDesc}
+                            </p>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {isMobile && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {isMobile && (
+                                    <button 
+                                        onClick={() => {
+                                            const typeLabel = cardTouchMethod === 'KAKAO_PAY' ? '카카오페이' : cardTouchMethod === 'NAVER_PAY' ? '네이버페이' : '실물카드';
+                                            const goodName = `${cardTouchTableId || '테이블'} ${typeLabel} 결제`;
+                                            const returnUri = encodeURIComponent(`${window.location.origin}/?order_id=${cardTouchOrderId}`);
+                                            const payappScheme = `payapp://request?reqType=${cardTouchMethod}&goodPrice=${cardTouchAmount}&goodName=${encodeURIComponent(goodName)}&var1=${cardTouchOrderId}&returnUri=${returnUri}&smsuse=n`;
+                                            
+                                            const startTime = Date.now();
+                                            window.location.href = payappScheme;
+                                            
+                                            setTimeout(() => {
+                                                if (Date.now() - startTime < 1500) {
+                                                    window.location.href = "market://details?id=com.udid.payapp";
+                                                }
+                                            }, 1200);
+                                        }}
+                                        style={{
+                                            width: '100%', padding: '16px', borderRadius: '14px',
+                                            background: 'linear-gradient(135deg, #ec4899, #db2777)',
+                                            color: 'white', border: 'none', fontWeight: 800,
+                                            fontSize: '1.05rem', cursor: 'pointer',
+                                            boxShadow: '0 8px 20px rgba(236, 72, 153, 0.3)',
+                                            marginBottom: '6px'
+                                        }}
+                                    >
+                                        📲 페이앱 결제 실행 ({methodBtnText})
+                                    </button>
+                                )}
                                 <button 
-                                    onClick={() => {
-                                        const goodName = `${cardTouchTableId || '테이블'} 실물카드 결제`;
-                                        const returnUri = encodeURIComponent(`${window.location.origin}/?order_id=${cardTouchOrderId}`);
-                                        const payappScheme = `payapp://request?reqType=CARD&goodPrice=${cardTouchAmount}&goodName=${encodeURIComponent(goodName)}&var1=${cardTouchOrderId}&returnUri=${returnUri}&smsuse=n`;
-                                        
-                                        const startTime = Date.now();
-                                        window.location.href = payappScheme;
-                                        
-                                        setTimeout(() => {
-                                            if (Date.now() - startTime < 1500) {
-                                                window.location.href = "market://details?id=com.udid.payapp";
-                                            }
-                                        }, 1200);
+                                    onClick={async () => {
+                                        setShowCardTouchOverlay(false);
+                                        if (cardTouchCallback) {
+                                            await cardTouchCallback();
+                                            setCardTouchCallback(null);
+                                        }
                                     }}
                                     style={{
                                         width: '100%', padding: '16px', borderRadius: '14px',
-                                        background: 'linear-gradient(135deg, #ec4899, #db2777)',
+                                        background: 'linear-gradient(135deg, #f97316, #ea580c)',
                                         color: 'white', border: 'none', fontWeight: 800,
                                         fontSize: '1.05rem', cursor: 'pointer',
-                                        boxShadow: '0 8px 20px rgba(236, 72, 153, 0.3)',
-                                        marginBottom: '6px'
+                                        boxShadow: '0 8px 20px rgba(249, 115, 22, 0.3)'
+                                    }}
+                                 >
+                                    💳 결제 완료 처리 (수동 승인)
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        setShowCardTouchOverlay(false);
+                                        setCardTouchCallback(null);
+                                    }}
+                                    style={{
+                                        width: '100%', padding: '12px', borderRadius: '12px',
+                                        background: 'transparent', color: '#94a3b8',
+                                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                                        fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer'
                                     }}
                                 >
-                                    📲 페이앱 결제 실행 (태깅)
+                                    취소
                                 </button>
-                            )}
-                            <button 
-                                onClick={async () => {
-                                    setShowCardTouchOverlay(false);
-                                    if (cardTouchCallback) {
-                                        await cardTouchCallback();
-                                        setCardTouchCallback(null);
-                                    }
-                                }}
-                                style={{
-                                    width: '100%', padding: '16px', borderRadius: '14px',
-                                    background: 'linear-gradient(135deg, #f97316, #ea580c)',
-                                    color: 'white', border: 'none', fontWeight: 800,
-                                    fontSize: '1.05rem', cursor: 'pointer',
-                                    boxShadow: '0 8px 20px rgba(249, 115, 22, 0.3)'
-                                }}
-                             >
-                                💳 결제 완료 처리 (수동 승인)
-                            </button>
-                            <button 
-                                onClick={() => {
-                                    setShowCardTouchOverlay(false);
-                                    setCardTouchCallback(null);
-                                }}
-                                style={{
-                                    width: '100%', padding: '12px', borderRadius: '12px',
-                                    background: 'transparent', color: '#94a3b8',
-                                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                                    fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer'
-                                }}
-                            >
-                                취소
-                            </button>
+                            </div>
                         </div>
+                        
+                        <style>{`
+                            @keyframes cardTouchBlink {
+                                0% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 5px rgba(249,115,22,0.2)); }
+                                100% { transform: translateY(-8px) scale(1.05); filter: drop-shadow(0 0 20px rgba(249,115,22,0.6)); }
+                            }
+                        `}</style>
                     </div>
-                    
-                    <style>{`
-                        @keyframes cardTouchBlink {
-                            0% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 5px rgba(249,115,22,0.2)); }
-                            100% { transform: translateY(-8px) scale(1.05); filter: drop-shadow(0 0 20px rgba(249,115,22,0.6)); }
-                        }
-                    `}</style>
-                </div>
-            )}
+                );
+            })()}
         </div>
     );
 };
