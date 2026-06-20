@@ -746,16 +746,20 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
      Pre-payment → Payment
   ───────────────────────────────────────────── */
   const handleProceedPayment = useCallback(() => {
-    if (!isApproved) {
-      alert("⏳ 가맹점 승인 대기 안내\n\n현재 이 매장은 최고관리자(Admin)의 PayApp 결제 연동 심사가 진행 중입니다.\n\n심사가 완료(1~2일 소요)된 이후부터 테이블 선불 결제 기능을 이용하실 수 있습니다. 주문은 직원에게 구두로 직접 진행해 주세요!");
-      return;
-    }
+    
     if (cart.length === 0) { addAiMsg('장바구니에 메뉴를 담아주세요. 🛒', false); return; }
     phaseRef.current = 'pre_payment'; setPhase('pre_payment');
     addAiMsg('결제 전 포인트 적립, 주차 등록을 확인해 주세요.', true);
   }, [cart, addAiMsg, isApproved]);
 
   const executeOrder = useCallback(async (method: string, extraData?: any) => {
+    // 가맹 승인 전 체험 모드 시 가상 결제로 자동 우회하여 테스트 허용
+    let isTestPay = method.includes('가상 결제') || method.includes('테스트');
+    if (!isApproved && !isTestPay && !method.includes('직원') && !method.includes('현금') && !method.includes('카운터')) {
+      alert("💡 안내: 현재 매장은 [체험 및 테스트 모드] 상태이므로 가상 모의 결제(테스트 승인)로 자동 처리됩니다.\n\n(주문이 정상적으로 주방과 상황판에 실시간 전송됩니다. 실제 카드 결제는 가맹 승인 완료 후 활성화됩니다.)");
+      method = '가상 결제 (테스트)';
+      isTestPay = true;
+    }
     setIsOrdering(true);
     try {
       if (extraData?.phone) {

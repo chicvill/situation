@@ -461,25 +461,26 @@ export const WelcomeHub: React.FC<WelcomeHubProps> = ({
       {/* ⏳ 미승인 (PayApp 가입 연동 중) 안내 배너 */}
       {!isApproved && user?.role === 'owner' && (
         <div style={{
-          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.04))',
-          border: '1.5px dashed #f59e0b',
+          background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.04))',
+          border: '1.5px dashed #3b82f6',
           borderRadius: '16px',
           padding: '16px 20px',
           marginBottom: '14px',
           fontSize: '0.85rem',
           color: 'var(--text-main)',
-          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.05)',
+          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.05)',
           display: 'flex',
           alignItems: 'center',
           gap: '12px'
         }}>
           <span style={{ fontSize: '1.6rem' }}>⏳</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
-            <span style={{ fontWeight: '800', color: '#e0a82e' }}>[PayApp 가맹 승인 및 연동 심사 진행 중]</span>
+            <span style={{ fontWeight: '800', color: '#2563eb' }}>[30일 무료 체험 및 가상 모의 결제 모드 작동 중]</span>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-              현재 최고관리자가 PayApp 가입 및 승인을 대행 처리하고 있습니다.<br />
-              가맹 승인 및 결제 연동 심사를 완료하기 위해, <strong>사업자등록증, 통장 사본, 대표자 신분증</strong> 사본을 당사 대표 이메일(<a href="mailto:mqnet@naver.com" style={{ color: '#e0a82e', fontWeight: 'bold', textDecoration: 'underline' }}>mqnet@naver.com</a>)로 즉시 제출해 주시기 바랍니다.<br />
-              승인 완료(서류 제출 후 1~2일 소요) 전까지 실결제는 대기 상태이나, 매장 설정 및 메뉴 구성, 직원 등록 등의 운영 준비는 자유롭게 진행 가능합니다.
+              축하합니다! 현재 매장은 30일 무료 체험 모드가 활성화되어 있습니다.<br />
+              메뉴 설정, 직원 근태 관리, 테이블 주문 전송, 주방 알림 수신 및 <strong>가상 결제 테스트(결제 차단 없음)</strong>까지 모든 매장 운영 시스템을 즉시 자유롭게 테스트해 보실 수 있습니다.<br />
+              <span style={{ color: '#2563eb', fontWeight: '700' }}>💳 실제 고객 신용카드 및 간편 결제(네이버/카카오)를 활성화하려면?</span><br />
+              가맹 승인 대행 완료를 위해, <strong>사업자등록증, 통장 사본, 대표자 신분증</strong> 사본을 당사 대표 이메일(<a href="mailto:mqnet@naver.com" style={{ color: '#2563eb', fontWeight: 'bold', textDecoration: 'underline' }}>mqnet@naver.com</a>)로 보내주시면 영업일 1~2일 내에 실결제 연동이 최종 완료됩니다.
             </span>
           </div>
         </div>

@@ -239,7 +239,7 @@ export const ContractSignup: React.FC<ContractSignupProps> = ({ onBack, onSignup
       localStorage.setItem('mqnet_user', JSON.stringify(loginData));
       localStorage.setItem('mqnet_token', loginData.token);
 
-      alert(`🎉 가입 및 이용계약 제출이 완료되었습니다!\n현재 매장은 최고관리자의 PayApp 심사 대기 중입니다.\n승인 전 상태로 로그인하여 매장 설정과 직원 등록을 시작합니다!`);
+      alert(`🎉 가입 및 이용계약 제출이 완료되었습니다!\n\n현재 매장은 30일간 무료로 이용 가능한 [체험 및 테스트 모드]가 즉시 시작됩니다.\n매장 설정, 메뉴 등록, 주방 전송 및 가상 모의 결제까지 완벽하게 테스트해 보실 수 있습니다!`);
       
       onSignupSuccess(loginData);
     } catch (err: any) {
