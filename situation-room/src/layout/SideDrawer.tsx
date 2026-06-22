@@ -83,6 +83,7 @@ export const SideDrawer: React.FC<SideDrawerProps> = ({
 
           <button style={{ width: '100%' }} onClick={() => onNavigate('qr')}>🖨️ QR 인쇄</button>
           <button onClick={() => onNavigate('wifi')}>📶 WiFi QR 인쇄</button>
+          <button onClick={() => onNavigate('gwansang')}>🔮 AI 관상 분석기</button>
           {(user?.role === 'admin' || user?.role === 'owner') && (
             <button onClick={() => onNavigate('stats')}>📊 통계</button>
           )}

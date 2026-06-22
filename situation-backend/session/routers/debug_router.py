@@ -140,11 +140,11 @@ async def get_archive(store_id: str = "Total", limit: int = 20):
 
 @router.post("/api/debug/reset-test")
 async def reset_test_tables():
-    """테스트 테이블(T98, T99) 초기화 — 테스트 스크립트 전후 정리용"""
+    """테스트 테이블(T88, T89, T90, T91, T98, T99) 초기화 — 테스트 스크립트 전후 정리용"""
     from ..database import get_all_active_sessions, update_session_status, get_orders_by_session, update_order_status
     cleaned = []
     sessions = get_all_active_sessions("Total") or []
-    test_tables = {"T98", "T99"}
+    test_tables = {"T88", "T89", "T90", "T91", "T98", "T99"}
     for s in sessions:
         if s.get("table_id") in test_tables:
             sid = s["session_id"]
@@ -154,6 +154,12 @@ async def reset_test_tables():
             update_session_status(sid, "closed")
             manager.remove_seat_request(s["table_id"])
             cleaned.append(s["table_id"])
+            
+            # Broadcast to kitchen and table
+            msg = {"type": "SESSION_CLOSED", "session_id": sid, "store_id": s.get("store_id")}
+            await manager.broadcast_to_kitchen(msg)
+            await manager.send_to_table(s["table_id"], msg)
+            
     return {"cleaned": cleaned}
 
 

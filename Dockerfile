@@ -12,6 +12,7 @@ COPY situation-backend/ ./situation-backend/
 
 # Copy pre-built frontend (built locally, committed to git)
 COPY situation-room/dist/ ./situation-room/dist/
+COPY ai관상SaaS/dist/ ./ai관상SaaS/dist/
 
 EXPOSE 8000
 

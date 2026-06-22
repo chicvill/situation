@@ -40,7 +40,7 @@ import { usePadMode } from './hooks/usePadMode';
 import './components/ConversationalUI.css';
 import './components/SideMenu.css';
 
-type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'wifi' | 'paper' | 'tech' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'admin' | 'call' | 'manual' | 'parking' | 'points' | 'simulator';
+type MainTab = 'guide' | 'order' | 'orderV2' | 'home' | 'kitchen' | 'counter' | 'display' | 'settings' | 'inventory' | 'menu' | 'qr' | 'wifi' | 'paper' | 'tech' | 'hr' | 'waiting' | 'reserve' | 'stats' | 'admin' | 'call' | 'manual' | 'parking' | 'points' | 'simulator' | 'gwansang';
 
 function App() {
   const { storeId, storeName: initialStoreName, updateStore } = useStoreFilter();
@@ -61,7 +61,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<MainTab>(() => {
     return (localStorage.getItem('situation_active_tab') as MainTab) || 'guide';
   });
-  const isWideTab = ['counter', 'kitchen', 'display', 'stats', 'admin', 'menu', 'settings', 'qr', 'simulator', 'inventory', 'hr', 'manual'].includes(activeTab);
+  const isWideTab = ['counter', 'kitchen', 'display', 'stats', 'admin', 'menu', 'settings', 'qr', 'simulator', 'inventory', 'hr', 'manual', 'gwansang'].includes(activeTab);
   const isPadLayout = isWideTab && (
     (activeTab === 'counter' && counterPad) ||
     (activeTab === 'kitchen' && kitchenPad) ||
@@ -580,6 +580,17 @@ function App() {
       case 'parking': return <ParkingManager storeId={storeId} onComplete={decrementParking} />;
       case 'points': return <PointsManager storeId={storeId} />;
       case 'simulator': return <PaymentSimulator storeId={storeId} bundles={bundles} />;
+      case 'gwansang': {
+        const gwansangUrl = import.meta.env.VITE_GWANSANG_URL || "http://localhost:5174";
+        return (
+          <iframe 
+            src={gwansangUrl} 
+            style={{ width: '100%', height: 'calc(100vh - 106px)', border: 'none', borderRadius: '16px', background: '#0f0f0f' }}
+            allow="camera; microphone; display-capture"
+            title="AI 관상 분석기"
+          />
+        );
+      }
       default: return <QROrderFlow bundles={bundles} storeId={storeId} storeName={storeName} onNavigate={navigateTo as any} />;
     }
   };

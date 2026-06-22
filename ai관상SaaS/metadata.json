@@ -1,0 +1,7 @@
+{
+  "name": "Gwan-sang (Physiognomy) Booth",
+  "description": "An interactive AI experience that analyzes faces to provide traditional Korean physiognomy readings, prints results via Nemonic, and logs data to Google Sheets.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
