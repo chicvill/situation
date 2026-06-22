@@ -107,6 +107,11 @@ FRONTEND_DIR = os.path.join(os.path.dirname(BASE_DIR), "situation-room", "dist")
 
 if os.path.exists(FRONTEND_DIR):
     app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIR, "assets")), name="assets")
+    
+    # Mount separate AI Physiognomy Saju app served at /gwansang/
+    GWANSANG_DIR = os.path.join(FRONTEND_DIR, "gwansang")
+    if os.path.exists(GWANSANG_DIR):
+        app.mount("/gwansang", StaticFiles(directory=GWANSANG_DIR, html=True), name="gwansang")
 
 
 @app.get("/")
