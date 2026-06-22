@@ -19,7 +19,7 @@ export const checkModelAvailability = async (): Promise<boolean> => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: "health check",
       config: { 
         maxOutputTokens: 10,
@@ -48,7 +48,7 @@ export const analyzeFace = async (base64Image: string): Promise<PhysiognomyResul
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview", 
+        model: "gemini-2.5-flash", 
         contents: {
           parts: [
             {
