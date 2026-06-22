@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
+    base: './',
     plugins: [react()],
     define: {
       // 빌드 타임에 process.env.API_KEY를 실제 값으로 치환합니다.
