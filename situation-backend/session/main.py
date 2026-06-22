@@ -110,6 +110,7 @@ if os.path.exists(FRONTEND_DIR):
 
 
 @app.get("/")
+@app.head("/")
 async def serve_index():
     index_path = os.path.join(FRONTEND_DIR, "index.html")
     if os.path.exists(index_path):
