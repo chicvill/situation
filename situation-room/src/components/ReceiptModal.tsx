@@ -14,10 +14,11 @@ interface ReceiptModalProps {
   onClose: () => void;
   receiptUrl?: string;
   storeName?: string;
+  showGwansangOption?: boolean;
 }
 
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({ 
-  orderId, totalPrice, paymentMethod, items, onClose, receiptUrl, storeName
+  orderId, totalPrice, paymentMethod, items, onClose, receiptUrl, storeName, showGwansangOption
 }) => {
   const today = new Date().toLocaleString();
   const displayStoreName = storeName || '시크빌';
@@ -167,12 +168,51 @@ ${items.map(item => {
           >
             🖨️ 영수증 출력하기
           </button>
-          <button 
-            onClick={onClose}
-            style={{ padding: '15px', background: '#1e293b', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
-          >
-            종료
-          </button>
+          {showGwansangOption ? (
+            <>
+              <button 
+                onClick={() => {
+                  const getGwansangUrl = () => {
+                    const hostname = window.location.hostname;
+                    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+                      return `http://${hostname}:5174`;
+                    }
+                    return 'https://gwansang.chicvill.store';
+                  };
+                  window.location.href = getGwansangUrl();
+                }}
+                style={{ 
+                  padding: '15px', 
+                  background: 'linear-gradient(135deg, #d4af37, #f3e5ab)', 
+                  color: '#1a1a1a', 
+                  border: 'none', 
+                  borderRadius: '8px', 
+                  fontWeight: 'bold', 
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 10px rgba(212,175,55,0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px'
+                }}
+              >
+                ✨ AI 관상 보러가기 (운세 예측)
+              </button>
+              <button 
+                onClick={onClose}
+                style={{ padding: '15px', background: '#1e293b', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                그냥 종료하기
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={onClose}
+              style={{ padding: '15px', background: '#1e293b', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              종료
+            </button>
+          )}
         </div>
 
         {/* Bottom Jagged Edge Decorative */}

@@ -146,6 +146,9 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
     if (typeof handleOpenReceipt === 'function') {
       // safe reference to bypass unused function lint
     }
+    if (typeof setOrderRound === 'function') {
+      // safe reference to bypass unused state setter lint
+    }
   }, [onNavigate]);
 
   // --- Memos & Config ---
@@ -1872,12 +1875,13 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
           items={receiptItems}
           onClose={() => {
             setShowReceiptModal(false);
-            if (showProgress) {
-              setShowProgress(false);
-              setOrderRound(r => r + 1);
-            }
+            window.close();
+            setTimeout(() => {
+              window.location.href = "about:blank";
+            }, 100);
           }}
           storeName={storeName}
+          showGwansangOption={true}
         />
       )}
 

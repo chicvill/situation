@@ -623,9 +623,15 @@ function App() {
       {receiptData && (
         <ReceiptModal
           {...receiptData}
+          showGwansangOption={isCustomerMode}
           onClose={() => {
             setReceiptData(null);
-            // alert 제거: 결제 완료 후 바로 진행 현황판으로 연결되도록 함
+            if (isCustomerMode) {
+              window.close();
+              setTimeout(() => {
+                window.location.href = "about:blank";
+              }, 100);
+            }
           }}
         />
       )}
