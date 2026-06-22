@@ -18,6 +18,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel }) =>
   const [isFaceDetected, setIsFaceDetected] = useState(false);
   const [isModelLoading, setIsModelLoading] = useState(true);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const lastFaceSeenRef = useRef<number>(0);
 
   // Initialize MediaPipe Face Detector
   useEffect(() => {
@@ -98,12 +99,17 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel }) =>
 
              if (isCenteredX && isCenteredY && isLargeEnough) {
                setIsFaceDetected(true);
+               lastFaceSeenRef.current = Date.now();
              } else {
-               setIsFaceDetected(false);
+               if (Date.now() - lastFaceSeenRef.current > 1200) {
+                 setIsFaceDetected(false);
+               }
              }
 
           } else {
-             setIsFaceDetected(false);
+             if (Date.now() - lastFaceSeenRef.current > 1200) {
+               setIsFaceDetected(false);
+             }
           }
         }
       }
@@ -160,7 +166,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel }) =>
 
       timer = setTimeout(() => {
         handleCapture();
-      }, 2000);
+      }, 3000);
     } else {
       setCountdown(null);
     }
@@ -173,7 +179,7 @@ const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onCancel }) =>
   }, [isFaceDetected]);
 
   const handleCapture = () => {
-    if (!isFaceDetected) return; 
+    if (Date.now() - lastFaceSeenRef.current > 2000) return; 
 
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
