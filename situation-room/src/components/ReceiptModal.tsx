@@ -174,10 +174,11 @@ ${items.map(item => {
                 onClick={() => {
                   const getGwansangUrl = () => {
                     const hostname = window.location.hostname;
-                    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) {
+                    const port = window.location.port;
+                    if ((hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.')) && port === '5173') {
                       return `http://${hostname}:5174`;
                     }
-                    return 'https://gwansang.chicvill.store';
+                    return '/gwansang/';
                   };
                   window.location.href = getGwansangUrl();
                 }}
