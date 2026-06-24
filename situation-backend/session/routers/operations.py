@@ -345,3 +345,14 @@ async def get_parking_by_session_endpoint(session_id: str):
 async def get_active_parkings_endpoint(store_id: Optional[str] = None):
     from ..database import get_active_parkings_db
     return get_active_parkings_db(store_id)
+
+
+# --- 🔑 Gemini API Key Retrieval Endpoints ---
+@router.get("/api/config/gemini")
+async def get_gemini_api_key():
+    import os
+    key = os.getenv("GEMINI_API_KEY") or ""
+    # Remove quotes if present
+    if key.startswith('"') and key.endswith('"'):
+        key = key[1:-1]
+    return {"gemini_api_key": key}

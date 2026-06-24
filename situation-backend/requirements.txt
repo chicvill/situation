@@ -5,6 +5,7 @@ python-dotenv==1.2.2
 pydantic==2.13.2
 requests==2.33.1
 psycopg2-binary==2.9.10
+types-psycopg2
 python-multipart==0.0.9
 websockets==12.0
 aiomqtt==2.3.0
