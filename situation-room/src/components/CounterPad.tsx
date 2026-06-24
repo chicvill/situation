@@ -4,18 +4,14 @@ import { useStoreFilter } from '../hooks/useStoreFilter';
 import { subscribeTopic } from '../services/mqttClient';
 import { playDingDong } from '../utils/audio';
 import { usePadMode } from '../hooks/usePadMode';
+import { API_BASE } from '../config';
 
 interface CounterPadProps {
     storeId?: string;
     bundles?: any[];
 }
 
-const getApiUrl = () => {
-    const host = window.location.hostname;
-    const isLocal = host === 'localhost' || host === '127.0.0.1' || host.startsWith('192.168.') || host.startsWith('10.') || host.startsWith('172.');
-    if (isLocal) return `http://${host}:8080`;
-    return import.meta.env.VITE_API_URL || `http://${host}:8080`;
-};
+const getApiUrl = () => API_BASE;
 
 
 
@@ -70,6 +66,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
 
     const [lastTapInfo, setLastTapInfo] = useState<{ id: string; time: number } | null>(null);
     const { padMode } = usePadMode('counter');
+    const [isActionPending, setIsActionPending] = useState(false);
 
     // playDingDong: utils/audio.ts 상단 import에서 가져옴
 
@@ -232,6 +229,8 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
 
 
     const handleStatusUpdate = async (orderId: string, status: string) => {
+        if (isActionPending) return;
+        setIsActionPending(true);
         setSessions(prev => prev.map(s => ({
             ...s,
             orders: s.orders?.map((o: any) => o.order_id === orderId ? { ...o, status } : o)
@@ -245,10 +244,14 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         } catch (e) { 
             console.error('Status Update Error:', e); 
             fetchSessions();
+        } finally {
+            setIsActionPending(false);
         }
     };
 
     const handleCloseSession = async (sessionId: string, silent = false) => {
+        if (isActionPending) return;
+        setIsActionPending(true);
         try {
             const res = await fetch(`${getApiUrl()}/api/session/close`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -269,6 +272,8 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             console.error('Close Session Error:', e);
             if (!silent) alert('정산 중 오류가 발생했습니다.');
             throw e;
+        } finally {
+            setIsActionPending(false);
         }
     };
 
@@ -311,11 +316,14 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     };
 
     const handleCancelWithRefund = async (order: any) => {
+        if (isActionPending) return;
         const isPrepaid = order.payment_status === 'paid' || order.payment_status === 'prepaid';
         const confirmMsg = isPrepaid
             ? `#${order.order_seq}차 주문(${(order.total_price ?? order.total ?? 0).toLocaleString()}원)은 선불 결제된 주문입니다.\n취소 시 토스 환불 처리를 시도합니다.\n계속하시겠습니까?`
             : `#${order.order_seq}차 주문을 취소하시겠습니까?`;
         if (!window.confirm(confirmMsg)) return;
+        
+        setIsActionPending(true);
         try {
             if (isPrepaid) {
                 const res = await fetch(`${getApiUrl()}/api/payment/cancel`, {
@@ -327,14 +335,21 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 else if (data.status === 'manual_required') alert(`⚠️ 자동 환불 불가\n${data.message}`);
                 else alert('주문이 취소되었습니다. (결제키 없음 - 후불 처리)');
             } else {
-                await handleStatusUpdate(order.order_id, 'cancelled');
+                await fetch(`${getApiUrl()}/api/order/status`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_id: order.order_id, status: 'cancelled' })
+                });
             }
             fetchSessions();
         } catch (e: any) { alert(`취소 처리 중 오류: ${e.message}`); }
+        finally {
+            setIsActionPending(false);
+        }
     };
 
     const handleOpenSession = async (directTableId?: string) => {
-        if (!directTableId) return;
+        if (!directTableId || isActionPending) return;
+        setIsActionPending(true);
         try {
             const targetStoreId = (!storeId || storeId === 'Total') ? 'default_store' : storeId;
             const res = await fetch(`${getApiUrl()}/api/session/open`, {
@@ -349,10 +364,15 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 alert(`세션 개시 실패: ${await res.text()}`);
             }
         } catch { alert('서버와 통신 중 오류가 발생했습니다.'); }
+        finally {
+            setIsActionPending(false);
+        }
     };
 
     const handleResetSession = async (sessionId: string) => {
+        if (isActionPending) return;
         if (!window.confirm('정말 이 테이블을 초기화하시겠습니까? (모든 주문이 취소됩니다)')) return;
+        setIsActionPending(true);
         try {
             const res = await fetch(`${getApiUrl()}/api/session/reset`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -360,6 +380,9 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             });
             if (res.ok) { fetchSessions(); alert('테이블이 초기화되었습니다.'); }
         } catch { alert('초기화 중 오류가 발생했습니다.'); }
+        finally {
+            setIsActionPending(false);
+        }
     };
 
     const getTableStage = useCallback((tableId: string): { label: string; bg: string; color: string; stage: string; hint?: string } => {
@@ -414,8 +437,13 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     }, [sessions, seatRequests]);
 
     const patchSessionStatus = useCallback(async (tableId: string, status: string) => {
+        if (isActionPending) return;
+        setIsActionPending(true);
         const s = sessions.find(s => s.table_id === tableId);
-        if (!s) return;
+        if (!s) {
+            setIsActionPending(false);
+            return;
+        }
         setSessions(prev => prev.map(sess => sess.table_id === tableId ? { ...sess, status } : sess));
         try {
             await fetch(`${getApiUrl()}/api/session/status`, {
@@ -425,10 +453,13 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             fetchSessions();
         } catch {
             fetchSessions();
+        } finally {
+            setIsActionPending(false);
         }
-    }, [sessions, fetchSessions]);
+    }, [sessions, fetchSessions, isActionPending]);
 
     const handleTableTap = useCallback((tableId: string) => {
+        if (isActionPending) return;
         setSelectedTableId(tableId);
         const now = Date.now();
         const isDouble = lastTapInfo?.id === tableId && (now - lastTapInfo.time) < 450;
@@ -441,16 +472,17 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         } else if (stage === 'closing') {
             const s = sessions.find(s => s.table_id === tableId);
             if (s) {
+                setIsActionPending(true);
                 fetch(`${getApiUrl()}/api/session/close`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ session_id: s.session_id, force: true })
-                }).then(() => fetchSessions()).catch(() => {});
+                }).then(() => fetchSessions()).catch(() => {}).finally(() => setIsActionPending(false));
             }
             setSelectedTableId(null);
         } else if (stage === 'waiting' || stage === 'initial') {
             handleOpenSession(tableId);
         }
-    }, [lastTapInfo, getTableStage, patchSessionStatus, sessions, handleOpenSession, fetchSessions]);
+    }, [lastTapInfo, getTableStage, patchSessionStatus, sessions, handleOpenSession, fetchSessions, isActionPending]);
 
     const tables = Array.from({ length: tableCount }, (_, i) => i + 1);
 
@@ -715,7 +747,9 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
 
                                     return (
                                         <button
+                                            disabled={isActionPending}
                                             onClick={async () => {
+                                                if (isActionPending) return;
                                                 setCardTouchCallback(() => async () => {
                                                     await handleCloseSession(selectedSession.session_id, true);
                                                     await fetch(`${getApiUrl()}/api/call/status`, {
@@ -735,7 +769,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                 borderRadius: '12px',
                                                 fontWeight: '900',
                                                 fontSize: padMode ? '1.05rem' : '0.92rem',
-                                                cursor: 'pointer',
+                                                cursor: isActionPending ? 'default' : 'pointer',
                                                 width: '100%',
                                                 display: 'flex',
                                                 alignItems: 'center',
@@ -743,7 +777,8 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                 gap: '8px',
                                                 boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
                                                 marginBottom: '6px',
-                                                animation: 'pulse-pink 2s infinite ease-in-out'
+                                                animation: 'pulse-pink 2s infinite ease-in-out',
+                                                opacity: isActionPending ? 0.6 : 1
                                             }}
                                         >
                                             {btnIcon} 대기중인 {btnLabel} ({unpaidTotal.toLocaleString()}원)
@@ -863,18 +898,61 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
 
                                                         {/* 액션 버튼 */}
                                                         <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                                                            <button onClick={() => handleCancelWithRefund(order)} style={{ background: 'transparent', border: '1px solid #fca5a5', color: '#ef4444', padding: padMode ? '6px 10px' : '3px 5px', borderRadius: '6px', fontSize: padMode ? '0.78rem' : '0.65rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>취소</button>
+                                                            <button 
+                                                                disabled={isActionPending}
+                                                                onClick={() => handleCancelWithRefund(order)} 
+                                                                style={{ 
+                                                                    background: 'transparent', 
+                                                                    border: '1px solid #fca5a5', 
+                                                                    color: '#ef4444', 
+                                                                    padding: padMode ? '6px 10px' : '3px 5px', 
+                                                                    borderRadius: '6px', 
+                                                                    fontSize: padMode ? '0.78rem' : '0.65rem', 
+                                                                    cursor: isActionPending ? 'default' : 'pointer', 
+                                                                    whiteSpace: 'nowrap',
+                                                                    opacity: isActionPending ? 0.6 : 1
+                                                                }}
+                                                            >
+                                                                취소
+                                                            </button>
                                                             {isReady ? (
-                                                                <button onClick={() => handleStatusUpdate(order.order_id, 'served')} style={{ background: '#10b981', border: 'none', color: 'white', padding: padMode ? '6px 12px' : '3px 6px', borderRadius: '6px', fontSize: padMode ? '0.78rem' : '0.65rem', cursor: 'pointer', fontWeight: '700', whiteSpace: 'nowrap', boxShadow: '0 0 6px rgba(16,185,129,0.3)' }}>
+                                                                <button 
+                                                                    disabled={isActionPending}
+                                                                    onClick={() => handleStatusUpdate(order.order_id, 'served')} 
+                                                                    style={{ 
+                                                                        background: '#10b981', 
+                                                                        border: 'none', 
+                                                                        color: 'white', 
+                                                                        padding: padMode ? '6px 12px' : '3px 6px', 
+                                                                        borderRadius: '6px', 
+                                                                        fontSize: padMode ? '0.78rem' : '0.65rem', 
+                                                                        cursor: isActionPending ? 'default' : 'pointer', 
+                                                                        fontWeight: '700', 
+                                                                        whiteSpace: 'nowrap', 
+                                                                        boxShadow: '0 0 6px rgba(16,185,129,0.3)',
+                                                                        opacity: isActionPending ? 0.6 : 1
+                                                                    }}
+                                                                >
                                                                     서빙
                                                                 </button>
                                                             ) : (
                                                                 <button
-                                                                    disabled={isPaidFull}
+                                                                    disabled={isPaidFull || isActionPending}
                                                                     onClick={() => {
                                                                         setSelectedOrderForPay(order);
                                                                     }}
-                                                                    style={{ background: isPaidFull ? '#e5e7eb' : 'var(--accent)', border: 'none', color: isPaidFull ? '#9ca3af' : 'white', padding: padMode ? '6px 12px' : '3px 6px', borderRadius: '6px', fontSize: padMode ? '0.78rem' : '0.65rem', cursor: isPaidFull ? 'default' : 'pointer', fontWeight: '700', whiteSpace: 'nowrap' }}
+                                                                    style={{ 
+                                                                        background: isPaidFull ? '#e5e7eb' : 'var(--accent)', 
+                                                                        border: 'none', 
+                                                                        color: isPaidFull ? '#9ca3af' : 'white', 
+                                                                        padding: padMode ? '6px 12px' : '3px 6px', 
+                                                                        borderRadius: '6px', 
+                                                                        fontSize: padMode ? '0.78rem' : '0.65rem', 
+                                                                        cursor: (isPaidFull || isActionPending) ? 'default' : 'pointer', 
+                                                                        fontWeight: '700', 
+                                                                        whiteSpace: 'nowrap',
+                                                                        opacity: isActionPending ? 0.6 : 1 
+                                                                    }}
                                                                 >
                                                                     {isPrepaid ? '완료' : '결제'}
                                                                 </button>
@@ -914,19 +992,41 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                         <button onClick={() => handleOpenSession(selectedSession.table_id)} style={{ background: '#f97316', border: 'none', color: 'white', padding: padMode ? '8px 16px' : '4px 6px', borderRadius: '6px', fontWeight: '700', fontSize: padMode ? '0.85rem' : '0.68rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>개시 승인</button>
                                     ) : (
                                         <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                                            <button onClick={() => handleResetSession(selectedSession.session_id)} style={{ background: 'transparent', border: '1px solid #fca5a5', color: '#ef4444', padding: padMode ? '8px 12px' : '4px 5px', borderRadius: '6px', fontWeight: '600', fontSize: padMode ? '0.85rem' : '0.68rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>초기화</button>
+                                            <button 
+                                                disabled={isActionPending}
+                                                onClick={() => handleResetSession(selectedSession.session_id)} 
+                                                style={{ 
+                                                    background: 'transparent', 
+                                                    border: '1px solid #fca5a5', 
+                                                    color: '#ef4444', 
+                                                    padding: padMode ? '8px 12px' : '4px 5px', 
+                                                    borderRadius: '6px', 
+                                                    fontWeight: '600', 
+                                                    fontSize: padMode ? '0.85rem' : '0.68rem', 
+                                                    cursor: isActionPending ? 'default' : 'pointer', 
+                                                    whiteSpace: 'nowrap',
+                                                    opacity: isActionPending ? 0.6 : 1
+                                                }}
+                                            >
+                                                초기화
+                                            </button>
                                             {unpaidTotal === 0 ? (
                                                 <button 
-                                                    disabled={hasCookingOrder}
+                                                    disabled={hasCookingOrder || isActionPending}
                                                     title={hasCookingOrder ? "주방에서 조리 중인 주문이 있어 세션을 종료할 수 없습니다." : ""}
                                                     onClick={async () => {
+                                                        if (isActionPending) return;
                                                         const msg = activeOrders.length > 0 ? '모든 결제가 완료되었습니다. 세션을 종료하시겠습니까?' : '주문이 없습니다. 세션을 종료하시겠습니까?';
                                                         if (!window.confirm(msg)) return;
+                                                        setIsActionPending(true);
                                                         try {
                                                             const r = await fetch(`${getApiUrl()}/api/session/close`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: selectedSession.session_id, force: true }) });
                                                             if (r.ok) { setSelectedTableId(null); fetchSessions(); }
                                                             else alert('오류가 발생했습니다.');
                                                         } catch { alert('오류가 발생했습니다.'); }
+                                                        finally {
+                                                            setIsActionPending(false);
+                                                        }
                                                     }} 
                                                     style={{ 
                                                         background: hasCookingOrder ? '#cbd5e1' : 'var(--accent)', 
@@ -936,9 +1036,9 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                         borderRadius: '6px', 
                                                         fontWeight: '700', 
                                                         fontSize: padMode ? '0.85rem' : '0.68rem', 
-                                                        cursor: hasCookingOrder ? 'not-allowed' : 'pointer', 
+                                                        cursor: (hasCookingOrder || isActionPending) ? 'not-allowed' : 'pointer', 
                                                         whiteSpace: 'nowrap',
-                                                        opacity: hasCookingOrder ? 0.65 : 1
+                                                        opacity: (hasCookingOrder || isActionPending) ? 0.65 : 1
                                                     }}
                                                 >
                                                     종료
@@ -990,7 +1090,8 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                         const tableId = active?.table_id || '';
 
                         if (method === '폰 to 폰 결제') {
-                            if (active) {
+                            if (active && !isActionPending) {
+                                setIsActionPending(true);
                                 try {
                                     const res = await fetch(`${getApiUrl()}/api/payment/request-phone-to-phone`, {
                                         method: 'POST',
@@ -1010,6 +1111,8 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                     }
                                 } catch (e) {
                                     alert('서버와 통신 중 오류가 발생했습니다.');
+                                } finally {
+                                    setIsActionPending(false);
                                 }
                             }
                             return;
