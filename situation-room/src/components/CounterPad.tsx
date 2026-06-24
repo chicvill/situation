@@ -68,6 +68,26 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const { padMode } = usePadMode('counter');
     const [isActionPending, setIsActionPending] = useState(false);
 
+    // Custom confirm and alert dialog modal states
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        message: string;
+        onConfirm: () => void | Promise<void>;
+    } | null>(null);
+    const [alertModal, setAlertModal] = useState<{
+        isOpen: boolean;
+        message: string;
+        onClose?: () => void;
+    } | null>(null);
+
+    const showConfirm = (message: string, onConfirm: () => void | Promise<void>) => {
+        setConfirmModal({ isOpen: true, message, onConfirm });
+    };
+
+    const showAlert = (message: string, onClose?: () => void) => {
+        setAlertModal({ isOpen: true, message, onClose });
+    };
+
     // playDingDong: utils/audio.ts 상단 import에서 가져옴
 
     const fetchSeatRequests = useCallback(async () => {
@@ -126,7 +146,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
     const handleManualOrderSubmit = async () => {
         if (!selectedSession) return;
         if (!selectedMenuName) {
-            alert('메뉴를 선택해 주세요.');
+            showAlert('메뉴를 선택해 주세요.');
             return;
         }
         
@@ -160,17 +180,17 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             });
             
             if (response.ok) {
-                alert('구두 추가 주문이 정식 접수되어 주방으로 전송되었습니다.');
+                showAlert('구두 추가 주문이 정식 접수되어 주방으로 전송되었습니다.');
                 setShowAddOrder(false);
                 setSelectedMenuName('');
                 setSelectedMenuQty(1);
                 fetchSessions(); // 세션 리로드하여 화면 갱신
             } else {
-                alert('주문 등록에 실패했습니다.');
+                showAlert('주문 등록에 실패했습니다.');
             }
         } catch (e) {
             console.error('Manual order submit error:', e);
-            alert('서버 오류가 발생했습니다.');
+            showAlert('서버 오류가 발생했습니다.');
         } finally {
             setIsSubmittingManualOrder(false);
         }
@@ -260,7 +280,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             const data = await res.json();
             if (res.ok) {
                 if (!silent) {
-                    alert(data.status === 'partial' ? data.message : '정산이 완료되었습니다.');
+                    showAlert(data.status === 'partial' ? data.message : '정산이 완료되었습니다.');
                 }
                 setSelectedSessionForPay(null);
                 setSelectedOrderForPay(null);
@@ -270,7 +290,7 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
             }
         } catch (e) {
             console.error('Close Session Error:', e);
-            if (!silent) alert('정산 중 오류가 발생했습니다.');
+            if (!silent) showAlert('정산 중 오류가 발생했습니다.');
             throw e;
         } finally {
             setIsActionPending(false);
@@ -321,30 +341,31 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
         const confirmMsg = isPrepaid
             ? `#${order.order_seq}차 주문(${(order.total_price ?? order.total ?? 0).toLocaleString()}원)은 선불 결제된 주문입니다.\n취소 시 토스 환불 처리를 시도합니다.\n계속하시겠습니까?`
             : `#${order.order_seq}차 주문을 취소하시겠습니까?`;
-        if (!window.confirm(confirmMsg)) return;
         
-        setIsActionPending(true);
-        try {
-            if (isPrepaid) {
-                const res = await fetch(`${getApiUrl()}/api/payment/cancel`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ order_id: order.order_id, cancel_reason: '카운터 취소' })
-                });
-                const data = await res.json();
-                if (data.status === 'success') alert(`✅ ${data.message}`);
-                else if (data.status === 'manual_required') alert(`⚠️ 자동 환불 불가\n${data.message}`);
-                else alert('주문이 취소되었습니다. (결제키 없음 - 후불 처리)');
-            } else {
-                await fetch(`${getApiUrl()}/api/order/status`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ order_id: order.order_id, status: 'cancelled' })
-                });
+        showConfirm(confirmMsg, async () => {
+            setIsActionPending(true);
+            try {
+                if (isPrepaid) {
+                    const res = await fetch(`${getApiUrl()}/api/payment/cancel`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order_id: order.order_id, cancel_reason: '카운터 취소' })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') showAlert(`✅ ${data.message}`);
+                    else if (data.status === 'manual_required') showAlert(`⚠️ 자동 환불 불가\n${data.message}`);
+                    else showAlert('주문이 취소되었습니다. (결제키 없음 - 후불 처리)');
+                } else {
+                    await fetch(`${getApiUrl()}/api/order/status`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order_id: order.order_id, status: 'cancelled' })
+                    });
+                }
+                fetchSessions();
+            } catch (e: any) { showAlert(`취소 처리 중 오류: ${e.message}`); }
+            finally {
+                setIsActionPending(false);
             }
-            fetchSessions();
-        } catch (e: any) { alert(`취소 처리 중 오류: ${e.message}`); }
-        finally {
-            setIsActionPending(false);
-        }
+        });
     };
 
     const handleOpenSession = async (directTableId?: string) => {
@@ -361,9 +382,9 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                 setSelectedTableId(directTableId); // 승인된 테이블 자동 선택 및 포커싱
                 fetchSessions();
             } else {
-                alert(`세션 개시 실패: ${await res.text()}`);
+                showAlert(`세션 개시 실패: ${await res.text()}`);
             }
-        } catch { alert('서버와 통신 중 오류가 발생했습니다.'); }
+        } catch { showAlert('서버와 통신 중 오류가 발생했습니다.'); }
         finally {
             setIsActionPending(false);
         }
@@ -371,18 +392,19 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
 
     const handleResetSession = async (sessionId: string) => {
         if (isActionPending) return;
-        if (!window.confirm('정말 이 테이블을 초기화하시겠습니까? (모든 주문이 취소됩니다)')) return;
-        setIsActionPending(true);
-        try {
-            const res = await fetch(`${getApiUrl()}/api/session/reset`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ session_id: sessionId })
-            });
-            if (res.ok) { fetchSessions(); alert('테이블이 초기화되었습니다.'); }
-        } catch { alert('초기화 중 오류가 발생했습니다.'); }
-        finally {
-            setIsActionPending(false);
-        }
+        showConfirm('정말 이 테이블을 초기화하시겠습니까? (모든 주문이 취소됩니다)', async () => {
+            setIsActionPending(true);
+            try {
+                const res = await fetch(`${getApiUrl()}/api/session/reset`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                if (res.ok) { fetchSessions(); showAlert('테이블이 초기화되었습니다.'); }
+            } catch { showAlert('초기화 중 오류가 발생했습니다.'); }
+            finally {
+                setIsActionPending(false);
+            }
+        });
     };
 
     const getTableStage = useCallback((tableId: string): { label: string; bg: string; color: string; stage: string; hint?: string } => {
@@ -1017,16 +1039,17 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                                     onClick={async () => {
                                                         if (isActionPending) return;
                                                         const msg = activeOrders.length > 0 ? '모든 결제가 완료되었습니다. 세션을 종료하시겠습니까?' : '주문이 없습니다. 세션을 종료하시겠습니까?';
-                                                        if (!window.confirm(msg)) return;
-                                                        setIsActionPending(true);
-                                                        try {
-                                                            const r = await fetch(`${getApiUrl()}/api/session/close`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: selectedSession.session_id, force: true }) });
-                                                            if (r.ok) { setSelectedTableId(null); fetchSessions(); }
-                                                            else alert('오류가 발생했습니다.');
-                                                        } catch { alert('오류가 발생했습니다.'); }
-                                                        finally {
-                                                            setIsActionPending(false);
-                                                        }
+                                                        showConfirm(msg, async () => {
+                                                            setIsActionPending(true);
+                                                            try {
+                                                                const r = await fetch(`${getApiUrl()}/api/session/close`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: selectedSession.session_id, force: true }) });
+                                                                if (r.ok) { setSelectedTableId(null); fetchSessions(); }
+                                                                else showAlert('오류가 발생했습니다.');
+                                                            } catch { showAlert('오류가 발생했습니다.'); }
+                                                            finally {
+                                                                setIsActionPending(false);
+                                                            }
+                                                        });
                                                     }} 
                                                     style={{ 
                                                         background: hasCookingOrder ? '#cbd5e1' : 'var(--accent)', 
@@ -1103,14 +1126,14 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                                         })
                                     });
                                     if (res.ok) {
-                                        alert('📲 고객 휴대폰으로 폰 to 폰 원격 결제 요청을 전송했습니다. 고객이 휴대폰에서 최종 결제하면 이 화면도 자동으로 완료 갱신됩니다.');
+                                        showAlert('📲 고객 휴대폰으로 폰 to 폰 원격 결제 요청을 전송했습니다. 고객이 휴대폰에서 최종 결제하면 이 화면도 자동으로 완료 갱신됩니다.');
                                         setSelectedSessionForPay(null);
                                         setSelectedOrderForPay(null);
                                     } else {
-                                        alert('결제 요청 전송 실패: ' + await res.text());
+                                        showAlert('결제 요청 전송 실패: ' + await res.text());
                                     }
                                 } catch (e) {
-                                    alert('서버와 통신 중 오류가 발생했습니다.');
+                                    showAlert('서버와 통신 중 오류가 발생했습니다.');
                                 } finally {
                                     setIsActionPending(false);
                                 }
@@ -1282,6 +1305,134 @@ export const CounterPad = ({ storeId: propStoreId, bundles = [] }: CounterPadPro
                     </div>
                 );
             })()}
+
+            {/* Custom Confirm Modal */}
+            {confirmModal && confirmModal.isOpen && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    background: 'rgba(15, 23, 42, 0.65)',
+                    backdropFilter: 'blur(4px)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 9999,
+                    animation: 'fade-in 0.2s ease-out'
+                }}>
+                    <div style={{
+                        background: 'var(--surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '16px',
+                        padding: '24px',
+                        width: '90%',
+                        maxWidth: '400px',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '20px'
+                    }}>
+                        <div style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+                            {confirmModal.message}
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button 
+                                onClick={() => setConfirmModal(null)} 
+                                style={{
+                                    background: 'transparent',
+                                    border: '1px solid var(--border)',
+                                    color: 'var(--text-muted)',
+                                    padding: '10px 18px',
+                                    borderRadius: '10px',
+                                    fontWeight: '700',
+                                    fontSize: '0.88rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                취소
+                            </button>
+                            <button 
+                                onClick={async () => {
+                                    const action = confirmModal.onConfirm;
+                                    setConfirmModal(null);
+                                    await action();
+                                }} 
+                                style={{
+                                    background: 'var(--accent)',
+                                    border: 'none',
+                                    color: 'white',
+                                    padding: '10px 18px',
+                                    borderRadius: '10px',
+                                    fontWeight: '700',
+                                    fontSize: '0.88rem',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Alert Modal */}
+            {alertModal && alertModal.isOpen && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100vw',
+                    height: '100vh',
+                    background: 'rgba(15, 23, 42, 0.65)',
+                    backdropFilter: 'blur(4px)',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: 10000,
+                    animation: 'fade-in 0.2s ease-out'
+                }}>
+                    <div style={{
+                        background: 'var(--surface)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '16px',
+                        padding: '24px',
+                        width: '90%',
+                        maxWidth: '400px',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '20px'
+                    }}>
+                        <div style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-main)', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+                            {alertModal.message}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button 
+                                onClick={() => {
+                                    const closeAction = alertModal.onClose;
+                                    setAlertModal(null);
+                                    if (closeAction) closeAction();
+                                }} 
+                                style={{
+                                    background: 'var(--accent)',
+                                    border: 'none',
+                                    color: 'white',
+                                    padding: '10px 20px',
+                                    borderRadius: '10px',
+                                    fontWeight: '700',
+                                    fontSize: '0.88rem',
+                                    cursor: 'pointer',
+                                    width: '100%'
+                                }}
+                            >
+                                확인
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
