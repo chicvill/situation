@@ -1881,7 +1881,6 @@ const MobileOrderV2: React.FC<Props> = ({ bundles, storeId, storeName: initialSt
             }, 100);
           }}
           storeName={storeName}
-          showGwansangOption={true}
         />
       )}
 

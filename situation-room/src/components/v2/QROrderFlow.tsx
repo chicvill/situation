@@ -1554,7 +1554,6 @@ const QROrderFlow: React.FC<Props> = ({ bundles, storeId, storeName: initialStor
             }, 100);
           }}
           storeName={storeName}
-          showGwansangOption={true}
         />
       )}
 
